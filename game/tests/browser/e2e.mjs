@@ -515,7 +515,34 @@ try{
     await page.locator("#command-open-btn").click();
     await page.locator("#command-modal").waitFor({state:"visible"});
     assert.ok(await page.locator("#command-modal").isVisible(),"management dialog must open from the top bar");
-    assert.equal(await page.locator("#command-modal .command-deck [data-command-tab]").count(),26,"all twenty-six management tabs, including Explore, Biomes, the Atelier, city charter, noble houses, item lexicon and the Whisper Court, must live inside the dialog");
+    assert.equal(await page.locator("#command-modal .command-deck [data-command-tab]").count(),27,"all twenty-seven management tabs, including the hazard panel, Explore, Biomes, the Atelier, city charter, noble houses, item lexicon and the Whisper Court, must live inside the dialog");
+    // The 1.2.20 hazard panel is the twenty-seventh tab. Prove it opens with the
+    // real panel and that the two movement rows render the same factors the
+    // simulation reads, rather than only counting a button in the deck.
+    await page.locator('[data-command-tab="hazards"]').click();
+    await waitForPanelText("Hazards of the realm");
+    // Large panels mount progressively across frames. Wait for the derived
+    // rows themselves before reading the summary, not just the intro title.
+    await waitForPanelText("CARAVAN SPEED");
+    const hazardTab = await page.evaluate(() => {
+        const rows = [...document.querySelectorAll("#command-panel-content .command-summary > div")];
+        return {
+            title: document.querySelector("#command-panel-content .command-panel-intro h3")?.textContent || "",
+            summary: Object.fromEntries(rows.map(row => [row.querySelector("small")?.textContent || "", row.querySelector("strong")?.textContent || ""]))
+        };
+    });
+    assert.equal(hazardTab.title, "Hazards of the realm", "the hazard tab must render its real panel");
+    const lossPercent = text => Number(String(text).replace(/[^0-9]/g, ""));
+    // The two rows are rendered from the same live movement reading. Checking
+    // their exact half relationship is stronger than a fixed label, and unlike
+    // a second read of the state it cannot race a season pass between the
+    // panel render and the assertion.
+    const movementLoss = lossPercent(hazardTab.summary["MOVEMENT & EXPEDITIONS"]);
+    const caravanLoss = lossPercent(hazardTab.summary["CARAVAN SPEED"]);
+    assert.ok(movementLoss >= 0 && movementLoss <= 50, "the hazard panel must print a bounded movement penalty");
+    assert.equal(caravanLoss, Math.round(movementLoss / 2), "the hazard panel must print the caravan factor derived from the same movement reading");
+    assert.ok(hazardTab.summary["FOOD & WATER DRAW"], "the hazard panel must expose the household demand row");
+    await page.locator('[data-command-tab="kingdom"]').click();
     await waitForPanelText("Kingdom overview");
     assert.equal(await page.locator("#command-panel-content .command-panel-intro h3").innerText(),"Kingdom overview","management must open on the live kingdom overview");
     await page.locator('[data-command-tab="kingdom"]').click();

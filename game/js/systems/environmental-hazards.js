@@ -18,6 +18,7 @@ import { addLog } from "../core/event-log.js";
 import { state } from "../core/state.js";
 import { TYPE } from "../core/types.js";
 import { addResource } from "../systems/resources.js";
+import { recordResourceMovement } from "./goods-book.js";
 import { consumeMedicine, getMedicineAvailability, startOutbreak } from "../systems/health.js";
 import { getHazardModifiers as readHazardModifiers, invalidateHazardModifierCache } from "./hazard-modifiers.js";
 import { destroyRoad, getRoadAt } from "../systems/roads.js";
@@ -444,6 +445,22 @@ function recordLoss(entry, kind, amount) {
     return value;
 }
 
+// Hazard losses are physical changes to the royal food store. Every one must
+// reach the same goods book as population consumption, otherwise the movement
+// audit reports a real leak after a flood or drought. The bounded amounts are
+// already clamped to the available reserve by the callers.
+function bookHazardFoodLoss(loss, cause, key) {
+    const amount = Math.max(0, Number(loss) || 0);
+    if (amount <= 0) return 0;
+    recordResourceMovement("food", -amount, cause, {
+        from: { kind: "realm", id: "royal-stores" },
+        to: { kind: "hazard", id: cause },
+        key
+    });
+    addResource("food", -amount);
+    return amount;
+}
+
 function addHistory(entry, kind, text) {
     entry.history.push({ year: state.year, season: state.seasonIndex, kind, text: String(text).slice(0, 220) });
     if (entry.history.length > HAZARD_LIMITS.maxHistory) entry.history.splice(0, entry.history.length - HAZARD_LIMITS.maxHistory);
@@ -568,7 +585,8 @@ function applyHazard(entry, row, severity, budget) {
         loss = recordLoss(entry, "food", loss);
         budget.food += loss;
         if (loss > 0) {
-            addResource("food", -loss);
+            bookHazardFoodLoss(loss, "hazard-food-loss",
+                "hazard-food:" + row.mechanic + ":" + state.year + ":" + state.seasonIndex);
             text = (text ? text + " · " : "") + ("FOOD -" + loss);
         }
     }
@@ -593,7 +611,11 @@ function applyHazard(entry, row, severity, budget) {
         }
         loss = recordLoss(entry, "food", loss);
         budget.food += loss;
-        if (loss > 0) { addResource("food", -loss); text = (text ? text + " · " : "") + ("WATER SHORT · FOOD -" + loss); }
+        if (loss > 0) {
+            bookHazardFoodLoss(loss, "hazard-water-shortage",
+                "hazard-water:" + row.mechanic + ":" + state.year + ":" + state.seasonIndex);
+            text = (text ? text + " · " : "") + ("WATER SHORT · FOOD -" + loss);
+        }
     }
     if (effects.work) {
         entry.modifiers.work = clamp01(entry.modifiers.work + effects.work * scale);
@@ -786,8 +808,9 @@ export function updateEnvironmentalHazards({ force = false } = {}) {
     if (entry.modifiers.work > 0.25) {
         const lost = Math.min(Math.floor((Number(state.resources?.food) || 0) / 10), 2);
         if (lost > 0) {
-            addResource("food", -lost);
             recordLoss(entry, "food", lost);
+            bookHazardFoodLoss(lost, "hazard-lost-workdays",
+                "hazard-workdays:" + state.year + ":" + state.seasonIndex);
             events.push("LOST WORKDAYS · FOOD -" + lost);
         }
     }
@@ -825,8 +848,8 @@ export function updateEnvironmentalHazardYear() {
     if (chronic.droughtYears >= 2) {
         const loss = Math.min(Number(state.resources?.food) || 0, chronic.droughtYears);
         if (loss > 0) {
-            addResource("food", -loss);
             recordLoss(entry, "food", loss);
+            bookHazardFoodLoss(loss, "hazard-drought", "hazard-drought:" + state.year);
             events.push("YEAR " + chronic.droughtYears + " OF DROUGHT · FOOD -" + loss);
         }
     }

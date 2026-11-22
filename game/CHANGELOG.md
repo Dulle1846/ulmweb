@@ -1,6 +1,6 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.38.0`
+**Current production version:** `3.38.1`
 **Next development line:** `3.39.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
@@ -8,6 +8,25 @@
 **Last repository verification:** 2026-11-22 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.38.1 — Browser E2E gate repaired and hazard losses booked
+
+This is a focused verification release on top of 3.38.0. The live hazard
+multipliers, save schema 13 and calm-realm behaviour are unchanged.
+
+- **The twenty-seventh management tab is the hazard panel.** The browser E2E
+  now expects the real deck of 27 tabs instead of the stale 26. It also opens
+  the hazard panel, waits for its progressively mounted derived rows and checks
+  that `MOVEMENT & EXPEDITIONS` and `CARAVAN SPEED` come from the same live
+  movement reading. The tab is verified, not merely counted.
+- **Hazard food losses reach the goods book.** Flood, water-shortage, lost
+  workday and drought losses already reduced the royal food store but were not
+  booked as consumed. The movement audit now reconciles after a hazard season
+  instead of reporting a leak; the physical and expected food values differ by
+  at most the existing 0.01 rounding.
+- **No gate was loosened.** The E2E tab assertion is exact, the movement-panel
+  relationship is checked, and the goods audit keeps its full 0.02 tolerance.
+  The change does not alter hazard factors, production, consumption or saves.
 
 ## 3.38.0 — The hazard modifiers reach the last economic paths
 

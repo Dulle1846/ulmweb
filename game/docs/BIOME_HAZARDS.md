@@ -1,6 +1,6 @@
 # Biomes with special hazards and diseases (1.2.20)
 
-**Status:** implemented, tested and deployed from `ulmweb-branch` on 2026-11-22 (3.38.0).
+**Status:** implemented, tested and deployed from `ulmweb-branch` on 2026-11-22 (3.38.1).
 **Spec:** 1.2.20.1–1.2.20.102, all 102 points implemented.
 **Panel:** `HAZARDS` tab in the realm management deck.
 **Code:** `js/world/hazard-data.js`, `js/world/hazard-expansion-data.js`,
