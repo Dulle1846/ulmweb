@@ -3,6 +3,7 @@ import { TYPE } from "../core/types.js";
 import { state } from "../core/state.js";
 import { getEntitiesOfType } from "../world/entities.js";
 import { getEndeavourModifiers } from "./endeavours.js";
+import { getHazardModifiers } from "./hazard-modifiers.js";
 export function updateMorale(){
     if(state.tick%45!==0)return;
     let delta=getEntitiesOfType(TYPE.TAVERN).length*0.6+getEntitiesOfType(TYPE.TEMPLE).length*1.4;
@@ -10,5 +11,9 @@ export function updateMorale(){
     if(getEntitiesOfType(TYPE.VILLAGER).length>35)delta-=0.4;
     if(state.resources.food<10)delta-=1.1;
     delta+=Math.max(0,Number(getEndeavourModifiers().morale)||0)*0.25;
+    // A rolled hazard's stored morale pressure now reaches the real morale
+    // simulation. The factor is small and bounded; direct losses remain in the
+    // hazard pass and this only makes the chronic mood drag persistent.
+    delta-=Math.max(0,Number(getHazardModifiers().morale)||0)*0.12;
     state.morale=Math.max(0,Math.min(100,state.morale+delta));
 }

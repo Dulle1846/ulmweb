@@ -1,13 +1,51 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.38.1`
-**Next development line:** `3.39.0-dev`
+**Current production version:** `3.39.0`
+**Next development line:** `3.40.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
 **Last repository verification:** 2026-11-22 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.39.0 — Climate drift, regional crises and real resettlement
+
+This release closes the remaining "stored but not felt" gaps in 1.2.20. The
+102-row catalogue was already complete; the depth work now reaches the world
+queries, weather, morale, partner realms and actual population. Save schema 13
+is unchanged, and a calm realm with zero drift still reads the exact shipped
+baseline.
+
+- **Climate drift is a real climate.** The saved `chronic.climateDrift` now
+  shifts per-tile temperature and moisture queries, tilts the live weather
+  table toward clear/dry or rain/snow, and raises heat/drought/fire pressure
+  while lowering cold/frost/avalanche pressure. The world's `getBiomeAt`,
+  forest, field and construction consumers therefore see the drift, not just
+  the hazard panel. A small memoised reader keeps the per-tile path bounded.
+- **Regional bundles have teeth.** The signature hazards named by a climate's
+  regional bundle now carry its exposure multiplier. Volcanic, desert, swamp
+  and mountain realms feel their own bundle's dangers more strongly instead of
+  showing the same weights under a different label.
+- **The morale modifier reaches morale.** `updateMorale()` consumes the saved
+  hazard morale pressure, so a severe season leaves a persistent mood drag in
+  the same simulation the player already watches; neutral weather is unchanged.
+- **Refugees become residents.** Waiting `migrants` from neighbour aid and rare
+  settlement decisions are now housed through the normal population gate: real
+  `spawnEntity(VILLAGER)` arrivals, real household assignments, real yearly
+  growth accounting. A realm without beds, food or morale keeps them waiting
+  at the border instead of silently counting them.
+- **Neighbour realms have their own crisis.** Partners now carry a bounded
+  crisis (`outbreak`, `epizootic`, `drought`, `flood`, `fire`), refugee
+  households and a trade penalty. Crises raise caravan terms, can send
+  refugees, recover over time, and are cleared by aid. The hazard panel shows
+  the crisis, waiting households and dearer trade; the existing aid button now
+  answers any partner crisis, not only fever.
+- **Verification:** focused 1.2.20, modifier and climate tests; full `npm test`
+  (1331/1331), the deterministic 25-year campaign and a real cloud-browser
+  check of the hazard panel. The local Playwright wrapper could not launch on
+  this host because its Chromium system libraries are absent; the browser E2E
+  workflow remains the CI gate. No gate was lowered.
 
 ## 3.38.1 — Browser E2E gate repaired and hazard losses booked
 

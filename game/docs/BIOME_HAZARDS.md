@@ -1,6 +1,6 @@
 # Biomes with special hazards and diseases (1.2.20)
 
-**Status:** implemented, tested and deployed from `ulmweb-branch` on 2026-11-22 (3.38.1).
+**Status:** implemented, tested and deployed from `ulmweb-branch` on 2026-11-22 (3.39.0).
 **Spec:** 1.2.20.1–1.2.20.102, all 102 points implemented.
 **Panel:** `HAZARDS` tab in the realm management deck.
 **Code:** `js/world/hazard-data.js`, `js/world/hazard-expansion-data.js`,
@@ -34,6 +34,27 @@ resettlement, disease treatment, rare-event decisions and the hazard map
 toggle. The original three actions remain: prepare the season (12 wood, 8 gold,
 once per season), treat casualties (spends herbal doses) and cleanse corrupted
 ground (10 stone, 12 gold).
+
+### 3.39 depth pass
+
+The 102 rows are unchanged. The following formerly cosmetic or stored values now
+have world consumers:
+
+- **Climate drift** (`js/systems/climate-drift.js`) moves the per-tile
+  temperature and moisture queries, tilts the live weather table and changes
+  heat versus cold hazard pressure. It is still the same saved
+  `chronic.climateDrift`; zero is exactly neutral.
+- **Regional bundles** multiply the weight of their own signature hazards by
+  the bundle's exposure, so a volcanic, desert, swamp or mountain realm has a
+  real regional profile rather than a label.
+- **Morale**: the saved hazard `morale` modifier is read by `updateMorale()`.
+- **Refugees and resettlement**: `response.migrants` is a real waiting pool;
+  housed arrivals spawn villagers through the normal population gate and are
+  counted in `response.arrivals`. `response.resettled` remains the number of
+  cleared plots, not people.
+- **Partner realms**: each partner carries a bounded `crisis`, `refugees` and
+  `tradePenalty`; crises raise caravan terms, can send refugees and are cleared
+  by aid. Partner crises are displayed in the same panel.
 
 ## Simulation model
 

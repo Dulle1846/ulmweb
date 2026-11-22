@@ -126,10 +126,11 @@ export function renderHazardPanel() {
     const partnerRows = snapshot.partners.length
         ? snapshot.partners.map(partner => '<div class="command-history"><strong>' + esc(partner.name.toUpperCase()) +
             ' · RELATION ' + num(partner.relation) + '</strong><p>' +
-            (partner.outbreak ? "OUTBREAK · " : "no outbreak · ") +
-            (partner.epizootic ? "ANIMAL PLAGUE · " : "") +
+            (partner.crisis && partner.crisis !== "none" ? esc(String(partner.crisis).toUpperCase()) + " · " : "no crisis · ") +
+            (partner.refugees ? num(partner.refugees) + " refugee households · " : "") +
+            (partner.tradePenalty ? "trade " + pct(partner.tradePenalty) + " dearer · " : "") +
             (partner.request ? "asks for aid" : "trade is open") + '</p>' +
-            (partner.outbreak ? '<div class="hazard-actions">' + actionButton("hazard-aid", "SEND AID · 10 FOOD · 8G", { value: partner.id }) + '</div>' : '') +
+            (partner.crisis && partner.crisis !== "none" ? '<div class="hazard-actions">' + actionButton("hazard-aid", "SEND AID · 10 FOOD · 8G", { value: partner.id }) + '</div>' : '') +
             '</div>').join("")
         : '<p class="command-note">No neighbouring realm is currently in the hazard ledger.</p>';
     const diseaseRows = snapshot.diseases.length
@@ -265,7 +266,9 @@ export function renderHazardPanel() {
         '<div class="command-section-title">REBUILD ECONOMY</div><div class="command-summary">' +
         '<div><small>EMERGENCY FUND</small><strong>' + num(response.insurance) + ' / ' + num(INSURANCE_CAP) + 'G</strong></div>' +
         '<div><small>LOAN</small><strong>' + (response.loan?.principal ? num(response.loan.principal) + 'G LEFT' : 'NONE') + '</strong></div>' +
-        '<div><small>RESETTLED</small><strong>' + num(response.resettled) + '</strong></div>' +
+        '<div><small>RESETTLED PLOTS</small><strong>' + num(response.resettled) + '</strong></div>' +
+        '<div><small>NEW RESIDENTS</small><strong>' + num(response.arrivals) + '</strong></div>' +
+        '<div><small>WAITING HOUSEHOLDS</small><strong>' + num(response.migrants) + '</strong></div>' +
         '<div><small>REBUILD QUEUE</small><strong>' + num(recovery.pendingCount) + '</strong></div></div>' +
         '<div class="hazard-actions">' +
         actionButton("hazard-insure", "FUND REPAIRS · 20G", { disabled: response.insurance >= INSURANCE_CAP }) +

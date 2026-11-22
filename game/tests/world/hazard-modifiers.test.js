@@ -16,6 +16,7 @@ import { generateResourceGeography, getResourceNodeAt } from "../../js/systems/r
 import { initializeCityForRealm, ensureInventory, getInventorySummary, updateLogisticsMovement } from "../../js/systems/logistics.js";
 import { updateSettlementNeeds } from "../../js/systems/settlement.js";
 import { updateBuildingIncome } from "../../js/simulation/buildings.js";
+import { updateMorale } from "../../js/systems/morale.js";
 import { ensureForestFauna, harvestForestGameAt, resetForestFauna } from "../../js/systems/forest-fauna.js";
 import {
     getHazardCaravanMovementFactor, getHazardExtractionFactor, getHazardFoodDemandFactor,
@@ -85,6 +86,26 @@ test("1.2.20 a quiet legacy save loads at exactly neutral", () => {
     assert.equal(effects.pasture, 1);
     assert.equal(effects.tradeBuy, 1);
     assert.equal(effects.tradeSell, 1);
+});
+
+test("1.2.20 the stored morale modifier reaches the morale simulation", () => {
+    resetState();
+    state.tick = 45;
+    state.morale = 70;
+    state.resources.food = 100;
+    state.entities = [];
+    setModifiers(null);
+    updateMorale();
+    const calm = state.morale;
+
+    resetState();
+    state.tick = 45;
+    state.morale = 70;
+    state.resources.food = 100;
+    state.entities = [];
+    setModifiers({ morale: 1 });
+    updateMorale();
+    assert.ok(state.morale < calm, "a rolled hazard's morale pressure must lower the real morale tick");
 });
 
 test("1.2.20 an active hazard raises household food and water draw", () => {

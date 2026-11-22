@@ -78,15 +78,16 @@ export function getHazardSimulationEffects() {
     // Fog closes paths, forbidden growth makes extraction dangerous and an
     // outbreak across the border raises caravan terms. Zero changes nothing.
     const magic = state.environmentalHazards?.magic || {};
-    const partnerOutbreaks = Array.isArray(state.environmentalHazards?.partners)
-        ? state.environmentalHazards.partners.filter(partner => partner?.outbreak).length : 0;
+    const partnerCrises = Array.isArray(state.environmentalHazards?.partners)
+        ? state.environmentalHazards.partners.filter(partner => partner?.outbreak
+            || (partner?.crisis && partner.crisis !== "none")).length : 0;
     const raw = Object.freeze({
         ...base,
         movement: clamp01(base.movement + clamp01(magic.fog) * 0.18 + clamp01(magic.unnaturalWeather) * 0.10),
         extraction: clamp01(base.extraction + clamp01(magic.forbidden) * 0.12),
         pasture: clamp01(base.pasture + clamp01(magic.animalShift) * 0.20),
         diseaseRisk: clamp01(base.diseaseRisk + clamp01(magic.corruption) * 0.12),
-        trade: clamp01(base.trade + partnerOutbreaks * 0.035)
+        trade: clamp01(base.trade + partnerCrises * 0.035)
     });
     const relief = 1 - clamp01(raw.adaptation) * HAZARD_MODIFIER_EFFECT.adaptationRelief;
     const movement = bounded(1 - raw.movement * HAZARD_MODIFIER_EFFECT.movement * relief, 0.50, 1);

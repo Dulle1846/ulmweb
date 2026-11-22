@@ -16,6 +16,7 @@ import { generateResourceGeography } from '../systems/resource-geography.js';
 import { ensureForestSuccession, resetForestSuccession } from '../systems/forest-succession.js';
 import { generateSpecialBiomes, paintSpecialBiomeTint } from '../systems/special-biome-state.js';
 import { generateBiomeAtlas, syncBiomeDiscovery } from '../systems/biome-resource-state.js';
+import { getClimateMoistureOffset, getClimateTemperatureOffset } from '../systems/climate-drift.js';
 
 export { normalizeWorldOptions, resolveWorldDimensions, seaLevelFor };
 
@@ -220,7 +221,8 @@ export function getMoistureAt(wx, wy) {
     const px = Math.floor(wx * res);
     const py = Math.floor(wy * res);
     if (px < 0 || py < 0 || px >= state.terrainPixW || py >= state.terrainPixH) return 0.5;
-    return state.moistureMap?.[py * state.terrainPixW + px] ?? 0.5;
+    const base = state.moistureMap?.[py * state.terrainPixW + px] ?? 0.5;
+    return Math.max(0, Math.min(1, base + getClimateMoistureOffset()));
 }
 
 export function getTemperatureAt(wx, wy) {
@@ -228,7 +230,8 @@ export function getTemperatureAt(wx, wy) {
     const px = Math.floor(wx * res);
     const py = Math.floor(wy * res);
     if (px < 0 || py < 0 || px >= state.terrainPixW || py >= state.terrainPixH) return 0.55;
-    return state.temperatureMap?.[py * state.terrainPixW + px] ?? 0.55;
+    const base = state.temperatureMap?.[py * state.terrainPixW + px] ?? 0.55;
+    return Math.max(0, Math.min(1, base + getClimateTemperatureOffset()));
 }
 
 export function getBiomeAt(wx, wy) {

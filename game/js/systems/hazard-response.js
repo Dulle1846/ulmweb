@@ -23,6 +23,8 @@ import {
 } from "./hazard-scars.js";
 import { canSpawnEntity, spawnEntity } from "../world/entities.js";
 import { awakenCreature } from "./creatures.js";
+import { getHouseholdSnapshot, getPopulationGrowthAllowance, getPopulationGrowthGate, recordPopulationGrowth } from "./population.js";
+import { ensurePersonProfile } from "./people.js";
 
 export const HAZARD_RESPONSE_VERSION = 1;
 export const PARTNER_LIMIT = 4;
@@ -33,6 +35,7 @@ export const LOAN_AMOUNT = 60;
 export const LOAN_PRINCIPAL = 72;
 export const LOAN_TERM = 3;
 export const LOAN_PAYMENT = 24;
+export const MIGRANT_SETTLE_LIMIT = 2;
 
 const clamp01 = value => Math.max(0, Math.min(1, Number(value) || 0));
 const clamp = (value, min, max) => Math.max(min, Math.min(max, Number(value) || 0));
@@ -84,6 +87,7 @@ export function createHazardResponseState() {
         loan: { principal: 0, takenYear: 0, dueYear: 0 },
         resettled: 0,
         migrants: 0,
+        arrivals: 0,
         lastActions: [],
         lastYear: 0
     };
@@ -141,6 +145,7 @@ export function normalizeHazardResponse(value) {
     };
     base.resettled = Math.min(9999, positive(source.resettled));
     base.migrants = Math.min(9999, positive(source.migrants));
+    base.arrivals = Math.min(9999, positive(source.arrivals));
     base.lastActions = Array.isArray(source.lastActions) ? source.lastActions.slice(-ACTION_HISTORY_LIMIT).map(entry => ({
         year: Math.min(9999, positive(entry?.year)),
         season: clamp(int(entry?.season, -1), -1, 3),
@@ -530,12 +535,19 @@ export function normalizeHazardPartners(value) {
         const id = text(item?.id, 48);
         if (!id || seen.has(id)) continue;
         seen.add(id);
+        const outbreak = Boolean(item?.outbreak);
+        const epizootic = Boolean(item?.epizootic);
+        const savedCrisis = ["none", "outbreak", "epizootic", "drought", "flood", "fire"].includes(item?.crisis)
+            ? item.crisis : "none";
         partners.push({
             id,
             name: text(item?.name || item?.id, 60),
             relation: clamp(int(item?.relation, 0), 0, 100),
-            outbreak: Boolean(item?.outbreak),
-            epizootic: Boolean(item?.epizootic),
+            outbreak,
+            epizootic,
+            crisis: outbreak ? "outbreak" : epizootic ? "epizootic" : savedCrisis,
+            refugees: Math.min(99, positive(item?.refugees)),
+            tradePenalty: clamp(Number(item?.tradePenalty) || 0, 0, 0.25),
             request: Boolean(item?.request),
             aidYear: Math.min(9999, positive(item?.aidYear)),
             lastYear: Math.min(9999, positive(item?.lastYear)),
@@ -560,9 +572,15 @@ function findPartner(entry, id) {
 export function advanceHazardPartners(entry, events = []) {
     if (!entry || typeof entry !== "object") return [];
     const year = positive(state.year);
+    const response = ensureHazardResponse(entry);
     const previous = normalizeHazardPartners(entry.partners);
     const byId = new Map(previous.map(partner => [partner.id, partner]));
     const partners = [];
+    const climate = state.worldOptions?.climate || "temperate";
+    const crisisOptions = climate === "arid" || climate === "savanna"
+        ? ["drought", "fire"]
+        : climate === "coastal" || climate === "swamp"
+            ? ["flood", "outbreak"] : ["drought", "flood", "fire"];
     for (const definition of DIPLOMATIC_REALMS.slice(0, PARTNER_LIMIT)) {
         const saved = byId.get(definition.id) || {};
         const realm = diplomacyRealm(definition.id);
@@ -573,11 +591,16 @@ export function advanceHazardPartners(entry, events = []) {
             relation,
             outbreak: Boolean(saved.outbreak),
             epizootic: Boolean(saved.epizootic),
+            crisis: saved.crisis || "none",
+            crisisYear: positive(saved.crisisYear),
+            refugees: Math.min(99, positive(saved.refugees)),
+            tradePenalty: clamp(Number(saved.tradePenalty) || 0, 0, 0.25),
             request: Boolean(saved.request),
             aidYear: positive(saved.aidYear),
             lastYear: positive(saved.lastYear),
             pressure: clamp01(saved.pressure)
         };
+        const hadCrisis = partner.crisis !== "none";
         if (state.health?.outbreakActive && !quarantineActive(entry)
             && roll01("partner-outbreak:" + partner.id, year, 1) < 0.38) {
             if (!partner.outbreak) events.push("THE FEVER REACHES " + partner.name.toUpperCase());
@@ -587,11 +610,37 @@ export function advanceHazardPartners(entry, events = []) {
             && roll01("partner-epizootic:" + partner.id, year, 2) < 0.34) {
             partner.epizootic = true;
         }
-        if (partner.outbreak) {
+        if (partner.outbreak) partner.crisis = "outbreak";
+        else if (partner.epizootic) partner.crisis = "epizootic";
+        else if (partner.crisis !== "none") {
+            // A drought, flood or fire in a neighbour burns out after about two
+            // years unless the player keeps sending aid and the realm stays open.
+            if (!partner.crisisYear) partner.crisisYear = year;
+            if (year - partner.crisisYear >= 2 && roll01("partner-recovery:" + partner.id, year, 6) < 0.45) {
+                partner.crisis = "none";
+                partner.crisisYear = 0;
+                partner.tradePenalty = 0;
+                events.push(partner.name.toUpperCase() + " RECOVERS FROM THE " + String(saved.crisis || "crisis").toUpperCase());
+            }
+        }
+        if (partner.crisis === "none" && !hadCrisis && roll01("partner-crisis:" + partner.id, year, 4) < 0.16) {
+            partner.crisis = crisisOptions[Math.floor(roll01("partner-crisis-kind:" + partner.id, year, 5) * crisisOptions.length)];
+            partner.crisisYear = year;
+            events.push(partner.name.toUpperCase() + " SUFFERS A " + partner.crisis.toUpperCase());
+        }
+        if (partner.crisis !== "none") {
             partner.pressure = clamp01(partner.pressure + 0.18);
+            partner.tradePenalty = Math.max(partner.tradePenalty,
+                partner.crisis === "outbreak" || partner.crisis === "epizootic" ? 0.08 : 0.05);
             if (realm && partner.lastYear < year) realm.relation = clamp((Number(realm.relation) || 0) - 1, 0, 100);
             partner.request = relation >= 25;
-            if (!quarantineActive(entry) && !state.health?.outbreakActive
+            if (relation >= 35 && partner.refugees < 3 && response.migrants < 8
+                && roll01("partner-refugees:" + partner.id, year, 7) < 0.55) {
+                partner.refugees += 1;
+                response.migrants = Math.min(9999, response.migrants + 1);
+                events.push("REFUGEES FROM " + partner.name.toUpperCase() + " ARRIVE AT THE BORDER");
+            }
+            if (partner.crisis === "outbreak" && !quarantineActive(entry) && !state.health?.outbreakActive
                 && roll01("import-fever:" + partner.id, year, 3) < 0.3) {
                 registerHazardDisease(entry, createDiseaseRecord(
                     "hazard:regional-disease",
@@ -604,8 +653,16 @@ export function advanceHazardPartners(entry, events = []) {
         } else {
             partner.pressure = clamp01(partner.pressure * 0.72);
             partner.request = false;
+            partner.tradePenalty = 0;
+            partner.refugees = Math.max(0, partner.refugees - 1);
         }
-        if (partner.aidYear && year - partner.aidYear > 3) partner.outbreak = false;
+        if (partner.aidYear && year - partner.aidYear > 3) {
+            partner.outbreak = false;
+            partner.epizootic = false;
+            partner.crisis = "none";
+            partner.crisisYear = 0;
+            partner.tradePenalty = 0;
+        }
         partner.lastYear = year;
         partners.push(partner);
     }
@@ -618,12 +675,19 @@ export function sendHazardAid(partnerId) {
     if (!entry || typeof entry !== "object") return { ok: false, reason: "NO REALM HAZARD STATE" };
     const partner = findPartner(entry, partnerId);
     if (!partner) return { ok: false, reason: "UNKNOWN NEIGHBOUR" };
-    if (!partner.outbreak) return { ok: false, reason: "THIS NEIGHBOUR HAS NO OUTBREAK" };
+    if (!partner.outbreak && (!partner.crisis || partner.crisis === "none")) {
+        return { ok: false, reason: "THIS NEIGHBOUR HAS NO CRISIS" };
+    }
     const cost = { food: 10, gold: 8 };
     const missing = canPay(cost);
     if (missing) return { ok: false, reason: "NOT ENOUGH " + missing.toUpperCase() };
     pay(cost);
     partner.outbreak = false;
+    partner.epizootic = false;
+    partner.crisis = "none";
+    partner.crisisYear = 0;
+    partner.tradePenalty = 0;
+    partner.refugees = Math.max(0, partner.refugees - 1);
     partner.request = false;
     partner.aidYear = positive(state.year);
     partner.relation = clamp(partner.relation + 5, 0, 100);
@@ -643,7 +707,8 @@ export function requestHazardAid() {
     const entry = state.environmentalHazards;
     if (!entry || typeof entry !== "object") return { ok: false, reason: "NO REALM HAZARD STATE" };
     const response = ensureHazardResponse(entry);
-    const partner = (entry.partners || []).find(item => item.relation >= 45 && !item.outbreak);
+    const partner = (entry.partners || []).find(item => item.relation >= 45
+        && !item.outbreak && (!item.crisis || item.crisis === "none"));
     if (!partner) return { ok: false, reason: "NO FRIENDLY NEIGHBOUR CAN HELP" };
     if (positive(state.year) - positive(partner.aidYear) < 2) return { ok: false, reason: "THIS NEIGHBOUR ALREADY HELPED RECENTLY" };
     partner.aidYear = positive(state.year);
@@ -839,6 +904,66 @@ export function isHazardQuarantined(entry) {
 }
 
 /**
+ * Turn waiting refugee households into real residents. This is deliberately
+ * annual and capped: it uses the same housing, food, morale and yearly-growth
+ * gates as ordinary immigration, so a hazard cannot spawn a parallel village.
+ * The waiting pool stays in `response.migrants`; only a successfully housed
+ * person is removed from it.
+ */
+export function settleHazardMigrants(entry, events = []) {
+    if (!entry || typeof entry !== "object") return 0;
+    const response = ensureHazardResponse(entry);
+    if (response.migrants <= 0) return 0;
+    const economy = state.economy || (state.economy = {});
+    if (Number(economy.growthYear) !== positive(state.year)) {
+        economy.growthYear = positive(state.year);
+        economy.growthThisYear = 0;
+    }
+    if ((Number(economy.growthThisYear) || 0) >= getPopulationGrowthAllowance()) return 0;
+    const gate = getPopulationGrowthGate();
+    if (!gate.ok) return 0;
+
+    let settled = 0;
+    while (response.migrants > 0 && settled < MIGRANT_SETTLE_LIMIT) {
+        if ((Number(economy.growthThisYear) || 0) >= getPopulationGrowthAllowance()) break;
+        const home = getHouseholdSnapshot().homes
+            .filter(item => item.residents < item.capacity)
+            .sort((a, b) => a.residents - b.residents || a.y - b.y || a.x - b.x)[0];
+        if (!home || !canSpawnEntity(TYPE.VILLAGER)) break;
+        const offset = hash32(Number(state.worldSeed) || 1, 0x53455454, positive(state.year), settled);
+        const villager = spawnEntity(
+            home.x + (offset % 3) - 1,
+            home.y + (Math.floor(offset / 3) % 3) - 1,
+            TYPE.VILLAGER
+        );
+        if (!villager) break;
+        villager.home = { x: home.x, y: home.y };
+        villager.anchor = { x: home.x, y: home.y };
+        villager.householdId = "house:" + home.x + ":" + home.y;
+        villager.civicOrigin = "hazard-arrival";
+        villager.jobRefreshTimer = 0;
+        villager.lastAgedYear = positive(state.year);
+        const person = ensurePersonProfile(villager);
+        person.role = "newcomer";
+        person.goals = ["security", "family"];
+        response.migrants -= 1;
+        response.arrivals += 1;
+        recordPopulationGrowth({ immigration: true });
+        settled++;
+    }
+    if (settled > 0) {
+        events.push(settled + " REFUGEE HOUSEHOLD" + (settled === 1 ? "" : "S") + " SETTLE IN THE REALM");
+        pushAction(response, {
+            kind: "settle", label: "Refugees housed",
+            text: settled + " household" + (settled === 1 ? "" : "s") + " moved from the border into real homes."
+        });
+        pushHistory(entry, "partner", settled + " REFUGEE HOUSEHOLD" + (settled === 1 ? "" : "S") + " SETTLED");
+        addLog(settled + " REFUGEE HOUSEHOLD" + (settled === 1 ? "" : "S") + " SETTLED", "#9ab7a1", "diplomacy");
+    }
+    return settled;
+}
+
+/**
  * One bounded annual response pass. Called after the hazard year has rolled so
  * the forecast reflects the new burden and every counter uses the same year.
  */
@@ -853,12 +978,14 @@ export function advanceHazardResponse(entry, events = [], hooks = {}) {
     awakenCursedCreature(entry, events);
     if (entry.magic?.corruption > 0.35) spreadHazardCorruption(entry, entry.magic.corruption > 0.7 ? 2 : 1);
     serviceLoan(entry, events);
+    const settled = settleHazardMigrants(entry, events);
     refreshHazardForecast(entry);
     invalidateHazardModifierCache();
     return {
         skipped: false,
         disease,
         partners: partners.length,
+        settled,
         plan: response.plan,
         fund: response.insurance,
         loan: response.loan.principal,

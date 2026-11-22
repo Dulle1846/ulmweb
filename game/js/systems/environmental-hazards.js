@@ -34,6 +34,7 @@ import {
     selectRareChain
 } from "./hazard-response.js";
 import { rareChainFor } from "../world/hazard-expansion-data.js";
+import { getClimateDrift } from "./climate-drift.js";
 import {
     HAZARD_CATALOG, HAZARD_EFFECTS, HAZARD_LIMITS, HAZARD_MECHANICS, REGIONAL_BUNDLES,
     hazardRowsForClimate
@@ -338,6 +339,9 @@ export function getHazardProfile() {
     const season = Number.isInteger(state.seasonIndex) ? state.seasonIndex : 0;
     const rows = hazardRowsForClimate(climate);
     const mitigation = getHazardMitigation();
+    const bundle = Object.values(REGIONAL_BUNDLES).find(item => item.climate === climate) || null;
+    const bundleHazards = new Set(bundle?.hazards || []);
+    const drift = getClimateDrift();
     const hazards = [];
     for (const row of rows) {
         // Only concrete dangers roll here. Regional bundles, works, effects and
@@ -354,8 +358,19 @@ export function getHazardProfile() {
         if (state.weather === "clear" && ["heat", "heatwave", "drought", "sandstorm"].includes(key)) weight += 0.08;
         if (key === "deficiency" && (Number(state.resources?.food) || 0) < 40) weight += 0.2;
         if (key === "spoiled-food" && (Number(state.resources?.food) || 0) > 160) weight += 0.06;
+        // The regional bundle is more than a label: its signature dangers are
+        // the ones this climate actually exposes, so they carry its exposure.
+        if (bundleHazards.has(key)) weight *= Math.max(1, Number(bundle?.exposure) || 1);
         weight -= mitigation.score * 0.22;
-        weight += Number(state.environmentalHazards?.chronic?.climateDrift || 0) * 0.004;
+        // A warmer, drier baseline raises heat/drought/fire and lowers cold;
+        // a colder, wetter drift does the reverse. This also feeds the world's
+        // temperature and moisture queries through climate-drift.js.
+        if (["heat", "heatwave", "drought", "sandstorm", "wildfire", "heat-illness"].includes(key)) {
+            weight += drift * 0.006;
+        }
+        if (["cold", "frost", "snowstorm", "avalanche", "frostbite", "extreme-cold"].includes(key)) {
+            weight -= drift * 0.006;
+        }
         const arcane = state.environmentalHazards?.magic || {};
         if (row.magical) weight -= clamp01(arcane.wards) * 0.12;
         if (["storm", "wind", "rain", "flood", "snowstorm"].includes(key)) {
@@ -374,8 +389,8 @@ export function getHazardProfile() {
         weather: state.weather || "clear",
         hazards: hazards.slice(0, HAZARD_LIMITS.maxActive),
         mitigation,
-        bundle: Object.values(REGIONAL_BUNDLES).find(bundle => bundle.climate === climate) || null,
-        exposure: clamp01(1 - mitigation.score * 0.5)
+        bundle,
+        exposure: Math.min(1.3, (1 - mitigation.score * 0.5) * (Number(bundle?.exposure) || 1))
     };
 }
 

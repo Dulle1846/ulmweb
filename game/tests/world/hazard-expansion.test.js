@@ -6,7 +6,7 @@ import {
     buildHazardForecast, chooseHazardPlan, chooseRareEvent, createDiseaseRecord,
     fundHazardInsurance, getHazardResponseSnapshot, normalizeHazardResponse,
     resettleHazardGround, selectRareChain, sendHazardAid, setHazardQuarantine,
-    takeHazardLoan, trainHazardCrew, advanceHazardDiseases
+    takeHazardLoan, trainHazardCrew, advanceHazardDiseases, settleHazardMigrants
 } from "../../js/systems/hazard-response.js";
 import {
     getHazardScarSnapshot, isHazardTileBlocked, recordLavaScar, recordLostGround,
@@ -177,6 +177,38 @@ test("1.2.20 a partner outbreak can be answered with aid and changes the relatio
     assert.ok(state.resources.food < food);
     assert.equal(entry.partners[0].outbreak, false);
     assert.equal(entry.partners[0].relation, 45);
+});
+
+test("1.2.20 refugees become real residents when homes and stores exist", () => {
+    const entry = prepareRealm();
+    addBuilding(TYPE.HOUSE);
+    entry.response.migrants = 2;
+    const before = state.entities.filter(entity => entity.type === TYPE.VILLAGER).length;
+    const settled = settleHazardMigrants(entry, []);
+    assert.equal(settled, 2);
+    assert.equal(entry.response.arrivals, 2);
+    assert.equal(entry.response.migrants, 0);
+    const villagers = state.entities.filter(entity => entity.type === TYPE.VILLAGER);
+    assert.equal(villagers.length, before + 2);
+    assert.equal(villagers.filter(entity => entity.civicOrigin === "hazard-arrival").length, 2);
+    assert.ok(villagers.filter(entity => entity.civicOrigin === "hazard-arrival")
+        .every(entity => entity.householdId && entity.home), "arrivals receive a real household");
+});
+
+test("1.2.20 a partner crisis raises caravan terms and aid resolves the crisis", () => {
+    const entry = prepareRealm();
+    entry.partners = [{
+        id: "northmere", name: "Northmere Guild", relation: 40,
+        crisis: "drought", refugees: 1, tradePenalty: 0.05, request: true
+    }];
+    invalidateHazardModifierCache();
+    assert.ok(getHazardSimulationEffects().tradeBuy > 1, "a partner crisis must affect trade");
+    const food = state.resources.food;
+    const result = sendHazardAid("northmere");
+    assert.equal(result.ok, true);
+    assert.ok(state.resources.food < food);
+    assert.equal(entry.partners[0].crisis, "none");
+    assert.equal(entry.partners[0].tradePenalty, 0);
 });
 
 test("1.2.20 unnatural weather and changed animal populations are real burdens", () => {

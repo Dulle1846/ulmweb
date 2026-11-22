@@ -9,53 +9,70 @@ import { state } from '../core/state.js';
 import { randInt as seededRandInt } from '../core/random.js';
 import { addLog } from '../systems/events.js';
 import { seasonalState } from './season.js';
+import { getClimateDriftWeatherBias } from '../systems/climate-drift.js';
 
 const randInt = (min, max) => seededRandInt(min, max, 'weather');
 
 const SEASON_NAMES = ['spring', 'summer', 'autumn', 'winter'];
 
+// Climate drift tilts the same weather table without adding a second weather
+// state. Positive drift is warmer and drier, so clear skies gain and rain/snow
+// lose; negative drift does the reverse. Zero is exactly the shipped table.
+function applyClimateDrift(weights, drift) {
+    const bias = Math.max(-1, Math.min(1, Number(drift) || 0));
+    if (!bias) return weights;
+    return {
+        clear: Math.max(0.05, weights.clear + bias * 0.10),
+        rain: Math.max(0, weights.rain - bias * 0.05),
+        snow: Math.max(0, weights.snow - bias * 0.05)
+    };
+}
+
 // Relative weights for one day. Snow is gated by the actual snow-cover curve,
 // not by an integer season, so late autumn can see the first snow and a warm
-// early spring cannot.
-export function weatherWeights(dayOfYear, climate = 'temperate') {
+// early spring cannot. The optional drift is a normalized -1..1 bias from the
+// saved climate chronicle.
+export function weatherWeights(dayOfYear, climate = 'temperate', drift = 0) {
     const { season, snowCover } = seasonalState(dayOfYear, climate);
     // Frequent convective rain is the defining weather of the tropical realm.
     // There is no snow weight at all, even in the calendar winter.
     if (climate === 'tropical') {
-        return { clear: 0.28, rain: 0.72, snow: 0 };
+        return applyClimateDrift({ clear: 0.28, rain: 0.72, snow: 0 }, drift);
     }
     // Maritime weather is rainier than the temperate baseline. Fog and strong
     // wind are derived from the coast profile rather than stored as extra
     // weather states, so every existing save and weather consumer still works.
     if (climate === 'coastal') {
         const coastalSnow = snowCover > 0.02 ? 0.42 * snowCover : 0;
-        return { clear: 0.32, rain: 0.68, snow: coastalSnow };
+        return applyClimateDrift({ clear: 0.32, rain: 0.68, snow: coastalSnow }, drift);
     }
     // Snowlands spend most of the year under snowfall; a clear cold day is a
     // real break in the weather, and wet spring snow briefly turns to rain.
     if (climate === 'snow') {
         const snowWeight = 0.58 + snowCover * 0.24;
         const rainWeight = season === 0 ? 0.16 : 0.04;
-        return { clear: Math.max(0.12, 0.92 - snowWeight - rainWeight), rain: rainWeight, snow: snowWeight };
+        return applyClimateDrift({
+            clear: Math.max(0.12, 0.92 - snowWeight - rainWeight), rain: rainWeight, snow: snowWeight
+        }, drift);
     }
     const clear = season === 1 ? 0.58 : season === 3 ? 0.26 : 0.40;
     const rain = season === 1 ? 0.42 : season === 3 ? 0.12 : season === 2 ? 0.48 : 0.52;
     // Snow follows the climate's actual cover; arid and mediterranean winters
     // therefore snow far less often than a northern one.
     const snow = snowCover > 0.02 ? 0.60 * snowCover : 0;
-    return { clear, rain, snow };
+    return applyClimateDrift({ clear, rain, snow }, drift);
 }
 
-export function weatherOptionsForDay(dayOfYear, climate = 'temperate') {
-    return Object.entries(weatherWeights(dayOfYear, climate))
+export function weatherOptionsForDay(dayOfYear, climate = 'temperate', drift = 0) {
+    return Object.entries(weatherWeights(dayOfYear, climate, drift))
         .filter(([, weight]) => weight > 0)
         .map(([kind, weight]) => ({ kind, weight }));
 }
 
 // Deterministic pick from a 0..1 roll. Exported so the seasonal table can be
 // tested without touching mutable game state.
-export function pickWeather(dayOfYear, roll, climate = 'temperate') {
-    const options = weatherOptionsForDay(dayOfYear, climate);
+export function pickWeather(dayOfYear, roll, climate = 'temperate', drift = 0) {
+    const options = weatherOptionsForDay(dayOfYear, climate, drift);
     const total = options.reduce((sum, option) => sum + option.weight, 0) || 1;
     let cursor = Math.max(0, Math.min(1, Number(roll) || 0)) * total;
     for (const option of options) {
@@ -78,6 +95,7 @@ export function weatherDurationDays(dayOfYear, roll, climate = 'temperate') {
 
 export function updateWeather() {
     const climate = state.worldOptions?.climate || 'temperate';
+    const drift = getClimateDriftWeatherBias();
     // Old saves stored spells of several hundred days. Clamp them so a summer
     // day cannot keep a snowfall from a previous winter.
     if (!Number.isFinite(state.weatherTimer) || state.weatherTimer > 24) state.weatherTimer = 0;
@@ -93,7 +111,7 @@ export function updateWeather() {
     if (state.weatherTimer > 0) return;
 
     const previousWeather = state.weather;
-    state.weather = pickWeather(state.dayOfYear, randInt(0, 999) / 999, climate);
+    state.weather = pickWeather(state.dayOfYear, randInt(0, 999) / 999, climate, drift);
     state.weatherTimer = weatherDurationDays(state.dayOfYear, randInt(0, 999) / 999, climate);
 
     // Only a real transition belongs in the chronicle. Re-rolling the same
