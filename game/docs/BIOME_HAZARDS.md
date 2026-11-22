@@ -1,7 +1,7 @@
 # Biomes with special hazards and diseases (1.2.20)
 
-**Status:** implemented, tested and deployed from `ulmweb-branch` on 2026-11-22 (3.42.0).
-**Spec:** 1.2.20.1–1.2.20.102, all 102 points active with executable state-delta proofs.
+**Status:** implemented, tested and deployed from `ulmweb-branch` on 2026-11-22 (3.43.0).
+**Spec:** 1.2.20.1–1.2.20.102, all 102 points active with executable state-delta and DOM visibility proofs.
 **Panel:** `HAZARDS` tab in the realm management deck.
 **Code:** `js/world/hazard-data.js`, `js/world/hazard-expansion-data.js`,
 `js/world/hazard-evidence.js`, `js/systems/environmental-hazards.js`,
@@ -17,13 +17,20 @@ static contract is enforced by `tests/world/hazard-coverage.test.js`. Since
 `tests/world/hazard-effect-proofs.test.js`: the real `applyHazard`, annual,
 modifier, work, scar and magic paths must move measurable state, and the same
 proof must stop moving when that row is neutralized through
-`js/systems/hazard-proof.js`. The production seam starts empty and is never
-saved, so live determinism and save schema 13 are unchanged.
+`js/systems/hazard-proof.js`. Since 3.43.0 the player-facing half is proven by
+`tests/browser/hazard-visibility-proof.mjs`: the same trigger is replayed, the
+real `renderHazardPanel()` output is inserted into a browser DOM, and the row
+must carry its `data-hazard-surface` spec and live `data-hazard-value`. The
+proof then hides exactly that surface and requires the other rendered rows to
+remain. Both seams start empty in production and are never saved, so live
+determinism and save schema 13 are unchanged.
 
 **Active/passive split:** **102 active, 0 passive.** No 1.2.20 row is a
 flavour-only label. A row that is deliberately passive in a future release must
 set `passive: true` with a reason and is excluded from the proof count; the
-current audit found none, and every one of the 102 rows has a measured delta.
+current audit found none, and every one of the 102 rows has a measured delta and
+a rendered HAZARDS surface. The visibility run reports **102/102 visible, 102
+neutralized, 0 survivors, 102/102 isolation checks**.
 
 ## What the player sees
 
@@ -83,6 +90,34 @@ coordinates and the fire/flood/lava conversion shield.
   tile mark when the deterministic roll is below the shield, and existing
   works also narrow the converted area. A zero-firebreak realm keeps the exact
   pre-3.40 readiness and hazard pressure.
+
+### 3.43 visible-surface proof pass
+
+The 3.42 proof answered “does it move state?” but the player-facing side was
+still a set of non-empty surface strings. That is now a rendered proof too:
+
+- **Active hazards** keep their existing `.hazard-row`; each row now carries
+  `data-hazard-surface="1.2.20.N"` and its severity value. The browser proof
+  triggers all 42 events through the real `applyHazard` path.
+- **Regional bundles** render a current-climate row with signature hazards and
+  exposure; all 9 climates are exercised.
+- **Effects** render in `VISIBLE EFFECTS · LIVE` only while their live modifier,
+  mitigation or loss value is non-zero. The values come from the same
+  `getHazardSnapshot()` / `getHazardSimulationEffects()` blocks the consumers
+  read; all 19 rows are exercised by the shared trigger cases.
+- **Works, chronic processes and magic** keep their existing protection,
+  long-term and arcane rows and now carry the same surface/value attributes.
+  All 12 works, 9 chronic rows and 11 magic rows are exercised. The seasonal
+  row shows the live season/weather pair; rare pressure shows the real chain.
+- **The neutralization seam is separate from effect neutralization.**
+  `setHazardSurfaceProofHidden()` hides one row from `renderHazardPanel()`
+  without disabling the underlying effect. The production set is empty and is
+  never serialized. A run of 102 normal renders, 102 single-row hides and
+  102 isolation checks reports **0 surviving rows** and **0 collateral rows
+  removed**.
+- **No second UI or simulation.** The rows live in the existing HAZARDS tab and
+  read the existing snapshot. No frame work, tick work, save field or new
+  ecological cadence was added.
 
 ### 3.42 executable proof pass
 
@@ -358,6 +393,10 @@ not saved.
   migration) and `tests/world/hazard-modifiers.test.js` (neutral baselines,
   household demand, production, construction, extraction, pasture, caravan
   terms and adaptation relief).
+- `npm run test:hazard-visibility` — real browser visibility proof: all 102
+  trigger cases render a `data-hazard-surface` row with its live
+  `data-hazard-value`; hiding one surface removes exactly that row and leaves
+  the other rendered rows intact (`102/102`, `0` survivors, `102/102` isolation).
 - `npm run test:hazard-ui` — real browser reference: panel render, prepare
   action, a settled hazard row, save/reload, the calm NEUTRAL consequences
   block, the hazard-on consequences and no console errors.

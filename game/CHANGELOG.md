@@ -1,13 +1,44 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.42.0`
-**Next development line:** `3.43.0-dev`
+**Current production version:** `3.43.0`
+**Next development line:** `3.44.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
 **Last repository verification:** 2026-11-22 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.43.0 — Every active point is visible in the HAZARDS renderer
+
+3.42.0 proved that each catalogue row moves state. The player-facing half was
+still only a non-empty surface string, so this release makes visibility itself
+executable.
+
+- **State-bound HAZARDS rows.** Active events carry a `data-hazard-surface`
+  spec and severity; bundles show their climate exposure; effects appear in
+  `VISIBLE EFFECTS · LIVE` only while their modifier, mitigation or loss is
+  non-zero; works, chronic processes and magic rows carry their live value.
+  Every row is rendered by the real `renderHazardPanel()` used by the HAZARDS
+  tab, not matched as source text.
+- **Visibility neutralization.** `setHazardSurfaceProofHidden()` hides one
+  surface without disabling the effect that produced it. The new browser proof
+  runs the shared trigger cases, renders the panel into a real DOM, hides one
+  row at a time and checks that the other rows remain. Result: **102/102 visible,
+  102/102 neutralized, 0/102 survivors, 102/102 isolation checks**.
+- **Honest active/passive split.** **102 active, 0 passive.** All 102 rows now
+  have both a measured state delta and a rendered HAZARDS surface. No row is a
+  flavour-only label; a future passive row must declare `passive: true` with a
+  reason and is excluded from both proof counts.
+- **No new simulation or save burden.** The rows read the existing snapshot and
+  live modifiers. The hidden-surface set is test-only, empty in production and
+  never saved; save schema 13 and deterministic rolls are unchanged.
+
+Verification: focused hazard/terrain/save tests, the new browser visibility
+proof, one full `npm test`, the deterministic 25-year campaign and the
+hazard/terrain browser reference.
+
+---
 
 ## 3.42.0 — The 102/102 claim is executed, not declared
 

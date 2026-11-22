@@ -11,6 +11,7 @@ export const HAZARD_SURFACES = Object.freeze({
     active: "HAZARDS > ACTIVE HAZARDS",
     losses: "HAZARDS > LOSSES",
     consequences: "HAZARDS > DERIVED CONSEQUENCES",
+    effects: "HAZARDS > VISIBLE EFFECTS · LIVE",
     resilience: "HAZARDS > REALM RESILIENCE",
     protection: "HAZARDS > PROTECTION · READINESS",
     diseases: "HAZARDS > DISEASES & OUTBREAKS",
@@ -74,6 +75,11 @@ const COVERAGE_VOLCANO = testRef(COVERAGE, "1.2.20 volcanic ash and long-term de
 // stop moving state. The evidence contract names it so a row cannot claim a
 // proof that the release did not actually run.
 const EXECUTABLE_PROOF = testRef("hazard-effect-proofs", "1.2.20 all 102 catalogue points produce measured state deltas");
+const VISIBILITY_PROOF = Object.freeze({
+    file: "tests/browser/hazard-visibility-proof.mjs",
+    name: "HAZARD VISIBILITY 102/102 · NEUTRALIZED 102/102 · SURVIVORS 0/102",
+    render: "renderHazardPanel() → data-hazard-surface row in a real DOM"
+});
 
 function eventTestFor(row) {
     const effects = HAZARD_EFFECTS[row.mechanic] || {};
@@ -192,10 +198,18 @@ export const HAZARD_EVIDENCE_BY_MECHANIC = Object.freeze(Object.fromEntries(HAZA
 
 export const HAZARD_EVIDENCE = Object.freeze(Object.fromEntries(HAZARD_CATALOG.map(row => {
     const proof = HAZARD_EVIDENCE_BY_MECHANIC[row.mechanic] || UNKNOWN;
+    // Effects share one player-facing live-effects strip. Naming it here keeps
+    // the static contract honest, while the browser proof checks the actual
+    // rendered row rather than this string.
+    const surfaces = row.mechanic.startsWith("effect:")
+        ? [...proof.surfaces, HAZARD_SURFACES.effects]
+        : proof.surfaces;
     return [row.spec, Object.freeze({
         ...proof,
+        surfaces: Object.freeze(surfaces),
         tests: Object.freeze([...(proof.tests || []), EXECUTABLE_PROOF]),
         executableProof: EXECUTABLE_PROOF.name,
+        visibilityProof: VISIBILITY_PROOF,
         spec: row.spec,
         id: row.id,
         mechanic: row.mechanic,

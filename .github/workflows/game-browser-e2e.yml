@@ -87,7 +87,7 @@ jobs:
         run: echo "finished_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
 
   live-proofs:
-    name: Live swamp and mountain proofs
+    name: Live hazard, swamp and mountain proofs
     runs-on: ubuntu-24.04
     timeout-minutes: 12
     steps:
@@ -103,6 +103,10 @@ jobs:
         working-directory: game
         timeout-minutes: 5
         run: npm run test:mountain-live
+      - name: Run 1.2.20 HAZARDS visibility proof
+        working-directory: game
+        timeout-minutes: 5
+        run: npm run test:hazard-visibility
       - name: Upload live proof artifacts
         if: always()
         uses: actions/upload-artifact@v4

@@ -1,6 +1,6 @@
 {
   "name": "kings-and-cards",
-  "version": "3.42.0",
+  "version": "3.43.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -60,6 +60,7 @@
     "test:random-start-ui": "node tests/browser/random-start-ui.mjs",
     "test:biome-ui": "node tests/browser/biome-atlas-ui.mjs",
     "test:hazard-ui": "node tests/browser/hazard-panel-ui.mjs",
+    "test:hazard-visibility": "node tests/browser/hazard-visibility-proof.mjs",
     "test:crown-dread-ui": "node tests/browser/crown-dread-ui.mjs",
     "test:diplomacy-standing-ui": "node tests/browser/diplomacy-standing-ui.mjs",
     "test:disaster-recovery-ui": "node tests/browser/disaster-recovery-ui.mjs",

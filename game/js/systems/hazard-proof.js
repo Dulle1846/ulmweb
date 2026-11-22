@@ -4,6 +4,7 @@
 // measured delta really belongs to that point. This is intentionally a small,
 // synchronous lookup at hazard/season cadence, never a frame-loop system.
 const neutralized = new Set();
+const hiddenSurfaces = new Set();
 
 export function setHazardProofNeutralized(specs = []) {
     neutralized.clear();
@@ -16,6 +17,22 @@ export function clearHazardProofNeutralized() {
 
 export function isHazardProofNeutralized(spec) {
     return neutralized.has(String(spec));
+}
+
+// Visibility has its own seam. Hiding a surface must not disable the effect
+// that produced it: the effect proof still runs, but the HAZARDS renderer must
+// omit exactly that row. This set is empty in production and never saved.
+export function setHazardSurfaceProofHidden(specs = []) {
+    hiddenSurfaces.clear();
+    for (const spec of specs) hiddenSurfaces.add(String(spec));
+}
+
+export function clearHazardSurfaceProofHidden() {
+    hiddenSurfaces.clear();
+}
+
+export function isHazardSurfaceHidden(spec) {
+    return hiddenSurfaces.has(String(spec));
 }
 
 // Effect rows whose consumer is an event primitive. Zeroing the named primitive

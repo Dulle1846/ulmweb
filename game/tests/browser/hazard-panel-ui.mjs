@@ -90,6 +90,7 @@ try {
     assert.match(panel, /ARCANE BURDEN/);
     assert.match(panel, /REGIONAL DANGERS/);
     assert.match(panel, /DERIVED CONSEQUENCES/);
+    assert.match(panel, /VISIBLE EFFECTS · LIVE/);
     assert.match(panel, /FOOD & WATER DRAW/);
     assert.match(panel, /CARAVAN SPEED/);
     assert.match(panel, /CARAVAN BUY/);
@@ -164,6 +165,10 @@ try {
     for (const mechanic of live) {
         assert.ok(activeRows.includes(mechanic), "the panel must list the active hazard " + mechanic);
     }
+    assert.ok(await page.locator("#command-panel-content [data-hazard-surface]").count() > 0,
+        "the real HAZARDS tab must render at least one state-bound surface row");
+    assert.ok(await page.locator("#command-panel-content [data-hazard-surface][data-hazard-value]").count() > 0,
+        "surface rows must carry the live state value");
 
     await page.locator("#command-close").click();
     await page.locator("#command-modal").waitFor({ state: "hidden", timeout: 15000 });
