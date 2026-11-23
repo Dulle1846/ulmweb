@@ -72,8 +72,8 @@ function frontierCard(realm, snapshot) {
         '<p class="world-frontier__hint">' + esc(frontierHint(realm)) + '</p>' +
         '<div class="world-frontier__watch"><span>FRONTIER WATCH</span><div class="world-watch">' + watchButtons + '</div></div>' +
         routeForm +
-        '<p class="world-frontier__note">' + realm.activeRoutes + ' standing route' + (realm.activeRoutes === 1 ? "" : "s") + ' · ' +
-            integer(realm.tradeVolume) + ' goods traded · each watch level costs ' + snapshot.costs.watch + ' gold and cuts pressure by 9.</p>' +
+        '<p class="world-frontier__note">' + realm.routes + ' standing route' + (realm.routes === 1 ? "" : "s") + ' · ' +
+            realm.activeRoutes + ' ready · ' + integer(realm.routeDelivered) + ' goods delivered · each watch level costs ' + snapshot.costs.watch + ' gold and cuts pressure by 9.</p>' +
         '</article>';
 }
 

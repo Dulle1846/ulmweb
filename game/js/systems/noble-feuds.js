@@ -176,7 +176,13 @@ export function updateNobleFeuds() {
         } else {
             applyEscalation(feud, ignored ? 2 : 1);
             if (feud.severity >= 5) {
-                recordFeudState(nobility, "feud-crisis", "A feud reached open confrontation; both houses withhold their strength.");
+                const feudNames = feud.houses
+                    .map(id => snapshot.houses.find(house => house.id === id)?.familyName)
+                    .filter(Boolean);
+                const feudLabel = feudNames.length === 2
+                    ? "Houses " + feudNames[0] + " and " + feudNames[1]
+                    : "The noble houses";
+                recordFeudState(nobility, "feud-crisis", feudLabel + " reached open confrontation; both houses withhold their strength.");
             }
         }
     }

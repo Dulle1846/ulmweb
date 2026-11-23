@@ -34,6 +34,7 @@ npm run test:desert-reference
 npm run test:tundra-reference
 npm run test:savanna-reference
 npm run test:forest-reference
+npm run test:regional-forest-reference
 npm run test:conifer-reference
 npm run test:mixed-reference
 npm run test:forest-occlusion
@@ -75,6 +76,11 @@ below 50 or frame time above 20 ms.
 weather and foliage log for a complete 400-day year plus a five-climate
 comparison. `test:climate-reference` writes the same-grove 5 × 4 climate
 matrix, five live 1280 × 800 climate screenshots and their JSON logs.
+`test:regional-forest-reference` starts a real tropical realm, verifies that every
+harvestable woodland tile resolves a regional type, opens a real Lumberyard
+inspector, and writes `artifacts/regional-forests/regional-forests.json` plus
+three rendered regional stands. It fails on an untyped forest tile, a missing
+inspector value, identical stand frames, a console error or a page error.
 `test:forest-reference` writes `forest-reference.png` with all fifteen broadleaf
 formations and `forest-seasons.png` with one ancient wood on days 50, 150, 250
 and 350, plus `forest-reference.json`. `test:tundra-reference` writes `tundra-reference.png`, `tundra-seasons.png`

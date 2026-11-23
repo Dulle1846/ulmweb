@@ -10,6 +10,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { isDeepStrictEqual } from "node:util";
 import { chromium } from "playwright";
+import { auditMaturePanels } from "./mature-panel-audit.mjs";
 
 const BASE = process.env.E2E_BASE_URL || "http://127.0.0.1:3100";
 const JOURNEY = String(process.env.JOURNEY || "").toLowerCase();
@@ -106,7 +107,9 @@ async function openPanel(tab) {
         await page.locator("#command-open-btn").click();
         await page.waitForTimeout(80);
     }
-    await page.locator(`[data-command-tab="${tab}"]`).click();
+    const tabSelect = page.locator("#command-tab-select");
+    if (await tabSelect.isVisible().catch(() => false)) await tabSelect.selectOption(tab);
+    else await page.locator(`[data-command-tab="${tab}"]`).click();
     await page.waitForTimeout(100);
     await dismiss();
 }
@@ -118,7 +121,7 @@ async function closePanel() {
 
 async function stateSnapshot() {
     return page.evaluate(async ({ pathId }) => {
-        const [{ state }, { getEndeavourSnapshot }, { getMilitarySnapshot }, { getDiplomacySnapshot }, { getResearchSnapshot }, { getHousingSnapshot }, { getSettlementSnapshot }, { getPhysicalStock, getPhysicalStockMap }, { getCrownSupplySnapshot }] = await Promise.all([
+        const [{ state }, { getEndeavourSnapshot }, { getMilitarySnapshot }, { getDiplomacySnapshot }, { getResearchSnapshot }, { getHousingSnapshot }, { getSettlementSnapshot }, { getPhysicalStock, getPhysicalStockMap }, { getCrownSupplySnapshot }, { getWorldMapSnapshot }, { getExpeditionSnapshot }, { getFaithSnapshot }, { getJusticeSnapshot }, { getHealthSnapshot }, { getLogisticsSnapshot }, { getEconomyCycleSnapshot }] = await Promise.all([
             import("./js/core/state.js"),
             import("./js/systems/endeavours.js"),
             import("./js/systems/military.js"),
@@ -127,8 +130,22 @@ async function stateSnapshot() {
             import("./js/systems/population.js"),
             import("./js/systems/settlement.js"),
             import("./js/systems/logistics.js"),
-            import("./js/systems/crown-supply.js")
+            import("./js/systems/crown-supply.js"),
+            import("./js/systems/world-map.js"),
+            import("./js/systems/expeditions.js"),
+            import("./js/systems/faith.js"),
+            import("./js/systems/justice.js"),
+            import("./js/systems/health.js"),
+            import("./js/systems/logistics.js"),
+            import("./js/systems/economy-cycle.js")
         ]);
+        const world = getWorldMapSnapshot();
+        const expeditions = getExpeditionSnapshot();
+        const faith = getFaithSnapshot();
+        const justice = getJusticeSnapshot();
+        const health = getHealthSnapshot();
+        const logistics = getLogisticsSnapshot();
+        const cycle = getEconomyCycleSnapshot();
         const settlement = getSettlementSnapshot();
         const endeavours = getEndeavourSnapshot();
         const diplomacy = getDiplomacySnapshot();
@@ -166,9 +183,15 @@ async function stateSnapshot() {
             diplomacy: { treaties: diplomacy.counts, alliances: diplomacy.counts.alliance, tradePacts: diplomacy.counts.trade, wars: diplomacy.counts.war, averageRelation: diplomacy.averageRelation, realmHistory },
             research: { completed: research.modifiers.completedCount, active: research.activeTechDetails?.label || null, scholars: research.scholars.length },
             market: { trades: state.statistics?.totalTrades || 0, goldTraded: state.market?.totalGoldTraded || 0 },
+            world: { routes: world.routes.length, delivered: world.totals.delivered, earned: world.totals.earned, incidents: world.totals.incidents, watchLevels: world.totals.watchLevels },
+            exploration: { known: expeditions.stats.known, cleared: expeditions.stats.cleared, completed: expeditions.stats.completed, discoveries: expeditions.stats.discoveries, active: expeditions.stats.active },
+            faith: { clergy: faith.clergy.length, capacity: faith.capacity, temples: faith.modifiers.temples, shrines: faith.modifiers.shrines, congregation: faith.modifiers.congregation },
+            justice: { judges: justice.judges.length, capacity: justice.capacity, pendingCases: justice.pendingCases.length, charters: justice.charters.length },
+            health: { sick: health.sick, healers: health.healers.length, capacity: health.healerCapacity, medicineStock: health.medicineStock },
+            logistics: { carriers: logistics.carriers.length, activeJobs: logistics.jobs.length, counts: logistics.counts, lastRejection: logistics.lastRejection },
+            economy: state.economy ? { lastLedger: state.economy.lastLedger, history: (state.economy.history || []).slice(-3), debt: cycle.debt, crisis: cycle.crisis.severity } : null,
             physical: getPhysicalStockMap(),
             physicalGrain: getPhysicalStock("grain"),
-            economy: state.economy ? { lastLedger: state.economy.lastLedger, history: (state.economy.history || []).slice(-3) } : null,
             crownSupply: getCrownSupplySnapshot()
         };
     }, { pathId: journey.path });
@@ -871,7 +894,7 @@ async function diplomatTurn(year) {
     if (year % 10 === 1) await buildViaUI(1, "housing");
 }
 
-async function merchantTurn() {
+async function merchantTurn(year) {
     await pauseGame();
     await dismiss();
     await page.evaluate(() => document.querySelector("#tab-2")?.click());
@@ -896,6 +919,39 @@ async function merchantTurn() {
     await page.evaluate(() => document.querySelector("#tab-0")?.click());
     await page.waitForTimeout(80);
     await pauseGame();
+    // A merchant realm is a caravan realm. Open a standing route through the
+    // shipped WORLD panel once the treasury and timber can pay for it, then
+    // let the annual world pass prove it in a later journey block.
+    if (year % 5 === 1) {
+        const map = await page.evaluate(async () => {
+            const { getWorldMapSnapshot } = await import("./js/systems/world-map.js");
+            const snapshot = getWorldMapSnapshot();
+            return {
+                ready: snapshot.ready,
+                routes: snapshot.routes.map(route => route.realmId),
+                reachable: snapshot.realms.filter(realm => realm.treaty !== "war").map(realm => realm.id)
+            };
+        });
+        if (map.ready && map.routes.length < 2) {
+            await openPanel("worldmap");
+            const openable = map.reachable.find(id => !map.routes.includes(id));
+            if (openable) {
+                const plan = map.routes.length === 0
+                    ? { resource: "food", direction: "import" }
+                    : { resource: "wood", direction: "export" };
+                const resource = page.locator('#world-resource-' + openable);
+                if (await resource.count()) await resource.selectOption(plan.resource);
+                const direction = page.locator('#world-direction-' + openable);
+                if (await direction.count()) await direction.selectOption(plan.direction);
+                const open = page.locator('[data-command="world-route-open"][data-value="' + openable + '"]');
+                if (await open.count() && await open.isEnabled().catch(() => false)) {
+                    await open.click();
+                    await page.waitForTimeout(150);
+                }
+            }
+            await closePanel();
+        }
+    }
 }
 
 async function fundJourneyFromSurplus() {
@@ -934,7 +990,7 @@ async function fundJourneyFromSurplus() {
     await pauseGame();
 }
 
-async function scholarTurn() {
+async function scholarTurn(year) {
     await openPanel("research");
     const scholar = page.locator("#research-scholar-select");
     if (await scholar.count() && (await scholar.locator("option").count()) > 1) {
@@ -948,6 +1004,34 @@ async function scholarTurn() {
     const tech = page.locator('[data-command="research-start"]:not([disabled])').first();
     if (await tech.count()) await tech.click();
     await closePanel();
+    // Exploration is the scholar's field laboratory. Send a named resident to
+    // the wilds through the shipped Explore panel on a bounded cadence, leaving
+    // enough food and gold for the realm's ordinary needs.
+    if (year % 10 === 1) {
+        const wallet = await page.evaluate(async () => {
+            const { state } = await import("./js/core/state.js");
+            return { food: Number(state.resources.food) || 0, gold: Number(state.resources.gold) || 0 };
+        });
+        if (wallet.food >= 80 && wallet.gold >= 40) {
+            await openPanel("explore");
+            const active = await page.evaluate(async () => {
+                const { getExpeditionSnapshot } = await import("./js/systems/expeditions.js");
+                return Boolean(getExpeditionSnapshot().active);
+            });
+            if (!active) {
+                const leader = page.locator("#expedition-leader-select");
+                if (await leader.count() && (await leader.locator("option").count()) > 1) {
+                    await leader.selectOption({ index: 1 });
+                    const launch = page.locator(".expedition-launch:not([disabled])").first();
+                    if (await launch.count()) {
+                        await launch.click();
+                        await page.waitForTimeout(120);
+                    }
+                }
+            }
+            await closePanel();
+        }
+    }
 }
 
 await page.goto(BASE + "/", { waitUntil: "networkidle", timeout: 60000 });
@@ -974,8 +1058,8 @@ for (let block = 0; block < Math.ceil(YEARS / 5); block++) {
     if (JOURNEY === "builder") await builderTurn(advance.year);
     else if (JOURNEY === "warlord") await warlordTurn(advance.year);
     else if (JOURNEY === "diplomat") await diplomatTurn(advance.year);
-    else if (JOURNEY === "merchant") await merchantTurn();
-    else if (JOURNEY === "scholar") await scholarTurn();
+    else if (JOURNEY === "merchant") await merchantTurn(advance.year);
+    else if (JOURNEY === "scholar") await scholarTurn(advance.year);
     await sustainRealm(advance.year);
     const snapshot = await stateSnapshot();
     blocks.push({ block: block + 1, targetYear, ...advance, snapshot });
@@ -1119,6 +1203,9 @@ if (SAVE_LOAD) {
         screenshot: loadedFile
     };
 }
+const matureAudit = ["warlord", "diplomat", "merchant", "scholar"].includes(JOURNEY)
+    ? await auditMaturePanels({ page, journeyPath: JOURNEY, outDir, openPanel, closePanel })
+    : null;
 const report = {
     journey: JOURNEY,
     label: journey.label,
@@ -1137,7 +1224,8 @@ const report = {
     saveLoad,
     blocks,
     layouts: { desktop: desktopLayout, narrow: narrowLayout, ...(saveLoad?.layout ? { loaded: saveLoad.layout } : {}) },
-    screenshots: [desktopFile, narrowFile, ...(loadedFile ? [loadedFile] : [])],
+    matureAudit,
+    screenshots: [desktopFile, narrowFile, ...(loadedFile ? [loadedFile] : []), ...(matureAudit?.screenshots || [])],
     pageErrors,
     consoleErrors,
     findings: []
@@ -1156,6 +1244,10 @@ if (consoleErrors.length) failures.push("console errors: " + consoleErrors.join(
 if (desktopLayout.overflow) failures.push("desktop layout overflows horizontally");
 if (narrowLayout.overflow) failures.push("narrow layout overflows horizontally");
 if (!desktopLayout.modalVisible || !narrowLayout.modalVisible) failures.push("the Crown Endeavours panel is not visible");
+if (matureAudit?.findings.length) {
+    const sample = matureAudit.findings.slice(0, 8).map(item => `${item.tab}@${item.width}: ${item.kind} — ${item.detail}`).join(" | ");
+    failures.push(`mature panel audit found ${matureAudit.findings.length} issue(s): ${sample}`);
+}
 if (desktopLayout.paths !== 5 || narrowLayout.paths !== 5) failures.push("the Crown Endeavours panel does not render five paths");
 if (desktopLayout.projects !== 20 || narrowLayout.projects !== 20) failures.push("the Crown Endeavours panel does not render twenty projects");
 if (desktopLayout.legacies !== 1 || narrowLayout.legacies !== 1) failures.push("the Crown Endeavours panel does not render each path's legacy");
@@ -1165,7 +1257,9 @@ if (JOURNEY === "warlord" && final.military.soldiers < 1) failures.push("the war
 if (JOURNEY === "warlord" && final.diplomacy.wars < 0) failures.push("warlord diplomacy is invalid");
 if (JOURNEY === "diplomat" && final.diplomacy.alliances < 1) failures.push("the diplomat concluded no alliance");
 if (JOURNEY === "merchant" && final.market.trades < 1) failures.push("the merchant completed no trade");
+if (JOURNEY === "merchant" && final.world.routes < 1) failures.push("the merchant opened no standing caravan route");
 if (JOURNEY === "scholar" && final.research.completed < 1) failures.push("the scholar completed no technology");
+if (JOURNEY === "scholar" && final.exploration.completed < 1) failures.push("the scholar returned no expedition party");
 if (final.population <= MIN_POPULATION[JOURNEY]) failures.push(`population ${final.population} did not exceed the v3.12.0 value ${MIN_POPULATION[JOURNEY]}`);
 if (Number(final.resources.food) <= 40) failures.push("food reserve ended in the hunger corridor: " + final.resources.food);
 if (!(Number(final.services?.water) > 0)) failures.push("water coverage ended at zero");

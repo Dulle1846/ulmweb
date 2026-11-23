@@ -1,6 +1,6 @@
 {
   "name": "kings-and-cards",
-  "version": "3.50.0",
+  "version": "3.51.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -23,6 +23,7 @@
     "test:tundra-reference": "node tests/browser/tundra-reference.mjs",
     "test:savanna-reference": "node tests/browser/savanna-reference.mjs",
     "test:forest-reference": "node tests/browser/forest-reference.mjs",
+    "test:regional-forest-reference": "node tests/browser/regional-forest-reference.mjs",
     "test:conifer-reference": "node tests/browser/conifer-reference.mjs",
     "test:mixed-reference": "FOREST_REFERENCE_PROFILE=mixed node tests/browser/forest-reference.mjs",
     "test:tropical-reference": "FOREST_REFERENCE_PROFILE=tropical node tests/browser/forest-reference.mjs",

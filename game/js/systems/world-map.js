@@ -388,6 +388,7 @@ function liveRealmRow(realm, seats, map, year) {
     const entry = map.frontiers.find(row => row.realmId === realm.id) || defaultFrontier(realm.id);
     const routes = map.routes.filter(route => route.realmId === realm.id);
     const active = routes.filter(route => routeStatus(route, seatById(route.seatId), line) === "open").length;
+    const routeDelivered = routes.reduce((sum, route) => sum + Math.max(0, Number(route.delivered) || 0), 0);
     const computed = frontierPressureFor(realm, seats, entry.watch, active, entry.relief);
     return {
         id: realm.id,
@@ -411,6 +412,7 @@ function liveRealmRow(realm, seats, map, year) {
         nearestSeat: computed.nearestSeat ? { id: computed.nearestSeat.seatId, name: computed.nearestSeat.name } : null,
         routes: routes.length,
         activeRoutes: active,
+        routeDelivered: integer(routeDelivered),
         tradeVolume: integer(line?.tradeVolume),
         year
     };

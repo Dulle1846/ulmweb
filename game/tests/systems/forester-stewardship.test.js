@@ -109,7 +109,9 @@ test("a staffed forester repairs the most depleted stands and reports its range"
 
     // One sapling per stand per tick is deliberate: keep tending until both
     // cut-over stands are full, without exceeding their capacity.
-    for (let tick = 0; tick < 200; tick++) updateFields();
+    // Regional timber can lift a stand's capacity above 200; keep planting
+    // until every cut-over stand is full rather than assuming a fixed cap.
+    for (let tick = 0; tick < 300; tick++) updateFields();
     const grown = foresterRangeSummary(forester);
     assert.equal(grown.depleted, 0);
     assert.equal(grown.restorable, 0);

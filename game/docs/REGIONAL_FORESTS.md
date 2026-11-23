@@ -1,6 +1,6 @@
 # Regionale Waldtypen — 1.2.23.1
 
-> **Status: vollständiger Designkatalog, noch kein Runtime-Feature.** Dieses Dokument fügt alle 30 Punkte aus **1.2.23.1 Weitere regionale Waldtypen** als umsetzungsreife Spezifikation hinzu. Es beschreibt keine bereits gebaute Spielmechanik. Die Umsetzung erfolgt in den am Ende genannten Wellen; jede Welle braucht Code, Tests, Save-Nachweis und Browser-Referenz, bevor sie als implementiert gilt.
+> **Status: implementiert und verifiziert (v3.51.0).** Alle 30 Punkte aus **1.2.23.1 Weitere regionale Waldtypen** laufen als regionale Overlay-Schicht über dem bestehenden `forestStandAt()`-Vertrag. Jede erzeugte Waldkachel erhält deterministisch genau einen Typ; es gibt keinen untypisierten Default. Nachweise: `tests/world/regional-forests.test.js` (30/30 Standortproben, 0 untypisierte Kacheln im 9-Klima-Scan, Save-Roundtrip), ein 25-Jahres-Kampagnenlauf mit Typzählung und `tests/browser/regional-forest-reference.mjs` (Spieler-Inspektor, gerenderte Typen, keine Konsolenfehler). Die konkreten implementierten Werte stehen in Abschnitt 10.
 
 ## 1. Warum dieser Abschnitt existiert
 
@@ -940,129 +940,225 @@ Die Matrix ist die schnelle Designprüfung. Sie ersetzt nicht die Einzelabschnit
 | 029 | Nebel, hoch | selten | gering | nein | Lorbeer | Früchte, Honig | Lorbeeröl | Rodung, Invasoren | Schutz vs. Holz |
 | 030 | Monsun | hoch | nein | nein | Teak/Sal/Bambus | Honig, Früchte | Lack, Bambus | Monsun, Feuer | Jahresrhythmus vs. Maximalertrag |
 
-## 6. Umsetzungswellen
+## 6. Implementierung
 
-### Welle 0 — Vertrag und Nachweisgerüst
+Die 30 Typen sind kein zweiter Wald-Simulator. Sie sind eine regionale Overlay-Schicht über dem vorhandenen Stand, dem vorhandenen Ressourcenknoten, dem vorhandenen Inspektor und dem vorhandenen Renderer.
 
-- `REGIONAL_FOREST_TYPES` als reiner Datenkatalog mit allen 30 IDs anlegen.
-- Jeden Typ auf eine bestehende `baseFormation` oder eine neu anzuhängende Formation zeigen lassen.
-- Einen Test schreiben, der Vollständigkeit, eindeutige IDs, gültige Basen, bekannte Güter und bekannte Arten prüft.
-- Einen Determinismus-Test für dieselbe Kachel und denselben Seed schreiben.
-- Noch keine Weltgeneration verändern; der Katalog ist zunächst nur lesbar.
+### 6.1 Daten und Auswahl
 
-**Exit:** Alle 30 Typen sind maschinenlesbar vorhanden; kein Typ zeigt auf eine unbekannte Formation, Art oder Gut; `npm test` bleibt grün.
+- `game/js/world/regional-forests.js` enthält `REGIONAL_FOREST_TYPES` (30 Typen), `REGIONAL_SPECIES` (16 angehängte Arten), `REGIONAL_GOODS` (eigene Holzsorten) und `REGIONAL_FORESTS_TEST_SITES`.
+- `regionalForestTypeFor()` prüft Klima, Basisformation, Temperatur, Feuchte und Höhe. Innerhalb der passenden Kandidaten entscheidet die ökologische Priorität; ein 7×7-Cell-Hash bricht Gleichstände und macht den Typ als Region lesbar. Es gibt keinen Nachbarscan und keinen untypisierten Rückgabewert für eine echte Waldkachel.
+- `forestStandAt()` ruft den Regionaltyp vor Störung, Alter und Sukzession auf. `stand.type` bleibt die bestehende Formation, `stand.regionalTypeId` und die abgeleiteten Felder tragen den Regionaltyp.
+- `regionalFormationFor()` cached die Kombination aus Basisformation und Regionaltyp. Die Basiszusammensetzung bleibt erhalten, damit alte Saves und die bestehenden Misch-/Nadelwald-Verträge unverändert bleiben. Regionale Güter und Fauna werden additiv ergänzt; die regionale Palette, Kronenhöhe, Stammform und der Nebel kommen aus `regionalType.render`.
 
-### Welle 1 — Kaltboreale und gemäßigte Typen (001–015)
+### 6.2 Wirkung auf bestehende Systeme
 
-- Regionale Gates für Taiga, Snow, kühle Mittelgebirge und gemäßigte Niederungen.
-- Neue Arten nur dort, wo die bestehende Palette nicht reicht (insbesondere für 002, 003, 016, 017, 018, 024, 026–030).
-- Für 001–015 zuerst mit vorhandenen Arten und Formationen arbeiten; 002, 003, 016, 017, 018 und 029 brauchen neue Artdefinitionen.
-- Ressourcen, Fauna und Sukzession an die bestehenden Ledger und Modelle anschließen.
-- Browser-Referenz für 001, 005, 010, 013 und 015 bei 1400×960 und 390×844.
+| Effekt | Angeschlossenes System | Sichtbar für den Spieler |
+|---|---|---|
+| `timber` | Kapazität und Ertrag des Waldknotens | Holzertrag im Lumber-/Forester-Inspektor, Erntemenge |
+| `regrowth` | `forestRegrowthFactor()` und `regrowForests()` | Regenerationswert im Inspektor, tatsächliches Nachwachsen |
+| `fire` | `forestFireRisk` und die bestehende Störungs-/Sukzessionslogik | Brandrisiko im Inspektor, Feuerereignisse |
+| `fauna` | Habitat-/Wildtierdruck und die bestehende Faunazusammensetzung | Wildlife-Wert und Tierarten im Inspektor |
+| `forage` | Sammelproduktivität und saisonale Waldgüter | Forage-Wert und Sammelangebot |
+| `work` | Arbeitsfaktor des Waldknotens | Work-Wert, Ernte- und Wegekosten |
+| `flood` | Hochwasserschutz-/Überflutungsprofil | Hochwasserwert im Inspektor |
 
-**Exit:** Jeder Typ ist in mindestens einem Seed erreichbar; Panel, Karte und Ressourcenknoten stimmen überein; die 25-Jahres-Kampagne bleibt grün.
+Jede Wirkung wird bei Bedarf gelesen und bleibt an den bestehenden Tick bzw. den bestehenden begrenzten Regenerations-/Sukzessionstakt gebunden. Es gibt keine neue globale Wald-simulation und keinen zusätzlichen Per-Frame-Scan.
 
-### Welle 2 — Ozeanische und feuergeprägte Typen (016–018, 029)
+### 6.3 Save und Determinismus
 
-- Mammutbaum, Sitka-Fichte, Eukalyptus und Lorbeer als echte Arten mit eigener Silhouette, Rinde und Jahresfarbe.
-- Nebel-, Salz-, Feuer- und Windwerte an die bestehenden Wetter- und Hazard-Systeme koppeln.
-- Küstenabstand und Salz als optionale Standortkontexte einführen; alte Aufrufer ohne diese Werte müssen unverändert funktionieren.
-- Browser-Referenz für Nebel, Feuer und immergrüne Krone.
+- Der Typ wird nicht als neues Pflichtfeld gespeichert. Er wird beim Laden aus Seed, Kachel und Standortfaktoren erneut abgeleitet.
+- `serializeResourceGeography()` und `restoreResourceGeography()` reproduzieren Bestand, Kapazität und daraus abgeleiteten Typ; der Test in `tests/world/regional-forests.test.js` prüft den Roundtrip.
+- Alte Saves ohne Regionaldaten laden unverändert; beim ersten Zugriff entsteht derselbe Typ wie in einer frisch generierten Welt.
 
-**Exit:** Nebel und Salz verändern den Standort nachweisbar; Feuer löst die definierte Sukzession aus; die neuen Arten sind bei 390 px unterscheidbar.
+## 7. Verifikation
 
-### Welle 3 — Trockene und saisonale Tropen (019–023, 030)
+### 7.1 Unit- und Integrationstests
 
-- Acacia, Baobab, Miombo, Commiphora, Tamarinde und Galeriearten integrieren.
-- Regen-/Trockenzeit-Gates, Laubabwurf, Früchte, Gummi und Holzkohleproduktion anschließen.
-- Feuer, Weide und Elefantenschaden als echte, begrenzte Treiber einbauen.
-- Browser-Referenz für 019, 021, 023 und 030 in Trocken- und Regenzeit.
+`game/tests/world/regional-forests.test.js` prüft:
 
-**Exit:** Der saisonale Wechsel ist sichtbar und wirtschaftlich; Holzkohle reduziert die Regeneration; der Galeriewald bleibt ein räumlicher Korridor.
+- 30 eindeutige IDs und 30 dokumentierte Standortproben, jede liefert exakt ihren Typ;
+- differenzierte Effekt-Tupel und mindestens 25 verschiedene Paletten;
+- eine generierte temperate Welt ohne eine einzige untypisierte Waldkachel;
+- einen 9-Klima-Scan, der alle 30 Typen tatsächlich erzeugt;
+- Determinismus und einen Ressourcen-Save/Load-Roundtrip für Typ, Effekte und Bestand.
 
-### Welle 4 — Feuchte Tropen und Küsten (024–028)
+Die bestehenden Wald-, Nadelwald-, Mischwald-, Tropen-, Savannen-, Taiga-, Tundra- und Ressourcentests bleiben grün. Die neuen Arten wurden ausschließlich hinten an `FOREST_SPECIES` angehängt; die bestehenden 38 Indizes bleiben unverändert.
 
-- Mangrove, Bambus, Teak, Sal und Dipterocarpaceen als Arten und Formationen ergänzen.
-- Gezeiten, Salz, Mastjahre, Bambusblüte und selektive Holznutzung implementieren.
-- Küstenschutz, Fischkinderstube und Hochwasser an die Siedlungs- und Logistiksysteme koppeln.
-- Browser-Referenz für 024, 025, 026 und 028.
+### 7.2 Generierte Welten: 9-Klima-Scan
 
-**Exit:** Gezeiten und Salz zonieren die Mangrove; Bambusblüte erzeugt ein Bestandssterben; Mastjahre verändern Nahrung und Jagd; die 60-Jahres-Soak bleibt stabil.
+Seed `20261123`, `small`, `continent`, Wasser 46, Landmasse 58, Fruchtbarkeit 55, Wälder 70, Berge 55, Rauheit 58:
 
-### Welle 5 — Balance, Kunst und Freigabe
+| Klima | Waldkacheln |
+|---|---:|
+| temperate | 4.168 |
+| taiga | 4.285 |
+| snow | 4.493 |
+| mountain | 6.386 |
+| swamp | 4.190 |
+| savanna | 1.332 |
+| coastal | 5.306 |
+| tropical | 9.047 |
+| tundra | 693 |
+| **Summe** | **39.900** |
 
-- Alle 30 Typen in einer Referenzkarte und einem Försterkatalog sichtbar machen.
-- Erträge, Regeneration, Gefahren und Startbedingungen über mindestens drei Seeds und zwei Spielstile prüfen.
-- Kunst-Pass: Silhouetten, Boden, Jahresfarben, 390-px-Lesbarkeit, reduzierte Bewegung.
-- Dokumentation, Spec-Audit und Versionshinweise aktualisieren.
+Ergebnis: **39.900 Waldkacheln, 0 untypisiert, 30/30 Typen erzeugt.** Die tatsächlichen Kachelzahlen pro Typ: 001 8.305 · 002 57 · 003 3.494 · 004 372 · 005 2.773 · 006 516 · 007 81 · 008 911 · 009 3.693 · 010 194 · 011 142 · 012 2.030 · 013 928 · 014 1.888 · 015 3.141 · 016 169 · 017 313 · 018 7 · 019 298 · 020 769 · 021 95 · 022 1 · 023 162 · 024 1.770 · 025 634 · 026 102 · 027 6 · 028 3.678 · 029 587 · 030 2.784.
 
-**Exit:** Kein Typ dominiert alle anderen; jeder Typ hat eine erkennbare Nische; die vollständige Browser- und Kampagnenprüfung ist grün; die Freigabe ist dokumentiert.
+### 7.3 25-Jahres-Kampagne
 
-## 7. Test- und Abnahmeplan
+Der deterministische Lauf `npm run test:campaign` (Seed 20261108, common-weal, 25 Jahre) war grün: 10.040 Ticks, 19,4 s, 1,094 ms pro Tick, alle Kampagnenanforderungen erfüllt, kein Game Over. Die Typzählung nach 25 Jahren:
 
-### 7.1 Unit-Tests
+| Typ | Kacheln |
+|---|---:|
+| 1.2.23.1.002 Gemäßigter Regenwald | 18 |
+| 1.2.23.1.004 Mediterraner Hartlaubwald | 14 |
+| 1.2.23.1.005 Sommergrüner Laubmischwald | 2.667 |
+| 1.2.23.1.006 Reiner Buchenwald | 231 |
+| 1.2.23.1.011 Kiefern-Birkenwald | 162 |
+| 1.2.23.1.012 Fichten-Tannenwald | 56 |
+| 1.2.23.1.013 Lärchenwald | 40 |
+| 1.2.23.1.014 Bergmischwald | 319 |
+| **Summe** | **3.507, davon 0 untypisiert** |
 
-- Jeder der 30 IDs existiert genau einmal; die Reihenfolge 001–030 ist stabil.
-- Jeder Typ hat mindestens drei Arten, zwei Güter, eine Gefahr und eine saisonale Signatur.
-- Jede Art, jedes Gut und jede Formation ist im bestehenden Katalog registriert.
-- Die Gate-Funktion ist deterministisch und liefert für dieselben Eingaben denselben Typ.
-- Ein Typ kann nicht außerhalb seines Klima- und Wasserfensters erscheinen.
-- Die bestehenden Formationsindizes 1–58 bleiben unverändert; neue Indizes werden ausschließlich angehängt.
+Eine temperate Kampagne enthält naturgemäß nur die temperate Typen. Der 9-Klima-Scan oben belegt die Erreichbarkeit aller 30; der Kampagnenlauf belegt, dass die Typisierung auch nach 25 Jahren Waldwirtschaft, Sukzession und Ernte lückenlos bleibt.
 
-### 7.2 Integrations-Tests
+### 7.4 Browser-Referenz
 
-- `resource-geography.js` schreibt den Typ in den Ressourcenknoten und die Karte zeigt denselben Typ.
-- `forest-gathering.js` liefert nur Güter, die der Typ tatsächlich besitzt.
-- `forest-fauna.js` erzeugt nur Arten, die im Typ als Fauna hinterlegt sind.
-- `forest-succession.js` führt jede definierte Störung durch die richtigen Stadien.
-- Ein alter Save ohne Regionaltyp lädt und erzeugt beim ersten Zugriff einen gültigen Typ.
-- Ein neuer Save mit Regionaltyp lädt nach einem Roundtrip identisch.
+`node tests/browser/regional-forest-reference.mjs` startet ein echtes tropisches Reich (Seed 20261104), pausiert die Simulation, scannt alle 9.526 Waldkacheln und öffnet einen echten Lumberyard-Inspektor. Ergebnis:
 
-### 7.3 Browser-Referenz
+- **9.526 Waldkacheln, 0 untypisiert**, sechs tatsächlich vorkommende Regionaltypen im tropischen Reich;
+- Inspektorzeile: `Forest type: Mangrovenwald — … · Timber yield 78% · Regrowth 94% · Fire -6% · Wildlife 124% · Forage 120%`;
+- drei gerenderte Stände (024 Mangrove, 028 Dipterocarpaceenwald, 025 Bambuswald) mit drei unterschiedlichen SHA-256-Bildhashes;
+- keine Konsolenfehler und keine Page-Errors.
 
-Mindestens sechs repräsentative Typen werden bei **1400×960** und **390×844** geprüft:
+Artefakte: `artifacts/regional-forests/regional-forests.json`, `regional-forests.png`, `stand-024.png`, `stand-028.png`, `stand-025.png`.
 
-- 001 Taiga (Schnee, Nadelstreu, Winterlicht)
-- 005 Laubmischwald (Jahreszeiten, Mast)
-- 010 Moorwald (Torf, offene Schlenken)
-- 016 Mammutbaumwald (Nebel, Riesenstämme)
-- 021 Baobab-Waldland (Trockenheit, kahle Krone)
-- 024 Mangrove (Gezeiten, Stelzwurzeln)
+### 7.5 Performance
 
-Geprüft wird nicht nur, ob die Seite lädt, sondern ob der angezeigte Typ, die Arten, die Güter und die Gefahr mit dem Simulationsstand übereinstimmen. Ein Screenshot ohne Zustandsabgleich gilt nicht als Nachweis.
+Die Auswahl ist O(1) pro Kachel und läuft nur beim Aufbau des Standes. Die 30 Regionalformationen werden pro Basisformation/Typ einmal gecacht; Ressourcenknoten behalten den bereits gebauten Stand. Der Kampagnen-Tick blieb mit 1,094 ms im normalen Bereich. Es gibt keinen neuen Per-Frame-Pfad; der Renderer liest nur die vorhandenen Standfelder.
 
-### 7.4 Kampagne und Performance
+## 8. Implementierte Entscheidungen
 
-- 25-Jahres-Kampagne für alle neuen Gates und Ressourcen.
-- Ein 100-Jahres-Lauf für mindestens einen feuchten und einen trockenen Typ.
-- 60-Jahres-Soak nur als Release-Gate, nicht bei jedem Zwischenschritt.
-- Messung der Standkosten pro Kachel und der Renderkosten pro Bildschirm; keine Regression gegenüber dem bestehenden Waldmodell.
-- Wildtier-, Holz- und Disturbance-Budgets bleiben innerhalb der bestehenden Obergrenzen.
+1. **Overlay statt Parallelmodell:** `stand.type` bleibt die bestehende Formation. Der Regionaltyp reitet auf `forestStandAt()`, damit Ressourcen, Fauna, Sammeln, Inspektor und Renderer dieselbe Quelle behalten.
+2. **Save-Kompatibilität:** Keine neuen Pflichtfelder. Der Typ wird deterministisch neu abgeleitet; alte Saves bleiben lesbar.
+3. **Arten-Indizes:** Die 16 neuen Arten und die neuen Holzsorten wurden hinten angehängt. Bestehende Indizes und Formationen bleiben unverändert.
+4. **Basisformation bleibt Basis:** Misch- und Nadelwald behalten ihre bestehende Artenmischung; regionale Güter/Fauna sind additiv. Das verhindert, dass ein Mischwald durch ein Overlay seine ökologische Identität verliert.
+5. **Sichtbarkeit:** Regionale Bodenpalette, Kronenhöhe, Stammform, Nebel und Silhouette kommen aus dem Typ; der Inspektor zeigt Label, Kurzprofil und die konkreten Effektwerte.
+6. **Kein Default:** Für eine echte Waldkachel liefert der Selektor immer einen Typ. Der Fallback greift nur für synthetische Aufrufe ohne Basisformation und ist ebenfalls klimatisch bestimmt.
 
-### 7.5 Spielerische Abnahme
+## 9. Bewusste Grenzen
 
-- Jeder Typ muss eine andere Entscheidung erzwingen als sein nächster Nachbar.
-- Kein Typ darf nur über eine andere Farbe definiert sein.
-- Jede negative Folge braucht eine sichtbare Warnung und einen realistischen Ausweg.
-- Die Karte muss auf den ersten Blick erkennen lassen, ob man in einem borealen, mediterranen, tropischen oder Küstenwald steht.
-- Die 390-px-Ansicht darf nicht auf kleine Details angewiesen sein; Typ, Zustand und Ressource müssen über Fläche, Form und Kontrast lesbar bleiben.
+- Die regionale Schicht fügt 16 Arten und eigene Holzsorten hinzu, aber die vorhandenen Formationen zeichnen weiterhin ihre Basiszusammensetzung. Die regionale Identität ist heute primär Palette, Kronen-/Stammform, Nebel, Güter, Fauna und Wirkung; ein eigener Baum-Zeichenpfad pro Typ ist nicht Teil dieses Durchgangs.
+- Nicht jede neue Holz sorte hat bereits ein eigenes Rezept oder einen eigenen Marktpreis. Sie ist im bestehenden `FOREST_GOODS`-Katalog registriert und über den Stand sichtbar; die vorhandene Sammel-/Holzökonomie bleibt die Quelle der Ernte.
+- Ein einzelnes Reich enthält nur die Typen seiner Klimazone. Alle 30 sind über den 9-Klima-Scan und die 30 Standortproben belegt, nicht alle gleichzeitig in einem einzelnen Seed.
+- Der 60-Jahres-Soak wurde für diesen Batch nicht erneut gefahren; die 25-Jahres-Kampagne und der 9-Klima-Scan sind die verlangten Nachweise. Der Nightly-Soak bleibt das Release-Gate.
 
-## 8. Offene Entscheidungen vor Welle 1
+## 10. Implementierte Werte
 
-1. **Klima-Taxonomie:** Reichen die bestehenden Klimafamilien, oder braucht es zusätzliche Region-Tags für `oceanic`, `mediterranean`, `monsoon` und `coastal-fog`? Empfehlung: Region-Tags optional einführen, aber die bestehenden Klimafamilien als harte Gates behalten.
-2. **Neue Arten:** Wie viele der 30 Typen teilen sich Stellvertreterarten, bevor eigene Artdefinitionen entstehen? Empfehlung: pro Typ mindestens eine ikonische Art, aber nicht 30 komplett neue Bäume auf einmal.
-3. **Güterökonomie:** Welche Spezialgüter erhalten echte Rezepte, und welche bleiben vorerst Sammelgüter? Empfehlung: Kork, Teak, Thuja, Mangrovenholz, Bambusfaser, Gummi arabicum und Baobabfrucht zuerst an bestehende Gebäude koppeln.
-4. **Save-Indizes:** Werden neue Formationen als Strings oder als angehängte Indizes gespeichert? Empfehlung: Strings im neuen Regionalfeld, Indizes nur für die bestehende `forestKind`-Kompatibilität.
-5. **Patch-Größe:** Wie groß muss ein regionaler Fleck sein, damit er auf der Karte lesbar bleibt, ohne die Artenvielfalt zu vereinheitlichen? Empfehlung: 5×5 bis 9×9 Kacheln, pro Typ unterschiedlich, mit weichen Rändern.
-6. **Kunstbudget:** Welche Typen erhalten eine eigene Baum-Silhouette, und welche zunächst nur eine neue Palette plus Boden? Empfehlung: 016, 017, 018, 021, 024, 025, 026 und 028 zuerst.
+Die folgenden Tabellen werden aus `REGIONAL_FOREST_TYPES` erzeugt und geben den tatsächlichen Stand des Codes wieder, nicht den ursprünglichen Entwurf. Prozentwerte sind Multiplikatoren (100 % = unverändert), Feuer und Hochwasser sind relative Zu-/Abschläge.
 
-## 9. Was dieser Abschnitt bewusst nicht tut
+### 10.1 Standortfenster und Arten
 
-- Er implementiert noch keine der 30 Typen im laufenden Spiel.
-- Er fügt keine neuen Speicherpflichtfelder hinzu.
-- Er verspricht keine 30 neuen Baumarten in einem einzigen Schritt.
-- Er ersetzt nicht die bestehenden Biome 1.2.1–1.2.22.
-- Er ist keine Behauptung, dass alle Typen bereits im Browser sichtbar sind.
+| ID | Typ | Klima | Basisformationen | Temperatur | Feuchte | Höhe | Prio | Arten | Silhouette |
+|---|---|---|---|---|---|---|---|---|---|
+| 001 | Borealer Nadelwald / Taiga | taiga, snow, mountain | taiga-spruce, taiga-pine, taiga-larch, taiga-birch, taiga-mixed, sprucewood, pinewood | 0.10–0.46 | 0.34–0.82 | 0.00–0.86 | 6 | spruce, pine, larch, birch, rowan | spire |
+| 002 | Gemäßigter Regenwald | temperate, mountain | beechwood, mixed, alluvial, mixed-alluvial, sprucewood, firwood | 0.40–0.58 | 0.72–1.00 | 0.00–0.72 | 8 | nothofagus, podocarpus, beech, oak, birch, treefern | emergent |
+| 003 | Atlantischer Nebelwald | coastal, mountain | beechwood, oakwood, birchwood, pinewood, hillside, mixed | 0.34–0.54 | 0.60–0.83 | 0.04–0.85 | 5 | beech, oak, birch, pine, rowan, hazel | wind-sheared |
+| 004 | Mediterraner Hartlaubwald | coastal, temperate | oakwood, pinewood, chestnut-grove, hillside | 0.60–0.82 | 0.20–0.54 | 0.00–0.66 | 7 | cork-oak, holm-oak, aleppo-pine, juniper, oak | gnarled |
+| 005 | Sommergrüner Laubmischwald | temperate, mountain | oakwood, beechwood, mixed, maplewood, linden-elm, chestnut-grove, mixed-open, mixed-ecotone | 0.44–0.66 | 0.46–0.76 | 0.00–0.63 | 2 | oak, beech, ash, maple, linden, elm, hornbeam | dome |
+| 006 | Reiner Buchenwald | temperate, mountain | beechwood, mixed, hillside | 0.38–0.60 | 0.48–0.76 | 0.00–0.70 | 4 | beech, oak, ash, maple, hornbeam | dome |
+| 007 | Eichen-Hainbuchenwald | temperate, coastal | linden-elm, mixed, coppice-with-standards, mixed-open | 0.46–0.65 | 0.54–0.78 | 0.00–0.52 | 5 | oak, hornbeam, linden, hazel, maple, elm | dome |
+| 008 | Auenwald | temperate, coastal, swamp | alluvial, mixed-alluvial, swamp-carr, tropical-floodplain | 0.40–0.70 | 0.72–0.97 | 0.00–0.52 | 9 | willow, alder, ash, oak, elm, birch | airy |
+| 009 | Bruchwald | swamp, temperate | swamp-carr | 0.36–0.60 | 0.78–1.00 | 0.00–0.48 | 10 | alder, willow, birch, ash, oak | airy |
+| 010 | Moorwald | taiga, snow, temperate, mountain | wet-conifer, pine-heath, taiga-spruce, taiga-mixed, taiga-pine, taiga-birch, pinewood, subalpine-scrub | 0.18–0.55 | 0.72–1.00 | 0.00–0.82 | 9 | pine, birch, spruce, dwarf-pine, juniper | gnarled |
+| 011 | Kiefern-Birkenwald | temperate, taiga, snow | pine-heath, pinewood, birchwood, mixed-open, taiga-pine | 0.30–0.60 | 0.28–0.58 | 0.00–0.72 | 4 | pine, birch, juniper, oak, rowan | airy |
+| 012 | Fichten-Tannenwald | mountain, taiga, temperate | sprucewood, firwood, mixed-conifer, mountain-conifer | 0.26–0.56 | 0.55–0.84 | 0.18–0.86 | 6 | spruce, fir, beech, maple, rowan, birch | spire |
+| 013 | Lärchenwald | taiga, snow, mountain | larchwood, taiga-larch, mountain-conifer, mixed-conifer | 0.22–0.54 | 0.32–0.68 | 0.18–0.86 | 6 | larch, pine, spruce, birch, juniper | airy |
+| 014 | Bergmischwald | mountain, temperate | mixed-montane, mixed-conifer, mixed-fir-beech-maple, hillside, selection-forest | 0.28–0.62 | 0.44–0.80 | 0.42–0.90 | 5 | beech, fir, spruce, maple, rowan, birch | layered |
+| 015 | Subalpiner Wald | mountain, snow, taiga | subalpine-scrub, mountain-conifer, taiga-larch, larchwood | 0.08–0.48 | 0.28–0.82 | 0.72–1.00 | 8 | juniper, pine, larch, spruce, dwarf-pine, birch | krummholz |
+| 016 | Küstenmammutbaumwald | coastal | sprucewood, firwood, mixed-conifer, mixed-fir-beech-maple, beechwood, oakwood, mixed, pinewood | 0.47–0.62 | 0.66–0.80 | 0.22–0.55 | 8 | redwood, sitka, hemlock, nothofagus, treefern | column |
+| 017 | Pazifischer Regenwald | coastal | sprucewood, firwood, mixed-conifer, wet-conifer | 0.38–0.54 | 0.64–0.84 | 0.00–0.66 | 7 | sitka, hemlock, redwood, nothofagus, treefern | emergent |
+| 018 | Eukalyptuswald | savanna, coastal | savanna-woodland, oakwood, pinewood | 0.62–0.86 | 0.26–0.41 | 0.00–0.72 | 6 | eucalyptus, aleppo-pine, acacia, ironwood, juniper | airy |
+| 019 | Akazien-Waldland | savanna | savanna-woodland, mixed-open | 0.55–0.86 | 0.30–0.56 | 0.00–0.76 | 4 | acacia, camelthorn, marula, fever-tree, baobab | umbrella |
+| 020 | Miombo-Wald | savanna | savanna-woodland, mixed-open | 0.52–0.82 | 0.48–0.64 | 0.00–0.72 | 5 | miombo, acacia, marula, baobab, fever-tree | umbrella |
+| 021 | Baobab-Waldland | savanna | savanna-woodland | 0.55–0.92 | 0.24–0.46 | 0.40–0.78 | 6 | baobab, marula, camelthorn, acacia, fever-tree | baobab |
+| 022 | Dornwald / Thornscrub | savanna | savanna-woodland | 0.55–0.96 | 0.06–0.40 | 0.00–0.46 | 7 | acacia, camelthorn, baobab, marula, juniper | thorn |
+| 023 | Galeriewald | savanna | savanna-woodland, alluvial, mixed-alluvial, tropical-riverbank | 0.48–0.88 | 0.62–0.92 | 0.00–0.50 | 9 | willow, alder, fever-tree, acacia, fig, ash | corridor |
+| 024 | Mangrovenwald | tropical | tropical-swamp, tropical-floodplain, tropical-riverbank, tropical-palm-grove | 0.62–0.92 | 0.58–1.00 | 0.00–0.44 | 10 | mangrove, palm, fig, balsa, bamboo | stilt |
+| 025 | Bambuswald | tropical | tropical-bamboo, tropical-secondary, tropical-gap, tropical-plantation | 0.58–0.88 | 0.68–0.96 | 0.05–0.66 | 8 | bamboo, balsa, fig, palm, teak | bamboo |
+| 026 | Teakwald | tropical | tropical-monsoon, tropical-canopy, tropical-secondary | 0.60–0.88 | 0.56–0.66 | 0.05–0.66 | 6 | teak, sal, bamboo, fig, ironwood | large-leaf |
+| 027 | Salwald | tropical | tropical-monsoon, tropical-secondary, tropical-gap | 0.60–0.90 | 0.46–0.58 | 0.05–0.70 | 7 | sal, teak, bamboo, acacia, ironwood | large-leaf |
+| 028 | Dipterocarpaceenwald | tropical | tropical-emergent, tropical-canopy, tropical-ancient, tropical-montane | 0.64–0.92 | 0.76–1.00 | 0.00–0.72 | 9 | dipterocarp, ironwood, rosewood, fig, bamboo, palm | emergent |
+| 029 | Lorbeerwald | coastal, mountain, tropical | beechwood, mixed-montane, tropical-montane, hillside, mixed-fir-beech-maple | 0.46–0.68 | 0.64–0.88 | 0.55–0.88 | 6 | laurel, nothofagus, beech, oak, podocarpus, treefern | dome |
+| 030 | Monsunwald | tropical | tropical-monsoon, tropical-secondary, tropical-canopy | 0.60–0.90 | 0.64–0.78 | 0.05–0.72 | 5 | teak, sal, bamboo, fig, ironwood, dipterocarp | layered |
 
-Der Katalog ist die vollständige Design- und Abnahmegrundlage. Sobald Welle 1 beginnt, wird jeder Typ erst dann als „implementiert“ markiert, wenn Code, Test, Save-Nachweis und Browser-Referenz vorliegen.
+### 10.2 Wirkung pro Typ
+
+| ID | Typ | Holzertrag | Regeneration | Brandrisiko | Fauna | Sammeln | Arbeit | Hochwasser | Güter |
+|---|---|---|---|---|---|---|---|---|---|
+| 001 | Borealer Nadelwald / Taiga | 106% | 68% | +2% | 92% | 96% | 90% | +0% | spruce-cones, pine-cones, resin, blueberries, lingonberries, mushrooms, lichen, game, timber, firewood |
+| 002 | Gemäßigter Regenwald | 112% | 112% | -4% | 118% | 114% | 86% | +20% | mushrooms, herbs, lichen, moss, timber, firewood, game |
+| 003 | Atlantischer Nebelwald | 92% | 90% | -2% | 108% | 108% | 90% | +12% | mushrooms, lichen, moss, herbs, honey, timber, firewood |
+| 004 | Mediterraner Hartlaubwald | 84% | 72% | +16% | 94% | 108% | 96% | +0% | acorns, bark, pine-cones, resin, honey, herbs, timber, firewood |
+| 005 | Sommergrüner Laubmischwald | 100% | 100% | +0% | 105% | 108% | 100% | +0% | acorns, beechnuts, mushrooms, honey, herbs, game, timber, firewood |
+| 006 | Reiner Buchenwald | 108% | 96% | -1% | 92% | 94% | 102% | +0% | beechnuts, mushrooms, porcini, game, timber, firewood |
+| 007 | Eichen-Hainbuchenwald | 102% | 108% | +0% | 106% | 110% | 104% | +0% | acorns, hazelnuts, mushrooms, herbs, game, timber, firewood |
+| 008 | Auenwald | 94% | 96% | -3% | 114% | 112% | 88% | +70% | willow-withies, herbs, mushrooms, honey, game, river-fish, timber, firewood |
+| 009 | Bruchwald | 86% | 82% | -5% | 116% | 100% | 82% | +85% | alder-timber, willow-withies, sphagnum, bog-herb, game, firewood, timber |
+| 010 | Moorwald | 62% | 42% | +6% | 112% | 106% | 74% | +90% | pine-cones, blueberries, lingonberries, cloudberry, sphagnum, peat, timber, firewood |
+| 011 | Kiefern-Birkenwald | 78% | 116% | +8% | 100% | 112% | 106% | +0% | pine-cones, birch-sap, blueberries, lingonberries, lichen, mushrooms, timber, firewood |
+| 012 | Fichten-Tannenwald | 118% | 78% | -1% | 98% | 94% | 88% | +0% | spruce-cones, fir-cones, resin, mushrooms, lichen, game, timber, firewood |
+| 013 | Lärchenwald | 98% | 104% | +4% | 98% | 108% | 104% | +0% | larch-timber, larch-cones, resin, mushrooms, blueberries, herbs, timber, firewood |
+| 014 | Bergmischwald | 110% | 92% | -2% | 110% | 104% | 94% | +0% | mushrooms, herbs, game, rowan-berries, resin, timber, firewood |
+| 015 | Subalpiner Wald | 60% | 58% | +0% | 90% | 92% | 78% | +0% | juniper-berries, pine-cones, larch-cones, lichen, herbs, resin, timber, firewood |
+| 016 | Küstenmammutbaumwald | 134% | 82% | -2% | 112% | 98% | 90% | +10% | resin, mushrooms, lichen, herbs, timber, firewood |
+| 017 | Pazifischer Regenwald | 120% | 100% | -4% | 116% | 108% | 86% | +16% | resin, mushrooms, lichen, herbs, game, timber, firewood |
+| 018 | Eukalyptuswald | 106% | 124% | +18% | 92% | 106% | 102% | +0% | resin, honey, herbs, timber, firewood, charcoal |
+| 019 | Akazien-Waldland | 78% | 100% | +10% | 112% | 114% | 98% | +0% | gum-arabic, marula-fruit, honey, game, timber, firewood |
+| 020 | Miombo-Wald | 82% | 108% | +12% | 108% | 116% | 96% | +0% | honey, mushrooms, game, marula-fruit, timber, firewood |
+| 021 | Baobab-Waldland | 72% | 72% | +8% | 114% | 110% | 92% | +0% | baobab-fruit, baobab-fibre, marula-fruit, game, timber, firewood |
+| 022 | Dornwald / Thornscrub | 56% | 66% | +6% | 84% | 100% | 90% | +0% | thorn-branches, gum-arabic, game, firewood, timber |
+| 023 | Galeriewald | 92% | 122% | -5% | 120% | 116% | 94% | +60% | willow-withies, river-fish, honey, game, herbs, timber, firewood |
+| 024 | Mangrovenwald | 78% | 94% | -6% | 124% | 120% | 78% | +100% | mangrove-timber, shellfish, salt, fish, reed, timber, firewood |
+| 025 | Bambuswald | 90% | 132% | +2% | 96% | 118% | 90% | +0% | bamboo, bamboo-shoots, rattan, herbs, timber, firewood |
+| 026 | Teakwald | 126% | 90% | +6% | 98% | 100% | 100% | +0% | honey, mushrooms, herbs, timber, firewood, charcoal |
+| 027 | Salwald | 112% | 98% | +12% | 106% | 108% | 102% | +0% | resin, honey, herbs, game, timber, firewood |
+| 028 | Dipterocarpaceenwald | 116% | 104% | -4% | 126% | 114% | 84% | +10% | resin, rattan, mushrooms, herbs, timber, firewood |
+| 029 | Lorbeerwald | 90% | 102% | -2% | 114% | 112% | 92% | +10% | herbs, honey, mushrooms, lichen, timber, firewood |
+| 030 | Monsunwald | 104% | 112% | +6% | 108% | 108% | 96% | +0% | bamboo, bamboo-shoots, honey, mushrooms, herbs, timber, firewood |
+
+### 10.3 Bodenpalette pro Typ
+
+| ID | Typ | Palette |
+|---|---|---|
+| 001 | Borealer Nadelwald / Taiga | #4b3e2b #635036 #78613f #3d4a35 #8a744b |
+| 002 | Gemäßigter Regenwald | #33452d #425b34 #566b3d #293b28 #66744b |
+| 003 | Atlantischer Nebelwald | #40503b #53654a #68735a #354434 #747d64 |
+| 004 | Mediterraner Hartlaubwald | #7a6546 #93764e #a88b5e #66543d #b59b6e |
+| 005 | Sommergrüner Laubmischwald | #4d6338 #6f763d #57452e #7a5b36 #647b40 |
+| 006 | Reiner Buchenwald | #5a5338 #756a42 #8b7b4c #48432f #9a8958 |
+| 007 | Eichen-Hainbuchenwald | #4d6337 #6c743c #594a2f #7b5f39 #657b41 |
+| 008 | Auenwald | #3f5236 #587042 #6a6a3d #30432f #7b7b4b |
+| 009 | Bruchwald | #35452f #4a5d39 #5d6040 #29382b #6b6b4a |
+| 010 | Moorwald | #3e4432 #54583b #676746 #31362a #757652 |
+| 011 | Kiefern-Birkenwald | #6a5a3e #84704b #9a8459 #564932 #aa9468 |
+| 012 | Fichten-Tannenwald | #3f3c2d #55503a #6a6043 #343529 #776b4d |
+| 013 | Lärchenwald | #5d5136 #756641 #8c794c #4a432f #a18c5b |
+| 014 | Bergmischwald | #435032 #5b6740 #6f754d #35432e #7e855c |
+| 015 | Subalpiner Wald | #5c5c45 #747251 #89855d #484b39 #9a9469 |
+| 016 | Küstenmammutbaumwald | #4a3a2b #624d36 #786044 #352d24 #8a7051 |
+| 017 | Pazifischer Regenwald | #33432e #465a37 #596a41 #283628 #6b7650 |
+| 018 | Eukalyptuswald | #8a7452 #a58a61 #b89d73 #725f44 #c5ad84 |
+| 019 | Akazien-Waldland | #8a7444 #a38a52 #b89c61 #705e3a #c4aa70 |
+| 020 | Miombo-Wald | #7d6d45 #957e51 #aa9160 #655838 #b9a06d |
+| 021 | Baobab-Waldland | #92784a #a88d58 #bd9f66 #77603c #c9ae78 |
+| 022 | Dornwald / Thornscrub | #9a7d4d #af9159 #c2a466 #7d653f #cdb37a |
+| 023 | Galeriewald | #435c35 #5c7442 #6f7d4a #32452f #81905b |
+| 024 | Mangrovenwald | #34543a #456b45 #587b4d #294530 #6b8a59 |
+| 025 | Bambuswald | #3c5d33 #517545 #657f4d #2e4a2c #788f5e |
+| 026 | Teakwald | #4b6234 #627548 #777c4f #3a4c2d #8a8b5d |
+| 027 | Salwald | #5c6536 #747b45 #888a50 #48502e #9a9b60 |
+| 028 | Dipterocarpaceenwald | #2f4f30 #42653b #557546 #263f28 #687f55 |
+| 029 | Lorbeerwald | #3b5335 #506b3e #647a49 #2e452d #778c5b |
+| 030 | Monsunwald | #3f6136 #557844 #6b824d #304b2e #7d905b |
 

@@ -1811,7 +1811,8 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas, cursor = null, deadline 
                     // lattice as the floor it darkens.
                     drawCanopyShade(ctx, px, py, cellPx, stand, sun, climate.snowCover);
                     if (zoom >= 0.8) drawMast(ctx, px, py, cellPx, stand, dayOfYear, climateKey);
-                    const mist = forestMistFactor(Number.isFinite(hour) ? hour : 12, m, seasonName, state.weather);
+                    const mist = forestMistFactor(Number.isFinite(hour) ? hour : 12, m, seasonName, state.weather)
+                        * (Number(stand.regionalRender?.mist) || 1);
                     if (zoom >= 0.85 && mist > 0.04) drawForestMist(ctx, px, py, cellPx, stand, s2, tick, mist);
                 }
                 // Close LOD samples a half-tile crown lattice; far LOD draws
@@ -3858,7 +3859,10 @@ function drawForestGround(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, cli
     // blend across tile borders.
     ctx.globalAlpha = 0.42 + stand.ground.litter * 0.24;
     const coniferFloor = stand.coniferShare > 0.45;
-    const rawPalette = (stand.tropical
+    const regionalPalette = stand.regionalRender?.palette;
+    const rawPalette = Array.isArray(regionalPalette) && regionalPalette.length >= 3
+        ? regionalPalette
+        : (stand.tropical
         ? ["#2f4c2d", "#3b5d32", "#4c4a2a", "#2a3d26", "#5a5632"]
         : coniferFloor
         ? (turn > 0.5 ? ["#59402a", "#75512f", "#8b6538", "#4d3826", "#6d5a3b"]

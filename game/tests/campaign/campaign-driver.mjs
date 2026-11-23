@@ -24,6 +24,8 @@ import { placeDirectBuilding, canPlaceBuilding, isUnderConstruction, cancelConst
 import { placeRoad } from "../../js/systems/roads.js";
 import { getRoyalHouse, appointRoyalConsort, createRoyalChild } from "../../js/systems/royal-dynasty.js";
 import { addressFactionDemand } from "../../js/systems/court.js";
+import { getResourceNodeAt } from "../../js/systems/resource-geography.js";
+import { REGIONAL_FOREST_TYPE_IDS } from "../../js/world/regional-forests.js";
 
 export const CAMPAIGN_YEAR_DAYS = 400;
 export const CAMPAIGN_SEED = 20261108;
@@ -683,6 +685,30 @@ export function runCampaign({
     };
     const ok = Object.values(requirements).every(Boolean);
 
+    // Forest types are derived, not saved, so this scan is also a proof that
+    // the mature campaign still resolves a type for every woodland tile after
+    // twenty-five years of growth, harvest and succession.
+    const forestCounts = {};
+    let forestTiles = 0, untypedForestTiles = 0;
+    const width = Number(state.worldW) || 0, height = Number(state.worldH) || 0;
+    for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+            const node = getResourceNodeAt(x, y);
+            if (!node?.forestCapacity) continue;
+            forestTiles++;
+            const id = node.forestRegionalType || "untyped";
+            if (id === "untyped") untypedForestTiles++;
+            forestCounts[id] = (forestCounts[id] || 0) + 1;
+        }
+    }
+    const forestTypes = {
+        tiles: forestTiles,
+        untyped: untypedForestTiles,
+        observed: REGIONAL_FOREST_TYPE_IDS.filter(id => forestCounts[id] > 0),
+        missing: REGIONAL_FOREST_TYPE_IDS.filter(id => !forestCounts[id]),
+        counts: forestCounts,
+    };
+
     return {
         ok,
         seed: state.worldSeed,
@@ -699,6 +725,7 @@ export function runCampaign({
         initial: yearly[0],
         yearly,
         diagnostics,
+        forestTypes,
         gameOver: Boolean(state.gameOver),
         ambition: getAmbitionSnapshot(),
         era: eraSnapshot,

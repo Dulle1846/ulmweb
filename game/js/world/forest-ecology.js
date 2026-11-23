@@ -25,6 +25,7 @@ import { SWAMP_GOODS } from './swamp-ecology.js';
 import { MOUNTAIN_GOODS } from './mountain-ecology.js';
 import { VOLCANO_GOODS } from './volcano-ecology.js';
 import { COAST_GOODS } from './coast-ecology.js';
+import { REGIONAL_GOODS, REGIONAL_SPECIES, regionalForestTypeFor } from './regional-forests.js';
 
 const clamp01 = value => Math.max(0, Math.min(1, value));
 const fract = value => value - Math.floor(value);
@@ -256,6 +257,9 @@ export const FOREST_SPECIES = Object.freeze({
     // Savanna species are appended last; existing species lookups and saved
     // formation indices keep their exact meaning.
     ...SAVANNA_SPECIES,
+    // 1.2.23.1 species are appended last so every existing species index and
+    // every saved formation lookup keeps its exact meaning.
+    ...REGIONAL_SPECIES,
 });
 
 export const FOREST_SPECIES_IDS = Object.freeze(Object.keys(FOREST_SPECIES));
@@ -332,6 +336,35 @@ const type = (id, label, note, species, options = {}) => Object.freeze({
     mixturePattern: options.mixturePattern || 'even',
     silviculture: Object.freeze(options.silviculture || []),
 });
+
+// A regional type reuses the shared formation object but supplies its own
+// species palette, goods, fauna and understorey. The merged object is cached by
+// base formation + regional id: a 160x160 world must not allocate a new frozen
+// formation for every forest tile.
+const REGIONAL_FORMATION_CACHE = new Map();
+function regionalFormationFor(baseFormation, regionalType) {
+    const key = baseFormation.id + '|' + regionalType.id;
+    const cached = REGIONAL_FORMATION_CACHE.get(key);
+    if (cached) return cached;
+    const merged = Object.freeze({
+        ...baseFormation,
+        // The regional identity is an overlay, not a replacement. Keeping the
+        // base species mix preserves the existing formation contracts (mixed
+        // woods stay mixed, conifer stands stay coniferous, and old saves keep
+        // their exact composition). Regional timber, fauna and undergrowth are
+        // additive, while the renderer carries the regional palette and crown.
+        note: baseFormation.note,
+        species: baseFormation.species,
+        goods: Object.freeze([...new Set([...baseFormation.goods, ...regionalType.goods])]),
+        fauna: Object.freeze([...new Set([...baseFormation.fauna, ...regionalType.fauna])]),
+        understory: Object.freeze({ ...baseFormation.understory, ...(regionalType.understory || {}) }),
+        density: baseFormation.density,
+        productivity: baseFormation.productivity,
+        regionalType,
+    });
+    REGIONAL_FORMATION_CACHE.set(key, merged);
+    return merged;
+}
 
 // Formations are the ecological vocabulary; individual tiles then vary the
 // mix, age and density without turning a formation into a single repeated tile.
@@ -658,6 +691,7 @@ export const FOREST_GOODS = Object.freeze({
     // available everywhere. Existing temperate entries below keep their own
     // label, category and identity when an id is shared (fish, salt, reed).
     ...COAST_GOODS,
+    ...REGIONAL_GOODS,
     timber: Object.freeze({ id: 'timber', label: 'Timber', category: 'wood' }),
     'oak-timber': Object.freeze({ id: 'oak-timber', label: 'Oak timber', category: 'wood' }),
     'beech-timber': Object.freeze({ id: 'beech-timber', label: 'Beech timber', category: 'wood' }),
@@ -1104,8 +1138,17 @@ export function forestStandAt(x, y, context = {}) {
         : 0;
     const edge = forest && (forestPressure < 0.28 || clearing > 0.22);
 
-    let formation = FOREST_TYPES[formationFor(tx, ty, { moisture, temperature, height, seed, climate })];
-    const baseFormation = formation;
+    const baseFormation = FOREST_TYPES[formationFor(tx, ty, { moisture, temperature, height, seed, climate })];
+    // The regional layer is selected from the same site factors as the base
+    // formation and attached before disturbance/age are applied. A forest tile
+    // therefore always has exactly one regional type, even when its visible
+    // formation is a burn scar or a windthrow gap.
+    const regionalType = forest ? regionalForestTypeFor({
+        x: tx, y: ty, seed, moisture, temperature, height, climate,
+        baseFormation: baseFormation.id, stockRatio,
+    }) : null;
+    const climaxFormation = regionalType ? regionalFormationFor(baseFormation, regionalType) : baseFormation;
+    let formation = climaxFormation;
     let disturbance = formation.disturbance;
 
     const damage = coarseUnit(seed, tx, ty, 7, 0x44414d47);
@@ -1183,7 +1226,7 @@ export function forestStandAt(x, y, context = {}) {
             } else {
                 // A recovered site must not fall back to the base hash's
                 // disturbance; it returns to the undisturbed formation.
-                formation = baseFormation;
+                formation = climaxFormation;
                 disturbance = null;
             }
             forcedAgeClass = stage.ageClass;
@@ -1317,6 +1360,7 @@ export function forestStandAt(x, y, context = {}) {
     // moisture, heat, litter and stocking inputs. They add no per-tick state.
     const fireRisk = clamp01((1 - moisture) * 0.46 + Math.max(0, temperature - 0.48) * 0.48
         + coniferShare * 0.14 + needles * 0.12
+        + (regionalType?.effects.fire || 0)
         + (disturbance === 'drought-stressed' ? 0.18 : 0)
         + (disturbance === 'bark-beetle' ? 0.1 : 0));
     const pestRisk = clamp01(coniferShare * 0.34 + (1 - stockRatio) * 0.2
@@ -1476,8 +1520,9 @@ export function forestStandAt(x, y, context = {}) {
         food: foodPlants.length,
         deadwood,
         edge: ecotone,
-        score: clamp01(formation.fauna.length / 10 * 0.34 + speciesDiversity * 0.24
-            + structure.deadwood * 0.16 + (ecotone ? 0.1 : 0) + foodPlants.length / 8 * 0.16),
+        score: clamp01((formation.fauna.length / 10 * 0.34 + speciesDiversity * 0.24
+            + structure.deadwood * 0.16 + (ecotone ? 0.1 : 0) + foodPlants.length / 8 * 0.16)
+            * (regionalType?.effects.fauna || 1)),
     };
     const derived = formationDerived(formation, meta, ageClass, disturbance);
     const { silviculture, woodQuality } = derived;
@@ -1516,6 +1561,14 @@ export function forestStandAt(x, y, context = {}) {
         x: tx, y: ty, seed,
         forest,
         type: formation.id,
+        regionalType,
+        regionalTypeId: regionalType?.id || null,
+        regionalLabel: regionalType?.label || null,
+        regionalShortLabel: regionalType?.short || null,
+        regionalProfile: regionalType?.profile || null,
+        regionalEffects: regionalType?.effects || null,
+        regionalRender: regionalType?.render || null,
+        regionalSilhouette: regionalType?.render?.silhouette || null,
         label: succession?.label || standLabel,
         subtype: lindenElm,
         note: formation.note,
@@ -1756,13 +1809,14 @@ export function forestRegrowthFactor(stand) {
     // derived habitat pressure, so no new per-tile state or save field is
     // needed; a stand without a browser remains at the old compaction curve.
     const base = Math.max(0.3, (1 - compaction * 0.65) * (1 - browsing * 0.22));
+    const regional = Math.max(0.25, Math.min(1.45, Number(stand.regionalEffects?.regrowth) || 1));
     if (stand.tropical) {
         const tropical = stand.tropical;
-        return Math.max(0.3, Math.min(1.25, base
+        return Math.max(0.3, Math.min(1.45, base * regional
             * (0.82 + (Number(tropical.regrowth) || 0) * 0.24
                 - (Number(tropical.clearance) || 0) * 0.18)));
     }
-    return base;
+    return Math.min(1.45, base * regional);
 }
 
 function pickWeightedSpecies(entries, roll) {
@@ -1823,12 +1877,13 @@ export function forestTreeForm(stand, roll = 0.5) {
     const layer = layers.length
         ? layers[Math.min(layers.length - 1, Math.floor(fract(seed * 11.7) * layers.length))]
         : null;
+    const render = stand.regionalRender || {};
     return {
         ageClass,
         ageScale,
-        heightScale: 0.82 + fract(seed * 13.17) * 0.34,
-        trunkScale: 0.84 + fract(seed * 7.73) * 0.34,
-        crownScale: 0.84 + fract(seed * 9.41) * 0.34,
+        heightScale: (0.82 + fract(seed * 13.17) * 0.34) * (Number(render.height) || 1),
+        trunkScale: (0.84 + fract(seed * 7.73) * 0.34) * (Number(render.trunk) || 1),
+        crownScale: (0.84 + fract(seed * 9.41) * 0.34) * (Number(render.canopy) || 1),
         lean: (fract(seed * 5.37) - 0.5) * 2.6,
         // The data-driven layer gives every tree a readable canopy position
         // without adding a second per-tree height model.
@@ -1850,7 +1905,8 @@ export function forestGoodsFor(stand, dayOfYear, climate = 'temperate') {
         const base = category === 'wood'
             ? (id === 'timber' ? 0.9 : id === 'firewood' ? 0.82 : id === 'charcoal' ? 0.55 : 0.68)
             : 0.2;
-        const abundance = clamp01((seasonal[id] ?? base) * (0.7 + stand.productivity * 0.3));
+        const abundance = clamp01((seasonal[id] ?? base) * (0.7 + stand.productivity * 0.3)
+            * (Number(stand.regionalEffects?.forage) || 1));
         if (abundance > 0.08) goods.push({ ...FOREST_GOODS[id], abundance });
     }
     // Jungle resource pockets are real, but scattered. Add only the goods

@@ -67,6 +67,7 @@ try {
                 final: result.final,
                 yearly: result.yearly,
                 diagnostics: result.diagnostics,
+                forestTypes: result.forestTypes,
                 gameOver: result.gameOver,
                 ambition: result.ambition,
                 era: result.era,
@@ -93,6 +94,12 @@ try {
                     built: result.final.built,
                     eventsResolved: result.final.eventsResolved
                 },
+                forestTypes: result.forestTypes ? {
+                    tiles: result.forestTypes.tiles,
+                    untyped: result.forestTypes.untyped,
+                    observed: result.forestTypes.observed,
+                    missing: result.forestTypes.missing
+                } : null,
                 fuelBackfill: fuel ? {
                     orders: fuel.orders,
                     phases: fuel.phases,

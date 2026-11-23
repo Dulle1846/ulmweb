@@ -71,6 +71,9 @@ function forestVisualBucket(stock,capacity){
     const ratio=clamp(Number(stock)/cap,0,1);
     return ratio<=0?0:1+Math.ceil(ratio*10);
 }
+function regionalWoodGain(stand){
+    return Math.max(0.45,Math.min(1.5,Number(stand?.regionalEffects?.timber)||1));
+}
 function noteForestVisualChange(before,capacity,after){
     if(forestVisualBucket(before,capacity)===forestVisualBucket(after,capacity))return;
     state.forestVisualRevision=(Number(state.forestVisualRevision)||0)+1;
@@ -140,7 +143,12 @@ export function generateResourceGeography(seed=state.worldSeed){
             // ordinary forest line: a new snow realm needs fuel within reach
             // of its first sawmill, not only on distant high ground.
             const snowBelt=climate==="snow"&&h>=sea+0.006;
-            if((h>=forestLine||savannaBelt||swampBelt||mountainBelt||coastalBelt||snowBelt)&&h<BIOME.ROCK){
+            // Tropical mangrove and floodplain woodland begin at the shore,
+            // below the ordinary forest line. Without this belt a tropical
+            // realm had no harvestable mangrove at all, even though its
+            // coastal ecology renders the tidal fringe.
+            const tropicalMangroveBelt=climate==="tropical"&&h>=sea+0.004&&h<forestLine&&moisture>=0.58;
+            if((h>=forestLine||savannaBelt||swampBelt||mountainBelt||coastalBelt||snowBelt||tropicalMangroveBelt)&&h<BIOME.ROCK){
                 const density=climate==="savanna"
                     ?clamp((h-sea)/Math.max(0.001,BIOME.ROCK-sea),0,1)
                     :clamp((h-forestLine)/Math.max(0.001,BIOME.ROCK-forestLine),0,1);
@@ -157,7 +165,7 @@ export function generateResourceGeography(seed=state.worldSeed){
                             stockRatio:1, rockLine:BIOME.ROCK,
                         });
                         if(stand.forest){
-                            const capacity=Math.max(12,Math.min(120,Math.round(24+moisture*42+density*26+unitHash(worldSeed,index,0x53574350)*24)));
+                            const capacity=Math.max(12,Math.min(120,Math.round((24+moisture*42+density*26+unitHash(worldSeed,index,0x53574350)*24)*regionalWoodGain(stand))));
                             forestCapacity[index]=capacity;
                             forestStock[index]=capacity;
                             forestKind[index]=forestTypeIndex("swamp-carr");
@@ -176,7 +184,7 @@ export function generateResourceGeography(seed=state.worldSeed){
                             stockRatio:1, rockLine:BIOME.ROCK,
                         });
                         if(stand.forest){
-                            const capacity=Math.max(20,Math.min(90,Math.round(34+density*30+moisture*22+unitHash(worldSeed,index,0x53415652)*22)));
+                            const capacity=Math.max(20,Math.min(90,Math.round((34+density*30+moisture*22+unitHash(worldSeed,index,0x53415652)*22)*regionalWoodGain(stand))));
                             forestCapacity[index]=capacity;
                             forestStock[index]=capacity;
                             forestKind[index]=forestTypeIndex("savanna-woodland");
@@ -196,7 +204,7 @@ export function generateResourceGeography(seed=state.worldSeed){
                             stockRatio:1, rockLine:BIOME.ROCK,
                         });
                         if(stand.forest){
-                            const capacity=Math.max(4,Math.min(36,Math.round(8+density*12+moisture*8+unitHash(worldSeed,index,0x54534352)*10)));
+                            const capacity=Math.max(4,Math.min(36,Math.round((8+density*12+moisture*8+unitHash(worldSeed,index,0x54534352)*10)*regionalWoodGain(stand))));
                             forestCapacity[index]=capacity;
                             forestStock[index]=capacity;
                             // The renderer and survey must agree: tundra scrub is
@@ -219,7 +227,7 @@ export function generateResourceGeography(seed=state.worldSeed){
                             stockRatio:1, rockLine:BIOME.ROCK,
                         });
                         if(stand.forest){
-                            const capacity=Math.max(18,Math.min(160,Math.round(30+density*42+moisture*34+unitHash(worldSeed,index,0x434f4350)*26)));
+                            const capacity=Math.max(18,Math.min(160,Math.round((30+density*42+moisture*34+unitHash(worldSeed,index,0x434f4350)*26)*regionalWoodGain(stand))));
                             forestCapacity[index]=capacity;
                             forestStock[index]=capacity;
                             forestKind[index]=forestTypeIndex(stand.type);
@@ -239,7 +247,7 @@ export function generateResourceGeography(seed=state.worldSeed){
                             stockRatio:1, rockLine:BIOME.ROCK,
                         });
                         if(stand.forest){
-                            const capacity=Math.max(8,Math.min(80,Math.round(16+density*24+moisture*22+unitHash(worldSeed,index,0x534e4f58)*18)));
+                            const capacity=Math.max(8,Math.min(80,Math.round((16+density*24+moisture*22+unitHash(worldSeed,index,0x534e4f58)*18)*regionalWoodGain(stand))));
                             forestCapacity[index]=capacity;
                             forestStock[index]=capacity;
                             forestKind[index]=forestTypeIndex("subalpine-scrub");
@@ -257,7 +265,26 @@ export function generateResourceGeography(seed=state.worldSeed){
                             stockRatio:1, rockLine:BIOME.ROCK,
                         });
                         if(stand.forest){
-                            const capacity=Math.max(8,Math.min(160,Math.round(18+density*54+moisture*32+unitHash(worldSeed,index,0x4d544e50)*28)));
+                            const capacity=Math.max(8,Math.min(160,Math.round((18+density*54+moisture*32+unitHash(worldSeed,index,0x4d544e50)*28)*regionalWoodGain(stand))));
+                            forestCapacity[index]=capacity;
+                            forestStock[index]=capacity;
+                            forestKind[index]=forestTypeIndex(stand.type);
+                            forestAge[index]=stand.ageClass==="ancient"?3:stand.ageClass==="young"?1:2;
+                        }
+                    }
+                }else if(climate==="tropical"&&h<forestLine){
+                    // Low, wet tropical ground is mangrove, palm and floodplain
+                    // woodland. Keep it patchy so the tidal fringe and the open
+                    // delta remain visible, but make the timber real.
+                    const presence=0.32+moisture*0.34+resourceBias;
+                    if(unitHash(worldSeed,index,0x4d414e47)<presence){
+                        const stand=forestStandAt(x+0.5,y+0.5,{
+                            seed:worldSeed, moisture, temperature, height:h,
+                            climate, forests:state.worldOptions?.forests??52,
+                            stockRatio:1, rockLine:BIOME.ROCK,
+                        });
+                        if(stand.forest){
+                            const capacity=Math.max(18,Math.min(150,Math.round((28+moisture*50+unitHash(worldSeed,index,0x4d414e48)*34)*regionalWoodGain(stand))));
                             forestCapacity[index]=capacity;
                             forestStock[index]=capacity;
                             forestKind[index]=forestTypeIndex(stand.type);
@@ -274,7 +301,7 @@ export function generateResourceGeography(seed=state.worldSeed){
                         });
                         if(stand.forest){
                             const base=35+density*85+moisture*55+unitHash(worldSeed,index,0x46434150)*45;
-                            const capacity=Math.max(1,Math.min(65535,Math.round(base*(0.68+stand.productivity*0.6))));
+                            const capacity=Math.max(1,Math.min(65535,Math.round(base*(0.68+stand.productivity*0.6)*regionalWoodGain(stand))));
                             forestCapacity[index]=capacity;
                             forestStock[index]=capacity;
                             forestKind[index]=forestTypeIndex(stand.type);
@@ -738,20 +765,27 @@ export function getResourceNodeAt(x,y){
         deadwood=Number(stand.deadwood)||0;treeline=Boolean(stand.treeline);
         // Snow and dense cover slow actual forest work: the same derived value
         // is used by gathering and shown in the forester/lumber survey.
-        workFactor=clamp(1-snow.depth*0.38-(1-visibility)*0.12-(Number(stand.tropical?.hazard?.workPenalty)||0)*0.55
-            -(Number(stand.jungle?.hazards?.workPenalty)||0)*0.22,0.3,1);
+        workFactor=clamp((1-snow.depth*0.38-(1-visibility)*0.12-(Number(stand.tropical?.hazard?.workPenalty)||0)*0.55
+            -(Number(stand.jungle?.hazards?.workPenalty)||0)*0.22)*(Number(stand.regionalEffects?.work)||1),0.25,1);
     }
     return {
         x:point.x,y:point.y,
         forestStock:geo.forestStock[i],forestCapacity:geo.forestCapacity[i],
         forestStand,forestStandSeed:geo.seed,
         forestType,forestTypeLabel:tundraScrub?"Subalpine Scrub":savannaWoodland?"Savanna Woodland":(succession?.label||forestDefinition?.label||null),
+        forestRegionalType:forestStand?.regionalTypeId||null,
+        forestRegionalLabel:forestStand?.regionalLabel||null,
+        forestRegionalShortLabel:forestStand?.regionalShortLabel||null,
+        forestRegionalProfile:forestStand?.regionalProfile||null,
+        forestRegionalEffects:forestStand?.regionalEffects||null,
+        forestRegionalRender:forestStand?.regionalRender||null,
+        forestRegionalSilhouette:forestStand?.regionalSilhouette||null,
         forestSuccession:succession,forestDisturbance:succession&&!succession.recovered?succession.kind:null,
         forestSuccessionStage:succession?.stage||null,forestSuccessionAge:succession?.age??null,
         forestAge:forestAgeIndex?["young","mature","ancient"][forestAgeIndex-1]||null:null,
         forestSpecies:forestDefinition?Object.keys(forestDefinition.species):[],
         forestGoods:forestStand?[...forestStand.goods]:forestDefinition?[...new Set([...forestDefinition.goods,"timber","firewood"])]:[],
-        forestFauna:forestDefinition?[...forestDefinition.fauna]:[],
+        forestFauna:forestStand?[...forestStand.fauna]:forestDefinition?[...forestDefinition.fauna]:[],
         forestSnowDepth:snowDepth,forestSnowDepthCm:snowDepthCm,
         forestExposure:exposure,forestFireRisk:fireRisk,forestPestRisk:pestRisk,forestMonoculture:monoculture,
         forestVisibility:visibility,forestSightStrength:sightStrength,forestWorkFactor:workFactor,
