@@ -2,9 +2,9 @@
   "version": 2,
   "generatedBy": "scripts/spec-audit.mjs",
   "scope": "All numbered 1.1 and 1.2.1–1.2.18 requirements, plus the documented 2.x phases and 3.3–4.0 roadmap points.",
-  "commit": "7bc5dd2e00b8d571a068c9bf139e1b4a26a85e40",
+  "commit": "c77cad3540dcb86325d0cbcfec492e858c10924e",
   "sourceHash": "ae9d181fdffc3724d468a9289e5f6fa9c45aee93ff4f31a5b68ab74dfaf49249",
-  "generatedAt": "2026-11-23T16:48:46+00:00",
+  "generatedAt": "2026-11-23T17:51:55+00:00",
   "totals": {
     "total": 1618,
     "implemented": 1616,

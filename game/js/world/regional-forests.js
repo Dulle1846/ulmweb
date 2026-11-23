@@ -317,7 +317,7 @@ export const REGIONAL_FOREST_TYPES = Object.freeze([
         profile: 'Lichte Kiefern und Birken auf armen Sandböden, mit Heidekraut, Flechten und offenen Rohböden.',
         climates: ['temperate', 'taiga', 'snow'], formations: ['pine-heath', 'pinewood', 'birchwood', 'mixed-open', 'taiga-pine'],
         temp: [0.30, 0.60], moisture: [0.28, 0.58], height: [0, 0.72], priority: 4,
-        timber: 0.78, effects: { timber: 0.78, regrowth: 1.16, fire: 0.08, fauna: 1.0, forage: 1.12, work: 1.06 },
+        timber: 0.86, effects: { timber: 0.86, regrowth: 1.16, fire: 0.08, fauna: 1.0, forage: 1.12, work: 1.06 },
         species: { pine: 0.5, birch: 0.24, juniper: 0.1, oak: 0.06, rowan: 0.1 },
         goods: ['pine-cones', 'birch-sap', 'blueberries', 'lingonberries', 'lichen', 'mushrooms', 'timber', 'firewood'],
         fauna: ['capercaillie', 'hare', 'fox', 'squirrel', 'ant', 'bark-beetle', 'butterfly'],

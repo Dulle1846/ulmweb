@@ -1106,7 +1106,7 @@ Die folgenden Tabellen werden aus `REGIONAL_FOREST_TYPES` erzeugt und geben den 
 | 008 | Auenwald | 94% | 96% | -3% | 114% | 112% | 88% | +70% | willow-withies, herbs, mushrooms, honey, game, river-fish, timber, firewood |
 | 009 | Bruchwald | 86% | 82% | -5% | 116% | 100% | 82% | +85% | alder-timber, willow-withies, sphagnum, bog-herb, game, firewood, timber |
 | 010 | Moorwald | 62% | 42% | +6% | 112% | 106% | 74% | +90% | pine-cones, blueberries, lingonberries, cloudberry, sphagnum, peat, timber, firewood |
-| 011 | Kiefern-Birkenwald | 78% | 116% | +8% | 100% | 112% | 106% | +0% | pine-cones, birch-sap, blueberries, lingonberries, lichen, mushrooms, timber, firewood |
+| 011 | Kiefern-Birkenwald | 86% | 116% | +8% | 100% | 112% | 106% | +0% | pine-cones, birch-sap, blueberries, lingonberries, lichen, mushrooms, timber, firewood |
 | 012 | Fichten-Tannenwald | 118% | 78% | -1% | 98% | 94% | 88% | +0% | spruce-cones, fir-cones, resin, mushrooms, lichen, game, timber, firewood |
 | 013 | Lärchenwald | 98% | 104% | +4% | 98% | 108% | 104% | +0% | larch-timber, larch-cones, resin, mushrooms, blueberries, herbs, timber, firewood |
 | 014 | Bergmischwald | 110% | 92% | -2% | 110% | 104% | 94% | +0% | mushrooms, herbs, game, rowan-berries, resin, timber, firewood |
