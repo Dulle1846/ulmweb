@@ -240,6 +240,7 @@ test("07 an unreachable store is not bound to a job and accepts the order after 
     state.buildingCollisionVersion = (state.buildingCollisionVersion || 0) + 1;
     const job = requestHaul(source, "logs", 5);
     assert.ok(job, "a reachable store must accept the order once the route exists");
+    assert.equal(state.city.logistics.lastRejection, null, "an accepted order for the blocked good must clear the stale rejection");
     advance(200);
     assert.equal(job.status, "done");
     assert.equal(warehouseStock(warehouse, "logs"), 5);

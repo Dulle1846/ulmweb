@@ -107,7 +107,9 @@ mutations are therefore limited to the small number of explicitly booked sinks.
 
 `makeJob()` creates a job only if fewer than `MAX_LOGISTICS_JOBS = 72` jobs are
 active. A rejected order sets `lastRejection` (`reason`, `kind`, `good`, `tick`)
-and increments `stats.queueRejected` — the queue no longer fails silently.
+and increments `stats.queueRejected` — the queue no longer fails silently. The
+first later job accepted for the same good clears that warning, so the panel
+describes a live blockage rather than a historical one.
 
 Job lifecycle: `pending` → `assigned` → `done`, with `blocked` for retryable
 failures and `cancelled` for permanent ones. Source and destination

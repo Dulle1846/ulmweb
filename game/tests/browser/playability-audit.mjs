@@ -60,7 +60,7 @@ await page.waitForTimeout(100);
 
 const started = Date.now();
 const report = await page.evaluate(async ({ticks}) => {
-    const [{state}, {updateSimulation}, {updateLogisticsMovement, getLogisticsSnapshot, getWarehouseSnapshot}, {resolveEventChoice}, {getAmbitionSnapshot}, {updateServices}, {TYPE}] = await Promise.all([
+    const [{state}, {updateSimulation, setAnnualMaintenanceSlicing}, {updateLogisticsMovement, getLogisticsSnapshot, getWarehouseSnapshot}, {resolveEventChoice}, {getAmbitionSnapshot}, {updateServices}, {TYPE}] = await Promise.all([
         import("./js/core/state.js"),
         import("./js/simulation/simulation.js"),
         import("./js/systems/logistics.js"),
@@ -100,6 +100,11 @@ const report = await page.evaluate(async ({ticks}) => {
         };
     }
 
+    // Direct callers advance whole deterministic days; the presented loop is
+    // the only caller that splits a day across frames. Without this, 1200
+    // calls would simulate only 150 days and the audit would report a healthy
+    // realm as stalled.
+    setAnnualMaintenanceSlicing(false);
     state.isPaused = false;
     const marks = [];
     for (let index = 0; index < ticks; index++) {
@@ -112,6 +117,7 @@ const report = await page.evaluate(async ({ticks}) => {
         if (state.gameOver) break;
     }
     state.isPaused = true;
+    setAnnualMaintenanceSlicing(true);
     updateServices();
     const milestones = state.eventLog
         .filter(entry => entry.kind === "milestone")

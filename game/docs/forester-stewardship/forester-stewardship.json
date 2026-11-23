@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-11-11T16:17:27.367Z",
-  "baseUrl": "http://127.0.0.1:8792",
+  "generatedAt": "2026-11-23T15:16:31.991Z",
+  "baseUrl": "http://127.0.0.1:3000",
   "seed": 20261108,
   "world": [
     176,
@@ -10,7 +10,7 @@
     "x": 107,
     "y": 87
   },
-  "foresterId": "ec29kk-1g",
+  "foresterId": "ec29kk-1l",
   "targets": [
     {
       "x": 106,
@@ -30,7 +30,7 @@
   ],
   "targetCapacity": 291,
   "planting": {
-    "tick": 3,
+    "tick": 63,
     "workerCount": 2,
     "reason": "Planting saplings",
     "range": {
@@ -69,11 +69,11 @@
       "restorable": 3,
       "status": "Planting saplings"
     },
-    "text": "Forester's Lodge ec29kk-1g · 107, 87 100% condition Forester's Lodge FOREST STEWARDSHIP · 5-TILE RANGE 4,849 / 5,138 94% RESTORABLE STANDS 3 STATUS Planting saplings Footprint 1.4 × 1.2 tiles Health 105 / 105 Construction COMPLETE · 100% Staff 2 / 1 Workforce efficiency 99% Recorded card cost No catalogued material cost Local store Empty Active haul No active haul Supply / service Output store is full Site data Forest stock at site tile: 143 / 143 · Oak–Beech–Spruce Wood · mature · oak, beech, spruce, birch · Snow depth: 41 cm · Exposure: 22% · Fire risk: 35% · Pest risk: 8% · Monoculture: 0% · Work: 83% · Visibility: 53% · Sight: 6 tiles · Diversity: 78% · Mix: Oak · Beech · Spruce · Birch · Pattern: grouped · Layers: Emergent crowns, Main canopy, Understorey and saplings · Broadleaf/conifer: 80/20 · Understorey: Fern layer · Silviculture: timber, firewood, charcoal, hunting · Wind exposure: 16% · Wetness: 2% · Deadwood: 0% · Browse: 58% · Predators: 8% · Wildlife: Red deer · Roe deer · Wild boar · Forest products: none gathered yet GATHER FOREST PRODUCTS DELIVER FOREST GOODS PROCESS FOREST HUNT SUPPRESS FOREST DISTURBANCE",
+    "text": "Forester's Lodge ec29kk-1l · 107, 87 100% condition Forester's Lodge FOREST STEWARDSHIP · 5-TILE RANGE 4,849 / 5,138 94% RESTORABLE STANDS 3 STATUS Planting saplings Footprint 1.4 × 1.2 tiles Health 105 / 105 Construction COMPLETE · 100% Staff 2 / 1 Workforce efficiency 91% Recorded card cost No catalogued material cost Local store Empty Active haul No active haul Supply / service Output store is full Site data Forest stock at site tile: 143 / 143 · Oak–Beech–Spruce Wood · mature · oak, beech, spruce, birch · Snow depth: 0 cm · Exposure: 22% · Fire risk: 35% · Pest risk: 8% · Monoculture: 0% · Work: 94% · Visibility: 53% · Sight: 6 tiles · Diversity: 78% · Mix: Oak · Beech · Spruce · Birch · Pattern: grouped · Layers: Emergent crowns, Main canopy, Understorey and saplings · Broadleaf/conifer: 80/20 · Understorey: Fern layer · Silviculture: timber, firewood, charcoal, hunting · Wind exposure: 16% · Wetness: 2% · Deadwood: 0% · Browse: 58% · Predators: 8% · Wildlife: Red deer · Roe deer · Wild boar · Forest products: none gathered yet GATHER FOREST PRODUCTS DELIVER FOREST GOODS PROCESS FOREST HUNT SUPPRESS FOREST DISTURBANCE",
     "blockText": "FOREST STEWARDSHIP · 5-TILE RANGE 4,849 / 5,138 94% RESTORABLE STANDS 3 STATUS Planting saplings"
   },
   "progress": {
-    "tick": 11,
+    "tick": 71,
     "reason": "Planting saplings",
     "range": {
       "radius": 5,
@@ -111,13 +111,13 @@
       "restorable": 3,
       "status": "Planting saplings"
     },
-    "visualRevision": 6,
-    "cacheMisses": 5
+    "visualRevision": 7,
+    "cacheMisses": 2
   },
   "grown": {
-    "tick": 156,
+    "tick": 216,
     "year": 1,
-    "dayOfYear": 156,
+    "dayOfYear": 216,
     "reason": "Forest is fully grown",
     "productionReason": "Forest is fully grown",
     "range": {
@@ -158,20 +158,20 @@
     },
     "blockText": "FOREST STEWARDSHIP · 5-TILE RANGE 5,138 / 5,138 100% RESTORABLE STANDS 0 STATUS Forest is fully grown",
     "visualRevision": 35,
-    "cacheMisses": 8,
-    "totalPlanted": 289
+    "cacheMisses": 4,
+    "totalPlanted": 278
   },
   "renderer": "canvas",
   "hashes": {
     "cutover": {
       "terrain": {
-        "hash": "5bac5dc0",
+        "hash": "100b4a61",
         "samples": 18041,
         "width": 1152,
         "height": 830
       },
       "interactive": {
-        "hash": "3dbdac6f",
+        "hash": "a10e3b9e",
         "samples": 18041,
         "width": 1152,
         "height": 830
@@ -179,13 +179,13 @@
     },
     "progress": {
       "terrain": {
-        "hash": "34687bc0",
+        "hash": "9878124b",
         "samples": 18041,
         "width": 1152,
         "height": 830
       },
       "interactive": {
-        "hash": "0a17114e",
+        "hash": "dc2d6526",
         "samples": 18041,
         "width": 1152,
         "height": 830
@@ -193,13 +193,13 @@
     },
     "grown": {
       "terrain": {
-        "hash": "13da527a",
+        "hash": "c59510fc",
         "samples": 18041,
         "width": 1152,
         "height": 830
       },
       "interactive": {
-        "hash": "0b99d5fe",
+        "hash": "1fdc21bf",
         "samples": 18041,
         "width": 1152,
         "height": 830

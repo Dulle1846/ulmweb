@@ -402,11 +402,15 @@ function compareEventLogs(before, after) {
 async function advanceYears(years) {
     const started = Date.now();
     const result = await page.evaluate(async ({ ticks }) => {
-        const [{ state }, { updateSimulation }, { updateLogisticsMovement }] = await Promise.all([
+        const [{ state }, { updateSimulation, setAnnualMaintenanceSlicing }, { updateLogisticsMovement }] = await Promise.all([
             import("./js/core/state.js"),
             import("./js/simulation/simulation.js"),
             import("./js/systems/logistics.js")
         ]);
+        // This path is a headless clock, not the presented loop: every call must
+        // advance a complete deterministic day. Otherwise 400 calls per year
+        // only advance 50 days and a 100-year journey silently stops early.
+        setAnnualMaintenanceSlicing(false);
         state.isPaused = false;
         const start = performance.now();
         for (let index = 0; index < ticks; index++) {
@@ -414,6 +418,7 @@ async function advanceYears(years) {
             for (let slice = 0; slice < 4; slice++) updateLogisticsMovement(0.1875);
         }
         state.isPaused = true;
+        setAnnualMaintenanceSlicing(true);
         return {
             year: state.year,
             tick: state.tick,

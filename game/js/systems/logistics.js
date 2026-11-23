@@ -649,6 +649,11 @@ function makeJob(kind, good, quantity, from, to, extra = {}) {
         ...extra
     };
     city.logistics.jobs.push(job);
+    // A rejection is a live warning, not a permanent scar. The first accepted
+    // order for that good proves the blockage cleared; keeping the old tick in
+    // the building register made a year-one shortage look like a current fault
+    // centuries later.
+    if (city.logistics.lastRejection?.good === good) city.logistics.lastRejection = null;
     appendLedger({ type: "reserved", good, quantity: job.quantity, from, to, cause: "job-created", jobId: id });
     trimJobs();
     return job;

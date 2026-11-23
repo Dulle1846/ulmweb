@@ -522,9 +522,11 @@ try {
     let eventCount = report.event ? 1 : 0;
 
     // 1200 ticks = three completed years. At 4x this is 225 seconds of game
-    // clock; 10-second chunks keep event handling and year-boundary capture exact.
+    // clock; the daily-slicing frames and event modals add real time, so the
+    // 480-second budget leaves headroom without reducing the required years.
+    // 10-second chunks keep event handling and year-boundary capture exact.
     // The run then continues from the recovered state to Year 6.
-    for (let chunk = 0; chunk < 28 && last.year < 4; chunk++) {
+    for (let chunk = 0; chunk < 48 && last.year < 4; chunk++) {
         const advanced = await advance(10000);
         if (advanced.event) eventCount++;
         last = advanced.snapshot;

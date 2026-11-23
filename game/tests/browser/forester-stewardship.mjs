@@ -53,16 +53,18 @@ async function dismissBlockingMessage(){
 
 async function advanceTicks(count){
     await page.evaluate(async ticks=>{
-        const [{state},{updateSimulation}]=await Promise.all([
+        const [{state},{updateSimulation,setAnnualMaintenanceSlicing}]=await Promise.all([
             import("./js/core/state.js"),
             import("./js/simulation/simulation.js")
         ]);
+        setAnnualMaintenanceSlicing(false);
         state.isPaused=false;
         for(let index=0;index<ticks;index++){
             updateSimulation();
             if(state.gameOver)break;
         }
         state.isPaused=true;
+        setAnnualMaintenanceSlicing(true);
     },count);
     await page.waitForTimeout(180);
     await dismissBlockingMessage();
