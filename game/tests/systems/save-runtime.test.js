@@ -55,7 +55,7 @@ function initializeAuditRealm() {
     state.legacy = createLegacyState({ foundedYear: 1 });
 }
 
-test("a mature realm survives an exact save/load round-trip through schema 8 and 9 into schema 13", () => {
+test("a mature realm survives an exact save/load round-trip through schema 8 and 9 into schema 14", () => {
     const previousDocument = globalThis.document;
     globalThis.document = { createElement: () => makeCanvas() };
     try {
@@ -75,7 +75,7 @@ test("a mature realm survives an exact save/load round-trip through schema 8 and
             state.worldW = 160;
             state.worldH = 160;
             const prepared = prepareSaveSnapshot(legacy);
-            assert.equal(prepared.saveSchemaVersion, 13, "the load path must migrate to the current schema");
+            assert.equal(prepared.saveSchemaVersion, 14, "the load path must migrate to the current schema");
 
             resetState();
             state.activeProfileId = "save-runtime-test";

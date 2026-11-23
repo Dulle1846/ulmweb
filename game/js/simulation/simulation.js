@@ -62,6 +62,7 @@ import { isEndlessEnabled, recoverEndlessMorale, updateEndlessRealm, updateEndle
 import { updateSpecialBiomes } from "../systems/special-biome-state.js";
 import { updateRoadWear } from "../systems/roads.js";
 import { updateSettlementMaintenance } from "../systems/settlement-owners.js";
+import { updateScenario } from "../systems/scenario.js";
 
 // The annual rollover is deep but its systems are independent in strict order.
 // Headless callers run all of them in one call; the presented game loop runs
@@ -415,6 +416,9 @@ function finishDailyRealm() {
     // setback in an endless realm rather than a terminal game-over.
     updateEndlessRealm();
     updateEndlessRelief();
+    // Authored scenarios evaluate one objective once per calendar day. This is
+    // a bounded read of the named system's value, not a second simulation pass.
+    updateScenario();
     // Rare-biome discovery is checked every 200 ticks; yields and hazards
     // settle once per year. The call itself is a couple of integer reads.
     updateSpecialBiomes();

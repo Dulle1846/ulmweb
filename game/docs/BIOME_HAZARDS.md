@@ -23,7 +23,8 @@ real `renderHazardPanel()` output is inserted into a browser DOM, and the row
 must carry its `data-hazard-surface` spec and live `data-hazard-value`. The
 proof then hides exactly that surface and requires the other rendered rows to
 remain. Both seams start empty in production and are never saved, so live
-determinism and save schema 13 are unchanged.
+determinism and the hazard block's save shape are unchanged. (The later
+scenario layer adds save schema 14 without touching this block.)
 
 **Active/passive split:** **102 active, 0 passive.** No 1.2.20 row is a
 flavour-only label. A row that is deliberately passive in a future release must
@@ -363,8 +364,9 @@ change. A saved realm with no rolled hazard loads with an exactly neutral
 modifier block, even if a build before the modifiers had consumers left values
 from the standing regional bundle in the save.
 
-The 3.37 response layer stores `response`, `partners` and `scars` inside the
-same object, so no schema bump is needed. Old disease records load contained
+Save schema 14 later adds the scenario block beside this one; the hazard state
+and its migration path are untouched. The 3.37 response layer stores `response`,
+`partners` and `scars` inside the same object, so no schema bump was needed. Old disease records load contained
 (`active: false`) and old rare records are migrated into a chain rather than
 remaining inert. The map overlay flag is presentation-only and intentionally
 not saved.

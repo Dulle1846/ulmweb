@@ -65,9 +65,31 @@ import { initializeWinterForRealm, refreshWinterSnapshot } from "../world/winter
 import { createEndlessState } from "../systems/endless.js";
 import { setupWinterHud } from "../presentation/winter-panel.js";
 import { buildRandomStart } from "./start-randomizer.js";
+import { SCENARIO_CLIMATES, SCENARIO_OBJECTIVES, SCENARIO_PRESETS, SCENARIO_PRESET_LIST, SCENARIO_SEASONS, applyScenarioStart, createCustomScenario, getScenarioStartDayForSeason, refreshScenarioProgress } from "../systems/scenario.js";
+import { addScenarioToLibrary, readScenarioLibrary, removeScenarioFromLibrary } from "../core/scenario-library.js";
 
 let loopStarted=false;
 let settings=loadSettings();
+let customScenarios=[];
+let selectedScenarioId="free-realm";
+let selectedScenarioDefinition=SCENARIO_PRESETS["free-realm"];
+const scenarioEscape=value=>String(value??"").replace(/[&<>"']/g,character=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[character]));
+function scenarioSeasonLabel(index){return (SCENARIO_SEASONS[Number(index)%4]||"spring").replace(/^./,letter=>letter.toUpperCase());}
+function scenarioDeadlineLabel(definition){
+    const deadline=definition?.objective;
+    return deadline?scenarioSeasonLabel(Math.floor(deadline.deadlineDay/100)%4)+", year "+deadline.deadlineYear:"";
+}
+function scenarioRewardText(effects={}){
+    const parts=[];
+    for(const key of ["food","wood","stone","gold"])if(Number(effects[key]))parts.push((Number(effects[key])>0?"+":"")+Number(effects[key])+" "+key);
+    if(Number(effects.morale))parts.push((Number(effects.morale)>0?"+":"")+Number(effects.morale)+" morale");
+    if(Number(effects.legitimacy))parts.push((Number(effects.legitimacy)>0?"+":"")+Number(effects.legitimacy)+" legitimacy");
+    return parts.join(" · ")||"the realm's survival";
+}
+function scenarioStoreText(definition){
+    return ["food","wood","stone","gold"].map(key=>Number(definition?.resources?.[key])>0?Number(definition.resources[key])+" "+key:"").filter(Boolean).join(" · ")||"no starting stores";
+}
+function scenarioById(id){return SCENARIO_PRESETS[id]||customScenarios.find(entry=>entry.id===id)||SCENARIO_PRESETS["free-realm"];}
 function applyInterfaceSettings(){
     document.body.classList.toggle("hide-resource-deltas",settings.showDeltas===false);
     document.body.classList.toggle("reduce-interface-motion",settings.reduceMotion===true);
@@ -363,6 +385,7 @@ function readStartFormState(){
         if(!control)continue;
         values[id]=control.type==="checkbox"?Boolean(control.checked):String(control.value??"");
     }
+    values.__scenarioId=selectedScenarioId;
     return values;
 }
 
@@ -375,6 +398,7 @@ function writeStartFormState(values){
         if(control.type==="checkbox")control.checked=Boolean(values[id]);
         else control.value=String(values[id]??"");
     }
+    if(values.__scenarioId)selectScenario(values.__scenarioId,{applyClimate:false});
 }
 
 function setStartControl(id,value){
@@ -404,6 +428,7 @@ function renderRandomStartSummary(){
         "CULTURE "+selectedStartLabel("realm-culture")+" · "+selectedStartLabel("realm-government"),
         "FAITH "+selectedStartLabel("realm-religion")+" · "+selectedStartLabel("realm-tradition")+" · "+selectedStartLabel("realm-law")+" · "+selectedStartLabel("realm-legitimacy"),
         "CHARTER "+selectedStartLabel("realm-founding")+" · "+selectedStartLabel("realm-banner")+" · "+selectedStartLabel("realm-emblem"),
+        "SCENARIO "+(selectedScenarioDefinition?.name||"Free Realm")+(selectedScenarioDefinition?.id!=="free-realm"?" · "+scenarioDeadlineLabel(selectedScenarioDefinition):" · NO DEADLINE"),
         document.getElementById("world-endless")?.checked?"∞ ENDLESS REALM":"CLASSIC FINITE CAMPAIGN"
     ];
     if(background)lines.push("“"+background+"”");
@@ -483,7 +508,7 @@ function startRealmFromForm(trigger){
             const player=active&&(!typed||typed===active.displayName)?active:createLocalProfile(typed||"Realm Keeper");
             const seed=Number(document.getElementById("world-seed-input")?.value);
             const worldOptions=readWorldOptions();
-            startNewRealm(Number.isSafeInteger(seed)&&seed>0?seed:randomSeed(),player,worldOptions)
+            startNewRealm(Number.isSafeInteger(seed)&&seed>0?seed:randomSeed(),player,worldOptions,selectedScenarioDefinition)
                 .catch(error=>showStatus(error.message));
         }catch(error){showStatus(error.message);}
         finally{
@@ -647,13 +672,16 @@ async function warmTerrainDetailForStart(){
     }
 }
 
-async function startNewRealm(seed,profile,worldOptions=readWorldOptions()){
+async function startNewRealm(seed,profile,worldOptions=readWorldOptions(),scenarioDefinition=selectedScenarioDefinition){
     resetForRun(profile);
     applyIdentityForNewRealm();
     state.worldSeed=seed;
     state.worldOptions={...worldOptions};
     state.endless=createEndlessState({enabled:document.getElementById("world-endless")?.checked!==false});
     state.terrainVersion=TERRAIN_GENERATION_VERSION;
+    // Apply the authored opening before world generation so the first biome
+    // state, seasonal atlas and starting settlement all see the same calendar.
+    applyScenarioStart(scenarioDefinition||SCENARIO_PRESETS["free-realm"]);
     initWorld(seed,state.worldOptions,state.terrainVersion);
     initStartingKingdom();
     const foundingGrant=applyFoundingProfile(state.identity?.startProfile);
@@ -664,6 +692,7 @@ async function startNewRealm(seed,profile,worldOptions=readWorldOptions()){
     initializeSettlementOwners();
     initializeWinterForRealm();
     initializePopulationRegister();
+    refreshScenarioProgress();
     openGoodsBookForNewRealm();
     drawStartingHand();
     state.camera.x=0;state.camera.y=0;
@@ -983,6 +1012,160 @@ async function importRealm(file){
     }
 }
 
+function renderScenarioPicker(){
+    const list=document.getElementById("scenario-preset-list");
+    if(!list)return;
+    const all=[...SCENARIO_PRESET_LIST,...customScenarios.filter(entry=>!SCENARIO_PRESETS[entry.id])];
+    list.innerHTML=all.map(definition=>{
+        const selected=definition.id===selectedScenarioId;
+        const target=definition.objective?definition.objective.target+" "+(SCENARIO_OBJECTIVES[definition.objective.type]?.unit||"") : "Standard realm";
+        const subtitle=definition.id==="free-realm"?"No deadline. Every world and charter option remains open.":scenarioSeasonLabel(definition.startSeason)+" opening · "+target+" target";
+        return '<button type="button" class="scenario-card'+(selected?' is-selected':'')+'" data-scenario-card="'+scenarioEscape(definition.id)+'" aria-pressed="'+(selected?'true':'false')+'">'+
+            '<span class="scenario-card__tag">'+scenarioEscape(definition.difficulty)+'</span>'+
+            '<strong>'+scenarioEscape(definition.name)+'</strong>'+
+            '<em>'+scenarioEscape(definition.description)+'</em>'+
+            '<small>'+scenarioEscape(subtitle)+'</small>'+
+            '</button>';
+    }).join("");
+    renderScenarioBriefing(selectedScenarioDefinition);
+    renderScenarioDeleteButton();
+}
+
+function renderScenarioDeleteButton(){
+    const button=document.getElementById("scenario-delete-custom");
+    if(!button)return;
+    button.hidden=!customScenarios.some(entry=>entry.id===selectedScenarioId);
+}
+
+function renderScenarioBriefing(definition){
+    const box=document.getElementById("scenario-briefing");
+    if(!box||!definition)return;
+    if(definition.id==="free-realm"){
+        box.innerHTML='<div class="scenario-briefing__head"><h3>Free Realm</h3><span>NO SCENARIO DEADLINE</span></div>'+
+            '<p>'+scenarioEscape(definition.description)+'</p>'+
+            '<div class="scenario-briefing__conditions"><span>OPENING <b>Spring · Year 1</b></span><span>STORES <b>World Forge defaults</b></span><span>MORALE / LEGITIMACY <b>65 / 65</b></span><span>OBJECTIVE <b>None</b></span></div>'+
+            '<div class="scenario-briefing__goal">This is the classic open campaign. Choose a scenario card only when you want a different opening and a live objective.</div>';
+        return;
+    }
+    const objective=definition.objective;
+    const meta=SCENARIO_OBJECTIVES[objective.type];
+    box.innerHTML='<div class="scenario-briefing__head"><h3>'+scenarioEscape(definition.name)+'</h3><span>'+scenarioEscape(definition.difficulty)+'</span></div>'+
+        '<p>'+scenarioEscape(definition.description)+'</p>'+
+        '<div class="scenario-briefing__conditions">'+
+        '<span>OPENING <b>'+scenarioEscape(scenarioSeasonLabel(definition.startSeason))+' · Year 1</b></span>'+
+        '<span>RECOMMENDED CLIMATE <b>'+scenarioEscape(definition.recommendedClimate)+'</b></span>'+
+        '<span>STARTING STORES <b>'+scenarioEscape(scenarioStoreText(definition))+'</b></span>'+
+        '<span>MORALE / LEGITIMACY <b>'+scenarioEscape(definition.morale)+' / '+scenarioEscape(definition.legitimacy)+'</b></span>'+
+        '</div>'+
+        '<div class="scenario-briefing__goal"><strong>'+scenarioEscape(meta?.label||"Objective")+':</strong> '+scenarioEscape(objective.target+" "+(meta?.unit||"")+" by "+scenarioDeadlineLabel(definition))+'<br><small>REWARD · '+scenarioEscape(scenarioRewardText(definition.reward))+' · IF MISSED · '+scenarioEscape(scenarioRewardText(definition.failure))+'</small></div>';
+}
+
+function selectScenario(id,{applyClimate=true}={}){
+    selectedScenarioDefinition=scenarioById(id);
+    selectedScenarioId=selectedScenarioDefinition.id;
+    document.querySelectorAll("[data-scenario-card]").forEach(card=>{
+        const selected=card.dataset.scenarioCard===selectedScenarioId;
+        card.classList.toggle("is-selected",selected);
+        card.setAttribute("aria-pressed",selected?"true":"false");
+    });
+    renderScenarioBriefing(selectedScenarioDefinition);
+    renderScenarioDeleteButton();
+    const status=document.getElementById("scenario-editor-status");
+    if(status&&selectedScenarioDefinition.id!=="free-realm")status.textContent="Selected · "+selectedScenarioDefinition.name+". It will apply when the realm is founded.";
+    if(applyClimate&&selectedScenarioDefinition.id!=="free-realm"){
+        setStartControl("world-climate",selectedScenarioDefinition.recommendedClimate);
+        syncWorldForge(readWorldOptions());
+    }
+}
+
+function resetScenarioEditor(){
+    const values={"scenario-name-input":"","scenario-description-input":"","scenario-climate-select":"temperate","scenario-season-select":"0","scenario-morale-input":"65","scenario-legitimacy-input":"65","scenario-food-input":"150","scenario-wood-input":"180","scenario-stone-input":"95","scenario-gold-input":"75","scenario-objective-select":"food","scenario-target-input":"150","scenario-deadline-year-input":"2"};
+    for(const [id,value] of Object.entries(values))setStartControl(id,value);
+    const objective=document.getElementById("scenario-objective-select");
+    if(objective)objective.value="food";
+    const target=document.getElementById("scenario-target-input");
+    if(target)target.max="9999";
+    const status=document.getElementById("scenario-editor-status");
+    if(status)status.textContent="";
+}
+
+function saveCustomScenarioFromEditor(){
+    const status=document.getElementById("scenario-editor-status");
+    const name=String(document.getElementById("scenario-name-input")?.value||"").trim();
+    const description=String(document.getElementById("scenario-description-input")?.value||"").trim();
+    if(!name||!description){
+        if(status)status.textContent="Enter a scenario name and a briefing before saving.";
+        return;
+    }
+    const season=Math.max(0,Math.min(3,Number(document.getElementById("scenario-season-select")?.value)||0));
+    const objectiveType=String(document.getElementById("scenario-objective-select")?.value||"food");
+    const meta=SCENARIO_OBJECTIVES[objectiveType]||SCENARIO_OBJECTIVES.food;
+    const objective={
+        type:meta===SCENARIO_OBJECTIVES[objectiveType]?objectiveType:"food",
+        target:Number(document.getElementById("scenario-target-input")?.value)||meta.defaultTarget,
+        deadlineYear:Number(document.getElementById("scenario-deadline-year-input")?.value)||2,
+        deadlineDay:299
+    };
+    const slug=name.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,28)||"chronicle";
+    try{
+        const definition=createCustomScenario({
+            id:"custom-"+slug+"-"+Date.now().toString(36).slice(-5),
+            name,description,
+            recommendedClimate:String(document.getElementById("scenario-climate-select")?.value||"temperate"),
+            startDay:getScenarioStartDayForSeason(season),
+            resources:{
+                food:Number(document.getElementById("scenario-food-input")?.value)||0,
+                wood:Number(document.getElementById("scenario-wood-input")?.value)||0,
+                stone:Number(document.getElementById("scenario-stone-input")?.value)||0,
+                gold:Number(document.getElementById("scenario-gold-input")?.value)||0
+            },
+            morale:Number(document.getElementById("scenario-morale-input")?.value)||0,
+            legitimacy:Number(document.getElementById("scenario-legitimacy-input")?.value)||0,
+            objective,
+            reward:{food:40,morale:2},
+            failure:{morale:-4}
+        });
+        customScenarios=addScenarioToLibrary(customScenarios,definition);
+        selectScenario(definition.id,{applyClimate:true});
+        renderScenarioPicker();
+        if(status)status.textContent="Saved in this browser · "+definition.name+" is selected.";
+    }catch(error){
+        if(status)status.textContent=String(error?.message||"This scenario could not be saved.");
+    }
+}
+
+function deleteSelectedCustomScenario(){
+    if(!customScenarios.some(entry=>entry.id===selectedScenarioId))return;
+    customScenarios=removeScenarioFromLibrary(customScenarios,selectedScenarioId);
+    selectScenario("free-realm",{applyClimate:false});
+    renderScenarioPicker();
+    const status=document.getElementById("scenario-editor-status");
+    if(status)status.textContent="Custom scenario deleted. The free realm is selected.";
+}
+
+function setupScenarioPicker(){
+    customScenarios=readScenarioLibrary();
+    const climate=document.getElementById("scenario-climate-select");
+    if(climate)climate.innerHTML=SCENARIO_CLIMATES.map((id,index)=>'<option value="'+scenarioEscape(id)+'"'+(index===0?' selected':'')+'>'+scenarioEscape(id.replace(/^./,letter=>letter.toUpperCase()))+'</option>').join("");
+    const objective=document.getElementById("scenario-objective-select");
+    if(objective)objective.innerHTML=Object.entries(SCENARIO_OBJECTIVES).map(([id,meta])=>'<option value="'+scenarioEscape(id)+'"'+(id==="food"?' selected':'')+'>'+scenarioEscape(meta.label+' · '+meta.unit)+'</option>').join("");
+    resetScenarioEditor();
+    document.getElementById("scenario-preset-list")?.addEventListener("click",event=>{
+        const card=event.target.closest("[data-scenario-card]");
+        if(card)selectScenario(card.dataset.scenarioCard);
+    });
+    document.getElementById("scenario-save-custom")?.addEventListener("click",saveCustomScenarioFromEditor);
+    document.getElementById("scenario-reset-custom")?.addEventListener("click",resetScenarioEditor);
+    document.getElementById("scenario-delete-custom")?.addEventListener("click",deleteSelectedCustomScenario);
+    document.getElementById("scenario-objective-select")?.addEventListener("change",event=>{
+        const meta=SCENARIO_OBJECTIVES[event.target.value]||SCENARIO_OBJECTIVES.food;
+        const target=document.getElementById("scenario-target-input");
+        if(target){target.max=String(meta.max);target.value=String(meta.defaultTarget);}
+    });
+    renderScenarioPicker();
+    selectScenario(selectedScenarioId,{applyClimate:false});
+}
+
 function bindMenu(){
     const profile=getActiveProfile();
     const nameInput=document.getElementById("player-name-input");
@@ -999,6 +1182,7 @@ function bindMenu(){
     if(seedInput)seedInput.value=String(randomSeed());
     const forgeDefaults=normalizeWorldOptions({});
     syncWorldForge(forgeDefaults);
+    setupScenarioPicker();
     const identityControls=["realm-name-input","realm-dynasty-input","realm-title-input","realm-culture","realm-religion","realm-tradition","realm-law","realm-legitimacy","realm-founding","realm-background","realm-banner","realm-emblem"];
     identityControls.forEach(id=>{
         const control=document.getElementById(id);

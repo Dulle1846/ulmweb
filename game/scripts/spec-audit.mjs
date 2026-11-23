@@ -691,7 +691,20 @@ const SYSTEM_SPECS = [
         { id: "4.0.1", label: "Multiple kingdoms and map regions", status: "open", missing: "Diplomacy models four abstract neighbouring realms; there is no multi-kingdom world map or region ownership consumer.", tests: ["tests/systems/diplomacy.test.js"] },
         { id: "4.0.2", label: "World map, trade routes, borders and frontier settlements", status: "open", missing: "Local roads and trade partners exist, but no world-map border, route or frontier-settlement layer is implemented.", tests: ["tests/systems/roads.test.js"] },
         { id: "4.0.3", label: "Long-term world history and generational change", evidence: [{ file: "js/presentation/ai-chronicle-panel.js", symbol: "renderAiChroniclePanel" }, { file: "js/systems/micro-events.js", symbol: "updateMicroEvents" }], tests: ["tests/systems/ai-chronicle.test.js"] },
-        { id: "4.0.4", label: "Scenario editor and multiple start conditions", status: "open", missing: "World forge changes terrain and realm options, but there is no scenario editor, scenario save format or authored start-condition consumer.", tests: ["tests/world/world-options.test.js"] },
+        {
+            id: "4.0.4", label: "Scenario editor and multiple start conditions",
+            evidence: [
+                { file: "js/systems/scenario.js", symbol: "SCENARIO_PRESETS", role: "scenario-catalog" },
+                { file: "js/systems/scenario.js", symbol: "applyScenarioStart", role: "start-conditions" },
+                { file: "js/systems/scenario.js", symbol: "updateScenario", role: "objective-simulation" },
+                { file: "js/core/scenario-library.js", symbol: "readScenarioLibrary", role: "scenario-save-format" },
+                { file: "js/presentation/scenario-panel.js", symbol: "renderScenarioPanel", role: "gameplay" },
+                { file: "js/core/save-runtime.js", symbol: "normalizeScenarioState", role: "persistence" },
+                { file: "js/core/save-migrations.js", symbol: "13:snapshot", role: "save-migration" },
+                { file: "js/app/main.js", symbol: "setupScenarioPicker", role: "start-screen" }
+            ],
+            tests: ["tests/systems/scenario.test.js", "tests/browser/scenario-start.mjs"]
+        },
         { id: "4.0.5", label: "Save migration and world simulation at long horizons", evidence: [{ file: "js/core/save-migrations.js", symbol: "migrateSaveSnapshot" }, { file: "scripts/endurance-60y.mjs", symbol: "60" }], tests: ["tests/campaign/sweep-results.test.js"] },
         { id: "4.0.6", label: "Mod/data packs after schema and security boundaries", status: "open", missing: "There is no mod manifest, data-pack loader, sandbox boundary or compatibility validator.", tests: ["tests/systems/card-catalog.test.js"] }
     ], {

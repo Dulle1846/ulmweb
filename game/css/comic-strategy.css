@@ -269,3 +269,85 @@
 .spy-report strong,.spy-history strong{color:#263b52}
 .spy-report small,.spy-history small{color:#756445}
 @media(max-width:560px){.spy-agent-list{grid-template-columns:1fr}}
+
+/* Scenario forge: a small authored-opening picker that sits beside the world
+   forge instead of creating a second start flow. */
+.scenario-forge{margin:.45rem 0 .2rem;padding:.75rem .8rem;border:1px solid rgba(185,154,89,.5);border-radius:6px;background:linear-gradient(145deg,rgba(23,31,31,.92),rgba(9,15,16,.86))}
+.scenario-forge__intro{margin:0 0 .55rem;color:#b9c4b8;font-size:.62rem;line-height:1.45;letter-spacing:.02em}
+.scenario-preset-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.4rem}
+.scenario-card{display:flex;flex-direction:column;align-items:flex-start;gap:.18rem;min-height:74px;padding:.48rem .52rem;border:1px solid rgba(185,154,89,.34);border-radius:5px;background:rgba(255,255,255,.035);color:#e9ddc2;text-align:left;cursor:pointer;transition:border-color 120ms ease,background 120ms ease}
+.scenario-card:hover{border-color:#d6b56d;background:rgba(214,181,109,.11)}
+.scenario-card.is-selected{border-color:#e1c280;background:linear-gradient(145deg,rgba(203,166,91,.24),rgba(108,77,39,.2));box-shadow:inset 0 0 0 1px rgba(244,215,150,.18)}
+.scenario-card__tag{font-size:.48rem;font-weight:900;letter-spacing:.15em;color:#d8b979}
+.scenario-card strong{font-size:.66rem;line-height:1.2;letter-spacing:.04em;color:#f3e3bf}
+.scenario-card em{font-style:normal;font-size:.55rem;line-height:1.35;color:#aebbb0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.scenario-card small{font-size:.48rem;color:#8fa093;letter-spacing:.02em}
+.scenario-briefing{margin-top:.5rem;padding:.55rem .6rem;border-left:2px solid #b99a59;background:rgba(5,10,11,.4);color:#c6d0c2;font-size:.59rem;line-height:1.45}
+.scenario-briefing__head{display:flex;justify-content:space-between;gap:.5rem;align-items:flex-start;margin-bottom:.25rem}
+.scenario-briefing__head span{font-size:.48rem;letter-spacing:.14em;color:#d8b979;font-weight:900;white-space:nowrap}
+.scenario-briefing h3{margin:0;font:700 .78rem/1.2 var(--ui-title-font,Georgia,serif);color:#f3e3bf}
+.scenario-briefing p{margin:.2rem 0 .4rem;color:#b8c3b8}
+.scenario-briefing__conditions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.22rem .5rem;color:#aebbb0;font-size:.54rem}
+.scenario-briefing__conditions b{color:#f0d9a5;font-weight:800}
+.scenario-briefing__goal{margin-top:.4rem;padding-top:.35rem;border-top:1px solid rgba(185,154,89,.2);color:#efd59f;font-size:.57rem}
+.scenario-briefing__goal strong{color:#f4e4bd}
+.scenario-editor{margin-top:.55rem;border-top:1px solid rgba(185,154,89,.24);padding-top:.45rem}
+.scenario-editor summary{cursor:pointer;color:#d8b979;font-size:.57rem;font-weight:900;letter-spacing:.12em}
+.scenario-editor summary:hover{color:#f3dcb0}
+.scenario-editor__grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.45rem;margin-top:.5rem}
+.scenario-editor__stores,.scenario-editor__objective{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.4rem;margin-top:.4rem}
+.scenario-editor__objective{grid-template-columns:repeat(3,minmax(0,1fr))}
+.scenario-editor__actions{display:flex;flex-wrap:wrap;gap:.45rem;align-items:center;margin-top:.55rem}
+.scenario-editor__actions .secondary-button{min-height:34px;font-size:.55rem;width:auto}
+.scenario-editor__status{min-height:1rem;margin:.35rem 0 0;color:#e6c98e;font-size:.56rem;line-height:1.4}
+.scenario-editor .profile-note{margin:.2rem 0 0;font-size:.52rem;line-height:1.4}
+.scenario-objective{margin:12px 0 4px;padding:13px 14px;border:2px solid #ad8750;border-radius:9px;background:linear-gradient(145deg,#fff8df,#ecd8ad);color:#243a50}
+.scenario-objective.is-won{border-color:#4d8067;background:linear-gradient(145deg,#e7f3df,#c9dfbd)}
+.scenario-objective.is-failed{border-color:#9b4a3b;background:linear-gradient(145deg,#f8e3d7,#e0bfae)}
+.scenario-objective__head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.scenario-objective__kicker{color:#806d52;font-size:7px;font-weight:900;letter-spacing:.16em}
+.scenario-objective h4{margin:3px 0 0;color:#203c58;font:bold 20px Georgia,serif;letter-spacing:.02em}
+.scenario-objective__status{padding:4px 7px;border:1px solid #20374d;border-radius:4px;background:#263b52;color:#f3e3bf;font-size:6px;font-weight:1000;letter-spacing:.1em;white-space:nowrap}
+.scenario-objective.is-won .scenario-objective__status{background:#315d49}
+.scenario-objective.is-failed .scenario-objective__status{background:#7a352e}
+.scenario-objective__briefing{margin:7px 0 9px;color:#554a3a;font-size:9px;line-height:1.5}
+.scenario-objective__goal{display:flex;flex-direction:column;gap:2px;padding:7px 8px;border:1px solid #cfb47f;border-radius:5px;background:rgba(255,250,234,.45)}
+.scenario-objective__goal span{color:#806d52;font-size:6px;font-weight:1000;letter-spacing:.15em}
+.scenario-objective__goal strong{color:#263b52;font-size:11px;line-height:1.35}
+.scenario-progress{margin:8px 0}
+.scenario-progress__track{height:9px;border:1px solid #9d7d50;border-radius:3px;background:#1b211f;overflow:hidden}
+.scenario-progress__track i{display:block;height:100%;background:linear-gradient(90deg,#8eaa7a,#d5b76e);transition:width .3s ease}
+.scenario-objective.is-won .scenario-progress__track i{background:linear-gradient(90deg,#4d8067,#8eaa7a)}
+.scenario-objective.is-failed .scenario-progress__track i{background:linear-gradient(90deg,#9b4a3b,#d17a5e)}
+.scenario-progress__label{display:flex;justify-content:space-between;gap:8px;margin-top:4px;color:#806d52;font-size:7px}
+.scenario-progress__label strong{color:#263b52;font-size:8px}
+.scenario-objective__meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(105px,1fr));gap:5px;margin-top:8px}
+.scenario-objective__meta span{display:flex;flex-direction:column;gap:2px;padding:5px;border:1px solid #cfb47f;border-radius:4px;background:rgba(255,250,234,.3)}
+.scenario-objective__meta small{color:#806d52;font-size:6px;font-weight:1000;letter-spacing:.1em}
+.scenario-objective__meta strong{color:#263b52;font-size:8px;line-height:1.3}
+.scenario-objective__history{margin-top:8px;color:#554a3a;font-size:8px}
+.scenario-objective__history summary{cursor:pointer;color:#806d52;font-size:7px;font-weight:900;letter-spacing:.1em}
+.scenario-objective__history ul{display:grid;gap:5px;margin:6px 0 0;padding:0;list-style:none}
+.scenario-objective__history li{display:grid;gap:2px;padding:5px;border-left:2px solid #ad8750;background:rgba(255,250,234,.35)}
+.scenario-objective__history strong{color:#263b52;font-size:7px;letter-spacing:.08em}
+.scenario-objective__note{margin:8px 0 0;color:#756445;font-size:7px;line-height:1.4}
+.scenario-hud{display:flex;flex-direction:column;align-items:flex-start;gap:1px;max-width:190px;margin-top:4px;padding:2px 0 0;border:0;background:transparent;color:#d8b979;text-align:left;cursor:pointer}
+.scenario-hud span{font:700 6px var(--ui-body-font,sans-serif);letter-spacing:.16em;color:#9fbba3}
+.scenario-hud strong{max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:700 7px/1.2 var(--ui-title-font,Georgia,serif);letter-spacing:.05em;color:#f1dcae}
+.scenario-hud em{max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:700 6px/1.2 var(--ui-number-font,monospace);font-style:normal;letter-spacing:.02em;color:#aebbb0}
+.scenario-hud:hover strong,.scenario-hud:focus-visible strong{color:#fff0c9}
+.scenario-hud[data-status="won"] strong{color:#a9d6a7}
+.scenario-hud[data-status="failed"] strong{color:#e9a08c}
+@media(max-width:620px){
+ .scenario-preset-list{grid-template-columns:1fr}
+ .scenario-card{min-height:64px}
+ .scenario-editor__grid,.scenario-editor__stores{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .scenario-editor__objective{grid-template-columns:1fr}
+ .scenario-briefing__conditions{grid-template-columns:1fr}
+ .scenario-hud{max-width:145px}
+ .scenario-hud strong,.scenario-hud em{max-width:145px}
+}
+@media(max-width:380px){
+ .scenario-objective__head{flex-direction:column;gap:5px}
+ .scenario-progress__label{flex-direction:column;gap:2px}
+}

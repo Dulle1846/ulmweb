@@ -28,6 +28,7 @@ import { getResourceNodeAt } from "../systems/resource-geography.js";
 import { forestFaunaSummaryAt } from "../systems/forest-fauna.js";
 import { cleanBiomeWater, craftBiomeGoods, drainBiomeRegion, harvestBiomeResource, huntBiomeSpecies, irrigateBiomeRegion, reforestBiomeRegion, reintroduceBiomeSpecies, restoreBiomeRegion, sellBiomeCraft, sellBiomeGoods, setBiomeFocus, setBiomePolicy, setBiomeProtection, slashAndBurnBiomeRegion, surveyBiomeRegion } from "../systems/biome-resource-state.js";
 import { renderBiomePanel } from "./biome-panel.js";
+import { renderScenarioPanel } from "./scenario-panel.js";
 import { renderHazardPanel } from "./hazard-panel.js";
 import { cleanseHazardCorruption, prepareForHazardSeason, treatHazardCasualties } from "../systems/environmental-hazards.js";
 import {
@@ -215,6 +216,7 @@ function realmCycleStatus(){
 }
 function kingdom(){
  if(!state.hasStarted)return intro("THE REALM OF "+(state.kingdomName||"ELDRIA"),"Awaiting its founding","The royal ledger becomes active when a new campaign begins.")+'<div class="command-note">No campaign is running yet. Begin a new game to appoint the sovereign, populate the settlement and activate the royal ledger.</div>';
+ const scenarioMarkup=renderScenarioPanel();
  const h=getRoyalHouse(),p=getPoliticalSnapshot(),w=getWorkforceSnapshot(),housing=getHousingSnapshot();
  const sovereign=h.king?.person?.name||"No sovereign recorded";
  const income=state.incomeThisTick||{};
@@ -223,6 +225,7 @@ function kingdom(){
  const active=state.activeEvent?'<div class="command-note"><strong>ACTIVE ISSUE</strong><br>'+esc(state.activeEvent.title||state.activeEvent.name||"A realm issue requires attention")+'</div>':'<div class="command-note">No realm-wide event is currently awaiting a decision.</div>';
  return intro("THE REALM OF "+(state.kingdomName||"ELDRIA"),"Kingdom overview","A live summary of the crown, people, treasury and stability. Figures below are read from the running simulation.")+
  '<div class="command-summary"><div><small>SOVEREIGN</small><strong>'+esc(sovereign)+'</strong></div><div><small>YEAR</small><strong>'+number(state.year)+'</strong></div><div><small>POPULATION</small><strong>'+number(housing.population)+'</strong></div><div><small>MORALE</small><strong>'+Math.round(state.morale||0)+'/100</strong></div></div>'+
+ (scenarioMarkup?'<div class="command-section-title">SCENARIO OBJECTIVE</div>'+scenarioMarkup:'')+
  '<div class="command-section-title">THE REALM AT A GLANCE</div><div class="command-summary"><div><small>TREASURY</small><strong>'+number(state.resources?.gold)+'</strong></div><div><small>HOUSING</small><strong>'+number(housing.population)+' / '+number(housing.capacity)+'</strong></div><div><small>EMPLOYED</small><strong>'+number(w.employed)+'</strong></div><div><small>LEGITIMACY</small><strong>'+Math.round(p.legitimacy)+'/100</strong></div></div>'+
  '<div class="command-section-title">LIVING REALM CYCLE</div>'+realmCycleStatus()+
  '<div class="command-section-title">ROYAL STORES</div><div class="command-resource-grid">'+resources+'</div>'+

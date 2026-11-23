@@ -384,7 +384,7 @@ test("faith and justice normalize, validate and survive a JSON save/load round t
     assert.equal(restored.justice.lawCode, justiceBefore.lawCode);
     assert.equal(restored.faith.festival.lastKind, "harvest");
 
-    assert.equal(SAVE_SCHEMA_VERSION, 13, "schema 13 adds the hazard and disease layer on top of settlement maintenance ownership");
+    assert.equal(SAVE_SCHEMA_VERSION, 14, "schema 14 adds authored scenarios on top of the hazard and disease layer");
     const snapshot = normalizeSaveSnapshot({
         worldSeed: 9917,
         entities: [],

@@ -32,7 +32,7 @@
                 <svg class="ruler-portrait" viewBox="0 0 256 320" aria-hidden="true"><use id="ruler-portrait-use" href="assets/royal-portraits.svg#portrait-king"></use></svg>
                 <span class="ruler-copy"><small>THE CROWN</small><strong id="ruler-name">THE CROWN VACANT</strong><em id="ruler-title">AWAITING SUCCESSION</em><span id="treasury-trend" class="ruler-trend">TREASURY · AWAITING LEDGER</span></span>
             </button>
-            <div class="date-block"><div class="date-label">Realm calendar</div><div class="date-value"><span id="season">SPRING</span> · <span id="year">YEAR 1</span></div></div>
+            <div class="date-block"><div class="date-label">Realm calendar</div><div class="date-value"><span id="season">SPRING</span> · <span id="year">YEAR 1</span></div><button id="scenario-hud" class="scenario-hud hidden" type="button" data-kac-panel="kingdom" aria-label="Open the scenario objective"><span>SCENARIO</span><strong id="scenario-hud-name">FREE REALM</strong><em id="scenario-hud-progress"></em></button></div>
             <div class="morale-block"><div class="morale-topline"><span>REALM MORALE</span><span id="morale-value">72</span></div><div class="morale-track"><div id="morale-bar"></div></div></div>
             <div class="player-chip"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.2"/><path d="M4.5 20c.4-4.1 2.9-6.2 7.5-6.2s7.1 2.1 7.5 6.2"/></svg><span id="player-name">GUEST</span></div>
         </div>
@@ -347,6 +347,41 @@
                 </div>
                 <div id="founding-summary" class="founding-summary" role="status" aria-live="polite"></div>
                 <div class="profile-note">Culture, religion, tradition, law, legitimacy, constitution and the starting charter apply real modifiers from the first year. Heraldry and the founding are recorded in the chronicle.</div>
+            </section>
+            <section class="scenario-forge" aria-labelledby="scenario-heading">
+                <div class="forge-heading" id="scenario-heading"><span>SCENARIO</span><span>CHOOSE YOUR OPENING</span></div>
+                <p class="scenario-forge__intro">A scenario changes the opening date, the first stores and the crown's standing, then gives the realm one objective that reads the live simulation. The World Forge still decides the land beneath it.</p>
+                <div id="scenario-preset-list" class="scenario-preset-list" role="group" aria-label="Scenario presets"></div>
+                <div id="scenario-briefing" class="scenario-briefing" aria-live="polite"></div>
+                <details id="scenario-editor" class="scenario-editor">
+                    <summary>OPEN THE SCENARIO EDITOR</summary>
+                    <div class="scenario-editor__grid">
+                        <label class="identity-field identity-field--wide" for="scenario-name-input"><span>SCENARIO NAME</span><input id="scenario-name-input" type="text" maxlength="40" placeholder="Name this opening"></label>
+                        <label class="identity-field identity-field--wide" for="scenario-description-input"><span>BRIEFING</span><textarea id="scenario-description-input" rows="2" maxlength="220" placeholder="Tell the player what is different and what is at stake."></textarea></label>
+                        <label class="identity-field" for="scenario-climate-select"><span>RECOMMENDED CLIMATE</span><select id="scenario-climate-select"></select></label>
+                        <label class="identity-field" for="scenario-season-select"><span>OPENING SEASON</span><select id="scenario-season-select"><option value="0">Spring</option><option value="1">Summer</option><option value="2">Autumn</option><option value="3">Winter</option></select></label>
+                        <label class="identity-field" for="scenario-morale-input"><span>STARTING MORALE</span><input id="scenario-morale-input" type="number" min="0" max="100" step="1" value="65"></label>
+                        <label class="identity-field" for="scenario-legitimacy-input"><span>STARTING LEGITIMACY</span><input id="scenario-legitimacy-input" type="number" min="0" max="100" step="1" value="65"></label>
+                    </div>
+                    <div class="scenario-editor__stores">
+                        <label class="identity-field" for="scenario-food-input"><span>FOOD</span><input id="scenario-food-input" type="number" min="0" max="9999" step="1" value="150"></label>
+                        <label class="identity-field" for="scenario-wood-input"><span>WOOD</span><input id="scenario-wood-input" type="number" min="0" max="9999" step="1" value="180"></label>
+                        <label class="identity-field" for="scenario-stone-input"><span>STONE</span><input id="scenario-stone-input" type="number" min="0" max="9999" step="1" value="95"></label>
+                        <label class="identity-field" for="scenario-gold-input"><span>GOLD</span><input id="scenario-gold-input" type="number" min="0" max="9999" step="1" value="75"></label>
+                    </div>
+                    <div class="scenario-editor__objective">
+                        <label class="identity-field" for="scenario-objective-select"><span>OBJECTIVE</span><select id="scenario-objective-select"></select></label>
+                        <label class="identity-field" for="scenario-target-input"><span>TARGET</span><input id="scenario-target-input" type="number" min="1" step="1" value="150"></label>
+                        <label class="identity-field" for="scenario-deadline-year-input"><span>DEADLINE YEAR</span><input id="scenario-deadline-year-input" type="number" min="1" max="10" step="1" value="2"></label>
+                    </div>
+                    <div class="scenario-editor__actions">
+                        <button id="scenario-save-custom" class="ui-button ui-button--secondary secondary-button" type="button">SAVE &amp; USE THIS SCENARIO</button>
+                        <button id="scenario-reset-custom" class="text-button" type="button">RESET EDITOR</button>
+                        <button id="scenario-delete-custom" class="text-button" type="button" hidden>DELETE SELECTED CUSTOM SCENARIO</button>
+                    </div>
+                    <p id="scenario-editor-status" class="scenario-editor__status" role="status" aria-live="polite"></p>
+                    <p class="profile-note">Custom scenarios are validated and kept in this browser (up to six). Their start stores replace the default opening stores; the founding charter still applies afterwards. The objective deadline must fall after the opening.</p>
+                </details>
             </section>
             <label for="world-seed-input">WORLD SEED</label>
             <div class="seed-row"><input id="world-seed-input" type="number" min="1" step="1"><button id="random-seed-btn" class="ui-button ui-button--secondary secondary-button" type="button">RANDOMIZE</button></div>

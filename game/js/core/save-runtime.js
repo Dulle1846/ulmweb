@@ -53,6 +53,7 @@ import { normalizeGovernment } from "../systems/government.js";
 import { normalizeRoyalState } from "../systems/royal-dynasty.js";
 import { restoreWinterState, serializeWinterState } from "../world/winter-economy.js";
 import { normalizeEndlessState } from "../systems/endless.js";
+import { normalizeScenarioState } from "../systems/scenario.js";
 import { restoreSpecialBiomeState, serializeSpecialBiomeState } from "../systems/special-biome-state.js";
 import { restoreEnvironmentalHazardState, serializeEnvironmentalHazardState } from "../systems/environmental-hazards.js";
 import { restoreBiomeAtlasState, serializeBiomeAtlasState } from "../systems/biome-resource-state.js";
@@ -239,6 +240,7 @@ export function createSaveSnapshot() {
         market: JSON.parse(JSON.stringify(state.market)),
         winter: serializeWinterState(),
         endless: JSON.parse(JSON.stringify(state.endless || {})),
+        scenario: normalizeScenarioState(state.scenario),
         specialBiomes: serializeSpecialBiomeState(),
         environmentalHazards: serializeEnvironmentalHazardState(),
         biomeAtlas: serializeBiomeAtlasState(),
@@ -404,6 +406,10 @@ export function restoreSaveSnapshot(snapshot) {
     state.totalRaidsSurvived = snapshot.totalRaidsSurvived || 0;
     state.raidActive = Boolean(snapshot.raidActive);
     state.endless = normalizeEndlessState(snapshot.endless, state.year);
+    // Schema 14 stores the authored start conditions and the objective's
+    // progress. Older saves without the field become a free realm; no existing
+    // realm is silently given a deadline it never had.
+    state.scenario = normalizeScenarioState(snapshot.scenario);
     state.gameOver = Boolean(snapshot.gameOver);
     // A realm saved at a terminal moment is resumed as a recoverable endless
     // realm. The next tick restores morale and the chronicle continues.

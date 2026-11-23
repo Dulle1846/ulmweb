@@ -12,6 +12,7 @@ import { getFirstSessionSnapshot } from "../first-session.js";
 import { renderStatisticsExplorer } from "../statistics-panel.js";
 import { renderWinterHud } from "../winter-panel.js";
 import { getEndlessSnapshot } from "../../systems/endless.js";
+import { getScenarioSnapshot } from "../../systems/scenario.js";
 import { BIOME_RESOURCE_MAP_FAMILIES } from "../../world/biome-resource-data.js";
 import { BIOME_SEASONAL_TINTS } from "../../world/cross-biome-data.js";
 
@@ -356,6 +357,23 @@ function renderMoraleHud(){
     }
     setText("morale-value",Math.floor(state.morale));
 }
+function renderScenarioHud(){
+    const hud=document.getElementById("scenario-hud");
+    if(!hud)return;
+    const scenario=getScenarioSnapshot();
+    hud.classList.toggle("hidden",!scenario.visible);
+    if(!scenario.visible){
+        setText("scenario-hud-name","FREE REALM");
+        setText("scenario-hud-progress","");
+        hud.removeAttribute("data-status");
+        return;
+    }
+    hud.dataset.status=scenario.status;
+    setText("scenario-hud-name",scenario.name.toUpperCase());
+    setText("scenario-hud-progress",(scenario.status==="won"?"COMPLETE":scenario.status==="failed"?"FAILED":scenario.progressLabel)+" · "+scenario.deadlineShort);
+    const label="Scenario "+scenario.name+": "+scenario.objectiveLabel+" Current "+scenario.progressLabel+", "+scenario.statusLabel+". Open the realm panel.";
+    if(hud.getAttribute("aria-label")!==label)hud.setAttribute("aria-label",label);
+}
 function renderWorldLabels(){
     setText("season",SEASONS[state.seasonIndex]||SEASONS[0]);setText("year","YEAR "+state.year);
     const now=performance.now();
@@ -411,7 +429,7 @@ function renderDynamicPanels(){
     renderTabContent();
     renderRealmEvent();
 }
-const UI_HUD_CHUNKS=Object.freeze([renderResourceValues,renderResourceIncome,renderMoraleHud,renderWorldLabels,renderTopStatus,renderHousingHud,renderCardHud,renderRoomBonuses,renderAmbition,renderFirstSession,renderWinterHud,renderViewHud,renderDynamicPanels]);
+const UI_HUD_CHUNKS=Object.freeze([renderResourceValues,renderResourceIncome,renderMoraleHud,renderWorldLabels,renderScenarioHud,renderTopStatus,renderHousingHud,renderCardHud,renderRoomBonuses,renderAmbition,renderFirstSession,renderWinterHud,renderViewHud,renderDynamicPanels]);
 let uiHudFrame=0,uiHudIndex=0,uiHudPending=false;
 function runHudRefresh() {
     uiHudFrame = 0;

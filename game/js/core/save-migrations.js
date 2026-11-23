@@ -40,6 +40,11 @@ export const SAVE_SCHEMA_MIGRATIONS = Object.freeze({
         // Schema 13 adds the 1.2.20 hazard and disease layer. A realm saved
         // before it starts with a quiet state; the first season pass fills it.
         if(snapshot.environmentalHazards===undefined)snapshot.environmentalHazards=null;
+    },
+    13:snapshot=>{
+        // Schema 14 adds authored scenarios. A legacy realm was not founded
+        // under one, so it migrates to the free-realm state without a deadline.
+        if(snapshot.scenario===undefined)snapshot.scenario=null;
     }
 });
 

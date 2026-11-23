@@ -1,13 +1,63 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.48.1`
-**Next development line:** `3.49.0-dev`
+**Current production version:** `3.49.0`
+**Next development line:** `3.50.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
 **Last repository verification:** 2026-11-23 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.49.0 — The realm begins on your terms
+
+Roadmap 4.0.4 closes with **Chronicle Scenarios**: five ways to found a realm,
+a local custom editor, and one live objective that reads the same stores, people
+and politics the player already manages. The audit moves from **1614/1618 to
+1615/1618**; 4.0.1, 4.0.2 and 4.0.6 remain open.
+
+- **Five authored openings.** Free Realm keeps the classic founding untouched.
+  The First Winter begins in a northern autumn with 70 food and must reach 150
+  food by spring of year 2. The Empty Granary begins in summer with 20 food and
+  240 gold, and must reach 180 food before winter of year 1. The Broken Crown
+  begins at 26 legitimacy and must reach 60. The Green Frontier begins in an old
+  forest and must survey six biome regions. Each preset carries its own date,
+  stores, morale, legitimacy, reward, failure consequence and recommended
+  climate; the recommendation reaches the existing World Forge, while terrain
+  and climate generation stay with the normal world options.
+- **A custom opening, authored in the browser.** The start screen editor accepts
+  name, briefing, climate, season, four stores, morale, legitimacy, objective
+  (food, population, legitimacy or surveyed regions), target and deadline year.
+  Entries are validated, normalized again on read and stored in a versioned
+  `localStorage` envelope capped at six. A broken entry cannot reach generation.
+- **The objective is a real consumer, not a counter.** `updateScenario` runs from
+  `finishDailyRealm` at most once per calendar day. It reads actual food, the
+  population register, actual political legitimacy and discovered biome regions.
+  Completion pays its reward once; a missed deadline applies its consequence
+  once. Both write a legacy/chronicle record and a player message, so morale,
+  treasury, politics and history visibly move together. No per-frame work and no
+  second ecological pass were added.
+- **Readable in normal play.** A calendar HUD shows the scenario name, current /
+  target and deadline; the Kingdom Overview card shows the full briefing, a
+  progress bar, starting stores, morale/legitimacy, reward, failure and the last
+  four outcomes. The card sits above the realm-at-a-glance block, not below the
+  fold. At 390 px the picker, HUD and panel stay inside the viewport with no
+  horizontal overflow.
+- **Save schema 14.** The scenario block stores the full normalized definition,
+  status, progress, evaluation day and a 12-entry history. Schema-13 saves
+  migrate to `scenario: null` and load as Free Realm, never receiving a
+  retroactive objective. The existing save round-trip now runs through schema
+  14; a custom scenario survives save and reload with the same id, status and
+  target.
+- **Gates.** `tests/systems/scenario.test.js` covers the catalog, bounds, start
+  path, one-shot completion/failure, migration and library cap. New
+  `tests/browser/scenario-start.mjs` selects a preset, authors and saves a custom
+  opening, founds it through the real start screen, checks live stores and
+  legitimacy against the card, saves and reloads, and repeats the reading at
+  390 × 844. Desktop and narrow runs finish with zero page or console errors.
+  The full suite reports **1,379 passing tests**; the deterministic 25-year
+  campaign completes all requirements and ambitions. `npm run spec:audit`
+  reports **1615/1618**.
 
 ## 3.48.1 — The seasons reach the ground, the haze costs one blit
 

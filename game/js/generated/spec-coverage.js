@@ -2,18 +2,18 @@
 export const SPEC_COVERAGE = Object.freeze({
   "version": 2,
   "generatedBy": "scripts/spec-audit.mjs",
-  "commit": "be6919ffdcf41b1f9870c24b456fc8e8c1edf9c2",
-  "sourceHash": "4fddba66c5e9d4009af623bfd21df55e9ea0bd0fed000fd84ae96f5c734a96d4",
+  "commit": "281d585c7a44b8f0d4d9d5ed0a7ac227988621d4",
+  "sourceHash": "a305264422e7bffec2da54a399bf6f23fd346ce91b5597fd5e481d399305e616",
   "totals": {
     "total": 1618,
-    "implemented": 1614,
-    "open": 4,
+    "implemented": 1615,
+    "open": 3,
     "sections": 38
   },
   "nextSection": {
     "id": "4.0",
     "title": "Great World and long-running history",
-    "open": 4,
+    "open": 3,
     "total": 6,
     "firstOpen": "4.0.1"
   },
@@ -656,8 +656,8 @@ export const SPEC_COVERAGE = Object.freeze({
       "id": "4.0",
       "title": "Great World and long-running history",
       "total": 6,
-      "implemented": 2,
-      "open": 4,
+      "implemented": 3,
+      "open": 3,
       "source": "system registry"
     }
   ],
@@ -678,15 +678,6 @@ export const SPEC_COVERAGE = Object.freeze({
       "label": "World map, trade routes, borders and frontier settlements",
       "missing": [
         "Local roads and trade partners exist, but no world-map border, route or frontier-settlement layer is implemented."
-      ]
-    },
-    {
-      "id": "4.0.4",
-      "section": "4.0",
-      "title": "Great World and long-running history",
-      "label": "Scenario editor and multiple start conditions",
-      "missing": [
-        "World forge changes terrain and realm options, but there is no scenario editor, scenario save format or authored start-condition consumer."
       ]
     },
     {

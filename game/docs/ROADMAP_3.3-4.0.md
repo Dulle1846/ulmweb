@@ -160,7 +160,7 @@ Art:
 - Multiple kingdoms and map regions.
 - World map, trade routes, borders and frontier settlements.
 - Long-term world history, chronicles and generational change.
-- Scenario editor and multiple start conditions.
+- Scenario editor and multiple start conditions. **Implemented in 3.49.0:** five authored openings, a local custom editor and a daily objective that reads the live realm; see [SCENARIOS.md](SCENARIOS.md).
 - Save migration and world simulation performance for long campaigns.
 - Optional mod/data packs only after schema and security boundaries are stable.
 

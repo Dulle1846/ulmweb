@@ -306,10 +306,10 @@ test("1.2.20 state normalises hostile input and survives a save round trip", () 
 });
 
 test("1.2.20 migration 12 to 13 gives old realms a quiet hazard state", () => {
-    assert.equal(SAVE_SCHEMA_VERSION, 13);
+    assert.equal(SAVE_SCHEMA_VERSION, 14);
     const snapshot = { saveSchemaVersion: 12, kingdomName: "Eldria" };
     migrateSaveSnapshot(snapshot);
-    assert.equal(snapshot.saveSchemaVersion, 13);
+    assert.equal(snapshot.saveSchemaVersion, 14);
     assert.equal(snapshot.environmentalHazards, null);
     const restored = restoreEnvironmentalHazardState(snapshot.environmentalHazards);
     assert.equal(restored.active.length, 0);
