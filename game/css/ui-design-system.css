@@ -479,6 +479,14 @@ html.ui-high-contrast :focus-visible{outline-width:3px;outline-offset:3px}
 .biome-system-readout>span{display:grid;gap:2px;min-width:0;padding:6px;border:1px solid #6f5c41;border-radius:2px;background:#241f18}
 .biome-system-readout small{color:#9f8d6c;font:700 7px var(--ui-title-font);letter-spacing:.07em}
 .biome-system-readout strong{overflow:visible;color:#e7d4ab;font:700 9px/1.3 var(--ui-body-font);overflow-wrap:anywhere}
+.biome-season-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin:8px 0}
+.biome-season-swatch{display:grid;gap:3px;min-width:0;padding:5px;border:1px solid #5e4d37;border-radius:2px;background:#1d1914}
+.biome-season-swatch i{display:block;height:26px;border:1px solid #00000044;border-radius:2px;background:linear-gradient(135deg,var(--season-base),var(--season-accent))}
+.biome-season-swatch small{color:#d1b476;font:700 7px var(--ui-title-font);letter-spacing:.07em}
+.biome-season-swatch b{overflow:hidden;color:#a99572;font:400 8px/1.3 var(--ui-body-font);text-overflow:ellipsis;white-space:nowrap}
+.biome-plant-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 5px;border:1px solid #6f5c41;border-radius:2px;background:#241f18;color:#e0cfae;font:700 8px var(--ui-title-font)}
+.biome-plant-chip i{width:7px;height:7px;flex:0 0 7px;border:1px solid #00000055;border-radius:50%;background:var(--plant-color)}
+.biome-plant-chip small{color:#9f8d6c;font:400 7px var(--ui-body-font)}
 .biome-system-ledger{margin:8px 0;border:1px solid #5e4d37;border-radius:2px;background:#17151255}
 .biome-system-ledger>summary{padding:8px;color:#d1b476;font:700 9px var(--ui-title-font);letter-spacing:.06em;cursor:pointer}
 .biome-system-grid{display:grid;gap:3px;padding:0 7px 7px}
@@ -536,7 +544,7 @@ html.ui-high-contrast :focus-visible{outline-width:3px;outline-offset:3px}
 .biome-stock small{color:#9f8d6c;font-size:8px}
 .biome-row-actions{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
 @media(max-width:800px){
- .biome-economy-grid,.biome-region-summary,.biome-system-readout{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .biome-economy-grid,.biome-region-summary,.biome-system-readout,.biome-season-strip{grid-template-columns:repeat(2,minmax(0,1fr))}
  .biome-choice-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
  .biome-system-row small{white-space:normal}
  .biome-system-ledger>summary{font-size:10px;line-height:1.35}

@@ -393,6 +393,18 @@ export const BIOME_TINT_COLORS = Object.freeze(BIOME_MAP_ORDER.map(id => {
     ]);
 }));
 
+// Inland water inside a forest or swamp must not inherit the forest floor hue.
+// The same coarse field carries the biome's own water face, so the shoreline and
+// every pond get a locally plausible water colour without a second map.
+export const BIOME_WATER_TINT_COLORS = Object.freeze(BIOME_MAP_ORDER.map(id => {
+    const water = BIOME_IDENTITY[id].palette.water;
+    return Object.freeze([
+        parseInt(water.slice(1, 3), 16),
+        parseInt(water.slice(3, 5), 16),
+        parseInt(water.slice(5, 7), 16)
+    ]);
+}));
+
 export function buildBiomeIndexMap(context = {}, stride = 4) {
     const width = Math.max(1, Number(context.width) || 176);
     const height = Math.max(1, Number(context.height) || 176);

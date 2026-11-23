@@ -1,6 +1,6 @@
 # Biome generation and visual quality (1.2.22)
 
-**Status:** implemented in 3.47.0.
+**Status:** implemented in 3.48.0.
 
 1.2.22 turns the continuous terrain field into a stable biome identity and a
 vegetation layer that a player can read from the normal camera. It is a reader
@@ -15,9 +15,23 @@ object graph or second simulation loop.
   boundary share, plant mix, habitat and the LOD contract.
 - A collapsible **FULL GENERATION LEDGER · 54 PARAMETERS** prints one live value
   and one evidence line for every point in the table below.
-- The baked ground receives a quiet 6% identity wash from the central biome
-  palette. The wash comes from a coarse map sampled every fourth tile, so the
-  bake stays O(pixels) and the paint never becomes a per-frame classification.
+- The baked ground is a **bilinear blend of the four surrounding biome
+  palettes**, not four-tile colour blocks. Each biome also carries its own water
+  tint, deterministic surface grain and a hillshade baked once per realm, so
+  sand, peat, scree, leaf litter and open water keep different surfaces at the
+  closest camera.
+- The seasonal overlay takes the **seasonal face of each biome cell** instead of
+  one global seasonal sheet. Spring blossom, summer deep shade, autumn copper
+  and winter frost therefore meet in soft ecotones; the panel prints all four
+  faces as colour swatches beside the live values.
+- `biome-identity-render.js` draws one **landmark silhouette per discovered
+  atlas region** — drowned tower, salt spit, ice cairn, standing stone, frost
+  mound, great spruce, sunken shrine, wind arch, kurgan, great oak, hollow tree
+  and giant fig — plus a bounded plant vignette and up to 140 atmosphere motes.
+  Anchors are deterministic, prefer explored land and are cached until discovery
+  changes.
+- The panel prints the **plant palette** with real species, colours, form and
+  variant count, so the registry is readable in play rather than only in tests.
 - The existing seasonal foliage, per-biome renderers, special-biome atlas,
   ecotone renderer and forest LOD remain the drawing paths. 1.2.22 gives them a
   central definition and a measurable quality contract instead of a second
@@ -66,21 +80,21 @@ layer without changing species identity.
 | 1.2.22.16 | Seasonal plant variants | implemented | biome-generation-data.js#BIOME_PLANTS seasons; vegetationAt filters active species |
 | 1.2.22.17 | Different vegetation densities | implemented | biome-generation.js#vegetationAt density from moisture, soil, grove and land use |
 | 1.2.22.18 | Buildings and human intervention respected | implemented | vegetationAt humanPressure from settlement, farming, mining, clearing |
-| 1.2.22.19 | Every biome recognisable from the normal camera | implemented | biome-generation-data.js#BIOME_IDENTITY palette, silhouette and landmark per biome |
-| 1.2.22.20 | Own colour palette per biome | implemented | biome-generation-data.js#BIOME_IDENTITY twelve distinct palettes; palette distance audited |
-| 1.2.22.21 | Own vegetation silhouettes | implemented | biome-generation-data.js#BIOME_IDENTITY silhouettes and BIOME_PLANTS silhouette rows |
-| 1.2.22.22 | Own ground and surface textures | implemented | biome-generation-data.js#BIOME_IDENTITY texture rows; world.js#prerenderTerrain identity wash |
-| 1.2.22.23 | Own atmospheric effects | implemented | biome-generation-data.js#BIOME_IDENTITY atmosphere rows; existing terrain mist/heat layers |
-| 1.2.22.24 | Own water and moisture presentation | implemented | biome-generation-data.js#BIOME_IDENTITY waterLook rows and seasonal water level |
-| 1.2.22.25 | Own seasonal appearance | implemented | biome-generation-data.js#BIOME_IDENTITY seasons; cross-biome-data.js#BIOME_SEASONAL_APPEARANCE |
-| 1.2.22.26 | Distinct landmarks for important biomes | implemented | biome-generation-data.js#BIOME_IDENTITY landmark row per biome |
+| 1.2.22.19 | Every biome recognisable from the normal camera | implemented | biome-generation-data.js#BIOME_IDENTITY palette, silhouette and landmark per biome; biome-identity-render.js#drawBiomeIdentityOverlay |
+| 1.2.22.20 | Own colour palette per biome | implemented | biome-generation-data.js#BIOME_IDENTITY twelve distinct palettes; world.js#prerenderTerrain bilinear blend; palette distance audited |
+| 1.2.22.21 | Own vegetation silhouettes | implemented | biome-generation-data.js#BIOME_IDENTITY silhouettes and BIOME_PLANTS silhouette rows; biome-identity-render.js plant glyph forms |
+| 1.2.22.22 | Own ground and surface textures | implemented | biome-generation-data.js#BIOME_GROUND_GRAIN; world.js#prerenderTerrain per-biome grain |
+| 1.2.22.23 | Own atmospheric effects | implemented | biome-generation-data.js#BIOME_ATMOSPHERE; biome-identity-render.js#drawBiomeIdentityOverlay bounded motes and screen haze |
+| 1.2.22.24 | Own water and moisture presentation | implemented | biome-generation-data.js#BIOME_IDENTITY waterLook rows; biome-generation.js#BIOME_WATER_TINT_COLORS bilinear water palette |
+| 1.2.22.25 | Own seasonal appearance | implemented | biome-generation-data.js#BIOME_IDENTITY seasons; terrain.js#seasonalTintOverlay per-biome faces; panel season swatches |
+| 1.2.22.26 | Distinct landmarks for important biomes | implemented | biome-generation-data.js#BIOME_IDENTITY landmark row per biome; biome-identity-render.js twelve landmark silhouettes and anchors |
 | 1.2.22.27 | Visually independent fantastic biomes | implemented | biome-generation-data.js#SPECIAL_BIOME_LOOKS and special-biomes.js families |
 | 1.2.22.28 | Vegetation detail depends on camera distance | implemented | biome-generation-data.js#BIOME_LOD tiers; terrain.js forest sprite/crown LOD |
 | 1.2.22.29 | LOD system for trees and larger plants | implemented | BIOME_LOD detail/simplified/impostor thresholds; forest-detail-reference.mjs |
 | 1.2.22.30 | Simplified representation of distant vegetation | implemented | BIOME_LOD impostor tier; terrain.js canopy marks beyond the impostor zoom |
-| 1.2.22.31 | Instancing and efficient reuse | implemented | shared crown/trunk sprite cache and per-biome palette reuse in terrain.js |
-| 1.2.22.32 | Bounded particle effects | implemented | BIOME_LOD.maxParticles and one ambient layer per visible biome |
-| 1.2.22.33 | Efficient shadow calculation | implemented | baked ground hillshade plus contact crown shadow cadence in BIOME_LOD |
+| 1.2.22.31 | Instancing and efficient reuse | implemented | shared crown/trunk sprite cache and per-biome palette reuse in terrain.js; cached landmark anchors |
+| 1.2.22.32 | Bounded particle effects | implemented | BIOME_LOD.maxParticles and a 140-mote budget across all visible biome anchors |
+| 1.2.22.33 | Efficient shadow calculation | implemented | baked ground hillshade plus contact crown and landmark shadow cadence in BIOME_LOD |
 | 1.2.22.34 | No unnecessary simulation of single grass blades | implemented | grass is a density/texture field; no blade entity exists |
 | 1.2.22.35 | Ecological simulation on a suitable abstraction level | implemented | 36 compact atlas regions and one annual pass; no per-tile ecology loop |
 | 1.2.22.36 | Detail without hurting large maps | implemented | coarse biome identity map and terrain resolution scaling to 576×576 |
@@ -99,6 +113,6 @@ layer without changing species identity.
 | 1.2.22.49 | Resources checked for plausible distribution | implemented | BIOME_RESOURCE_REQUIREMENTS audit and region resource match |
 | 1.2.22.50 | Animal species checked against habitats | implemented | tests/world/biome-generation.test.js every wildlife species has a habitat |
 | 1.2.22.51 | Hazards checked for traceable triggering | implemented | tests/world/biome-generation.test.js every trigger names a catalogue mechanic |
-| 1.2.22.52 | Performance checked on large maps | implemented | tests/world/biome-generation.test.js budget; low-end-performance.mjs |
-| 1.2.22.53 | No visible biome borders or rendering errors | implemented | continuous terrain palette, ecotone wash, identity map; browser references |
+| 1.2.22.52 | Performance checked on large maps | implemented | tests/world/biome-generation.test.js budget and anchor timing; low-end-performance.mjs; browser frame probe |
+| 1.2.22.53 | No visible biome borders or rendering errors | implemented | continuous bilinear ground blend, per-biome ecotone wash, cached anchors; browser references with zero page errors |
 | 1.2.22.54 | No regression of terrain, building or economy systems | implemented | shared arrays and atlas records untouched; full npm test and campaign gate |

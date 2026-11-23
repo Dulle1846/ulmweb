@@ -7,6 +7,7 @@ import { state } from "../core/state.js";
 import { getBiomeEconomySnapshot } from "../systems/biome-resource-state.js";
 import { getBiomeFrontierSupply } from "../systems/biome-market-link.js";
 import { BIOME_FOCUSES, BIOME_MARKET_CATEGORIES, BIOME_POLICIES, BIOME_RESOURCE_CATEGORIES } from "../world/biome-resource-data.js";
+import { BIOME_PLANTS } from "../world/biome-generation-data.js";
 
 const esc = value => String(value ?? "").replace(/[&<>"']/g, character => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
@@ -154,6 +155,13 @@ function generationSection(region) {
     const rows = generation.requirements.map(row =>
         '<div class="biome-system-row biome-generation-row" data-biome-generation-requirement="' + esc(row.id) + '" data-biome-generation-value="' + esc(row.value) + '"><span><b>' + esc(row.label) + '</b><small>' + esc(row.detail) + '</small></span><strong>' + esc(row.value) + '</strong></div>').join("");
     const palette = generation.palette;
+    const seasonFaces = generation.identity.seasons.map((face, index) =>
+        '<span class="biome-season-swatch" data-biome-season-swatch="' + esc(face.id) + '" data-biome-season-index="' + index + '" style="--season-base:' + esc(face.base) + ';--season-accent:' + esc(face.accent) + '"><i></i><small>' + esc(face.label.toUpperCase()) + '</small><b>' + esc(face.note) + '</b></span>').join("");
+    const plantChips = generation.vegetation.speciesIds.slice(0, 8).map(id => {
+        const plant = BIOME_PLANTS[id];
+        if (!plant) return "";
+        return '<span class="biome-plant-chip" data-biome-plant-chip="' + esc(id) + '" style="--plant-color:' + esc(plant.color) + '"><i></i>' + esc(plant.label) + ' <small>' + plant.variants.length + ' var · ' + esc(plant.form) + '</small></span>';
+    }).join("");
     return '<div class="command-section-title">BIOME GENERATION · 1.2.22</div>' +
         '<div class="biome-chip-line" data-biome-generation="catalog"><small>IDENTITY</small>' +
         '<span class="biome-badge" data-biome-generation-id="' + esc(generation.biomeId) + '">' + esc(generation.label.toUpperCase()) + '</span>' +
@@ -161,6 +169,8 @@ function generationSection(region) {
         '<span class="biome-badge">' + esc(generation.identity.texture.toUpperCase()) + '</span>' +
         '<span class="biome-badge">' + esc(generation.identity.atmosphere.toUpperCase()) + '</span>' +
         '<span class="biome-badge">LANDMARK · ' + esc(generation.identity.landmark.label.toUpperCase()) + '</span></div>' +
+        '<div class="biome-season-strip" data-biome-season-strip="' + esc(generation.biomeId) + '">' + seasonFaces + '</div>' +
+        '<div class="biome-chip-line" data-biome-plant-palette><small>PLANT PALETTE</small>' + plantChips + '</div>' +
         '<div class="biome-system-readout" data-biome-generation-readout> ' + readout + '</div>' +
         '<details class="biome-system-ledger"><summary>FULL GENERATION LEDGER · 54 PARAMETERS</summary><div class="biome-system-grid">' + rows + '</div></details>';
 }

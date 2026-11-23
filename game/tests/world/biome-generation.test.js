@@ -6,15 +6,18 @@ import {
     normalizeWorldOptions, seaLevelFor
 } from "../../js/world/terrain-model.js";
 import {
-    BIOME_HAZARD_TRIGGERS, BIOME_HABITATS, BIOME_IDENTITY, BIOME_IDENTITY_IDS,
-    BIOME_LOD, BIOME_PLANTS, BIOME_GENERATION_REQUIREMENTS,
-    BIOME_RESOURCE_REQUIREMENTS, plantsForBiome, resourceRequirementsForBiome
+    BIOME_ATMOSPHERE, BIOME_GROUND_GRAIN, BIOME_HAZARD_TRIGGERS, BIOME_HABITATS,
+    BIOME_IDENTITY, BIOME_IDENTITY_IDS, BIOME_LOD, BIOME_PLANTS,
+    BIOME_GENERATION_REQUIREMENTS, BIOME_RESOURCE_REQUIREMENTS,
+    plantsForBiome, resourceRequirementsForBiome
 } from "../../js/world/biome-generation-data.js";
 import {
     analyzeBiomeField, biomeAt, biomeEnvironmentAt, biomeRegistryAudit,
     buildBiomeGenerationProfile, buildBiomeIndexMap, classifyBiome,
+    BIOME_MAP_ORDER, BIOME_TINT_COLORS, BIOME_WATER_TINT_COLORS,
     vegetationAt
 } from "../../js/world/biome-generation.js";
+import { biomeLandmarkAnchors } from "../../js/presentation/rendering/biome-identity-render.js";
 import { BIOME_RESOURCE_BY_ID, BIOME_WILDLIFE } from "../../js/world/biome-resource-data.js";
 import { HAZARD_CATALOG } from "../../js/world/hazard-data.js";
 import {
@@ -262,6 +265,12 @@ test("1.2.22 every region exposes a complete 54-point generation profile", () =>
     const ids = new Set([...html.matchAll(/data-biome-generation-requirement="(1\.2\.22\.\d+)"/g)].map(match => match[1]));
     assert.equal(ids.size, 54, "the player panel must show all 54 point IDs");
     assert.ok(!/data-biome-generation-value=""/.test(html), "no generation row may render an empty value");
+    assert.equal(new Set([...html.matchAll(/data-biome-season-swatch="(spring|summer|autumn|winter)"/g)].map(match => match[1])).size, 4,
+        "every discovered region must show all four seasonal faces");
+    assert.ok(new Set([...html.matchAll(/data-biome-plant-chip="([a-z-]+)"/g)].map(match => match[1])).size >= 3,
+        "the plant palette must name real species, not a generic label");
+    assert.ok(!/--season-base:\s*;/.test(html), "a season swatch must carry its real colour");
+    assert.ok(!/--plant-color:\s*;/.test(html), "a plant chip must carry its real colour");
 });
 
 test("1.2.22 season change updates the same generation profile", () => {
@@ -332,6 +341,53 @@ test("1.2.22 generation survives save and reload", () => {
     const snapshot = getBiomeRegionSnapshot(region.id);
     assert.ok(snapshot.generation);
     assert.equal(snapshot.generation.requirements.length, 54);
+});
+
+test("1.2.22 landmark, ground grain and atmosphere registries are complete and bounded", () => {
+    assert.equal(BIOME_MAP_ORDER.length, 12);
+    assert.equal(BIOME_TINT_COLORS.length, 12);
+    assert.equal(BIOME_WATER_TINT_COLORS.length, 12);
+    for (const biome of BIOME_IDENTITY_IDS) {
+        assert.ok(BIOME_GROUND_GRAIN[biome] >= 0.01 && BIOME_GROUND_GRAIN[biome] <= 0.08, biome + " grain must stay subtle");
+        const atmosphere = BIOME_ATMOSPHERE[biome];
+        assert.ok(atmosphere, biome + " needs an atmosphere row");
+        assert.ok(atmosphere.count >= 3 && atmosphere.count <= 8, biome + " mote count must stay bounded");
+        assert.ok(atmosphere.seasons.length >= 1);
+        assert.match(atmosphere.color, /^#[0-9a-f]{6}$/i);
+        assert.ok(BIOME_IDENTITY[biome].landmark.id);
+    }
+    assert.ok(BIOME_LOD.maxParticles >= Math.max(...Object.values(BIOME_ATMOSPHERE).map(row => row.count)) * 8);
+
+    resetState();
+    state.worldW = W;
+    state.worldH = H;
+    const context = syntheticWorld();
+    const map = buildBiomeIndexMap(context, 4);
+    const explored = Array.from({ length: W }, () => new Array(H).fill(true));
+    const regions = Array.from({ length: 12 }, (_, index) => ({
+        id: "test-region-" + index,
+        name: "Region " + index,
+        discovered: true,
+        centerX: 4 + (index % 6) * 15,
+        centerY: 12 + Math.floor(index / 6) * 34,
+        width: 14, height: 30,
+        rawBiome: BIOME_IDENTITY_IDS[index]
+    }));
+    const started = performance.now();
+    const anchors = biomeLandmarkAnchors({ regions, map, explored, limit: 12 });
+    const elapsed = performance.now() - started;
+    assert.ok(anchors.length >= 6, "discovered regions must produce landmarks");
+    assert.ok(anchors.length <= 12);
+    assert.equal(new Set(anchors.map(row => row.regionId)).size, anchors.length);
+    for (const anchor of anchors) {
+        assert.ok(BIOME_IDENTITY[anchor.biome]);
+        assert.ok(Number.isFinite(anchor.x) && Number.isFinite(anchor.y));
+        assert.ok(anchor.identity.landmark.label);
+        assert.ok(anchor.x >= 0 && anchor.x < W && anchor.y >= 0 && anchor.y < H);
+    }
+    assert.deepEqual(anchors, biomeLandmarkAnchors({ regions, map, explored, limit: 12 }), "anchors must be deterministic");
+    assert.ok(elapsed < 250, "36-region anchor selection took " + Math.round(elapsed) + " ms");
+    assert.ok(new Set(anchors.map(row => row.identity.landmark.id)).size >= 3, "landmarks must not all use one silhouette");
 });
 
 test("1.2.22 classification stays inside the large-map budget", () => {

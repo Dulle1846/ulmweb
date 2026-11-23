@@ -152,9 +152,12 @@ const DOC_SPECS = [
             { file: "js/systems/biome-resource-state.js", symbol: "generateBiomeAtlas", role: "atlas" },
             { file: "js/presentation/biome-panel.js", symbol: "renderBiomePanel", role: "ui" },
             { file: "js/world/world.js", symbol: "initWorld", role: "world" },
-            { file: "js/world/world.js", symbol: "prerenderTerrain", role: "renderer" }
+            { file: "js/world/world.js", symbol: "prerenderTerrain", role: "renderer" },
+            { file: "js/presentation/rendering/biome-identity-render.js", symbol: "biomeLandmarkAnchors", role: "landmarks" },
+            { file: "js/presentation/rendering/biome-identity-render.js", symbol: "drawBiomeIdentityOverlay", role: "renderer" },
+            { file: "js/presentation/rendering/terrain.js", symbol: "seasonalTintOverlay", role: "renderer" }
         ],
-        tests: ["tests/world/biome-generation.test.js", "tests/browser/biome-atlas-ui.mjs"]
+        tests: ["tests/world/biome-generation.test.js", "tests/browser/biome-atlas-ui.mjs", "tests/browser/biome-atlas-visual.mjs"]
     }
 ];
 

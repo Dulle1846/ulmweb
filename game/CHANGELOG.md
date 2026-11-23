@@ -1,13 +1,46 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.47.0`
-**Next development line:** `3.48.0-dev`
+**Current production version:** `3.48.0`
+**Next development line:** `3.49.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
 **Last repository verification:** 2026-11-23 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.48.0 — The biome identity becomes visible terrain
+
+1.2.22 was already wired into generation, data and the panel. This release
+finishes the part a player actually looks at: the ground, the seasons, the
+landmarks and the atmosphere now read as different places instead of one green
+sheet with a registry behind it.
+
+- **Bilinear ground, not four-tile blocks.** `world.js#prerenderTerrain` blends
+  the four surrounding cells of the coarse biome map. Each biome supplies its
+  own land and water tint plus a deterministic grain amplitude, so pasture,
+  leaf litter, peat, sand, scree and open water keep distinct surfaces at the
+  closest camera. The bake is still one O(pixels) pass per realm and is cached.
+- **Per-biome seasonal faces.** `terrain.js#seasonalTintOverlay` no longer paints
+  one global seasonal wash. Every coarse cell takes the seasonal base and accent
+  of its own biome, with altitude-aware frost and a soft low-resolution edge, so
+  spring blossom, summer shade, autumn copper and winter frost meet in ecotones.
+- **Landmarks, plants and bounded air.** New
+  `presentation/rendering/biome-identity-render.js` places one deterministic
+  landmark per discovered atlas region: drowned tower, salt spit, ice cairn,
+  standing stone, frost mound, great spruce, sunken shrine, wind arch, kurgan,
+  great oak, hollow tree and giant fig. Each anchor gets a small plant vignette
+  and its biome's atmosphere motes, capped at 140 across the whole view. Anchors
+  are cached by seed, discovery revision and map shape; only explored land is
+  used, and water is avoided unless the region itself is coastal or aquatic.
+- **The registry is readable in play.** The region card now prints all four
+  seasonal colour swatches and the real plant palette (species, colour, form and
+  variant count), in addition to the existing 54-point ledger.
+- **Gates.** The focused world test now proves landmark determinism, the
+  12-biome grain/atmosphere contract and a bounded 36-region selection; the
+  browser atlas audit reads the swatches and plant chips from the live DOM and
+  the visual reference renders the close, district and landscape cameras with
+  zero page errors.
 
 ## 3.47.0 — Every biome now has its own generation and its own face
 

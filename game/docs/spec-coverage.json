@@ -2,9 +2,9 @@
   "version": 2,
   "generatedBy": "scripts/spec-audit.mjs",
   "scope": "All numbered 1.1 and 1.2.1–1.2.18 requirements, plus the documented 2.x phases and 3.3–4.0 roadmap points.",
-  "commit": "711cf6b420275a5fc27eb4d66639969e343e1003",
-  "sourceHash": "409dc89423c11a94bc1be1ad1cfc2fb108952652b35e9c22bf3a6b1c71a531ed",
-  "generatedAt": "2026-11-22T21:15:10+00:00",
+  "commit": "08301d61b3e68dcd0559bdde18df4660b6f97e85",
+  "sourceHash": "d388016d9b267928a8363cfa73294005686217bbd3c3101f610fb94f9992a804",
+  "generatedAt": "2026-11-23T09:41:19+00:00",
   "totals": {
     "total": 1618,
     "implemented": 1614,
@@ -37608,11 +37608,15 @@
             "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/world/world.js#initWorld (world)",
-            "js/world/world.js#prerenderTerrain (renderer)"
+            "js/world/world.js#prerenderTerrain (renderer)",
+            "js/presentation/rendering/biome-identity-render.js#biomeLandmarkAnchors (landmarks)",
+            "js/presentation/rendering/biome-identity-render.js#drawBiomeIdentityOverlay (renderer)",
+            "js/presentation/rendering/terrain.js#seasonalTintOverlay (renderer)"
           ],
           "tests": [
             "tests/world/biome-generation.test.js",
-            "tests/browser/biome-atlas-ui.mjs"
+            "tests/browser/biome-atlas-ui.mjs",
+            "tests/browser/biome-atlas-visual.mjs"
           ],
           "probe": null
         },
@@ -37632,11 +37636,15 @@
             "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/world/world.js#initWorld (world)",
-            "js/world/world.js#prerenderTerrain (renderer)"
+            "js/world/world.js#prerenderTerrain (renderer)",
+            "js/presentation/rendering/biome-identity-render.js#biomeLandmarkAnchors (landmarks)",
+            "js/presentation/rendering/biome-identity-render.js#drawBiomeIdentityOverlay (renderer)",
+            "js/presentation/rendering/terrain.js#seasonalTintOverlay (renderer)"
           ],
           "tests": [
             "tests/world/biome-generation.test.js",
-            "tests/browser/biome-atlas-ui.mjs"
+            "tests/browser/biome-atlas-ui.mjs",
+            "tests/browser/biome-atlas-visual.mjs"
           ],
           "probe": null
         },
@@ -37656,11 +37664,15 @@
             "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/world/world.js#initWorld (world)",
-            "js/world/world.js#prerenderTerrain (renderer)"
+            "js/world/world.js#prerenderTerrain (renderer)",
+            "js/presentation/rendering/biome-identity-render.js#biomeLandmarkAnchors (landmarks)",
+            "js/presentation/rendering/biome-identity-render.js#drawBiomeIdentityOverlay (renderer)",
+            "js/presentation/rendering/terrain.js#seasonalTintOverlay (renderer)"
           ],
           "tests": [
             "tests/world/biome-generation.test.js",
-            "tests/browser/biome-atlas-ui.mjs"
+            "tests/browser/biome-atlas-ui.mjs",
+            "tests/browser/biome-atlas-visual.mjs"
           ],
           "probe": null
         },
@@ -37680,11 +37692,15 @@
             "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/world/world.js#initWorld (world)",
-            "js/world/world.js#prerenderTerrain (renderer)"
+            "js/world/world.js#prerenderTerrain (renderer)",
+            "js/presentation/rendering/biome-identity-render.js#biomeLandmarkAnchors (landmarks)",
+            "js/presentation/rendering/biome-identity-render.js#drawBiomeIdentityOverlay (renderer)",
+            "js/presentation/rendering/terrain.js#seasonalTintOverlay (renderer)"
           ],
           "tests": [
             "tests/world/biome-generation.test.js",
-            "tests/browser/biome-atlas-ui.mjs"
+            "tests/browser/biome-atlas-ui.mjs",
+            "tests/browser/biome-atlas-visual.mjs"
           ],
           "probe": null
         },
@@ -37704,11 +37720,15 @@
             "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/world/world.js#initWorld (world)",
-            "js/world/world.js#prerenderTerrain (renderer)"
+            "js/world/world.js#prerenderTerrain (renderer)",
+            "js/presentation/rendering/biome-identity-render.js#biomeLandmarkAnchors (landmarks)",
+            "js/presentation/rendering/biome-identity-render.js#drawBiomeIdentityOverlay (renderer)",
+            "js/presentation/rendering/terrain.js#seasonalTintOverlay (renderer)"
           ],
           "tests": [
             "tests/world/biome-generation.test.js",
-            "tests/browser/biome-atlas-ui.mjs"
+            "tests/browser/biome-atlas-ui.mjs",
+            "tests/browser/biome-atlas-visual.mjs"
           ],
           "probe": null
         },
@@ -37728,11 +37748,15 @@
             "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/world/world.js#initWorld (world)",
-            "js/world/world.js#prerenderTerrain (renderer)"
+            "js/world/world.js#prerenderTerrain (renderer)",
+            "js/presentation/rendering/biome-identity-render.js#biomeLandmarkAnchors (landmarks)",
+            "js/presentation/rendering/biome-identity-render.js#drawBiomeIdentityOverlay (renderer)",
+            "js/presentation/rendering/terrain.js#seasonalTintOverlay (renderer)"
           ],
           "tests": [
             "tests/world/biome-generation.test.js",
-            "tests/browser/biome-atlas-ui.mjs"
+            "tests/browser/biome-atlas-ui.mjs",
+            "tests/browser/biome-atlas-visual.mjs"
           ],
           "probe": null
         },
@@ -37752,11 +37776,15 @@
             "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/world/world.js#initWorld (world)",
-            "js/world/world.js#prerenderTerrain (renderer)"
+            "js/world/world.js#prerenderTerrain (renderer)",
+            "js/presentation/rendering/biome-identity-render.js#biomeLandmarkAnchors (landmarks)",
+            "js/presentation/rendering/biome-identity-render.js#drawBiomeIdentityOverlay (renderer)",
+            "js/presentation/rendering/terrain.js#seasonalTintOverlay (renderer)"
           ],
           "tests": [
             "tests/world/biome-generation.test.js",
-            "tests/browser/biome-atlas-ui.mjs"
+            "tests/browser/biome-atlas-ui.mjs",
+            "tests/browser/biome-atlas-visual.mjs"
           ],
           "probe": null
         },
@@ -37776,11 +37804,15 @@
             "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/world/world.js#initWorld (world)",
-            "js/world/world.js#prerenderTerrain (renderer)"
+            "js/world/world.js#prerenderTerrain (renderer)",
+            "js/presentation/rendering/biome-identity-render.js#biomeLandmarkAnchors (landmarks)",
+            "js/presentation/rendering/biome-identity-render.js#drawBiomeIdentityOverlay (renderer)",
+            "js/presentation/rendering/terrain.js#seasonalTintOverlay (renderer)"
           ],
           "tests": [
             "tests/world/biome-generation.test.js",
-            "tests/browser/biome-atlas-ui.mjs"
+            "tests/browser/biome-atlas-ui.mjs",
+            "tests/browser/biome-atlas-visual.mjs"
           ],
           "probe": null
         },
@@ -37800,11 +37832,15 @@
             "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/world/world.js#initWorld (world)",
-            "js/world/world.js#prerenderTerrain (renderer)"
+            "js/world/world.js#prerenderTerrain (renderer)",
+            "js/presentation/rendering/biome-identity-render.js#biomeLandmarkAnchors (landmarks)",
+            "js/presentation/rendering/biome-identity-render.js#drawBiomeIdentityOverlay (renderer)",
+            "js/presentation/rendering/terrain.js#seasonalTintOverlay (renderer)"
           ],
           "tests": [
             "tests/world/biome-generation.test.js",
-            "tests/browser/biome-atlas-ui.mjs"
+            "tests/browser/biome-atlas-ui.mjs",
+            "tests/browser/biome-atlas-visual.mjs"
           ],
           "probe": null
         },
@@ -37824,11 +37860,15 @@
             "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/world/world.js#initWorld (world)",
-            "js/world/world.js#prerenderTerrain (renderer)"
+            "js/world/world.js#prerenderTerrain (renderer)",
+            "js/presentation/rendering/biome-identity-render.js#biomeLandmarkAnchors (landmarks)",
+            "js/presentation/rendering/biome-identity-render.js#drawBiomeIdentityOverlay (renderer)",
+            "js/presentation/rendering/terrain.js#seasonalTintOverlay (renderer)"
           ],
           "tests": [
             "tests/world/biome-generation.test.js",
-            "tests/browser/biome-atlas-ui.mjs"
+            "tests/browser/biome-atlas-ui.mjs",
+            "tests/browser/biome-atlas-visual.mjs"
           ],
           "probe": null
         },
@@ -37848,11 +37888,15 @@
             "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/world/world.js#initWorld (world)",
-            "js/world/world.js#prerenderTerrain (renderer)"
+            "js/world/world.js#prerenderTerrain (renderer)",
+            "js/presentation/rendering/biome-identity-render.js#biomeLandmarkAnchors (landmarks)",
+            "js/presentation/rendering/biome-identity-render.js#drawBiomeIdentityOverlay (renderer)",
+            "js/presentation/rendering/terrain.js#seasonalTintOverlay (renderer)"
           ],
           "tests": [
             "tests/world/biome-generation.test.js",
-            "tests/browser/biome-atlas-ui.mjs"
+            "tests/browser/biome-atlas-ui.mjs",
+            "tests/browser/biome-atlas-visual.mjs"
           ],
           "probe": null
         },
@@ -37872,11 +37916,15 @@
             "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/world/world.js#initWorld (world)",
-            "js/world/world.js#prerenderTerrain (renderer)"
+            "js/world/world.js#prerenderTerrain (renderer)",
+            "js/presentation/rendering/biome-identity-render.js#biomeLandmarkAnchors (landmarks)",
+            "js/presentation/rendering/biome-identity-render.js#drawBiomeIdentityOverlay (renderer)",
+            "js/presentation/rendering/terrain.js#seasonalTintOverlay (renderer)"
           ],
           "tests": [
             "tests/world/biome-generation.test.js",
-            "tests/browser/biome-atlas-ui.mjs"
+            "tests/browser/biome-atlas-ui.mjs",
+            "tests/browser/biome-atlas-visual.mjs"
           ],
           "probe": null
         },
@@ -37896,11 +37944,15 @@
             "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/world/world.js#initWorld (world)",
-            "js/world/world.js#prerenderTerrain (renderer)"
+            "js/world/world.js#prerenderTerrain (renderer)",
+            "js/presentation/rendering/biome-identity-render.js#biomeLandmarkAnchors (landmarks)",
+            "js/presentation/rendering/biome-identity-render.js#drawBiomeIdentityOverlay (renderer)",
+            "js/presentation/rendering/terrain.js#seasonalTintOverlay (renderer)"
           ],
           "tests": [
             "tests/world/biome-generation.test.js",
-            "tests/browser/biome-atlas-ui.mjs"
+            "tests/browser/biome-atlas-ui.mjs",
+            "tests/browser/biome-atlas-visual.mjs"
           ],
           "probe": null
         },
@@ -37920,11 +37972,15 @@
             "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/world/world.js#initWorld (world)",
-            "js/world/world.js#prerenderTerrain (renderer)"
+            "js/world/world.js#prerenderTerrain (renderer)",
+            "js/presentation/rendering/biome-identity-render.js#biomeLandmarkAnchors (landmarks)",
+            "js/presentation/rendering/biome-identity-render.js#drawBiomeIdentityOverlay (renderer)",
+            "js/presentation/rendering/terrain.js#seasonalTintOverlay (renderer)"
           ],
           "tests": [
             "tests/world/biome-generation.test.js",
-            "tests/browser/biome-atlas-ui.mjs"
+            "tests/browser/biome-atlas-ui.mjs",
+            "tests/browser/biome-atlas-visual.mjs"
           ],
           "probe": null
         },
@@ -37944,11 +38000,15 @@
             "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/world/world.js#initWorld (world)",
-            "js/world/world.js#prerenderTerrain (renderer)"
+            "js/world/world.js#prerenderTerrain (renderer)",
+            "js/presentation/rendering/biome-identity-render.js#biomeLandmarkAnchors (landmarks)",
+            "js/presentation/rendering/biome-identity-render.js#drawBiomeIdentityOverlay (renderer)",
+            "js/presentation/rendering/terrain.js#seasonalTintOverlay (renderer)"
           ],
           "tests": [
             "tests/world/biome-generation.test.js",
-            "tests/browser/biome-atlas-ui.mjs"
+            "tests/browser/biome-atlas-ui.mjs",
+            "tests/browser/biome-atlas-visual.mjs"
           ],
           "probe": null
         },
@@ -37968,11 +38028,15 @@
             "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/world/world.js#initWorld (world)",
-            "js/world/world.js#prerenderTerrain (renderer)"
+            "js/world/world.js#prerenderTerrain (renderer)",
+            "js/presentation/rendering/biome-identity-render.js#biomeLandmarkAnchors (landmarks)",
+            "js/presentation/rendering/biome-identity-render.js#drawBiomeIdentityOverlay (renderer)",
+            "js/presentation/rendering/terrain.js#seasonalTintOverlay (renderer)"
           ],
           "tests": [
             "tests/world/biome-generation.test.js",
-            "tests/browser/biome-atlas-ui.mjs"
+            "tests/browser/biome-atlas-ui.mjs",
+            "tests/browser/biome-atlas-visual.mjs"
           ],
           "probe": null
         },
@@ -37992,11 +38056,15 @@
             "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/world/world.js#initWorld (world)",
-            "js/world/world.js#prerenderTerrain (renderer)"
+            "js/world/world.js#prerenderTerrain (renderer)",
+            "js/presentation/rendering/biome-identity-render.js#biomeLandmarkAnchors (landmarks)",
+            "js/presentation/rendering/biome-identity-render.js#drawBiomeIdentityOverlay (renderer)",
+            "js/presentation/rendering/terrain.js#seasonalTintOverlay (renderer)"
           ],
           "tests": [
             "tests/world/biome-generation.test.js",
-            "tests/browser/biome-atlas-ui.mjs"
+            "tests/browser/biome-atlas-ui.mjs",
+            "tests/browser/biome-atlas-visual.mjs"
           ],
           "probe": null
         },
@@ -38016,11 +38084,15 @@
             "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/world/world.js#initWorld (world)",
-            "js/world/world.js#prerenderTerrain (renderer)"
+            "js/world/world.js#prerenderTerrain (renderer)",
+            "js/presentation/rendering/biome-identity-render.js#biomeLandmarkAnchors (landmarks)",
+            "js/presentation/rendering/biome-identity-render.js#drawBiomeIdentityOverlay (renderer)",
+            "js/presentation/rendering/terrain.js#seasonalTintOverlay (renderer)"
           ],
           "tests": [
             "tests/world/biome-generation.test.js",
-            "tests/browser/biome-atlas-ui.mjs"
+            "tests/browser/biome-atlas-ui.mjs",
+            "tests/browser/biome-atlas-visual.mjs"
           ],
           "probe": null
         },
@@ -38028,7 +38100,7 @@
           "id": "1.2.22.19",
           "label": "Every biome recognisable from the normal camera",
           "sourceStatus": "implemented",
-          "docEvidence": "biome-generation-data.js#BIOME_IDENTITY palette, silhouette and landmark per biome",
+          "docEvidence": "biome-generation-data.js#BIOME_IDENTITY palette, silhouette and landmark per biome; biome-identity-render.js#drawBiomeIdentityOverlay",
           "status": "implemented",
           "missing": [],
           "consumers": [
@@ -38040,11 +38112,15 @@
             "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/world/world.js#initWorld (world)",
-            "js/world/world.js#prerenderTerrain (renderer)"
+            "js/world/world.js#prerenderTerrain (renderer)",
+            "js/presentation/rendering/biome-identity-render.js#biomeLandmarkAnchors (landmarks)",
+            "js/presentation/rendering/biome-identity-render.js#drawBiomeIdentityOverlay (renderer)",
+            "js/presentation/rendering/terrain.js#seasonalTintOverlay (renderer)"
           ],
           "tests": [
             "tests/world/biome-generation.test.js",
-            "tests/browser/biome-atlas-ui.mjs"
+            "tests/browser/biome-atlas-ui.mjs",
+            "tests/browser/biome-atlas-visual.mjs"
           ],
           "probe": null
         },
@@ -38052,7 +38128,7 @@
           "id": "1.2.22.20",
           "label": "Own colour palette per biome",
           "sourceStatus": "implemented",
-          "docEvidence": "biome-generation-data.js#BIOME_IDENTITY twelve distinct palettes; palette distance audited",
+          "docEvidence": "biome-generation-data.js#BIOME_IDENTITY twelve distinct palettes; world.js#prerenderTerrain bilinear blend; palette distance audited",
           "status": "implemented",
           "missing": [],
           "consumers": [
@@ -38064,11 +38140,15 @@
             "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/world/world.js#initWorld (world)",
-            "js/world/world.js#prerenderTerrain (renderer)"
+            "js/world/world.js#prerenderTerrain (renderer)",
+            "js/presentation/rendering/biome-identity-render.js#biomeLandmarkAnchors (landmarks)",
+            "js/presentation/rendering/biome-identity-render.js#drawBiomeIdentityOverlay (renderer)",
+            "js/presentation/rendering/terrain.js#seasonalTintOverlay (renderer)"
           ],
           "tests": [
             "tests/world/biome-generation.test.js",
-            "tests/browser/biome-atlas-ui.mjs"
+            "tests/browser/biome-atlas-ui.mjs",
+            "tests/browser/biome-atlas-visual.mjs"
           ],
           "probe": null
         },
@@ -38076,7 +38156,7 @@
           "id": "1.2.22.21",
           "label": "Own vegetation silhouettes",
           "sourceStatus": "implemented",
-          "docEvidence": "biome-generation-data.js#BIOME_IDENTITY silhouettes and BIOME_PLANTS silhouette rows",
+          "docEvidence": "biome-generation-data.js#BIOME_IDENTITY silhouettes and BIOME_PLANTS silhouette rows; biome-identity-render.js plant glyph forms",
           "status": "implemented",
           "missing": [],
           "consumers": [
@@ -38088,11 +38168,15 @@
             "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/world/world.js#initWorld (world)",
-            "js/world/world.js#prerenderTerrain (renderer)"
+            "js/world/world.js#prerenderTerrain (renderer)",
+            "js/presentation/rendering/biome-identity-render.js#biomeLandmarkAnchors (landmarks)",
+            "js/presentation/rendering/biome-identity-render.js#drawBiomeIdentityOverlay (renderer)",
+            "js/presentation/rendering/terrain.js#seasonalTintOverlay (renderer)"
           ],
           "tests": [
             "tests/world/biome-generation.test.js",
-            "tests/browser/biome-atlas-ui.mjs"
+            "tests/browser/biome-atlas-ui.mjs",
+            "tests/browser/biome-atlas-visual.mjs"
           ],
           "probe": null
         },
@@ -38100,7 +38184,7 @@
           "id": "1.2.22.22",
           "label": "Own ground and surface textures",
           "sourceStatus": "implemented",
-          "docEvidence": "biome-generation-data.js#BIOME_IDENTITY texture rows; world.js#prerenderTerrain identity wash",
+          "docEvidence": "biome-generation-data.js#BIOME_GROUND_GRAIN; world.js#prerenderTerrain per-biome grain",
           "status": "implemented",
           "missing": [],
           "consumers": [
@@ -38112,11 +38196,15 @@
             "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/world/world.js#initWorld (world)",
-            "js/world/world.js#prerenderTerrain (renderer)"
+            "js/world/world.js#prerenderTerrain (renderer)",
+            "js/presentation/rendering/biome-identity-render.js#biomeLandmarkAnchors (landmarks)",
+            "js/presentation/rendering/biome-identity-render.js#drawBiomeIdentityOverlay (renderer)",
+            "js/presentation/rendering/terrain.js#seasonalTintOverlay (renderer)"
           ],
           "tests": [
             "tests/world/biome-generation.test.js",
-            "tests/browser/biome-atlas-ui.mjs"
+            "tests/browser/biome-atlas-ui.mjs",
+            "tests/browser/biome-atlas-visual.mjs"
           ],
           "probe": null
         },
@@ -38124,7 +38212,7 @@
           "id": "1.2.22.23",
           "label": "Own atmospheric effects",
           "sourceStatus": "implemented",
-          "docEvidence": "biome-generation-data.js#BIOME_IDENTITY atmosphere rows; existing terrain mist/heat layers",
+          "docEvidence": "biome-generation-data.js#BIOME_ATMOSPHERE; biome-identity-render.js#drawBiomeIdentityOverlay bounded motes and screen haze",
           "status": "implemented",
           "missing": [],
           "consumers": [
@@ -38136,11 +38224,15 @@
             "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/world/world.js#initWorld (world)",
-            "js/world/world.js#prerenderTerrain (renderer)"
+            "js/world/world.js#prerenderTerrain (renderer)",
+            "js/presentation/rendering/biome-identity-render.js#biomeLandmarkAnchors (landmarks)",
+            "js/presentation/rendering/biome-identity-render.js#drawBiomeIdentityOverlay (renderer)",
+            "js/presentation/rendering/terrain.js#seasonalTintOverlay (renderer)"
           ],
           "tests": [
             "tests/world/biome-generation.test.js",
-            "tests/browser/biome-atlas-ui.mjs"
+            "tests/browser/biome-atlas-ui.mjs",
+            "tests/browser/biome-atlas-visual.mjs"
           ],
           "probe": null
         },
@@ -38148,7 +38240,7 @@
           "id": "1.2.22.24",
           "label": "Own water and moisture presentation",
           "sourceStatus": "implemented",
-          "docEvidence": "biome-generation-data.js#BIOME_IDENTITY waterLook rows and seasonal water level",
+          "docEvidence": "biome-generation-data.js#BIOME_IDENTITY waterLook rows; biome-generation.js#BIOME_WATER_TINT_COLORS bilinear water palette",
           "status": "implemented",
           "missing": [],
           "consumers": [
@@ -38160,11 +38252,15 @@
             "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/world/world.js#initWorld (world)",
-            "js/world/world.js#prerenderTerrain (renderer)"
+            "js/world/world.js#prerenderTerrain (renderer)",
+            "js/presentation/rendering/biome-identity-render.js#biomeLandmarkAnchors (landmarks)",
+            "js/presentation/rendering/biome-identity-render.js#drawBiomeIdentityOverlay (renderer)",
+            "js/presentation/rendering/terrain.js#seasonalTintOverlay (renderer)"
           ],
           "tests": [
             "tests/world/biome-generation.test.js",
-            "tests/browser/biome-atlas-ui.mjs"
+            "tests/browser/biome-atlas-ui.mjs",
+            "tests/browser/biome-atlas-visual.mjs"
           ],
           "probe": null
         },
@@ -38172,7 +38268,7 @@
           "id": "1.2.22.25",
           "label": "Own seasonal appearance",
           "sourceStatus": "implemented",
-          "docEvidence": "biome-generation-data.js#BIOME_IDENTITY seasons; cross-biome-data.js#BIOME_SEASONAL_APPEARANCE",
+          "docEvidence": "biome-generation-data.js#BIOME_IDENTITY seasons; terrain.js#seasonalTintOverlay per-biome faces; panel season swatches",
           "status": "implemented",
           "missing": [],
           "consumers": [
@@ -38184,11 +38280,15 @@
             "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/world/world.js#initWorld (world)",
-            "js/world/world.js#prerenderTerrain (renderer)"
+            "js/world/world.js#prerenderTerrain (renderer)",
+            "js/presentation/rendering/biome-identity-render.js#biomeLandmarkAnchors (landmarks)",
+            "js/presentation/rendering/biome-identity-render.js#drawBiomeIdentityOverlay (renderer)",
+            "js/presentation/rendering/terrain.js#seasonalTintOverlay (renderer)"
           ],
           "tests": [
             "tests/world/biome-generation.test.js",
-            "tests/browser/biome-atlas-ui.mjs"
+            "tests/browser/biome-atlas-ui.mjs",
+            "tests/browser/biome-atlas-visual.mjs"
           ],
           "probe": null
         },
@@ -38196,7 +38296,7 @@
           "id": "1.2.22.26",
           "label": "Distinct landmarks for important biomes",
           "sourceStatus": "implemented",
-          "docEvidence": "biome-generation-data.js#BIOME_IDENTITY landmark row per biome",
+          "docEvidence": "biome-generation-data.js#BIOME_IDENTITY landmark row per biome; biome-identity-render.js twelve landmark silhouettes and anchors",
           "status": "implemented",
           "missing": [],
           "consumers": [
@@ -38208,11 +38308,15 @@
             "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/world/world.js#initWorld (world)",
-            "js/world/world.js#prerenderTerrain (renderer)"
+            "js/world/world.js#prerenderTerrain (renderer)",
+            "js/presentation/rendering/biome-identity-render.js#biomeLandmarkAnchors (landmarks)",
+            "js/presentation/rendering/biome-identity-render.js#drawBiomeIdentityOverlay (renderer)",
+            "js/presentation/rendering/terrain.js#seasonalTintOverlay (renderer)"
           ],
           "tests": [
             "tests/world/biome-generation.test.js",
-            "tests/browser/biome-atlas-ui.mjs"
+            "tests/browser/biome-atlas-ui.mjs",
+            "tests/browser/biome-atlas-visual.mjs"
           ],
           "probe": null
         },
@@ -38232,11 +38336,15 @@
             "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/world/world.js#initWorld (world)",
-            "js/world/world.js#prerenderTerrain (renderer)"
+            "js/world/world.js#prerenderTerrain (renderer)",
+            "js/presentation/rendering/biome-identity-render.js#biomeLandmarkAnchors (landmarks)",
+            "js/presentation/rendering/biome-identity-render.js#drawBiomeIdentityOverlay (renderer)",
+            "js/presentation/rendering/terrain.js#seasonalTintOverlay (renderer)"
           ],
           "tests": [
             "tests/world/biome-generation.test.js",
-            "tests/browser/biome-atlas-ui.mjs"
+            "tests/browser/biome-atlas-ui.mjs",
+            "tests/browser/biome-atlas-visual.mjs"
           ],
           "probe": null
         },
@@ -38256,11 +38364,15 @@
             "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/world/world.js#initWorld (world)",
-            "js/world/world.js#prerenderTerrain (renderer)"
+            "js/world/world.js#prerenderTerrain (renderer)",
+            "js/presentation/rendering/biome-identity-render.js#biomeLandmarkAnchors (landmarks)",
+            "js/presentation/rendering/biome-identity-render.js#drawBiomeIdentityOverlay (renderer)",
+            "js/presentation/rendering/terrain.js#seasonalTintOverlay (renderer)"
           ],
           "tests": [
             "tests/world/biome-generation.test.js",
-            "tests/browser/biome-atlas-ui.mjs"
+            "tests/browser/biome-atlas-ui.mjs",
+            "tests/browser/biome-atlas-visual.mjs"
           ],
           "probe": null
         },
@@ -38280,11 +38392,15 @@
             "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/world/world.js#initWorld (world)",
-            "js/world/world.js#prerenderTerrain (renderer)"
+            "js/world/world.js#prerenderTerrain (renderer)",
+            "js/presentation/rendering/biome-identity-render.js#biomeLandmarkAnchors (landmarks)",
+            "js/presentation/rendering/biome-identity-render.js#drawBiomeIdentityOverlay (renderer)",
+            "js/presentation/rendering/terrain.js#seasonalTintOverlay (renderer)"
           ],
           "tests": [
             "tests/world/biome-generation.test.js",
-            "tests/browser/biome-atlas-ui.mjs"
+            "tests/browser/biome-atlas-ui.mjs",
+            "tests/browser/biome-atlas-visual.mjs"
           ],
           "probe": null
         },
@@ -38304,11 +38420,15 @@
             "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/world/world.js#initWorld (world)",
-            "js/world/world.js#prerenderTerrain (renderer)"
+            "js/world/world.js#prerenderTerrain (renderer)",
+            "js/presentation/rendering/biome-identity-render.js#biomeLandmarkAnchors (landmarks)",
+            "js/presentation/rendering/biome-identity-render.js#drawBiomeIdentityOverlay (renderer)",
+            "js/presentation/rendering/terrain.js#seasonalTintOverlay (renderer)"
           ],
           "tests": [
             "tests/world/biome-generation.test.js",
-            "tests/browser/biome-atlas-ui.mjs"
+            "tests/browser/biome-atlas-ui.mjs",
+            "tests/browser/biome-atlas-visual.mjs"
           ],
           "probe": null
         },
@@ -38316,7 +38436,7 @@
           "id": "1.2.22.31",
           "label": "Instancing and efficient reuse",
           "sourceStatus": "implemented",
-          "docEvidence": "shared crown/trunk sprite cache and per-biome palette reuse in terrain.js",
+          "docEvidence": "shared crown/trunk sprite cache and per-biome palette reuse in terrain.js; cached landmark anchors",
           "status": "implemented",
           "missing": [],
           "consumers": [
@@ -38328,11 +38448,15 @@
             "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/world/world.js#initWorld (world)",
-            "js/world/world.js#prerenderTerrain (renderer)"
+            "js/world/world.js#prerenderTerrain (renderer)",
+            "js/presentation/rendering/biome-identity-render.js#biomeLandmarkAnchors (landmarks)",
+            "js/presentation/rendering/biome-identity-render.js#drawBiomeIdentityOverlay (renderer)",
+            "js/presentation/rendering/terrain.js#seasonalTintOverlay (renderer)"
           ],
           "tests": [
             "tests/world/biome-generation.test.js",
-            "tests/browser/biome-atlas-ui.mjs"
+            "tests/browser/biome-atlas-ui.mjs",
+            "tests/browser/biome-atlas-visual.mjs"
           ],
           "probe": null
         },
@@ -38340,7 +38464,7 @@
           "id": "1.2.22.32",
           "label": "Bounded particle effects",
           "sourceStatus": "implemented",
-          "docEvidence": "BIOME_LOD.maxParticles and one ambient layer per visible biome",
+          "docEvidence": "BIOME_LOD.maxParticles and a 140-mote budget across all visible biome anchors",
           "status": "implemented",
           "missing": [],
           "consumers": [
@@ -38352,11 +38476,15 @@
             "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/world/world.js#initWorld (world)",
-            "js/world/world.js#prerenderTerrain (renderer)"
+            "js/world/world.js#prerenderTerrain (renderer)",
+            "js/presentation/rendering/biome-identity-render.js#biomeLandmarkAnchors (landmarks)",
+            "js/presentation/rendering/biome-identity-render.js#drawBiomeIdentityOverlay (renderer)",
+            "js/presentation/rendering/terrain.js#seasonalTintOverlay (renderer)"
           ],
           "tests": [
             "tests/world/biome-generation.test.js",
-            "tests/browser/biome-atlas-ui.mjs"
+            "tests/browser/biome-atlas-ui.mjs",
+            "tests/browser/biome-atlas-visual.mjs"
           ],
           "probe": null
         },
@@ -38364,7 +38492,7 @@
           "id": "1.2.22.33",
           "label": "Efficient shadow calculation",
           "sourceStatus": "implemented",
-          "docEvidence": "baked ground hillshade plus contact crown shadow cadence in BIOME_LOD",
+          "docEvidence": "baked ground hillshade plus contact crown and landmark shadow cadence in BIOME_LOD",
           "status": "implemented",
           "missing": [],
           "consumers": [
@@ -38376,11 +38504,15 @@
             "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/world/world.js#initWorld (world)",
-            "js/world/world.js#prerenderTerrain (renderer)"
+            "js/world/world.js#prerenderTerrain (renderer)",
+            "js/presentation/rendering/biome-identity-render.js#biomeLandmarkAnchors (landmarks)",
+            "js/presentation/rendering/biome-identity-render.js#drawBiomeIdentityOverlay (renderer)",
+            "js/presentation/rendering/terrain.js#seasonalTintOverlay (renderer)"
           ],
           "tests": [
             "tests/world/biome-generation.test.js",
-            "tests/browser/biome-atlas-ui.mjs"
+            "tests/browser/biome-atlas-ui.mjs",
+            "tests/browser/biome-atlas-visual.mjs"
           ],
           "probe": null
         },
@@ -38400,11 +38532,15 @@
             "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/world/world.js#initWorld (world)",
-            "js/world/world.js#prerenderTerrain (renderer)"
+            "js/world/world.js#prerenderTerrain (renderer)",
+            "js/presentation/rendering/biome-identity-render.js#biomeLandmarkAnchors (landmarks)",
+            "js/presentation/rendering/biome-identity-render.js#drawBiomeIdentityOverlay (renderer)",
+            "js/presentation/rendering/terrain.js#seasonalTintOverlay (renderer)"
           ],
           "tests": [
             "tests/world/biome-generation.test.js",
-            "tests/browser/biome-atlas-ui.mjs"
+            "tests/browser/biome-atlas-ui.mjs",
+            "tests/browser/biome-atlas-visual.mjs"
           ],
           "probe": null
         },
@@ -38424,11 +38560,15 @@
             "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/world/world.js#initWorld (world)",
-            "js/world/world.js#prerenderTerrain (renderer)"
+            "js/world/world.js#prerenderTerrain (renderer)",
+            "js/presentation/rendering/biome-identity-render.js#biomeLandmarkAnchors (landmarks)",
+            "js/presentation/rendering/biome-identity-render.js#drawBiomeIdentityOverlay (renderer)",
+            "js/presentation/rendering/terrain.js#seasonalTintOverlay (renderer)"
           ],
           "tests": [
             "tests/world/biome-generation.test.js",
-            "tests/browser/biome-atlas-ui.mjs"
+            "tests/browser/biome-atlas-ui.mjs",
+            "tests/browser/biome-atlas-visual.mjs"
           ],
           "probe": null
         },
@@ -38448,11 +38588,15 @@
             "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/world/world.js#initWorld (world)",
-            "js/world/world.js#prerenderTerrain (renderer)"
+            "js/world/world.js#prerenderTerrain (renderer)",
+            "js/presentation/rendering/biome-identity-render.js#biomeLandmarkAnchors (landmarks)",
+            "js/presentation/rendering/biome-identity-render.js#drawBiomeIdentityOverlay (renderer)",
+            "js/presentation/rendering/terrain.js#seasonalTintOverlay (renderer)"
           ],
           "tests": [
             "tests/world/biome-generation.test.js",
-            "tests/browser/biome-atlas-ui.mjs"
+            "tests/browser/biome-atlas-ui.mjs",
+            "tests/browser/biome-atlas-visual.mjs"
           ],
           "probe": null
         },
@@ -38472,11 +38616,15 @@
             "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/world/world.js#initWorld (world)",
-            "js/world/world.js#prerenderTerrain (renderer)"
+            "js/world/world.js#prerenderTerrain (renderer)",
+            "js/presentation/rendering/biome-identity-render.js#biomeLandmarkAnchors (landmarks)",
+            "js/presentation/rendering/biome-identity-render.js#drawBiomeIdentityOverlay (renderer)",
+            "js/presentation/rendering/terrain.js#seasonalTintOverlay (renderer)"
           ],
           "tests": [
             "tests/world/biome-generation.test.js",
-            "tests/browser/biome-atlas-ui.mjs"
+            "tests/browser/biome-atlas-ui.mjs",
+            "tests/browser/biome-atlas-visual.mjs"
           ],
           "probe": null
         },
@@ -38496,11 +38644,15 @@
             "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/world/world.js#initWorld (world)",
-            "js/world/world.js#prerenderTerrain (renderer)"
+            "js/world/world.js#prerenderTerrain (renderer)",
+            "js/presentation/rendering/biome-identity-render.js#biomeLandmarkAnchors (landmarks)",
+            "js/presentation/rendering/biome-identity-render.js#drawBiomeIdentityOverlay (renderer)",
+            "js/presentation/rendering/terrain.js#seasonalTintOverlay (renderer)"
           ],
           "tests": [
             "tests/world/biome-generation.test.js",
-            "tests/browser/biome-atlas-ui.mjs"
+            "tests/browser/biome-atlas-ui.mjs",
+            "tests/browser/biome-atlas-visual.mjs"
           ],
           "probe": null
         },
@@ -38520,11 +38672,15 @@
             "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/world/world.js#initWorld (world)",
-            "js/world/world.js#prerenderTerrain (renderer)"
+            "js/world/world.js#prerenderTerrain (renderer)",
+            "js/presentation/rendering/biome-identity-render.js#biomeLandmarkAnchors (landmarks)",
+            "js/presentation/rendering/biome-identity-render.js#drawBiomeIdentityOverlay (renderer)",
+            "js/presentation/rendering/terrain.js#seasonalTintOverlay (renderer)"
           ],
           "tests": [
             "tests/world/biome-generation.test.js",
-            "tests/browser/biome-atlas-ui.mjs"
+            "tests/browser/biome-atlas-ui.mjs",
+            "tests/browser/biome-atlas-visual.mjs"
           ],
           "probe": null
         },
@@ -38544,11 +38700,15 @@
             "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/world/world.js#initWorld (world)",
-            "js/world/world.js#prerenderTerrain (renderer)"
+            "js/world/world.js#prerenderTerrain (renderer)",
+            "js/presentation/rendering/biome-identity-render.js#biomeLandmarkAnchors (landmarks)",
+            "js/presentation/rendering/biome-identity-render.js#drawBiomeIdentityOverlay (renderer)",
+            "js/presentation/rendering/terrain.js#seasonalTintOverlay (renderer)"
           ],
           "tests": [
             "tests/world/biome-generation.test.js",
-            "tests/browser/biome-atlas-ui.mjs"
+            "tests/browser/biome-atlas-ui.mjs",
+            "tests/browser/biome-atlas-visual.mjs"
           ],
           "probe": null
         },
@@ -38568,11 +38728,15 @@
             "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/world/world.js#initWorld (world)",
-            "js/world/world.js#prerenderTerrain (renderer)"
+            "js/world/world.js#prerenderTerrain (renderer)",
+            "js/presentation/rendering/biome-identity-render.js#biomeLandmarkAnchors (landmarks)",
+            "js/presentation/rendering/biome-identity-render.js#drawBiomeIdentityOverlay (renderer)",
+            "js/presentation/rendering/terrain.js#seasonalTintOverlay (renderer)"
           ],
           "tests": [
             "tests/world/biome-generation.test.js",
-            "tests/browser/biome-atlas-ui.mjs"
+            "tests/browser/biome-atlas-ui.mjs",
+            "tests/browser/biome-atlas-visual.mjs"
           ],
           "probe": null
         },
@@ -38592,11 +38756,15 @@
             "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/world/world.js#initWorld (world)",
-            "js/world/world.js#prerenderTerrain (renderer)"
+            "js/world/world.js#prerenderTerrain (renderer)",
+            "js/presentation/rendering/biome-identity-render.js#biomeLandmarkAnchors (landmarks)",
+            "js/presentation/rendering/biome-identity-render.js#drawBiomeIdentityOverlay (renderer)",
+            "js/presentation/rendering/terrain.js#seasonalTintOverlay (renderer)"
           ],
           "tests": [
             "tests/world/biome-generation.test.js",
-            "tests/browser/biome-atlas-ui.mjs"
+            "tests/browser/biome-atlas-ui.mjs",
+            "tests/browser/biome-atlas-visual.mjs"
           ],
           "probe": null
         },
@@ -38616,11 +38784,15 @@
             "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/world/world.js#initWorld (world)",
-            "js/world/world.js#prerenderTerrain (renderer)"
+            "js/world/world.js#prerenderTerrain (renderer)",
+            "js/presentation/rendering/biome-identity-render.js#biomeLandmarkAnchors (landmarks)",
+            "js/presentation/rendering/biome-identity-render.js#drawBiomeIdentityOverlay (renderer)",
+            "js/presentation/rendering/terrain.js#seasonalTintOverlay (renderer)"
           ],
           "tests": [
             "tests/world/biome-generation.test.js",
-            "tests/browser/biome-atlas-ui.mjs"
+            "tests/browser/biome-atlas-ui.mjs",
+            "tests/browser/biome-atlas-visual.mjs"
           ],
           "probe": null
         },
@@ -38640,11 +38812,15 @@
             "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/world/world.js#initWorld (world)",
-            "js/world/world.js#prerenderTerrain (renderer)"
+            "js/world/world.js#prerenderTerrain (renderer)",
+            "js/presentation/rendering/biome-identity-render.js#biomeLandmarkAnchors (landmarks)",
+            "js/presentation/rendering/biome-identity-render.js#drawBiomeIdentityOverlay (renderer)",
+            "js/presentation/rendering/terrain.js#seasonalTintOverlay (renderer)"
           ],
           "tests": [
             "tests/world/biome-generation.test.js",
-            "tests/browser/biome-atlas-ui.mjs"
+            "tests/browser/biome-atlas-ui.mjs",
+            "tests/browser/biome-atlas-visual.mjs"
           ],
           "probe": null
         },
@@ -38664,11 +38840,15 @@
             "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/world/world.js#initWorld (world)",
-            "js/world/world.js#prerenderTerrain (renderer)"
+            "js/world/world.js#prerenderTerrain (renderer)",
+            "js/presentation/rendering/biome-identity-render.js#biomeLandmarkAnchors (landmarks)",
+            "js/presentation/rendering/biome-identity-render.js#drawBiomeIdentityOverlay (renderer)",
+            "js/presentation/rendering/terrain.js#seasonalTintOverlay (renderer)"
           ],
           "tests": [
             "tests/world/biome-generation.test.js",
-            "tests/browser/biome-atlas-ui.mjs"
+            "tests/browser/biome-atlas-ui.mjs",
+            "tests/browser/biome-atlas-visual.mjs"
           ],
           "probe": null
         },
@@ -38688,11 +38868,15 @@
             "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/world/world.js#initWorld (world)",
-            "js/world/world.js#prerenderTerrain (renderer)"
+            "js/world/world.js#prerenderTerrain (renderer)",
+            "js/presentation/rendering/biome-identity-render.js#biomeLandmarkAnchors (landmarks)",
+            "js/presentation/rendering/biome-identity-render.js#drawBiomeIdentityOverlay (renderer)",
+            "js/presentation/rendering/terrain.js#seasonalTintOverlay (renderer)"
           ],
           "tests": [
             "tests/world/biome-generation.test.js",
-            "tests/browser/biome-atlas-ui.mjs"
+            "tests/browser/biome-atlas-ui.mjs",
+            "tests/browser/biome-atlas-visual.mjs"
           ],
           "probe": null
         },
@@ -38712,11 +38896,15 @@
             "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/world/world.js#initWorld (world)",
-            "js/world/world.js#prerenderTerrain (renderer)"
+            "js/world/world.js#prerenderTerrain (renderer)",
+            "js/presentation/rendering/biome-identity-render.js#biomeLandmarkAnchors (landmarks)",
+            "js/presentation/rendering/biome-identity-render.js#drawBiomeIdentityOverlay (renderer)",
+            "js/presentation/rendering/terrain.js#seasonalTintOverlay (renderer)"
           ],
           "tests": [
             "tests/world/biome-generation.test.js",
-            "tests/browser/biome-atlas-ui.mjs"
+            "tests/browser/biome-atlas-ui.mjs",
+            "tests/browser/biome-atlas-visual.mjs"
           ],
           "probe": null
         },
@@ -38736,11 +38924,15 @@
             "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/world/world.js#initWorld (world)",
-            "js/world/world.js#prerenderTerrain (renderer)"
+            "js/world/world.js#prerenderTerrain (renderer)",
+            "js/presentation/rendering/biome-identity-render.js#biomeLandmarkAnchors (landmarks)",
+            "js/presentation/rendering/biome-identity-render.js#drawBiomeIdentityOverlay (renderer)",
+            "js/presentation/rendering/terrain.js#seasonalTintOverlay (renderer)"
           ],
           "tests": [
             "tests/world/biome-generation.test.js",
-            "tests/browser/biome-atlas-ui.mjs"
+            "tests/browser/biome-atlas-ui.mjs",
+            "tests/browser/biome-atlas-visual.mjs"
           ],
           "probe": null
         },
@@ -38760,11 +38952,15 @@
             "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/world/world.js#initWorld (world)",
-            "js/world/world.js#prerenderTerrain (renderer)"
+            "js/world/world.js#prerenderTerrain (renderer)",
+            "js/presentation/rendering/biome-identity-render.js#biomeLandmarkAnchors (landmarks)",
+            "js/presentation/rendering/biome-identity-render.js#drawBiomeIdentityOverlay (renderer)",
+            "js/presentation/rendering/terrain.js#seasonalTintOverlay (renderer)"
           ],
           "tests": [
             "tests/world/biome-generation.test.js",
-            "tests/browser/biome-atlas-ui.mjs"
+            "tests/browser/biome-atlas-ui.mjs",
+            "tests/browser/biome-atlas-visual.mjs"
           ],
           "probe": null
         },
@@ -38784,11 +38980,15 @@
             "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/world/world.js#initWorld (world)",
-            "js/world/world.js#prerenderTerrain (renderer)"
+            "js/world/world.js#prerenderTerrain (renderer)",
+            "js/presentation/rendering/biome-identity-render.js#biomeLandmarkAnchors (landmarks)",
+            "js/presentation/rendering/biome-identity-render.js#drawBiomeIdentityOverlay (renderer)",
+            "js/presentation/rendering/terrain.js#seasonalTintOverlay (renderer)"
           ],
           "tests": [
             "tests/world/biome-generation.test.js",
-            "tests/browser/biome-atlas-ui.mjs"
+            "tests/browser/biome-atlas-ui.mjs",
+            "tests/browser/biome-atlas-visual.mjs"
           ],
           "probe": null
         },
@@ -38808,11 +39008,15 @@
             "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/world/world.js#initWorld (world)",
-            "js/world/world.js#prerenderTerrain (renderer)"
+            "js/world/world.js#prerenderTerrain (renderer)",
+            "js/presentation/rendering/biome-identity-render.js#biomeLandmarkAnchors (landmarks)",
+            "js/presentation/rendering/biome-identity-render.js#drawBiomeIdentityOverlay (renderer)",
+            "js/presentation/rendering/terrain.js#seasonalTintOverlay (renderer)"
           ],
           "tests": [
             "tests/world/biome-generation.test.js",
-            "tests/browser/biome-atlas-ui.mjs"
+            "tests/browser/biome-atlas-ui.mjs",
+            "tests/browser/biome-atlas-visual.mjs"
           ],
           "probe": null
         },
@@ -38820,7 +39024,7 @@
           "id": "1.2.22.52",
           "label": "Performance checked on large maps",
           "sourceStatus": "implemented",
-          "docEvidence": "tests/world/biome-generation.test.js budget; low-end-performance.mjs",
+          "docEvidence": "tests/world/biome-generation.test.js budget and anchor timing; low-end-performance.mjs; browser frame probe",
           "status": "implemented",
           "missing": [],
           "consumers": [
@@ -38832,11 +39036,15 @@
             "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/world/world.js#initWorld (world)",
-            "js/world/world.js#prerenderTerrain (renderer)"
+            "js/world/world.js#prerenderTerrain (renderer)",
+            "js/presentation/rendering/biome-identity-render.js#biomeLandmarkAnchors (landmarks)",
+            "js/presentation/rendering/biome-identity-render.js#drawBiomeIdentityOverlay (renderer)",
+            "js/presentation/rendering/terrain.js#seasonalTintOverlay (renderer)"
           ],
           "tests": [
             "tests/world/biome-generation.test.js",
-            "tests/browser/biome-atlas-ui.mjs"
+            "tests/browser/biome-atlas-ui.mjs",
+            "tests/browser/biome-atlas-visual.mjs"
           ],
           "probe": null
         },
@@ -38844,7 +39052,7 @@
           "id": "1.2.22.53",
           "label": "No visible biome borders or rendering errors",
           "sourceStatus": "implemented",
-          "docEvidence": "continuous terrain palette, ecotone wash, identity map; browser references",
+          "docEvidence": "continuous bilinear ground blend, per-biome ecotone wash, cached anchors; browser references with zero page errors",
           "status": "implemented",
           "missing": [],
           "consumers": [
@@ -38856,11 +39064,15 @@
             "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/world/world.js#initWorld (world)",
-            "js/world/world.js#prerenderTerrain (renderer)"
+            "js/world/world.js#prerenderTerrain (renderer)",
+            "js/presentation/rendering/biome-identity-render.js#biomeLandmarkAnchors (landmarks)",
+            "js/presentation/rendering/biome-identity-render.js#drawBiomeIdentityOverlay (renderer)",
+            "js/presentation/rendering/terrain.js#seasonalTintOverlay (renderer)"
           ],
           "tests": [
             "tests/world/biome-generation.test.js",
-            "tests/browser/biome-atlas-ui.mjs"
+            "tests/browser/biome-atlas-ui.mjs",
+            "tests/browser/biome-atlas-visual.mjs"
           ],
           "probe": null
         },
@@ -38880,11 +39092,15 @@
             "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
             "js/presentation/biome-panel.js#renderBiomePanel (ui)",
             "js/world/world.js#initWorld (world)",
-            "js/world/world.js#prerenderTerrain (renderer)"
+            "js/world/world.js#prerenderTerrain (renderer)",
+            "js/presentation/rendering/biome-identity-render.js#biomeLandmarkAnchors (landmarks)",
+            "js/presentation/rendering/biome-identity-render.js#drawBiomeIdentityOverlay (renderer)",
+            "js/presentation/rendering/terrain.js#seasonalTintOverlay (renderer)"
           ],
           "tests": [
             "tests/world/biome-generation.test.js",
-            "tests/browser/biome-atlas-ui.mjs"
+            "tests/browser/biome-atlas-ui.mjs",
+            "tests/browser/biome-atlas-visual.mjs"
           ],
           "probe": null
         }
@@ -38943,6 +39159,24 @@
           "symbol": "prerenderTerrain",
           "role": "renderer",
           "valid": true
+        },
+        {
+          "file": "js/presentation/rendering/biome-identity-render.js",
+          "symbol": "biomeLandmarkAnchors",
+          "role": "landmarks",
+          "valid": true
+        },
+        {
+          "file": "js/presentation/rendering/biome-identity-render.js",
+          "symbol": "drawBiomeIdentityOverlay",
+          "role": "renderer",
+          "valid": true
+        },
+        {
+          "file": "js/presentation/rendering/terrain.js",
+          "symbol": "seasonalTintOverlay",
+          "role": "renderer",
+          "valid": true
         }
       ],
       "tests": [
@@ -38952,6 +39186,10 @@
         },
         {
           "file": "tests/browser/biome-atlas-ui.mjs",
+          "valid": true
+        },
+        {
+          "file": "tests/browser/biome-atlas-visual.mjs",
           "valid": true
         }
       ],

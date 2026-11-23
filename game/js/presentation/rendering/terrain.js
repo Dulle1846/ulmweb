@@ -52,6 +52,18 @@ import { forestMistFactor, solarVector } from './daylight.js';
 import { drawTropicalBamboo, drawTropicalFloor, drawTropicalPalm, drawTropicalTree, drawTropicalUnderstory } from './tropical-render.js';
 import { drawJungleUnderstory } from './jungle-render.js';
 import { vegetationDensityAt, vegetationForestStand, vegetationGrassProfile } from '../../world/vegetation-density.js';
+import { BIOME_GROUND_GRAIN, BIOME_IDENTITY } from '../../world/biome-generation-data.js';
+import { BIOME_MAP_ORDER } from '../../world/biome-generation.js';
+import { drawBiomeIdentityOverlay } from './biome-identity-render.js';
+
+const colorTriplet = hex => [
+    parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)
+];
+const BIOME_SEASON_RGB = Object.freeze(Object.fromEntries(Object.entries(BIOME_IDENTITY).map(([key, identity]) => [
+    key, identity.seasons.map(face => Object.freeze({
+        base: colorTriplet(face.base), accent: colorTriplet(face.accent)
+    }))
+])));
 
 const worldW = () => Number(state.worldW) || WORLD_W;
 const worldH = () => Number(state.worldH) || WORLD_H;
@@ -105,6 +117,7 @@ export function drawTerrain(ctx) {
         drawOverlayDecorations(ctx, zoom, cam, canvas);
         drawGrasslandWindOverlay(ctx, zoom, cam, canvas);
         drawSpecialBiomeOverlay(ctx, zoom, cam, canvas);
+        drawBiomeIdentityOverlay(ctx, zoom, cam, canvas);
         return;
     }
 
@@ -114,12 +127,14 @@ export function drawTerrain(ctx) {
     if (drawCachedDecorations(ctx, zoom, cam, canvas)) {
         drawGrasslandWindOverlay(ctx, zoom, cam, canvas);
         drawSpecialBiomeOverlay(ctx, zoom, cam, canvas);
+        drawBiomeIdentityOverlay(ctx, zoom, cam, canvas);
         return;
     }
     if (state.terrainCanvasEl) state.terrainCanvasEl.style.opacity = "0";
     drawBakedGround(ctx, zoom, cam, canvas);
     drawFogOfWar(ctx, zoom, cam, canvas);
     drawSpecialBiomeOverlay(ctx, zoom, cam, canvas);
+    drawBiomeIdentityOverlay(ctx, zoom, cam, canvas);
 }
 
 // Seasonal land tint over the baked colour field. The base raster is authored
@@ -139,8 +154,9 @@ function seasonalTintOverlay() {
     const climateKey = state.worldOptions?.climate || "temperate";
     const season = seasonalState(day, climateKey);
     const dayBucket = Math.floor(day / 40);
-    const key = [state.worldEpoch, state.terrainVersion, base.width, base.height,
-        dayBucket, climateKey, season.season].join("|");
+    const map = state.biomeIndexMap;
+    const key = [state.worldEpoch, state.worldSeed, state.terrainVersion, base.width, base.height,
+        map?.ids?.length || 0, dayBucket, climateKey, season.season].join("|");
     if (base !== seasonalOverlayBase) {
         seasonalOverlayBase = base;
         seasonalOverlayKey = "";
@@ -156,17 +172,14 @@ function seasonalTintOverlay() {
     const turn = season.foliageTurn;
     const warmth = season.warmth;
     const green = season.greenUp;
-    const tint = snow > 0.02
-        ? [218, 228, 236]
-        : turn > 0.02
-            ? [154, 96, 38]
-            : warmth > 0.02 ? [176, 148, 64] : [104, 136, 62];
-    const strength = snow > 0.02
+    // The biome identity is always visible; the seasonal state strengthens or
+    // shifts it instead of replacing it with one global green/brown sheet.
+    const strength = Math.max(0.09, snow > 0.02
         ? snow * 0.34
         : turn > 0.02
             ? turn * 0.36
-            : warmth > 0.02 ? warmth * 0.15 : green * 0.07;
-    if (strength <= 0.001 || !heights) return null;
+            : warmth > 0.02 ? warmth * 0.15 : green * 0.07);
+    if (!heights) return null;
 
     const scale = 4;
     const ow = Math.max(1, Math.ceil(base.width / scale));
@@ -185,18 +198,34 @@ function seasonalTintOverlay() {
             const px = Math.min(base.width - 1, Math.floor((tx + 0.5) * base.width / ow));
             const h = heights[py * pixW + px];
             if (h === undefined || h < sea) continue;
+            // Each coarse cell takes the seasonal face of its own biome. The
+            // browser smooths the low-resolution canvas when it is drawn, so
+            // neighbouring faces meet in a soft ecotone instead of a hard tile
+            // edge. This is one bounded image build per season bucket.
+            let biome = "meadow";
+            if (map?.ids?.length) {
+                const stride = Math.max(1, Number(map.stride) || 4);
+                const bx = Math.max(0, Math.min(map.width - 1, Math.floor((px / (state.terrainResolution || 1)) / stride)));
+                const by = Math.max(0, Math.min(map.height - 1, Math.floor((py / (state.terrainResolution || 1)) / stride)));
+                biome = BIOME_MAP_ORDER[map.ids[by * map.width + bx]] || biome;
+            }
+            const face = BIOME_SEASON_RGB[biome]?.[season.season] || BIOME_SEASON_RGB.meadow[season.season];
             // Frost settles first on high, exposed ground; the low meadow keeps
             // a little green under the wash so winter is not a flat white disc.
             const altitude = Math.max(0, Math.min(1, (h - sea - 0.03) * 7));
             const drift = snow > 0.02
                 ? 0.62 + 0.38 * (0.5 + 0.5 * Math.sin(px * 0.024 + py * 0.018))
                 : 1;
-            const amount = strength * drift * (snow > 0.02 ? 0.55 + altitude * 0.75 : 1);
-            const alpha = Math.min(0.42, amount);
+            const amount = strength * drift * (snow > 0.02 ? 0.62 + altitude * 0.62 : 1);
+            const alpha = Math.min(0.36, amount);
+            const accentMix = 0.16 + altitude * 0.24 + snow * 0.2;
+            let grain = Math.imul(px + 1, 374761393) ^ Math.imul(py + 1, 668265263);
+            grain = ((grain ^ (grain >>> 13)) >>> 0) % 19 - 9;
+            const texture = grain * (BIOME_GROUND_GRAIN[biome] || 0.04) * 0.7;
             const i = (ty * ow + tx) * 4;
-            pixels[i] = tint[0];
-            pixels[i + 1] = tint[1];
-            pixels[i + 2] = tint[2];
+            pixels[i] = Math.max(0, Math.min(255, face.base[0] * (1 - accentMix) + face.accent[0] * accentMix + texture));
+            pixels[i + 1] = Math.max(0, Math.min(255, face.base[1] * (1 - accentMix) + face.accent[1] * accentMix + texture));
+            pixels[i + 2] = Math.max(0, Math.min(255, face.base[2] * (1 - accentMix) + face.accent[2] * accentMix + texture));
             pixels[i + 3] = Math.round(alpha * 255);
         }
     }

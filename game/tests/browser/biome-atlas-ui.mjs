@@ -117,13 +117,29 @@ try {
             unique: unique.size,
             missing: required.filter(id => !unique.has(id)),
             empty: rows.filter(row => !row.dataset.biomeGenerationValue || row.dataset.biomeGenerationValue === "—").length,
-            readout: [...element.querySelectorAll("[data-biome-generation-readout] [data-biome-generation-requirement], [data-biome-generation-readout] span")].length
+            readout: [...element.querySelectorAll("[data-biome-generation-readout] [data-biome-generation-requirement], [data-biome-generation-readout] span")].length,
+            seasons: [...element.querySelectorAll("[data-biome-season-swatch]")].map(row => ({
+                id: row.dataset.biomeSeasonSwatch,
+                base: getComputedStyle(row).getPropertyValue("--season-base").trim(),
+                accent: getComputedStyle(row).getPropertyValue("--season-accent").trim(),
+                height: row.querySelector("i")?.getBoundingClientRect().height || 0
+            })),
+            plants: [...element.querySelectorAll("[data-biome-plant-chip]")].map(row => ({
+                id: row.dataset.biomePlantChip,
+                color: getComputedStyle(row).getPropertyValue("--plant-color").trim(),
+                text: row.textContent.trim()
+            }))
         };
     });
     assert.equal(generationProof.unique, 54, "the player panel must show all 54 generation point IDs");
     assert.deepEqual(generationProof.missing, []);
     assert.equal(generationProof.empty, 0, "no generation requirement may render an empty value");
     assert.ok(generationProof.readout >= 6);
+    assert.equal(new Set(generationProof.seasons.map(row => row.id)).size, 4, "all four seasonal faces must be visible");
+    assert.ok(generationProof.seasons.every(row => /^#[0-9a-f]{6}$/i.test(row.base) && /^#[0-9a-f]{6}$/i.test(row.accent)));
+    assert.ok(generationProof.seasons.every(row => row.height >= 20), "season swatches must render as real colours");
+    assert.ok(generationProof.plants.length >= 3, "the biome panel must show real plant species");
+    assert.ok(generationProof.plants.every(row => /^#[0-9a-f]{6}$/i.test(row.color)), "plant chips must show their real colour");
 
     const ecoBefore = await page.evaluate(async regionId => {
         const { state } = await import("./js/core/state.js");

@@ -703,6 +703,32 @@ export const BIOME_HAZARD_TRIGGERS = freeze({
     ])
 });
 
+// ── ground grain and local atmosphere ─────────────────────────
+// The bake mixes these amplitudes into the terrain colour. They are small on
+// purpose: the base palette carries identity, the grain only breaks up a flat
+// fill. Atmosphere rows are read by the landmark overlay, which draws a bounded
+// number of motes around visible landmarks instead of simulating weather.
+export const BIOME_GROUND_GRAIN = freeze({
+    water: 0.018, beach: 0.07, snow: 0.026, rock: 0.062, tundra: 0.044,
+    taiga: 0.036, swamp: 0.052, desert: 0.068, steppe: 0.05,
+    meadow: 0.034, forest: 0.04, "dense-forest": 0.056
+});
+
+export const BIOME_ATMOSPHERE = freeze({
+    water: freeze({ kind: "glint", color: "#d8eef0", count: 5, seasons: [0, 1, 2, 3] }),
+    beach: freeze({ kind: "sand", color: "#eadfbe", count: 5, seasons: [0, 1, 2] }),
+    snow: freeze({ kind: "spindrift", color: "#f4fbfd", count: 7, seasons: [0, 3] }),
+    rock: freeze({ kind: "dust", color: "#cbc4b4", count: 4, seasons: [0, 2] }),
+    tundra: freeze({ kind: "midge", color: "#d8d2b0", count: 4, seasons: [1] }),
+    taiga: freeze({ kind: "needle", color: "#9eae8a", count: 4, seasons: [1, 2] }),
+    swamp: freeze({ kind: "firefly", color: "#d8e58a", count: 7, seasons: [1] }),
+    desert: freeze({ kind: "dust", color: "#ead6a4", count: 6, seasons: [1, 2] }),
+    steppe: freeze({ kind: "pollen", color: "#e2d29a", count: 5, seasons: [0, 1] }),
+    meadow: freeze({ kind: "pollen", color: "#f0df9a", count: 6, seasons: [0, 1] }),
+    forest: freeze({ kind: "pollen", color: "#d7e3a0", count: 5, seasons: [0, 1] }),
+    "dense-forest": freeze({ kind: "spore", color: "#b9e3b0", count: 6, seasons: [0, 1, 2] })
+});
+
 // ── level of detail / performance contract ───────────────────
 // Values are the zoom thresholds the canvas renderer already uses; the audit
 // and panel read them, so a new renderer path cannot silently break the

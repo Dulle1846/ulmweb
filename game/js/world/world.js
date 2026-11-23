@@ -18,7 +18,11 @@ import { generateSpecialBiomes, paintSpecialBiomeTint } from '../systems/special
 import { generateBiomeAtlas, syncBiomeDiscovery } from '../systems/biome-resource-state.js';
 import { getClimateMoistureOffset, getClimateTemperatureOffset } from '../systems/climate-drift.js';
 import { getHazardMoistureOffsetAt, paintHazardTerrain } from '../systems/hazard-scars.js';
-import { buildBiomeIndexMap, biomeIndexAt, BIOME_TINT_COLORS } from './biome-generation.js';
+import {
+    buildBiomeIndexMap, biomeIndexAt, BIOME_MAP_ORDER,
+    BIOME_TINT_COLORS, BIOME_WATER_TINT_COLORS
+} from './biome-generation.js';
+import { BIOME_GROUND_GRAIN } from './biome-generation-data.js';
 
 export { normalizeWorldOptions, resolveWorldDimensions, seaLevelFor };
 
@@ -196,13 +200,54 @@ export function prerenderTerrain() {
                     : Math.max(-30, Math.min(32, slope * reliefScale));
 
                 const color = terrainColor(h, m, temperature, px, py, climate, sea, hillshade, state.worldSeed);
-                // A quiet identity wash from the central biome registry. It is
-                // sampled from the coarse map, so the bake stays O(pixels).
-                const tintIndex = biomeIndexAt(state.biomeIndexMap, px / (state.terrainResolution || 1), py / (state.terrainResolution || 1));
-                const tint = BIOME_TINT_COLORS[tintIndex] || BIOME_TINT_COLORS[0];
-                color[0] = color[0] * 0.94 + tint[0] * 0.06;
-                color[1] = color[1] * 0.94 + tint[1] * 0.06;
-                color[2] = color[2] * 0.94 + tint[2] * 0.06;
+                // Sample the coarse identity field with bilinear weights. The
+                // four-tile source cells become gradients instead of four-tile
+                // colour blocks, so a biome edge is organic in the bake itself.
+                const map = state.biomeIndexMap;
+                const stride = Math.max(1, Number(map?.stride) || 4);
+                const mx = (px / (state.terrainResolution || 1)) / stride - 0.5;
+                const my = (py / (state.terrainResolution || 1)) / stride - 0.5;
+                const x0 = Math.max(0, Math.min((map?.width || 1) - 1, Math.floor(mx)));
+                const y0 = Math.max(0, Math.min((map?.height || 1) - 1, Math.floor(my)));
+                const x1 = Math.min((map?.width || 1) - 1, x0 + 1);
+                const y1 = Math.min((map?.height || 1) - 1, y0 + 1);
+                const fx = map?.width > 1 ? Math.max(0, Math.min(1, mx - x0)) : 0;
+                const fy = map?.height > 1 ? Math.max(0, Math.min(1, my - y0)) : 0;
+                const row0 = y0 * (map?.width || 1), row1 = y1 * (map?.width || 1);
+                const i00 = map?.ids?.[row0 + x0] || 0;
+                const i10 = map?.ids?.[row0 + x1] || i00;
+                const i01 = map?.ids?.[row1 + x0] || i00;
+                const i11 = map?.ids?.[row1 + x1] || i01;
+                const w00 = (1 - fx) * (1 - fy), w10 = fx * (1 - fy);
+                const w01 = (1 - fx) * fy, w11 = fx * fy;
+                const t00 = BIOME_TINT_COLORS[i00] || BIOME_TINT_COLORS[0];
+                const t10 = BIOME_TINT_COLORS[i10] || t00;
+                const t01 = BIOME_TINT_COLORS[i01] || t00;
+                const t11 = BIOME_TINT_COLORS[i11] || t01;
+                const water = h < sea;
+                const w00c = BIOME_WATER_TINT_COLORS[i00] || BIOME_WATER_TINT_COLORS[0];
+                const w10c = BIOME_WATER_TINT_COLORS[i10] || w00c;
+                const w01c = BIOME_WATER_TINT_COLORS[i01] || w00c;
+                const w11c = BIOME_WATER_TINT_COLORS[i11] || w01c;
+                const tintR = t00[0] * w00 + t10[0] * w10 + t01[0] * w01 + t11[0] * w11;
+                const tintG = t00[1] * w00 + t10[1] * w10 + t01[1] * w01 + t11[1] * w11;
+                const tintB = t00[2] * w00 + t10[2] * w10 + t01[2] * w01 + t11[2] * w11;
+                const waterR = w00c[0] * w00 + w10c[0] * w10 + w01c[0] * w01 + w11c[0] * w11;
+                const waterG = w00c[1] * w00 + w10c[1] * w10 + w01c[1] * w01 + w11c[1] * w11;
+                const waterB = w00c[2] * w00 + w10c[2] * w10 + w01c[2] * w01 + w11c[2] * w11;
+                const wash = water ? 0.11 : 0.155;
+                // A per-biome grain gives sand, scree, peat and leaf litter a
+                // surface instead of a flat fill. The hash is integer-only and
+                // deterministic; it costs no noise texture allocation.
+                let grainHash = Math.imul(px + 1, 374761393) ^ Math.imul(py + 1, 668265263) ^ state.worldSeed;
+                grainHash = Math.imul(grainHash ^ (grainHash >>> 13), 1274126177);
+                const noise = ((grainHash ^ (grainHash >>> 16)) >>> 0) / 4294967295 - 0.5;
+                const nearest = map?.ids?.[Math.max(0, Math.min((map?.height || 1) - 1, Math.round(my))) * (map?.width || 1)
+                    + Math.max(0, Math.min((map?.width || 1) - 1, Math.round(mx)))] || 0;
+                const grain = noise * (water ? 0.012 : (BIOME_GROUND_GRAIN[BIOME_MAP_ORDER[nearest]] || 0.04)) * 170;
+                color[0] = color[0] * (1 - wash) + (water ? waterR : tintR) * wash + grain;
+                color[1] = color[1] * (1 - wash) + (water ? waterG : tintG) * wash + grain;
+                color[2] = color[2] * (1 - wash) + (water ? waterB : tintB) * wash + grain;
                 const pi = idx * 4;
                 data[pi] = color[0] < 0 ? 0 : color[0] > 255 ? 255 : color[0];
                 data[pi + 1] = color[1] < 0 ? 0 : color[1] > 255 ? 255 : color[1];
