@@ -54,11 +54,27 @@ async function startRealm(page) {
     await page.waitForFunction(async () => (await import("./js/core/state.js")).state.isPaused, null, { timeout: 10000 });
 }
 
+async function openPanel(page, panel, narrow = false) {
+    const modal = page.locator("#command-modal");
+    if (!(await modal.isVisible())) {
+        await page.locator("#command-open-btn").click();
+        await modal.waitFor({ state: "visible", timeout: 10000 });
+    }
+    if (narrow) await page.locator("#command-tab-select").selectOption(panel);
+    else await page.locator('[data-command-tab="' + panel + '"]').click();
+}
+
+async function openKingdom(page, narrow = false) {
+    await openPanel(page, "kingdom", narrow);
+    await page.waitForFunction(() => {
+        const panel = document.querySelector("#command-panel-content");
+        return Boolean(panel && (panel.textContent || "").includes("THE WORLD BEYOND") &&
+            (panel.textContent || "").includes("THE REALM AT A GLANCE"));
+    }, null, { timeout: 20000 });
+}
+
 async function openWorld(page, narrow = false) {
-    await page.locator("#command-open-btn").click();
-    await page.locator("#command-modal").waitFor({ state: "visible", timeout: 10000 });
-    if (narrow) await page.locator("#command-tab-select").selectOption("worldmap");
-    else await page.locator('[data-command-tab="worldmap"]').click();
+    await openPanel(page, "worldmap", narrow);
     await page.waitForFunction(() => {
         const panel = document.querySelector("[data-world-map-panel]");
         // The narrow renderer hydrates the panel in bounded chunks; the world
@@ -66,6 +82,94 @@ async function openWorld(page, narrow = false) {
         return Boolean(panel && panel.querySelectorAll("[data-world-realm]").length === 4 &&
             (panel.textContent || "").includes("WORLD RECORD"));
     }, null, { timeout: 20000 });
+    if (narrow) {
+        assert.equal(await page.locator("#command-tab-select").inputValue(), "worldmap", "the narrow panel selector must show WORLD as the active panel");
+    } else {
+        await page.waitForFunction(() => document.querySelector('[data-command-tab="worldmap"]')?.getAttribute("aria-current") === "page", null, { timeout: 10000 });
+    }
+}
+
+// Read the copy next to a section heading after scrolling it into the
+// scrollport. Long ledgers use content-visibility:auto, so off-screen cards are
+// intentionally not laid out until the player approaches them.
+async function sectionCopy(page, title) {
+    return page.evaluate(async headingText => {
+        const heading = [...document.querySelectorAll("#command-panel-content .command-section-title")]
+            .find(element => (element.textContent || "").trim().includes(headingText));
+        if (!heading) return "";
+        heading.scrollIntoView({ block: "start" });
+        await new Promise(done => requestAnimationFrame(() => requestAnimationFrame(done)));
+        return heading.nextElementSibling?.innerText || "";
+    }, title);
+}
+
+// Measure page and panel overflow, plus any visible descendant whose content is
+// wider than its box. Long archives use content-visibility:auto, so scroll every
+// summary and card through the scrollport first, exactly as a player reads it.
+// A real horizontal clip is a player-visible defect, not a rounding tolerance;
+// the one-pixel allowance only covers sub-pixel layout.
+async function layoutReport(page, selector) {
+    return page.evaluate(async sel => {
+        const panel = document.querySelector(sel);
+        if (!panel) return { missing: true };
+        const panelBox = panel.getBoundingClientRect();
+        const ignoredTags = new Set(["SELECT", "OPTION", "INPUT", "TEXTAREA", "SCRIPT", "STYLE"]);
+        const clipped = [];
+        const seen = new Set();
+        let panelOverflow = 0;
+        let docOverflow = 0;
+        let inspected = 0;
+        const measure = root => {
+            for (const element of [root, ...root.querySelectorAll("*")]) {
+                if (seen.has(element)) continue;
+                seen.add(element);
+                if (element.closest("svg") || ignoredTags.has(element.tagName)) continue;
+                const style = getComputedStyle(element);
+                if (style.display === "none" || style.visibility === "hidden") continue;
+                if (style.overflowX === "auto" || style.overflowX === "scroll") continue;
+                const box = element.getBoundingClientRect();
+                if (!box.width && !box.height) continue;
+                inspected += 1;
+                const descriptor = {
+                    tag: element.tagName,
+                    className: String(element.className || "").slice(0, 70),
+                    text: (element.textContent || "").trim().replace(/\s+/g, " ").slice(0, 90),
+                    scrollWidth: element.scrollWidth,
+                    clientWidth: element.clientWidth
+                };
+                if (element.scrollWidth > element.clientWidth + 1) clipped.push(descriptor);
+                else if (box.left < panelBox.left - 1 || box.right > Math.min(window.innerWidth, panelBox.right) + 1) {
+                    clipped.push({ ...descriptor, outsidePanel: true });
+                }
+            }
+        };
+        const targets = [...panel.querySelectorAll(".command-summary, .world-map, .world-map__legend, .world-frontier, .world-route")];
+        for (const target of targets) {
+            target.scrollIntoView({ block: "center" });
+            await new Promise(done => requestAnimationFrame(() => requestAnimationFrame(done)));
+            panelOverflow = Math.max(panelOverflow, panel.scrollWidth - panel.clientWidth);
+            docOverflow = Math.max(docOverflow, document.documentElement.scrollWidth - window.innerWidth);
+            measure(target);
+        }
+        panel.scrollTop = 0;
+        await new Promise(done => requestAnimationFrame(done));
+        return {
+            viewport: window.innerWidth,
+            panelWidth: Math.round(panelBox.width * 100) / 100,
+            docOverflow,
+            panelOverflow,
+            inspected,
+            clipped: clipped.slice(0, 12)
+        };
+    }, selector);
+}
+
+function assertCleanLayout(report, label) {
+    assert.ok(!report.missing, label + " must render its panel");
+    assert.equal(report.docOverflow, 0, label + " must not overflow the page horizontally: " + JSON.stringify(report));
+    assert.equal(report.panelOverflow, 0, label + " must not overflow its panel horizontally: " + JSON.stringify(report));
+    assert.ok(report.panelWidth <= report.viewport, label + " must stay inside the viewport: " + JSON.stringify(report));
+    assert.deepEqual(report.clipped, [], label + " must not clip any visible copy: " + JSON.stringify(report.clipped));
 }
 
 const errors = [];
@@ -74,6 +178,26 @@ try {
     const desktop = await desktopContext.newPage();
     watch(desktop, "desktop", errors);
     await startRealm(desktop);
+
+    await openKingdom(desktop);
+    assert.equal(await desktop.locator("[data-command-tab]").count(), 28, "the desktop deck must expose all twenty-eight management tabs including WORLD");
+    const worldTab = desktop.locator('[data-command-tab="worldmap"]');
+    assert.equal((await worldTab.innerText()).trim(), "WORLD", "the WORLD tab must carry its complete label");
+    assert.ok(await worldTab.isVisible(), "the WORLD tab must be reachable in the desktop deck");
+    const kingdomText = await desktop.locator("#command-panel-content").textContent();
+    assert.match(kingdomText, /THE WORLD BEYOND/, "the kingdom overview must expose the world section");
+    assert.match(kingdomText, /Open WORLD in this deck/, "the kingdom overview must explain where the world map lives");
+    assert.match(kingdomText, /raise the diplomacy border levy/, "the kingdom overview must explain the diplomatic consequence");
+    assert.doesNotMatch(kingdomText, /undefined|NaN|Lorem ipsum|placeholder/i, "the kingdom overview must contain complete copy");
+    const desktopWorldSummary = await sectionCopy(desktop, "THE WORLD BEYOND");
+    assert.match(desktopWorldSummary, /STANDING ROUTES\s+0 \/ 6/, "the kingdom overview must visibly name the standing-route limit");
+    assert.match(desktopWorldSummary, /GOODS MOVED\s+0/, "the kingdom overview must visibly report moved goods");
+    assert.match(desktopWorldSummary, /FRONTIER PRESSURE\s+\d+ PRESSED/, "the kingdom overview must visibly report pressed frontiers");
+    assert.match(desktopWorldSummary, /BORDER INCIDENTS\s+\d+/, "the kingdom overview must visibly report border incidents");
+    const kingdomDesktop = await layoutReport(desktop, "#command-panel-content");
+    assertCleanLayout(kingdomDesktop, "kingdom overview at 1400x960");
+    await desktop.screenshot({ path: resolve(outDir, "kingdom-desktop.png"), animations: "disabled" });
+    await openWorld(desktop);
 
     const initial = await desktop.evaluate(async () => {
         const { state } = await import("./js/core/state.js");
@@ -205,9 +329,26 @@ try {
     const narrow = await narrowContext.newPage();
     watch(narrow, "narrow", errors);
     await startRealm(narrow);
+    await openKingdom(narrow, true);
+    assert.equal(await narrow.locator("#command-tab-select option").count(), 28, "the narrow selector must expose all twenty-eight management tabs including WORLD");
+    assert.equal((await narrow.locator('#command-tab-select option[value="worldmap"]').innerText()).trim(), "WORLD", "the narrow WORLD option must carry its complete label");
+    const narrowKingdomText = await narrow.locator("#command-panel-content").textContent();
+    assert.match(narrowKingdomText, /THE WORLD BEYOND/, "the narrow kingdom overview must expose the world section");
+    assert.match(narrowKingdomText, /Open WORLD in this deck/);
+    assert.doesNotMatch(narrowKingdomText, /undefined|NaN|Lorem ipsum|placeholder/i, "the narrow kingdom overview must contain complete copy");
+    const narrowWorldSummary = await sectionCopy(narrow, "THE WORLD BEYOND");
+    assert.match(narrowWorldSummary, /STANDING ROUTES\s+0 \/ 6/);
+    assert.match(narrowWorldSummary, /GOODS MOVED\s+0/);
+    assert.match(narrowWorldSummary, /FRONTIER PRESSURE\s+\d+ PRESSED/);
+    assert.match(narrowWorldSummary, /BORDER INCIDENTS\s+\d+/);
+    const kingdomNarrow = await layoutReport(narrow, "#command-panel-content");
+    assertCleanLayout(kingdomNarrow, "kingdom overview at 390 px");
+    await narrow.screenshot({ path: resolve(outDir, "kingdom-narrow.png"), animations: "disabled" });
     await openWorld(narrow, true);
     const overflow = await narrow.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
-    assert.ok(overflow <= 1, "the world map panel must not create horizontal page overflow at 390 px");
+    assert.equal(overflow, 0, "the world map panel must not create horizontal page overflow at 390 px");
+    const worldLayout = await layoutReport(narrow, "#command-panel-content");
+    assertCleanLayout(worldLayout, "world map at 390 px");
     const panelBox = await narrow.locator("[data-world-map-panel]").boundingBox();
     assert.ok(panelBox && panelBox.width <= 390, "the narrow world map panel must stay inside the viewport");
     const canvasBox = await narrow.locator(".world-map__canvas").boundingBox();
@@ -227,6 +368,11 @@ try {
         route: { id: chartered.routes[0].id, status: chartered.routes[0].status, seat: chartered.routes[0].seat },
         settled: { delivered: settled.route.delivered, seatStores: settled.seatStores, partnerStock: settled.partnerStock, tradeVolume: settled.realm.tradeVolume },
         restored: { routes: restored.routes.length, watch: restored.watch, incidents: restored.incidents },
+        layout: {
+            desktopKingdom: kingdomDesktop,
+            narrowKingdom: kingdomNarrow,
+            narrowWorld: worldLayout
+        },
         narrowOverflow: overflow,
         errors
     }, null, 2));
