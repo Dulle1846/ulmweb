@@ -2,13 +2,13 @@
 export const SPEC_COVERAGE = Object.freeze({
   "version": 2,
   "generatedBy": "scripts/spec-audit.mjs",
-  "commit": "8faa9541c1c85fc91dd458c9e2723e0b2d53be98",
-  "sourceHash": "05b4dc33df38c8c9c48c39c32a5deaad653a1ca09c2ee2e6a1dabff981916cb1",
+  "commit": "711cf6b420275a5fc27eb4d66639969e343e1003",
+  "sourceHash": "409dc89423c11a94bc1be1ad1cfc2fb108952652b35e9c22bf3a6b1c71a531ed",
   "totals": {
-    "total": 1564,
-    "implemented": 1560,
+    "total": 1618,
+    "implemented": 1614,
     "open": 4,
-    "sections": 37
+    "sections": 38
   },
   "nextSection": {
     "id": "4.0",
@@ -539,6 +539,14 @@ export const SPEC_COVERAGE = Object.freeze({
       "implemented": 66,
       "open": 0,
       "source": "js/world/cross-biome-data.js"
+    },
+    {
+      "id": "1.2.22",
+      "title": "Biome generation and visual quality",
+      "total": 54,
+      "implemented": 54,
+      "open": 0,
+      "source": "docs/BIOME_GENERATION.md"
     },
     {
       "id": "2.1",

@@ -107,6 +107,24 @@ try {
     assert.equal(ledgerProof.empty, 0, "no player-facing requirement may render an empty value");
     assert.equal(ledgerProof.readout.length, 10);
 
+    assert.match(firstRegionText, /BIOME GENERATION · 1\.2\.22/);
+    assert.match(firstRegionText, /FULL GENERATION LEDGER · 54 PARAMETERS/);
+    const generationProof = await ecoRegion.evaluate(element => {
+        const rows = [...element.querySelectorAll("[data-biome-generation-requirement]")];
+        const unique = new Set(rows.map(row => row.dataset.biomeGenerationRequirement));
+        const required = Array.from({ length: 54 }, (_, index) => "1.2.22." + (index + 1));
+        return {
+            unique: unique.size,
+            missing: required.filter(id => !unique.has(id)),
+            empty: rows.filter(row => !row.dataset.biomeGenerationValue || row.dataset.biomeGenerationValue === "—").length,
+            readout: [...element.querySelectorAll("[data-biome-generation-readout] [data-biome-generation-requirement], [data-biome-generation-readout] span")].length
+        };
+    });
+    assert.equal(generationProof.unique, 54, "the player panel must show all 54 generation point IDs");
+    assert.deepEqual(generationProof.missing, []);
+    assert.equal(generationProof.empty, 0, "no generation requirement may render an empty value");
+    assert.ok(generationProof.readout >= 6);
+
     const ecoBefore = await page.evaluate(async regionId => {
         const { state } = await import("./js/core/state.js");
         const { serializeCrossBiomeState } = await import("./js/systems/cross-biome-state.js");

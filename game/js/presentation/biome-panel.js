@@ -140,6 +140,31 @@ function systemsSection(region) {
         systemLedger(region);
 }
 
+function generationSection(region) {
+    const generation = region.generation;
+    if (!generation?.requirements?.length) return "";
+    const readout = [
+        ["DOMINANT BIOME", generation.label + " · " + generation.family],
+        ["PATCH STRUCTURE", generation.field.patches + " patches · " + generation.field.minPatch + "–" + generation.field.maxPatch + " cells"],
+        ["BOUNDARY", Math.round((1 - generation.field.straightness) * 100) + "% organic · " + (generation.field.checkerRatio * 100).toFixed(2) + "% chequer"],
+        ["PLANT MIX", generation.vegetation.species.length + " species · " + generation.vegetation.variants.length + " variants seen"],
+        ["HABITAT", generation.habitat.label + " · " + generation.habitat.match + "% fauna match"],
+        ["LOD CONTRACT", "≥" + generation.lod.detail + "× detail · ≥" + generation.lod.simplified + "× simple · ≤" + generation.lod.maxParticles + " particles"]
+    ].map(([label, value]) => '<span><small>' + label + '</small><strong>' + esc(value) + '</strong></span>').join("");
+    const rows = generation.requirements.map(row =>
+        '<div class="biome-system-row biome-generation-row" data-biome-generation-requirement="' + esc(row.id) + '" data-biome-generation-value="' + esc(row.value) + '"><span><b>' + esc(row.label) + '</b><small>' + esc(row.detail) + '</small></span><strong>' + esc(row.value) + '</strong></div>').join("");
+    const palette = generation.palette;
+    return '<div class="command-section-title">BIOME GENERATION · 1.2.22</div>' +
+        '<div class="biome-chip-line" data-biome-generation="catalog"><small>IDENTITY</small>' +
+        '<span class="biome-badge" data-biome-generation-id="' + esc(generation.biomeId) + '">' + esc(generation.label.toUpperCase()) + '</span>' +
+        '<span class="biome-badge">' + esc(palette.base.toUpperCase()) + ' / ' + esc(palette.accent.toUpperCase()) + ' / ' + esc(palette.water.toUpperCase()) + '</span>' +
+        '<span class="biome-badge">' + esc(generation.identity.texture.toUpperCase()) + '</span>' +
+        '<span class="biome-badge">' + esc(generation.identity.atmosphere.toUpperCase()) + '</span>' +
+        '<span class="biome-badge">LANDMARK · ' + esc(generation.identity.landmark.label.toUpperCase()) + '</span></div>' +
+        '<div class="biome-system-readout" data-biome-generation-readout> ' + readout + '</div>' +
+        '<details class="biome-system-ledger"><summary>FULL GENERATION LEDGER · 54 PARAMETERS</summary><div class="biome-system-grid">' + rows + '</div></details>';
+}
+
 function regionCard(region, index) {
     const resourceRows = region.resources.filter(row => row.discovered).map(row => resourceRow(region, row)).join("");
     const faunaRows = region.fauna.filter(row => row.discovered).map(row => faunaRow(region, row)).join("");
@@ -165,7 +190,7 @@ function regionCard(region, index) {
         '<div class="biome-region-body">' +
         '<div class="biome-region-summary"><span><small>PRODUCTION</small><strong>' + esc(region.productionLabel) + '</strong></span><span><small>SPECIALISATION</small><strong>' + esc(region.focusLabel) + '</strong></span><span><small>POLICY</small><strong>' + esc(region.policyLabel) + '</strong></span><span><small>PRODUCTION COST</small><strong>×' + region.economy.productionCost.toFixed(2) + '</strong></span><span><small>SUPPLY BONUS</small><strong>+' + region.economy.supplyBonus + '</strong></span><span><small>IMPORT COVERAGE</small><strong>' + (region.economy.importCoverage.length ? region.economy.importCoverage.join(", ").toUpperCase() : "NONE") + '</strong></span></div>' +
         meter("VEGETATION", region.vegetation) + meter("SOIL HEALTH", region.soilHealth) + meter("FRESH WATER", region.water) +
-        (region.discovered ? systemsSection(region) : '') +
+        (region.discovered ? systemsSection(region) + generationSection(region) : '') +
         '<div class="biome-chip-line"><small>LOCAL CRAFTS</small>' + region.crafts.map(craft => '<span class="biome-badge">' + esc(String(craft).toUpperCase()) + '</span>').join("") + '</div>' +
         '<div class="command-section-title">LOCAL CRAFT RECIPES</div><div class="biome-table">' + (craftRows || '<p class="command-note">No local recipe is available in this region.</p>') + '</div>' +
         '<p class="command-note">' + esc(region.policyDescription) + ' ' + esc(region.focusDescription) + '</p>' +

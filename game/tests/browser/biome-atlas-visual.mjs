@@ -85,12 +85,12 @@ async function scrollRegionToSection(regionId, text) {
 }
 async function scrollRegionToTop(regionId) {
     const region = page.locator('[data-biome-region="' + regionId + '"]');
-    await region.locator("summary").evaluate(element => element.scrollIntoView({ block: "start" }));
+    await region.locator("summary").first().evaluate(element => element.scrollIntoView({ block: "start" }));
     await page.waitForTimeout(180);
 }
 async function ensureRegionOpen(regionId) {
     const region = page.locator('[data-biome-region="' + regionId + '"]');
-    if (!(await region.evaluate(element => element.open))) await region.locator("summary").click();
+    if (!(await region.evaluate(element => element.open))) await region.locator("summary").first().click();
     await page.waitForTimeout(150);
 }
 async function setZoom(level, worldX, worldY) {

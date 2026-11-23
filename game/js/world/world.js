@@ -18,6 +18,7 @@ import { generateSpecialBiomes, paintSpecialBiomeTint } from '../systems/special
 import { generateBiomeAtlas, syncBiomeDiscovery } from '../systems/biome-resource-state.js';
 import { getClimateMoistureOffset, getClimateTemperatureOffset } from '../systems/climate-drift.js';
 import { getHazardMoistureOffsetAt, paintHazardTerrain } from '../systems/hazard-scars.js';
+import { buildBiomeIndexMap, biomeIndexAt, BIOME_TINT_COLORS } from './biome-generation.js';
 
 export { normalizeWorldOptions, resolveWorldDimensions, seaLevelFor };
 
@@ -78,6 +79,20 @@ export function initWorld(seed = state.worldSeed, options = state.worldOptions, 
 
     const W = dims.w;
     const H = dims.h;
+
+    // 1.2.22: one coarse biome identity map for the baked ground hue. It is
+    // derived from the same arrays, sampled every fourth tile, and never saved.
+    const biomeMapStarted = performance.now();
+    state.biomeIndexMap = buildBiomeIndexMap({
+        heights: state.heightMap,
+        moistures: state.moistureMap,
+        temperatures: state.temperatureMap,
+        resolution: state.terrainResolution,
+        pixW: state.terrainPixW,
+        pixH: state.terrainPixH,
+        width: W, height: H, sea: state.seaLevel, seed: worldSeed
+    }, 4);
+    markWorldTime("biomeMapMs", biomeMapStarted);
 
     const resourceStarted = performance.now();
     generateResourceGeography(worldSeed);
@@ -181,6 +196,13 @@ export function prerenderTerrain() {
                     : Math.max(-30, Math.min(32, slope * reliefScale));
 
                 const color = terrainColor(h, m, temperature, px, py, climate, sea, hillshade, state.worldSeed);
+                // A quiet identity wash from the central biome registry. It is
+                // sampled from the coarse map, so the bake stays O(pixels).
+                const tintIndex = biomeIndexAt(state.biomeIndexMap, px / (state.terrainResolution || 1), py / (state.terrainResolution || 1));
+                const tint = BIOME_TINT_COLORS[tintIndex] || BIOME_TINT_COLORS[0];
+                color[0] = color[0] * 0.94 + tint[0] * 0.06;
+                color[1] = color[1] * 0.94 + tint[1] * 0.06;
+                color[2] = color[2] * 0.94 + tint[2] * 0.06;
                 const pi = idx * 4;
                 data[pi] = color[0] < 0 ? 0 : color[0] > 255 ? 255 : color[0];
                 data[pi + 1] = color[1] < 0 ? 0 : color[1] > 255 ? 255 : color[1];

@@ -2,14 +2,14 @@
   "version": 2,
   "generatedBy": "scripts/spec-audit.mjs",
   "scope": "All numbered 1.1 and 1.2.1–1.2.18 requirements, plus the documented 2.x phases and 3.3–4.0 roadmap points.",
-  "commit": "8faa9541c1c85fc91dd458c9e2723e0b2d53be98",
-  "sourceHash": "05b4dc33df38c8c9c48c39c32a5deaad653a1ca09c2ee2e6a1dabff981916cb1",
-  "generatedAt": "2026-11-22T20:25:47+00:00",
+  "commit": "711cf6b420275a5fc27eb4d66639969e343e1003",
+  "sourceHash": "409dc89423c11a94bc1be1ad1cfc2fb108952652b35e9c22bf3a6b1c71a531ed",
+  "generatedAt": "2026-11-22T21:15:10+00:00",
   "totals": {
-    "total": 1564,
-    "implemented": 1560,
+    "total": 1618,
+    "implemented": 1614,
     "open": 4,
-    "sections": 37
+    "sections": 38
   },
   "collisions": [
     {
@@ -37587,6 +37587,1382 @@
       "implemented": 66,
       "open": 0,
       "total": 66
+    },
+    {
+      "id": "1.2.22",
+      "title": "Biome generation and visual quality",
+      "points": [
+        {
+          "id": "1.2.22.1",
+          "label": "Biomes generated from several environmental parameters",
+          "sourceStatus": "implemented",
+          "docEvidence": "biome-generation.js#biomeEnvironmentAt uses height, moisture, temperature, slope, water distance, elevation, light, soil and regional bias",
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-generation-data.js#BIOME_GENERATION_REQUIREMENTS (catalog)",
+            "js/world/biome-generation-data.js#BIOME_IDENTITY (identity)",
+            "js/world/biome-generation.js#classifyBiome (generation)",
+            "js/world/biome-generation.js#vegetationAt (vegetation)",
+            "js/world/biome-generation.js#buildBiomeGenerationProfile (profile)",
+            "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/world/world.js#initWorld (world)",
+            "js/world/world.js#prerenderTerrain (renderer)"
+          ],
+          "tests": [
+            "tests/world/biome-generation.test.js",
+            "tests/browser/biome-atlas-ui.mjs"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.22.2",
+          "label": "No simple rectangular biome areas",
+          "sourceStatus": "implemented",
+          "docEvidence": "biome-generation.js#analyzeBiomeGrid measures bounding-box fill; profiles keep max fill below a rectangle",
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-generation-data.js#BIOME_GENERATION_REQUIREMENTS (catalog)",
+            "js/world/biome-generation-data.js#BIOME_IDENTITY (identity)",
+            "js/world/biome-generation.js#classifyBiome (generation)",
+            "js/world/biome-generation.js#vegetationAt (vegetation)",
+            "js/world/biome-generation.js#buildBiomeGenerationProfile (profile)",
+            "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/world/world.js#initWorld (world)",
+            "js/world/world.js#prerenderTerrain (renderer)"
+          ],
+          "tests": [
+            "tests/world/biome-generation.test.js",
+            "tests/browser/biome-atlas-ui.mjs"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.22.3",
+          "label": "No artificial chequerboard patterns",
+          "sourceStatus": "implemented",
+          "docEvidence": "biome-generation.js#classifyBiome uses coherent noise only; analyzeBiomeGrid#checkerRatio is audited",
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-generation-data.js#BIOME_GENERATION_REQUIREMENTS (catalog)",
+            "js/world/biome-generation-data.js#BIOME_IDENTITY (identity)",
+            "js/world/biome-generation.js#classifyBiome (generation)",
+            "js/world/biome-generation.js#vegetationAt (vegetation)",
+            "js/world/biome-generation.js#buildBiomeGenerationProfile (profile)",
+            "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/world/world.js#initWorld (world)",
+            "js/world/world.js#prerenderTerrain (renderer)"
+          ],
+          "tests": [
+            "tests/world/biome-generation.test.js",
+            "tests/browser/biome-atlas-ui.mjs"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.22.4",
+          "label": "Organic borders and intermediate zones",
+          "sourceStatus": "implemented",
+          "docEvidence": "biome-generation.js#classifyBiome two-scale warp; transition-biomes.js#transitionAt provides the ecotone band",
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-generation-data.js#BIOME_GENERATION_REQUIREMENTS (catalog)",
+            "js/world/biome-generation-data.js#BIOME_IDENTITY (identity)",
+            "js/world/biome-generation.js#classifyBiome (generation)",
+            "js/world/biome-generation.js#vegetationAt (vegetation)",
+            "js/world/biome-generation.js#buildBiomeGenerationProfile (profile)",
+            "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/world/world.js#initWorld (world)",
+            "js/world/world.js#prerenderTerrain (renderer)"
+          ],
+          "tests": [
+            "tests/world/biome-generation.test.js",
+            "tests/browser/biome-atlas-ui.mjs"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.22.5",
+          "label": "Different patch sizes and shapes",
+          "sourceStatus": "implemented",
+          "docEvidence": "biome-generation.js#analyzeBiomeGrid patch size/deviation and boundary complexity",
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-generation-data.js#BIOME_GENERATION_REQUIREMENTS (catalog)",
+            "js/world/biome-generation-data.js#BIOME_IDENTITY (identity)",
+            "js/world/biome-generation.js#classifyBiome (generation)",
+            "js/world/biome-generation.js#vegetationAt (vegetation)",
+            "js/world/biome-generation.js#buildBiomeGenerationProfile (profile)",
+            "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/world/world.js#initWorld (world)",
+            "js/world/world.js#prerenderTerrain (renderer)"
+          ],
+          "tests": [
+            "tests/world/biome-generation.test.js",
+            "tests/browser/biome-atlas-ui.mjs"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.22.6",
+          "label": "Regional coherence and plausible distribution",
+          "sourceStatus": "implemented",
+          "docEvidence": "biome-generation.js low-frequency region bias and preference; biome-resource-state.js#generateBiomeAtlas",
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-generation-data.js#BIOME_GENERATION_REQUIREMENTS (catalog)",
+            "js/world/biome-generation-data.js#BIOME_IDENTITY (identity)",
+            "js/world/biome-generation.js#classifyBiome (generation)",
+            "js/world/biome-generation.js#vegetationAt (vegetation)",
+            "js/world/biome-generation.js#buildBiomeGenerationProfile (profile)",
+            "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/world/world.js#initWorld (world)",
+            "js/world/world.js#prerenderTerrain (renderer)"
+          ],
+          "tests": [
+            "tests/world/biome-generation.test.js",
+            "tests/browser/biome-atlas-ui.mjs"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.22.7",
+          "label": "Elevation and water bodies considered",
+          "sourceStatus": "implemented",
+          "docEvidence": "biome-generation.js#biomeEnvironmentAt elevation, slope, waterDistance; beach shore ribbon",
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-generation-data.js#BIOME_GENERATION_REQUIREMENTS (catalog)",
+            "js/world/biome-generation-data.js#BIOME_IDENTITY (identity)",
+            "js/world/biome-generation.js#classifyBiome (generation)",
+            "js/world/biome-generation.js#vegetationAt (vegetation)",
+            "js/world/biome-generation.js#buildBiomeGenerationProfile (profile)",
+            "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/world/world.js#initWorld (world)",
+            "js/world/world.js#prerenderTerrain (renderer)"
+          ],
+          "tests": [
+            "tests/world/biome-generation.test.js",
+            "tests/browser/biome-atlas-ui.mjs"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.22.8",
+          "label": "Cooperation with terrain generation",
+          "sourceStatus": "implemented",
+          "docEvidence": "world.js#initWorld reads the shared height/moisture/temperature arrays and river carve",
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-generation-data.js#BIOME_GENERATION_REQUIREMENTS (catalog)",
+            "js/world/biome-generation-data.js#BIOME_IDENTITY (identity)",
+            "js/world/biome-generation.js#classifyBiome (generation)",
+            "js/world/biome-generation.js#vegetationAt (vegetation)",
+            "js/world/biome-generation.js#buildBiomeGenerationProfile (profile)",
+            "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/world/world.js#initWorld (world)",
+            "js/world/world.js#prerenderTerrain (renderer)"
+          ],
+          "tests": [
+            "tests/world/biome-generation.test.js",
+            "tests/browser/biome-atlas-ui.mjs"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.22.9",
+          "label": "Plants chosen according to biome",
+          "sourceStatus": "implemented",
+          "docEvidence": "biome-generation-data.js#PLANTS_BY_BIOME and biome-generation.js#vegetationAt",
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-generation-data.js#BIOME_GENERATION_REQUIREMENTS (catalog)",
+            "js/world/biome-generation-data.js#BIOME_IDENTITY (identity)",
+            "js/world/biome-generation.js#classifyBiome (generation)",
+            "js/world/biome-generation.js#vegetationAt (vegetation)",
+            "js/world/biome-generation.js#buildBiomeGenerationProfile (profile)",
+            "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/world/world.js#initWorld (world)",
+            "js/world/world.js#prerenderTerrain (renderer)"
+          ],
+          "tests": [
+            "tests/world/biome-generation.test.js",
+            "tests/browser/biome-atlas-ui.mjs"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.22.10",
+          "label": "Spatially plausible plant distribution",
+          "sourceStatus": "implemented",
+          "docEvidence": "biome-generation.js#vegetationAt grove field, suitability and clearings",
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-generation-data.js#BIOME_GENERATION_REQUIREMENTS (catalog)",
+            "js/world/biome-generation-data.js#BIOME_IDENTITY (identity)",
+            "js/world/biome-generation.js#classifyBiome (generation)",
+            "js/world/biome-generation.js#vegetationAt (vegetation)",
+            "js/world/biome-generation.js#buildBiomeGenerationProfile (profile)",
+            "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/world/world.js#initWorld (world)",
+            "js/world/world.js#prerenderTerrain (renderer)"
+          ],
+          "tests": [
+            "tests/world/biome-generation.test.js",
+            "tests/browser/biome-atlas-ui.mjs"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.22.11",
+          "label": "Several plant variants",
+          "sourceStatus": "implemented",
+          "docEvidence": "biome-generation-data.js#BIOME_PLANTS every species carries at least three variants",
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-generation-data.js#BIOME_GENERATION_REQUIREMENTS (catalog)",
+            "js/world/biome-generation-data.js#BIOME_IDENTITY (identity)",
+            "js/world/biome-generation.js#classifyBiome (generation)",
+            "js/world/biome-generation.js#vegetationAt (vegetation)",
+            "js/world/biome-generation.js#buildBiomeGenerationProfile (profile)",
+            "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/world/world.js#initWorld (world)",
+            "js/world/world.js#prerenderTerrain (renderer)"
+          ],
+          "tests": [
+            "tests/world/biome-generation.test.js",
+            "tests/browser/biome-atlas-ui.mjs"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.22.12",
+          "label": "Different sizes, orientations and age stages",
+          "sourceStatus": "implemented",
+          "docEvidence": "biome-generation-data.js#BIOME_PLANTS size, ages, orientations; vegetationAt stage scale",
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-generation-data.js#BIOME_GENERATION_REQUIREMENTS (catalog)",
+            "js/world/biome-generation-data.js#BIOME_IDENTITY (identity)",
+            "js/world/biome-generation.js#classifyBiome (generation)",
+            "js/world/biome-generation.js#vegetationAt (vegetation)",
+            "js/world/biome-generation.js#buildBiomeGenerationProfile (profile)",
+            "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/world/world.js#initWorld (world)",
+            "js/world/world.js#prerenderTerrain (renderer)"
+          ],
+          "tests": [
+            "tests/world/biome-generation.test.js",
+            "tests/browser/biome-atlas-ui.mjs"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.22.13",
+          "label": "No conspicuous repetition",
+          "sourceStatus": "implemented",
+          "docEvidence": "biome-generation.js#vegetationAt position/seed rolls; analyzeBiomeGrid repetition metrics",
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-generation-data.js#BIOME_GENERATION_REQUIREMENTS (catalog)",
+            "js/world/biome-generation-data.js#BIOME_IDENTITY (identity)",
+            "js/world/biome-generation.js#classifyBiome (generation)",
+            "js/world/biome-generation.js#vegetationAt (vegetation)",
+            "js/world/biome-generation.js#buildBiomeGenerationProfile (profile)",
+            "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/world/world.js#initWorld (world)",
+            "js/world/world.js#prerenderTerrain (renderer)"
+          ],
+          "tests": [
+            "tests/world/biome-generation.test.js",
+            "tests/browser/biome-atlas-ui.mjs"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.22.14",
+          "label": "Natural grouping into clumps and groves",
+          "sourceStatus": "implemented",
+          "docEvidence": "biome-generation.js#vegetationAt low-frequency grove field and cluster classification",
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-generation-data.js#BIOME_GENERATION_REQUIREMENTS (catalog)",
+            "js/world/biome-generation-data.js#BIOME_IDENTITY (identity)",
+            "js/world/biome-generation.js#classifyBiome (generation)",
+            "js/world/biome-generation.js#vegetationAt (vegetation)",
+            "js/world/biome-generation.js#buildBiomeGenerationProfile (profile)",
+            "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/world/world.js#initWorld (world)",
+            "js/world/world.js#prerenderTerrain (renderer)"
+          ],
+          "tests": [
+            "tests/world/biome-generation.test.js",
+            "tests/browser/biome-atlas-ui.mjs"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.22.15",
+          "label": "Dependence on soil, moisture and light",
+          "sourceStatus": "implemented",
+          "docEvidence": "biome-generation-data.js#BIOME_PLANTS tolerance bands; vegetationAt#speciesSuitability",
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-generation-data.js#BIOME_GENERATION_REQUIREMENTS (catalog)",
+            "js/world/biome-generation-data.js#BIOME_IDENTITY (identity)",
+            "js/world/biome-generation.js#classifyBiome (generation)",
+            "js/world/biome-generation.js#vegetationAt (vegetation)",
+            "js/world/biome-generation.js#buildBiomeGenerationProfile (profile)",
+            "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/world/world.js#initWorld (world)",
+            "js/world/world.js#prerenderTerrain (renderer)"
+          ],
+          "tests": [
+            "tests/world/biome-generation.test.js",
+            "tests/browser/biome-atlas-ui.mjs"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.22.16",
+          "label": "Seasonal plant variants",
+          "sourceStatus": "implemented",
+          "docEvidence": "biome-generation-data.js#BIOME_PLANTS seasons; vegetationAt filters active species",
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-generation-data.js#BIOME_GENERATION_REQUIREMENTS (catalog)",
+            "js/world/biome-generation-data.js#BIOME_IDENTITY (identity)",
+            "js/world/biome-generation.js#classifyBiome (generation)",
+            "js/world/biome-generation.js#vegetationAt (vegetation)",
+            "js/world/biome-generation.js#buildBiomeGenerationProfile (profile)",
+            "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/world/world.js#initWorld (world)",
+            "js/world/world.js#prerenderTerrain (renderer)"
+          ],
+          "tests": [
+            "tests/world/biome-generation.test.js",
+            "tests/browser/biome-atlas-ui.mjs"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.22.17",
+          "label": "Different vegetation densities",
+          "sourceStatus": "implemented",
+          "docEvidence": "biome-generation.js#vegetationAt density from moisture, soil, grove and land use",
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-generation-data.js#BIOME_GENERATION_REQUIREMENTS (catalog)",
+            "js/world/biome-generation-data.js#BIOME_IDENTITY (identity)",
+            "js/world/biome-generation.js#classifyBiome (generation)",
+            "js/world/biome-generation.js#vegetationAt (vegetation)",
+            "js/world/biome-generation.js#buildBiomeGenerationProfile (profile)",
+            "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/world/world.js#initWorld (world)",
+            "js/world/world.js#prerenderTerrain (renderer)"
+          ],
+          "tests": [
+            "tests/world/biome-generation.test.js",
+            "tests/browser/biome-atlas-ui.mjs"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.22.18",
+          "label": "Buildings and human intervention respected",
+          "sourceStatus": "implemented",
+          "docEvidence": "vegetationAt humanPressure from settlement, farming, mining, clearing",
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-generation-data.js#BIOME_GENERATION_REQUIREMENTS (catalog)",
+            "js/world/biome-generation-data.js#BIOME_IDENTITY (identity)",
+            "js/world/biome-generation.js#classifyBiome (generation)",
+            "js/world/biome-generation.js#vegetationAt (vegetation)",
+            "js/world/biome-generation.js#buildBiomeGenerationProfile (profile)",
+            "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/world/world.js#initWorld (world)",
+            "js/world/world.js#prerenderTerrain (renderer)"
+          ],
+          "tests": [
+            "tests/world/biome-generation.test.js",
+            "tests/browser/biome-atlas-ui.mjs"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.22.19",
+          "label": "Every biome recognisable from the normal camera",
+          "sourceStatus": "implemented",
+          "docEvidence": "biome-generation-data.js#BIOME_IDENTITY palette, silhouette and landmark per biome",
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-generation-data.js#BIOME_GENERATION_REQUIREMENTS (catalog)",
+            "js/world/biome-generation-data.js#BIOME_IDENTITY (identity)",
+            "js/world/biome-generation.js#classifyBiome (generation)",
+            "js/world/biome-generation.js#vegetationAt (vegetation)",
+            "js/world/biome-generation.js#buildBiomeGenerationProfile (profile)",
+            "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/world/world.js#initWorld (world)",
+            "js/world/world.js#prerenderTerrain (renderer)"
+          ],
+          "tests": [
+            "tests/world/biome-generation.test.js",
+            "tests/browser/biome-atlas-ui.mjs"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.22.20",
+          "label": "Own colour palette per biome",
+          "sourceStatus": "implemented",
+          "docEvidence": "biome-generation-data.js#BIOME_IDENTITY twelve distinct palettes; palette distance audited",
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-generation-data.js#BIOME_GENERATION_REQUIREMENTS (catalog)",
+            "js/world/biome-generation-data.js#BIOME_IDENTITY (identity)",
+            "js/world/biome-generation.js#classifyBiome (generation)",
+            "js/world/biome-generation.js#vegetationAt (vegetation)",
+            "js/world/biome-generation.js#buildBiomeGenerationProfile (profile)",
+            "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/world/world.js#initWorld (world)",
+            "js/world/world.js#prerenderTerrain (renderer)"
+          ],
+          "tests": [
+            "tests/world/biome-generation.test.js",
+            "tests/browser/biome-atlas-ui.mjs"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.22.21",
+          "label": "Own vegetation silhouettes",
+          "sourceStatus": "implemented",
+          "docEvidence": "biome-generation-data.js#BIOME_IDENTITY silhouettes and BIOME_PLANTS silhouette rows",
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-generation-data.js#BIOME_GENERATION_REQUIREMENTS (catalog)",
+            "js/world/biome-generation-data.js#BIOME_IDENTITY (identity)",
+            "js/world/biome-generation.js#classifyBiome (generation)",
+            "js/world/biome-generation.js#vegetationAt (vegetation)",
+            "js/world/biome-generation.js#buildBiomeGenerationProfile (profile)",
+            "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/world/world.js#initWorld (world)",
+            "js/world/world.js#prerenderTerrain (renderer)"
+          ],
+          "tests": [
+            "tests/world/biome-generation.test.js",
+            "tests/browser/biome-atlas-ui.mjs"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.22.22",
+          "label": "Own ground and surface textures",
+          "sourceStatus": "implemented",
+          "docEvidence": "biome-generation-data.js#BIOME_IDENTITY texture rows; world.js#prerenderTerrain identity wash",
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-generation-data.js#BIOME_GENERATION_REQUIREMENTS (catalog)",
+            "js/world/biome-generation-data.js#BIOME_IDENTITY (identity)",
+            "js/world/biome-generation.js#classifyBiome (generation)",
+            "js/world/biome-generation.js#vegetationAt (vegetation)",
+            "js/world/biome-generation.js#buildBiomeGenerationProfile (profile)",
+            "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/world/world.js#initWorld (world)",
+            "js/world/world.js#prerenderTerrain (renderer)"
+          ],
+          "tests": [
+            "tests/world/biome-generation.test.js",
+            "tests/browser/biome-atlas-ui.mjs"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.22.23",
+          "label": "Own atmospheric effects",
+          "sourceStatus": "implemented",
+          "docEvidence": "biome-generation-data.js#BIOME_IDENTITY atmosphere rows; existing terrain mist/heat layers",
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-generation-data.js#BIOME_GENERATION_REQUIREMENTS (catalog)",
+            "js/world/biome-generation-data.js#BIOME_IDENTITY (identity)",
+            "js/world/biome-generation.js#classifyBiome (generation)",
+            "js/world/biome-generation.js#vegetationAt (vegetation)",
+            "js/world/biome-generation.js#buildBiomeGenerationProfile (profile)",
+            "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/world/world.js#initWorld (world)",
+            "js/world/world.js#prerenderTerrain (renderer)"
+          ],
+          "tests": [
+            "tests/world/biome-generation.test.js",
+            "tests/browser/biome-atlas-ui.mjs"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.22.24",
+          "label": "Own water and moisture presentation",
+          "sourceStatus": "implemented",
+          "docEvidence": "biome-generation-data.js#BIOME_IDENTITY waterLook rows and seasonal water level",
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-generation-data.js#BIOME_GENERATION_REQUIREMENTS (catalog)",
+            "js/world/biome-generation-data.js#BIOME_IDENTITY (identity)",
+            "js/world/biome-generation.js#classifyBiome (generation)",
+            "js/world/biome-generation.js#vegetationAt (vegetation)",
+            "js/world/biome-generation.js#buildBiomeGenerationProfile (profile)",
+            "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/world/world.js#initWorld (world)",
+            "js/world/world.js#prerenderTerrain (renderer)"
+          ],
+          "tests": [
+            "tests/world/biome-generation.test.js",
+            "tests/browser/biome-atlas-ui.mjs"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.22.25",
+          "label": "Own seasonal appearance",
+          "sourceStatus": "implemented",
+          "docEvidence": "biome-generation-data.js#BIOME_IDENTITY seasons; cross-biome-data.js#BIOME_SEASONAL_APPEARANCE",
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-generation-data.js#BIOME_GENERATION_REQUIREMENTS (catalog)",
+            "js/world/biome-generation-data.js#BIOME_IDENTITY (identity)",
+            "js/world/biome-generation.js#classifyBiome (generation)",
+            "js/world/biome-generation.js#vegetationAt (vegetation)",
+            "js/world/biome-generation.js#buildBiomeGenerationProfile (profile)",
+            "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/world/world.js#initWorld (world)",
+            "js/world/world.js#prerenderTerrain (renderer)"
+          ],
+          "tests": [
+            "tests/world/biome-generation.test.js",
+            "tests/browser/biome-atlas-ui.mjs"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.22.26",
+          "label": "Distinct landmarks for important biomes",
+          "sourceStatus": "implemented",
+          "docEvidence": "biome-generation-data.js#BIOME_IDENTITY landmark row per biome",
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-generation-data.js#BIOME_GENERATION_REQUIREMENTS (catalog)",
+            "js/world/biome-generation-data.js#BIOME_IDENTITY (identity)",
+            "js/world/biome-generation.js#classifyBiome (generation)",
+            "js/world/biome-generation.js#vegetationAt (vegetation)",
+            "js/world/biome-generation.js#buildBiomeGenerationProfile (profile)",
+            "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/world/world.js#initWorld (world)",
+            "js/world/world.js#prerenderTerrain (renderer)"
+          ],
+          "tests": [
+            "tests/world/biome-generation.test.js",
+            "tests/browser/biome-atlas-ui.mjs"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.22.27",
+          "label": "Visually independent fantastic biomes",
+          "sourceStatus": "implemented",
+          "docEvidence": "biome-generation-data.js#SPECIAL_BIOME_LOOKS and special-biomes.js families",
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-generation-data.js#BIOME_GENERATION_REQUIREMENTS (catalog)",
+            "js/world/biome-generation-data.js#BIOME_IDENTITY (identity)",
+            "js/world/biome-generation.js#classifyBiome (generation)",
+            "js/world/biome-generation.js#vegetationAt (vegetation)",
+            "js/world/biome-generation.js#buildBiomeGenerationProfile (profile)",
+            "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/world/world.js#initWorld (world)",
+            "js/world/world.js#prerenderTerrain (renderer)"
+          ],
+          "tests": [
+            "tests/world/biome-generation.test.js",
+            "tests/browser/biome-atlas-ui.mjs"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.22.28",
+          "label": "Vegetation detail depends on camera distance",
+          "sourceStatus": "implemented",
+          "docEvidence": "biome-generation-data.js#BIOME_LOD tiers; terrain.js forest sprite/crown LOD",
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-generation-data.js#BIOME_GENERATION_REQUIREMENTS (catalog)",
+            "js/world/biome-generation-data.js#BIOME_IDENTITY (identity)",
+            "js/world/biome-generation.js#classifyBiome (generation)",
+            "js/world/biome-generation.js#vegetationAt (vegetation)",
+            "js/world/biome-generation.js#buildBiomeGenerationProfile (profile)",
+            "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/world/world.js#initWorld (world)",
+            "js/world/world.js#prerenderTerrain (renderer)"
+          ],
+          "tests": [
+            "tests/world/biome-generation.test.js",
+            "tests/browser/biome-atlas-ui.mjs"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.22.29",
+          "label": "LOD system for trees and larger plants",
+          "sourceStatus": "implemented",
+          "docEvidence": "BIOME_LOD detail/simplified/impostor thresholds; forest-detail-reference.mjs",
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-generation-data.js#BIOME_GENERATION_REQUIREMENTS (catalog)",
+            "js/world/biome-generation-data.js#BIOME_IDENTITY (identity)",
+            "js/world/biome-generation.js#classifyBiome (generation)",
+            "js/world/biome-generation.js#vegetationAt (vegetation)",
+            "js/world/biome-generation.js#buildBiomeGenerationProfile (profile)",
+            "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/world/world.js#initWorld (world)",
+            "js/world/world.js#prerenderTerrain (renderer)"
+          ],
+          "tests": [
+            "tests/world/biome-generation.test.js",
+            "tests/browser/biome-atlas-ui.mjs"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.22.30",
+          "label": "Simplified representation of distant vegetation",
+          "sourceStatus": "implemented",
+          "docEvidence": "BIOME_LOD impostor tier; terrain.js canopy marks beyond the impostor zoom",
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-generation-data.js#BIOME_GENERATION_REQUIREMENTS (catalog)",
+            "js/world/biome-generation-data.js#BIOME_IDENTITY (identity)",
+            "js/world/biome-generation.js#classifyBiome (generation)",
+            "js/world/biome-generation.js#vegetationAt (vegetation)",
+            "js/world/biome-generation.js#buildBiomeGenerationProfile (profile)",
+            "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/world/world.js#initWorld (world)",
+            "js/world/world.js#prerenderTerrain (renderer)"
+          ],
+          "tests": [
+            "tests/world/biome-generation.test.js",
+            "tests/browser/biome-atlas-ui.mjs"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.22.31",
+          "label": "Instancing and efficient reuse",
+          "sourceStatus": "implemented",
+          "docEvidence": "shared crown/trunk sprite cache and per-biome palette reuse in terrain.js",
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-generation-data.js#BIOME_GENERATION_REQUIREMENTS (catalog)",
+            "js/world/biome-generation-data.js#BIOME_IDENTITY (identity)",
+            "js/world/biome-generation.js#classifyBiome (generation)",
+            "js/world/biome-generation.js#vegetationAt (vegetation)",
+            "js/world/biome-generation.js#buildBiomeGenerationProfile (profile)",
+            "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/world/world.js#initWorld (world)",
+            "js/world/world.js#prerenderTerrain (renderer)"
+          ],
+          "tests": [
+            "tests/world/biome-generation.test.js",
+            "tests/browser/biome-atlas-ui.mjs"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.22.32",
+          "label": "Bounded particle effects",
+          "sourceStatus": "implemented",
+          "docEvidence": "BIOME_LOD.maxParticles and one ambient layer per visible biome",
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-generation-data.js#BIOME_GENERATION_REQUIREMENTS (catalog)",
+            "js/world/biome-generation-data.js#BIOME_IDENTITY (identity)",
+            "js/world/biome-generation.js#classifyBiome (generation)",
+            "js/world/biome-generation.js#vegetationAt (vegetation)",
+            "js/world/biome-generation.js#buildBiomeGenerationProfile (profile)",
+            "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/world/world.js#initWorld (world)",
+            "js/world/world.js#prerenderTerrain (renderer)"
+          ],
+          "tests": [
+            "tests/world/biome-generation.test.js",
+            "tests/browser/biome-atlas-ui.mjs"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.22.33",
+          "label": "Efficient shadow calculation",
+          "sourceStatus": "implemented",
+          "docEvidence": "baked ground hillshade plus contact crown shadow cadence in BIOME_LOD",
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-generation-data.js#BIOME_GENERATION_REQUIREMENTS (catalog)",
+            "js/world/biome-generation-data.js#BIOME_IDENTITY (identity)",
+            "js/world/biome-generation.js#classifyBiome (generation)",
+            "js/world/biome-generation.js#vegetationAt (vegetation)",
+            "js/world/biome-generation.js#buildBiomeGenerationProfile (profile)",
+            "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/world/world.js#initWorld (world)",
+            "js/world/world.js#prerenderTerrain (renderer)"
+          ],
+          "tests": [
+            "tests/world/biome-generation.test.js",
+            "tests/browser/biome-atlas-ui.mjs"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.22.34",
+          "label": "No unnecessary simulation of single grass blades",
+          "sourceStatus": "implemented",
+          "docEvidence": "grass is a density/texture field; no blade entity exists",
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-generation-data.js#BIOME_GENERATION_REQUIREMENTS (catalog)",
+            "js/world/biome-generation-data.js#BIOME_IDENTITY (identity)",
+            "js/world/biome-generation.js#classifyBiome (generation)",
+            "js/world/biome-generation.js#vegetationAt (vegetation)",
+            "js/world/biome-generation.js#buildBiomeGenerationProfile (profile)",
+            "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/world/world.js#initWorld (world)",
+            "js/world/world.js#prerenderTerrain (renderer)"
+          ],
+          "tests": [
+            "tests/world/biome-generation.test.js",
+            "tests/browser/biome-atlas-ui.mjs"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.22.35",
+          "label": "Ecological simulation on a suitable abstraction level",
+          "sourceStatus": "implemented",
+          "docEvidence": "36 compact atlas regions and one annual pass; no per-tile ecology loop",
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-generation-data.js#BIOME_GENERATION_REQUIREMENTS (catalog)",
+            "js/world/biome-generation-data.js#BIOME_IDENTITY (identity)",
+            "js/world/biome-generation.js#classifyBiome (generation)",
+            "js/world/biome-generation.js#vegetationAt (vegetation)",
+            "js/world/biome-generation.js#buildBiomeGenerationProfile (profile)",
+            "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/world/world.js#initWorld (world)",
+            "js/world/world.js#prerenderTerrain (renderer)"
+          ],
+          "tests": [
+            "tests/world/biome-generation.test.js",
+            "tests/browser/biome-atlas-ui.mjs"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.22.36",
+          "label": "Detail without hurting large maps",
+          "sourceStatus": "implemented",
+          "docEvidence": "coarse biome identity map and terrain resolution scaling to 576×576",
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-generation-data.js#BIOME_GENERATION_REQUIREMENTS (catalog)",
+            "js/world/biome-generation-data.js#BIOME_IDENTITY (identity)",
+            "js/world/biome-generation.js#classifyBiome (generation)",
+            "js/world/biome-generation.js#vegetationAt (vegetation)",
+            "js/world/biome-generation.js#buildBiomeGenerationProfile (profile)",
+            "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/world/world.js#initWorld (world)",
+            "js/world/world.js#prerenderTerrain (renderer)"
+          ],
+          "tests": [
+            "tests/world/biome-generation.test.js",
+            "tests/browser/biome-atlas-ui.mjs"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.22.37",
+          "label": "Unique internal identifier for every biome",
+          "sourceStatus": "implemented",
+          "docEvidence": "biome-generation-data.js#BIOME_IDENTITY uses stable biome.<key> ids",
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-generation-data.js#BIOME_GENERATION_REQUIREMENTS (catalog)",
+            "js/world/biome-generation-data.js#BIOME_IDENTITY (identity)",
+            "js/world/biome-generation.js#classifyBiome (generation)",
+            "js/world/biome-generation.js#vegetationAt (vegetation)",
+            "js/world/biome-generation.js#buildBiomeGenerationProfile (profile)",
+            "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/world/world.js#initWorld (world)",
+            "js/world/world.js#prerenderTerrain (renderer)"
+          ],
+          "tests": [
+            "tests/world/biome-generation.test.js",
+            "tests/browser/biome-atlas-ui.mjs"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.22.38",
+          "label": "Central management of biome definitions",
+          "sourceStatus": "implemented",
+          "docEvidence": "biome-generation-data.js owns palette, texture, plants, habitat, hazard and LOD",
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-generation-data.js#BIOME_GENERATION_REQUIREMENTS (catalog)",
+            "js/world/biome-generation-data.js#BIOME_IDENTITY (identity)",
+            "js/world/biome-generation.js#classifyBiome (generation)",
+            "js/world/biome-generation.js#vegetationAt (vegetation)",
+            "js/world/biome-generation.js#buildBiomeGenerationProfile (profile)",
+            "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/world/world.js#initWorld (world)",
+            "js/world/world.js#prerenderTerrain (renderer)"
+          ],
+          "tests": [
+            "tests/world/biome-generation.test.js",
+            "tests/browser/biome-atlas-ui.mjs"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.22.39",
+          "label": "Plants assigned to biomes and conditions",
+          "sourceStatus": "implemented",
+          "docEvidence": "BIOME_PLANTS biomes and tolerance rows; plantsForBiome",
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-generation-data.js#BIOME_GENERATION_REQUIREMENTS (catalog)",
+            "js/world/biome-generation-data.js#BIOME_IDENTITY (identity)",
+            "js/world/biome-generation.js#classifyBiome (generation)",
+            "js/world/biome-generation.js#vegetationAt (vegetation)",
+            "js/world/biome-generation.js#buildBiomeGenerationProfile (profile)",
+            "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/world/world.js#initWorld (world)",
+            "js/world/world.js#prerenderTerrain (renderer)"
+          ],
+          "tests": [
+            "tests/world/biome-generation.test.js",
+            "tests/browser/biome-atlas-ui.mjs"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.22.40",
+          "label": "Own habitat definitions for animal species",
+          "sourceStatus": "implemented",
+          "docEvidence": "biome-generation-data.js#BIOME_HABITATS links to the existing wildlife catalog",
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-generation-data.js#BIOME_GENERATION_REQUIREMENTS (catalog)",
+            "js/world/biome-generation-data.js#BIOME_IDENTITY (identity)",
+            "js/world/biome-generation.js#classifyBiome (generation)",
+            "js/world/biome-generation.js#vegetationAt (vegetation)",
+            "js/world/biome-generation.js#buildBiomeGenerationProfile (profile)",
+            "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/world/world.js#initWorld (world)",
+            "js/world/world.js#prerenderTerrain (renderer)"
+          ],
+          "tests": [
+            "tests/world/biome-generation.test.js",
+            "tests/browser/biome-atlas-ui.mjs"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.22.41",
+          "label": "Resources linked to biome and site requirements",
+          "sourceStatus": "implemented",
+          "docEvidence": "biome-generation-data.js#BIOME_RESOURCE_REQUIREMENTS derived from BIOME_RESOURCES",
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-generation-data.js#BIOME_GENERATION_REQUIREMENTS (catalog)",
+            "js/world/biome-generation-data.js#BIOME_IDENTITY (identity)",
+            "js/world/biome-generation.js#classifyBiome (generation)",
+            "js/world/biome-generation.js#vegetationAt (vegetation)",
+            "js/world/biome-generation.js#buildBiomeGenerationProfile (profile)",
+            "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/world/world.js#initWorld (world)",
+            "js/world/world.js#prerenderTerrain (renderer)"
+          ],
+          "tests": [
+            "tests/world/biome-generation.test.js",
+            "tests/browser/biome-atlas-ui.mjs"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.22.42",
+          "label": "Hazards triggered by traceable conditions",
+          "sourceStatus": "implemented",
+          "docEvidence": "biome-generation-data.js#BIOME_HAZARD_TRIGGERS conditions and hazard catalogue mechanics",
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-generation-data.js#BIOME_GENERATION_REQUIREMENTS (catalog)",
+            "js/world/biome-generation-data.js#BIOME_IDENTITY (identity)",
+            "js/world/biome-generation.js#classifyBiome (generation)",
+            "js/world/biome-generation.js#vegetationAt (vegetation)",
+            "js/world/biome-generation.js#buildBiomeGenerationProfile (profile)",
+            "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/world/world.js#initWorld (world)",
+            "js/world/world.js#prerenderTerrain (renderer)"
+          ],
+          "tests": [
+            "tests/world/biome-generation.test.js",
+            "tests/browser/biome-atlas-ui.mjs"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.22.43",
+          "label": "Central definition of seasonal variants",
+          "sourceStatus": "implemented",
+          "docEvidence": "BIOME_IDENTITY seasons plus cross-biome-data.js#BIOME_SEASONS",
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-generation-data.js#BIOME_GENERATION_REQUIREMENTS (catalog)",
+            "js/world/biome-generation-data.js#BIOME_IDENTITY (identity)",
+            "js/world/biome-generation.js#classifyBiome (generation)",
+            "js/world/biome-generation.js#vegetationAt (vegetation)",
+            "js/world/biome-generation.js#buildBiomeGenerationProfile (profile)",
+            "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/world/world.js#initWorld (world)",
+            "js/world/world.js#prerenderTerrain (renderer)"
+          ],
+          "tests": [
+            "tests/world/biome-generation.test.js",
+            "tests/browser/biome-atlas-ui.mjs"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.22.44",
+          "label": "New biomes without extensive changes",
+          "sourceStatus": "implemented",
+          "docEvidence": "one registry entry covers identity, plants, habitat, hazards and LOD",
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-generation-data.js#BIOME_GENERATION_REQUIREMENTS (catalog)",
+            "js/world/biome-generation-data.js#BIOME_IDENTITY (identity)",
+            "js/world/biome-generation.js#classifyBiome (generation)",
+            "js/world/biome-generation.js#vegetationAt (vegetation)",
+            "js/world/biome-generation.js#buildBiomeGenerationProfile (profile)",
+            "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/world/world.js#initWorld (world)",
+            "js/world/world.js#prerenderTerrain (renderer)"
+          ],
+          "tests": [
+            "tests/world/biome-generation.test.js",
+            "tests/browser/biome-atlas-ui.mjs"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.22.45",
+          "label": "Every biome tested individually",
+          "sourceStatus": "implemented",
+          "docEvidence": "tests/world/biome-generation.test.js classifies all twelve biomes",
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-generation-data.js#BIOME_GENERATION_REQUIREMENTS (catalog)",
+            "js/world/biome-generation-data.js#BIOME_IDENTITY (identity)",
+            "js/world/biome-generation.js#classifyBiome (generation)",
+            "js/world/biome-generation.js#vegetationAt (vegetation)",
+            "js/world/biome-generation.js#buildBiomeGenerationProfile (profile)",
+            "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/world/world.js#initWorld (world)",
+            "js/world/world.js#prerenderTerrain (renderer)"
+          ],
+          "tests": [
+            "tests/world/biome-generation.test.js",
+            "tests/browser/biome-atlas-ui.mjs"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.22.46",
+          "label": "Every biome checked in several seasons",
+          "sourceStatus": "implemented",
+          "docEvidence": "tests/world/biome-generation.test.js seasons; biome-seasonal-visual.mjs",
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-generation-data.js#BIOME_GENERATION_REQUIREMENTS (catalog)",
+            "js/world/biome-generation-data.js#BIOME_IDENTITY (identity)",
+            "js/world/biome-generation.js#classifyBiome (generation)",
+            "js/world/biome-generation.js#vegetationAt (vegetation)",
+            "js/world/biome-generation.js#buildBiomeGenerationProfile (profile)",
+            "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/world/world.js#initWorld (world)",
+            "js/world/world.js#prerenderTerrain (renderer)"
+          ],
+          "tests": [
+            "tests/world/biome-generation.test.js",
+            "tests/browser/biome-atlas-ui.mjs"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.22.47",
+          "label": "Transitions between relevant biome pairs checked",
+          "sourceStatus": "implemented",
+          "docEvidence": "transition-biomes.js pair matrix and tests/world/transition-biomes.test.js",
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-generation-data.js#BIOME_GENERATION_REQUIREMENTS (catalog)",
+            "js/world/biome-generation-data.js#BIOME_IDENTITY (identity)",
+            "js/world/biome-generation.js#classifyBiome (generation)",
+            "js/world/biome-generation.js#vegetationAt (vegetation)",
+            "js/world/biome-generation.js#buildBiomeGenerationProfile (profile)",
+            "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/world/world.js#initWorld (world)",
+            "js/world/world.js#prerenderTerrain (renderer)"
+          ],
+          "tests": [
+            "tests/world/biome-generation.test.js",
+            "tests/browser/biome-atlas-ui.mjs"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.22.48",
+          "label": "Vegetation distribution examined for repetition",
+          "sourceStatus": "implemented",
+          "docEvidence": "tests/world/biome-generation.test.js species/variant distribution and field metrics",
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-generation-data.js#BIOME_GENERATION_REQUIREMENTS (catalog)",
+            "js/world/biome-generation-data.js#BIOME_IDENTITY (identity)",
+            "js/world/biome-generation.js#classifyBiome (generation)",
+            "js/world/biome-generation.js#vegetationAt (vegetation)",
+            "js/world/biome-generation.js#buildBiomeGenerationProfile (profile)",
+            "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/world/world.js#initWorld (world)",
+            "js/world/world.js#prerenderTerrain (renderer)"
+          ],
+          "tests": [
+            "tests/world/biome-generation.test.js",
+            "tests/browser/biome-atlas-ui.mjs"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.22.49",
+          "label": "Resources checked for plausible distribution",
+          "sourceStatus": "implemented",
+          "docEvidence": "BIOME_RESOURCE_REQUIREMENTS audit and region resource match",
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-generation-data.js#BIOME_GENERATION_REQUIREMENTS (catalog)",
+            "js/world/biome-generation-data.js#BIOME_IDENTITY (identity)",
+            "js/world/biome-generation.js#classifyBiome (generation)",
+            "js/world/biome-generation.js#vegetationAt (vegetation)",
+            "js/world/biome-generation.js#buildBiomeGenerationProfile (profile)",
+            "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/world/world.js#initWorld (world)",
+            "js/world/world.js#prerenderTerrain (renderer)"
+          ],
+          "tests": [
+            "tests/world/biome-generation.test.js",
+            "tests/browser/biome-atlas-ui.mjs"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.22.50",
+          "label": "Animal species checked against habitats",
+          "sourceStatus": "implemented",
+          "docEvidence": "tests/world/biome-generation.test.js every wildlife species has a habitat",
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-generation-data.js#BIOME_GENERATION_REQUIREMENTS (catalog)",
+            "js/world/biome-generation-data.js#BIOME_IDENTITY (identity)",
+            "js/world/biome-generation.js#classifyBiome (generation)",
+            "js/world/biome-generation.js#vegetationAt (vegetation)",
+            "js/world/biome-generation.js#buildBiomeGenerationProfile (profile)",
+            "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/world/world.js#initWorld (world)",
+            "js/world/world.js#prerenderTerrain (renderer)"
+          ],
+          "tests": [
+            "tests/world/biome-generation.test.js",
+            "tests/browser/biome-atlas-ui.mjs"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.22.51",
+          "label": "Hazards checked for traceable triggering",
+          "sourceStatus": "implemented",
+          "docEvidence": "tests/world/biome-generation.test.js every trigger names a catalogue mechanic",
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-generation-data.js#BIOME_GENERATION_REQUIREMENTS (catalog)",
+            "js/world/biome-generation-data.js#BIOME_IDENTITY (identity)",
+            "js/world/biome-generation.js#classifyBiome (generation)",
+            "js/world/biome-generation.js#vegetationAt (vegetation)",
+            "js/world/biome-generation.js#buildBiomeGenerationProfile (profile)",
+            "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/world/world.js#initWorld (world)",
+            "js/world/world.js#prerenderTerrain (renderer)"
+          ],
+          "tests": [
+            "tests/world/biome-generation.test.js",
+            "tests/browser/biome-atlas-ui.mjs"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.22.52",
+          "label": "Performance checked on large maps",
+          "sourceStatus": "implemented",
+          "docEvidence": "tests/world/biome-generation.test.js budget; low-end-performance.mjs",
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-generation-data.js#BIOME_GENERATION_REQUIREMENTS (catalog)",
+            "js/world/biome-generation-data.js#BIOME_IDENTITY (identity)",
+            "js/world/biome-generation.js#classifyBiome (generation)",
+            "js/world/biome-generation.js#vegetationAt (vegetation)",
+            "js/world/biome-generation.js#buildBiomeGenerationProfile (profile)",
+            "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/world/world.js#initWorld (world)",
+            "js/world/world.js#prerenderTerrain (renderer)"
+          ],
+          "tests": [
+            "tests/world/biome-generation.test.js",
+            "tests/browser/biome-atlas-ui.mjs"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.22.53",
+          "label": "No visible biome borders or rendering errors",
+          "sourceStatus": "implemented",
+          "docEvidence": "continuous terrain palette, ecotone wash, identity map; browser references",
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-generation-data.js#BIOME_GENERATION_REQUIREMENTS (catalog)",
+            "js/world/biome-generation-data.js#BIOME_IDENTITY (identity)",
+            "js/world/biome-generation.js#classifyBiome (generation)",
+            "js/world/biome-generation.js#vegetationAt (vegetation)",
+            "js/world/biome-generation.js#buildBiomeGenerationProfile (profile)",
+            "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/world/world.js#initWorld (world)",
+            "js/world/world.js#prerenderTerrain (renderer)"
+          ],
+          "tests": [
+            "tests/world/biome-generation.test.js",
+            "tests/browser/biome-atlas-ui.mjs"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.22.54",
+          "label": "No regression of terrain, building or economy systems",
+          "sourceStatus": "implemented",
+          "docEvidence": "shared arrays and atlas records untouched; full npm test and campaign gate",
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/world/biome-generation-data.js#BIOME_GENERATION_REQUIREMENTS (catalog)",
+            "js/world/biome-generation-data.js#BIOME_IDENTITY (identity)",
+            "js/world/biome-generation.js#classifyBiome (generation)",
+            "js/world/biome-generation.js#vegetationAt (vegetation)",
+            "js/world/biome-generation.js#buildBiomeGenerationProfile (profile)",
+            "js/systems/biome-resource-state.js#generateBiomeAtlas (atlas)",
+            "js/presentation/biome-panel.js#renderBiomePanel (ui)",
+            "js/world/world.js#initWorld (world)",
+            "js/world/world.js#prerenderTerrain (renderer)"
+          ],
+          "tests": [
+            "tests/world/biome-generation.test.js",
+            "tests/browser/biome-atlas-ui.mjs"
+          ],
+          "probe": null
+        }
+      ],
+      "consumers": [
+        {
+          "file": "js/world/biome-generation-data.js",
+          "symbol": "BIOME_GENERATION_REQUIREMENTS",
+          "role": "catalog",
+          "valid": true
+        },
+        {
+          "file": "js/world/biome-generation-data.js",
+          "symbol": "BIOME_IDENTITY",
+          "role": "identity",
+          "valid": true
+        },
+        {
+          "file": "js/world/biome-generation.js",
+          "symbol": "classifyBiome",
+          "role": "generation",
+          "valid": true
+        },
+        {
+          "file": "js/world/biome-generation.js",
+          "symbol": "vegetationAt",
+          "role": "vegetation",
+          "valid": true
+        },
+        {
+          "file": "js/world/biome-generation.js",
+          "symbol": "buildBiomeGenerationProfile",
+          "role": "profile",
+          "valid": true
+        },
+        {
+          "file": "js/systems/biome-resource-state.js",
+          "symbol": "generateBiomeAtlas",
+          "role": "atlas",
+          "valid": true
+        },
+        {
+          "file": "js/presentation/biome-panel.js",
+          "symbol": "renderBiomePanel",
+          "role": "ui",
+          "valid": true
+        },
+        {
+          "file": "js/world/world.js",
+          "symbol": "initWorld",
+          "role": "world",
+          "valid": true
+        },
+        {
+          "file": "js/world/world.js",
+          "symbol": "prerenderTerrain",
+          "role": "renderer",
+          "valid": true
+        }
+      ],
+      "tests": [
+        {
+          "file": "tests/world/biome-generation.test.js",
+          "valid": true
+        },
+        {
+          "file": "tests/browser/biome-atlas-ui.mjs",
+          "valid": true
+        }
+      ],
+      "source": "docs/BIOME_GENERATION.md",
+      "note": "Parsed 54 numbered rows from docs/BIOME_GENERATION.md.",
+      "probeFunction": null,
+      "probeClimate": "temperate",
+      "probeExtra": {},
+      "implemented": 54,
+      "open": 0,
+      "total": 54
     },
     {
       "id": "2.1",

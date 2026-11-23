@@ -1,13 +1,54 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.46.0`
-**Next development line:** `3.47.0-dev`
+**Current production version:** `3.47.0`
+**Next development line:** `3.48.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
-**Last repository verification:** 2026-11-22 (UTC)
+**Last repository verification:** 2026-11-23 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.47.0 — Every biome now has its own generation and its own face
+
+The whole 1.2.22 quality table is implemented as one central biome registry
+plus one organic classifier, not as a new renderer or a second simulation.
+
+- **Multi-parameter, organic generation.** `biome-generation.js` samples nine
+  environmental fields — height, moisture, temperature, slope, water distance,
+  elevation, light, soil and a regional climate bias — and picks a niche by
+  Gaussian membership. Two scales of coherent warp move the borders with the
+  real terrain contour; there is no per-tile random term, so a boundary cannot
+  become a chequerboard. Beaches are a ribbon along the carved shore.
+- **Measured, not asserted.** The field audit reports biome counts, connected
+  patches, patch size spread, bounding-box fill (rectangularity), boundary
+  complexity, chequer blocks, isolated cells and transition share. The panel
+  prints the same numbers the world test asserts.
+- **Plants belong to a place.** A central catalog assigns 52 species to the
+  twelve biomes and to their own soil, moisture, light, elevation and season
+  bands. Each species carries at least three variants, three age stages and
+  several orientations; a low-frequency grove field opens clearings, and
+  settlement, farming, mining and clearing thin the layer without changing
+  species identity.
+- **Central identity.** Every biome has a stable `biome.<key>` id, its own
+  palette, vegetation silhouette, ground texture, atmosphere, water treatment,
+  landmark, four seasonal faces and LOD contract. Nine fantastic families gain
+  their own palette and landmark. Adding a biome is one data entry.
+- **Visible in play.** Each discovered region card now carries a **BIOME
+  GENERATION · 1.2.22** block and a collapsible **FULL GENERATION LEDGER · 54
+  PARAMETERS** with one live value per point. The baked ground receives a quiet
+  6% identity wash from a coarse biome map sampled every fourth tile, so the
+  first glance at the map already distinguishes the formations without a
+  per-frame classification.
+- **Linked, not duplicated.** Resources derive their placement rules from the
+  existing resource catalog, animal habitats link to the existing wildlife
+  catalog, and hazard triggers name existing 1.2.20 mechanics and conditions.
+- **Gates.** New `tests/world/biome-generation.test.js` covers all twelve
+  biomes, four seasons, organic field metrics, vegetation distribution,
+  resources, fauna, hazards, save/reload and a sampling budget; the browser
+  atlas audit reads the 54 player-facing rows back. The shared height,
+  moisture, temperature and river arrays are untouched, and the 25-year
+  campaign remains deterministic and identical across two runs.
 
 ## 3.46.0 — Water, flood and frost now have consequences
 

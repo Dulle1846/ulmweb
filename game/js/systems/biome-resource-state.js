@@ -16,6 +16,7 @@ import {
     serializeCrossBiomeState, validateCrossBiomeState
 } from "./cross-biome-state.js";
 import { classifyTerrain } from "../world/terrain-model.js";
+import { buildBiomeGenerationProfile, getBiomeGenerationProfile } from "../world/biome-generation.js";
 import {
     BIOME_DIET_CATEGORIES, BIOME_FOCUSES, BIOME_FOCUS_IDS, BIOME_POLICIES, BIOME_POLICY_IDS,
     BIOME_PROFILES, BIOME_REGION_GRID, BIOME_REGION_MAX, BIOME_RESOURCES,
@@ -678,6 +679,10 @@ function makeRegion(index, seed, context) {
     region.fauna = selectedFauna.map(species => makeFaunaRow(species, region, index, seed, false));
     addFaunaProducts(region, selectedFauna, seed, index, false);
     region.systems = createCrossBiomeState(region, index, seed);
+    // 1.2.22 generation profile: a compact, derived record per region. It is
+    // not saved; it is rebuilt from the shared terrain on load or when the
+    // season or land use changes.
+    region.generation = buildBiomeGenerationProfile(region, context);
     return region;
 }
 
@@ -1642,7 +1647,8 @@ export function getBiomeRegionSnapshot(regionId) {
         resources: region.resources.map(row => snapshotResource(row, region)).filter(Boolean),
         fauna: region.fauna.map(row => snapshotFauna(row, region)).filter(Boolean),
         economy: regionEconomy(region),
-        systems: getCrossBiomeProfile(region)
+        systems: getCrossBiomeProfile(region),
+        generation: getBiomeGenerationProfile(region, tileTerrainContext() || { width: state.worldW, height: state.worldH })
     };
 }
 

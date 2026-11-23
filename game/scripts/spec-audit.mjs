@@ -139,6 +139,22 @@ const DOC_SPECS = [
             { file: "js/systems/forest-gathering.js", symbol: "forestStandAt", role: "gameplay" }
         ],
         tests: ["tests/world/jungle.test.js", "tests/systems/jungle-integration.test.js"]
+    },
+    {
+        id: "1.2.22", title: "Biome generation and visual quality", file: "docs/BIOME_GENERATION.md",
+        source: "docs/BIOME_GENERATION.md",
+        consumers: [
+            { file: "js/world/biome-generation-data.js", symbol: "BIOME_GENERATION_REQUIREMENTS", role: "catalog" },
+            { file: "js/world/biome-generation-data.js", symbol: "BIOME_IDENTITY", role: "identity" },
+            { file: "js/world/biome-generation.js", symbol: "classifyBiome", role: "generation" },
+            { file: "js/world/biome-generation.js", symbol: "vegetationAt", role: "vegetation" },
+            { file: "js/world/biome-generation.js", symbol: "buildBiomeGenerationProfile", role: "profile" },
+            { file: "js/systems/biome-resource-state.js", symbol: "generateBiomeAtlas", role: "atlas" },
+            { file: "js/presentation/biome-panel.js", symbol: "renderBiomePanel", role: "ui" },
+            { file: "js/world/world.js", symbol: "initWorld", role: "world" },
+            { file: "js/world/world.js", symbol: "prerenderTerrain", role: "renderer" }
+        ],
+        tests: ["tests/world/biome-generation.test.js", "tests/browser/biome-atlas-ui.mjs"]
     }
 ];
 
