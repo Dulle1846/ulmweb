@@ -293,6 +293,8 @@ try {
     assert.match(routeCard, /6/);
     assert.match(routeCard, /CARAVAN READY/);
     assert.equal(await desktop.locator(".world-map__route").count(), 1, "the map draws the standing caravan");
+    const worldDesktop = await layoutReport(desktop, "#command-panel-content");
+    assertCleanLayout(worldDesktop, "world map at 1400x960");
     await desktop.screenshot({ path: resolve(outDir, "desktop.png"), animations: "disabled" });
     await panel.scrollIntoViewIfNeeded();
     await desktop.locator(".world-map").screenshot({ path: resolve(outDir, "map-desktop.png"), animations: "disabled" });
@@ -370,6 +372,7 @@ try {
         restored: { routes: restored.routes.length, watch: restored.watch, incidents: restored.incidents },
         layout: {
             desktopKingdom: kingdomDesktop,
+            desktopWorld: worldDesktop,
             narrowKingdom: kingdomNarrow,
             narrowWorld: worldLayout
         },
