@@ -55,7 +55,7 @@ and politics the player already manages. The audit moves from **1614/1618 to
   opening, founds it through the real start screen, checks live stores and
   legitimacy against the card, saves and reloads, and repeats the reading at
   390 × 844. Desktop and narrow runs finish with zero page or console errors.
-  The full suite reports **1,379 passing tests**; the deterministic 25-year
+  The full suite reports **1,380 passing tests**; the deterministic 25-year
   campaign completes all requirements and ambitions. `npm run spec:audit`
   reports **1615/1618**.
 

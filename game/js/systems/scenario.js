@@ -373,11 +373,14 @@ function effectText(source) {
 }
 
 export function applyScenarioStart(definition) {
-    const normalized = normalizeDefinition(definition);
-    if (normalized.id === SCENARIO_FREE_ID) {
+    // A free realm deliberately has no objective. Check its id before
+    // normalizeDefinition(), which correctly rejects an authored scenario
+    // without one.
+    if (definition?.id === SCENARIO_FREE_ID) {
         state.scenario = freeScenarioState();
         return state.scenario;
     }
+    const normalized = normalizeDefinition(definition);
     const scenario = createScenarioState(normalized, { year: 1, day: normalized.startDay });
     state.year = 1;
     state.dayOfYear = normalized.startDay;

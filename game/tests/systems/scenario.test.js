@@ -78,6 +78,18 @@ test("custom scenarios are bounded and reject a deadline before the opening", ()
     assert.equal(clamped.objective.target, 100);
 });
 
+test("the free realm starts without an authored objective", () => {
+    resetState();
+    state.legacy = createLegacyState({ foundedYear: 1 });
+    const scenario = applyScenarioStart(SCENARIO_PRESETS["free-realm"]);
+    assert.equal(scenario.id, "free-realm");
+    assert.equal(scenario.status, "free");
+    assert.equal(scenario.objective, null);
+    assert.equal(state.scenario, scenario);
+    assert.equal(getScenarioSnapshot().visible, false);
+    assert.deepEqual(state.resources, { wood: 180, stone: 95, gold: 75, food: 120 });
+});
+
 test("a scenario changes date, stores, morale and legitimacy through the real start path", () => {
     resetState();
     state.legacy = createLegacyState({ foundedYear: 1 });
