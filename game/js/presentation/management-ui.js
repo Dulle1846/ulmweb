@@ -1290,7 +1290,13 @@ function render(resetScroll=false){
   const __t0=performance.now();
   const markup=(renderers[activePanel]||kingdom)();
   window.__panelTiming={panel:activePanel,renderMs:Math.round((performance.now()-__t0)*10)/10};
-  if(resetScroll&&activePanel!=="chronicle"){
+  // Progressive hydration is the narrow-screen path. Desktop already renders
+  // the panel synchronously and has the headroom for one parse; using the
+  // phone scheduler there left only the first region card in the DOM for
+  // hundreds of milliseconds while the rest of the archive was queued. Keep
+  // the phone budget, but do not make a desktop player wait for a panel that
+  // the same click could have painted whole.
+  if(resetScroll&&activePanel!=="chronicle"&&narrowViewport()){
    progressiveDynasty=false;
    // Building a mature ledger and parsing it in one frame left a 50-57 ms
    // task at 4x CPU throttle. Let the markup generation settle in this task;

@@ -319,7 +319,11 @@ try {
             "a struck region must name its last regional hazard");
     }
 
-    const ledger = page.locator('[data-biome-region="' + panelRegionId + '"] .biome-system-ledger');
+    // 1.2.22 added a second, generation-specific ledger to the same region
+    // card. Keep this audit on the 66-parameter ecology ledger; a bare class
+    // selector now resolves to both and strict mode rejects the click.
+    const ledger = page.locator('[data-biome-region="' + panelRegionId + '"] .biome-system-ledger')
+        .filter({ hasText: "FULL ECOLOGY LEDGER" });
     await ledger.locator("summary").click();
     await page.waitForTimeout(250);
     await ledger.scrollIntoViewIfNeeded();
@@ -328,7 +332,8 @@ try {
     const ledgerStats = await page.evaluate(regionId => {
         const modal = document.querySelector("#command-modal");
         const regionNode = modal?.querySelector('[data-biome-region="' + regionId + '"]');
-        const ledgerNode = regionNode?.querySelector(".biome-system-ledger");
+        const ledgerNode = [...(regionNode?.querySelectorAll(".biome-system-ledger") || [])]
+            .find(node => (node.textContent || "").includes("FULL ECOLOGY LEDGER"));
         const rows = [...(ledgerNode?.querySelectorAll(".biome-system-row") || [])];
         const panel = document.querySelector("#command-panel-content");
         return {
@@ -430,7 +435,8 @@ try {
     await phoneActions.scrollIntoViewIfNeeded();
     await page.waitForTimeout(250);
     await shot("panel-phone-actions", "#command-modal");
-    const phoneLedger = phoneRegion.locator(".biome-system-ledger");
+    const phoneLedger = phoneRegion.locator(".biome-system-ledger")
+        .filter({ hasText: "FULL ECOLOGY LEDGER" });
     if (!(await phoneLedger.evaluate(element => element.open))) await phoneLedger.locator("summary").click();
     await page.waitForTimeout(250);
     await phoneLedger.scrollIntoViewIfNeeded();

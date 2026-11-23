@@ -118,6 +118,32 @@ hardware numbers can be produced there. To record a row:
 4. Never compare software rows with hardware rows; they measure different
    things.
 
+### Biome identity overlay (576 × 576)
+
+The 1.2.22 identity layer draws a soft biome/season vignette and up to 36
+landmark anchors. It was profiled on a colossal `576 × 576` realm (seed
+`427919`, 36 anchors, one visible at both test cameras) with the layer toggled
+off and on in the same settled view. Each arm drew 267 frames after warm-up.
+
+Before 3.48.1 the haze created a full-screen radial gradient on every frame. It
+now draws a cached offscreen sprite keyed by canvas size, biome and season.
+
+| Zoom | Identity layer | Avg frame | p95 frame |
+| --- | --- | --- | --- |
+| 0.30 | off | 16.92 ms | 16.77 ms |
+| 0.30 | on, before cache | 17.04 ms | 22.27 ms |
+| 0.30 | on, after cache | 16.67 ms | 16.80 ms |
+| 0.30 | off, after cache | 16.67 ms | 16.73 ms |
+| 0.95 | on, after cache | 16.67 ms | 16.80 ms |
+| 0.95 | off, after cache | 16.67 ms | 16.73 ms |
+
+The 16.67 ms average is the 60 Hz frame cap, not a measurement floor of zero:
+the important change is the removal of the 22.27 ms p95 outlier. After the
+cache the on/off p95 difference is at most 0.07 ms at both distances. The
+decoration raster is cached by the existing detail layer and is not in this
+per-frame comparison; it is rebuilt only when the view or season bucket
+settles.
+
 ### Weather overlay
 
 The snowfall and rain are drawn in screen space after the terrain pass, so

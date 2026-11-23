@@ -1,6 +1,6 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.48.0`
+**Current production version:** `3.48.1`
 **Next development line:** `3.49.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
@@ -8,6 +8,44 @@
 **Last repository verification:** 2026-11-23 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.48.1 — The seasons reach the ground, the haze costs one blit
+
+A player-view audit of all twelve biomes found two things the 3.48.0 sheet hid:
+the sky haze rebuilt a full-screen radial gradient every frame, and autumn and
+winter met the eye as almost the same green field because the seasonal wash was
+nine to sixteen percent and the close grass pen stayed green.
+
+- **The atmosphere is cached, not recomputed.**
+  `biome-identity-render.js#hazeSpriteFor` renders the biome/season vignette once
+  per canvas size and reuses one offscreen sprite. The per-frame path is now a
+  single `drawImage`; a biome or season change rebuilds it, a camera pan does
+  not. The cache holds only the current view, so a journey across many biome
+  edges cannot grow it without bound.
+- **Snow and leaf turn both count.** `seasonalTintOverlay` used a max() chain
+  that discarded the foliage signal at the first snowflake. It now adds snow and
+  foliage and gives the dormant winter face its own floor. The close ground pen
+  follows the same state: ochre litter in autumn, grey-straw stubble and frost
+  in winter, no yellow flower dots on dormant ground.
+- **Winter no longer grows flowers.** The landmark plant vignette keeps
+  evergreens, shrubs, ferns, moss and dormant grass in winter, but filters out
+  flowering herbs and floating aquatics. A snow-capped hollow tree no longer has
+  a clover flower at its roots.
+- **Desktop panels render in one paint again.** Progressive hydration is the
+  narrow-screen path, as its own header says. It was also running on desktop and
+  leaving only the first region card in the DOM for hundreds of milliseconds.
+  Desktop keeps the synchronous panel; phones keep the 4 ms frame budget.
+- **Measured cost on a large map.** Colossal 576 × 576 realm, seed `427919`, 36
+  landmarks, one visible at rooftop and landscape distance. Before the cache the
+  identity layer's landscape p95 was 22.27 ms against 16.77 ms with the layer
+  disabled. After the cache both zooms and both arms sit at 16.67 ms average /
+  16.8 ms p95 — the 60 Hz cap, with a p95 A/B difference of at most 0.07 ms.
+- **Twelve-biome seasonal proof.** New
+  `tests/browser/biome-identity-seasons.mjs` starts three real realms, captures
+  all twelve biomes in autumn and winter at rooftop zoom and builds two contact
+  sheets. The existing seasonal reference was also repaired for the second
+  generation ledger and for the now-synchronous desktop panel. Both run with zero
+  page or console errors.
 
 ## 3.48.0 — The biome identity becomes visible terrain
 

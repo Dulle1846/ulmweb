@@ -170,15 +170,14 @@ function seasonalTintOverlay() {
     const pixW = Number(state.terrainPixW) || base.width;
     const snow = season.snowCover;
     const turn = season.foliageTurn;
-    const warmth = season.warmth;
-    const green = season.greenUp;
     // The biome identity is always visible; the seasonal state strengthens or
     // shifts it instead of replacing it with one global green/brown sheet.
-    const strength = Math.max(0.09, snow > 0.02
-        ? snow * 0.34
-        : turn > 0.02
-            ? turn * 0.36
-            : warmth > 0.02 ? warmth * 0.15 : green * 0.07);
+    // Snow and foliage are independent: a cold autumn with early snow still
+    // needs its leaf colour, and a mild wetland winter still needs its dormant
+    // grey. The previous max() chain threw the foliage signal away as soon as
+    // the first snowflake appeared.
+    const strength = Math.max(0.08,
+        Math.min(0.44, snow * 0.32 + turn * 0.50 + (season.season === 3 ? 0.04 : 0)));
     if (!heights) return null;
 
     const scale = 4;
@@ -2130,12 +2129,24 @@ function drawGroundInk(ctx, zoom, cam, canvas, cursor = null, deadline = Infinit
 // give the green wash an authored hand-drawn texture; occasional flowers and
 // stones break up the lattice. Everything is deterministic and only drawn in
 // the cached detail raster.
-function drawGroundPen(ctx, px, py, cellPx, a, b, moisture, temperature, snowCover = 0) {
-    const cold = snowCover > 0.2 || temperature < 0.3;
+function drawGroundPen(ctx, px, py, cellPx, a, b, moisture, temperature, season = null) {
+    const snowCover = Number(season?.snowCover) || 0;
+    const snow = snowCover > 0.2 || temperature < 0.3;
+    const dormant = season?.season === 3 && (season.foliageTurn > 0.22 || temperature < 0.48);
+    const autumn = !dormant && season?.season === 2 && season.foliageTurn > 0.16;
+    const cold = snow || dormant;
     const dry = moisture < 0.28;
     const lush = moisture > 0.58;
-    const ink = cold ? "62,88,98" : dry ? "104,84,42" : lush ? "18,42,19" : "34,58,26";
-    const light = cold ? "226,240,246" : dry ? "206,190,132" : "142,176,96";
+    // The close ground pen is what makes a season readable underfoot. Without
+    // this, a green blade on every tile painted over the seasonal wash and a
+    // mild wetland winter looked exactly like summer. Snow keeps its blue-white
+    // stubble; dormant ground turns grey-straw; autumn keeps ochre litter.
+    const ink = cold ? "74,86,82"
+        : autumn ? "98,76,42"
+            : dry ? "104,84,42" : lush ? "18,42,19" : "34,58,26";
+    const light = cold ? "214,224,220"
+        : autumn ? "204,166,94"
+            : dry ? "206,190,132" : "142,176,96";
     const clusters = cellPx >= 30 ? 3 : 1;
     ctx.save();
     ctx.lineCap = "round";
@@ -2167,7 +2178,7 @@ function drawGroundPen(ctx, px, py, cellPx, a, b, moisture, temperature, snowCov
         // A settled drift of snow lies across the winter stubble. Two pale
         // strokes per cluster keep the cold ground from flattening into a
         // single mint wash while still reading as pen, not texture noise.
-        if (cold && cellPx >= 22) {
+        if (snow && cellPx >= 22) {
             const sx = px + cellPx * (0.14 + ((cs * 11) % 1) * 0.62);
             const sy = py + cellPx * (0.55 + ((cs * 17) % 1) * 0.25);
             ctx.strokeStyle = "rgba(232,242,246,0.34)";
@@ -2178,12 +2189,12 @@ function drawGroundPen(ctx, px, py, cellPx, a, b, moisture, temperature, snowCov
             ctx.stroke();
         }
     }
-    if (a > 0.80) {
+    if (a > 0.80 && !cold) {
         const fx = px + cellPx * (0.25 + b * 0.5);
         const fy = py + cellPx * (0.25 + a * 0.45);
         ctx.fillStyle = "rgba(245,238,202,0.48)";
         ctx.beginPath(); ctx.arc(fx, fy, Math.max(0.9, cellPx * 0.035), 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = "rgba(216,172,62,0.52)";
+        ctx.fillStyle = autumn ? "rgba(178,94,38,0.58)" : "rgba(216,172,62,0.52)";
         ctx.beginPath(); ctx.arc(fx, fy, Math.max(0.35, cellPx * 0.013), 0, Math.PI * 2); ctx.fill();
     }
     if (b > 0.90) {
@@ -2209,10 +2220,10 @@ function drawGroundGrain(ctx, zoom, cam, canvas, cursor = null, deadline = Infin
     if (cellPx < 14) return true;
     const W = worldW(), H = worldH();
     const sea = state.seaLevel ?? 0.33;
-    const snowCover = seasonalState(
+    const season = seasonalState(
         Number.isFinite(Number(state.dayOfYear)) ? Number(state.dayOfYear) : 40,
         state.worldOptions?.climate || "temperate",
-    ).snowCover;
+    );
     const startX = Math.max(0, Math.floor(cam.x / cellPx) - 1);
     const startY = Math.max(0, Math.floor(cam.y / cellPx) - 1);
     const endX = Math.min(W, Math.ceil((cam.x + canvas.width) / cellPx) + 1);
@@ -2239,7 +2250,7 @@ function drawGroundGrain(ctx, zoom, cam, canvas, cursor = null, deadline = Infin
             const px = x * cellPx - cam.x;
             const py = y * cellPx - cam.y;
 
-            if (zoom >= 0.85) drawGroundPen(ctx, px, py, cellPx, a, b, m, temp, snowCover);
+            if (zoom >= 0.85) drawGroundPen(ctx, px, py, cellPx, a, b, m, temp, season);
         }
         if (cursor) cursor.x = x + 1;
         y = startY;

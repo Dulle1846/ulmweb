@@ -138,13 +138,27 @@ function dominantBiomeAt(map, x, y) {
     return [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] || "meadow";
 }
 
-function drawHaze(ctx, canvas, biome, season, zoom) {
-    if (zoom < 0.28) return;
+// The haze is a soft vignette, not a per-frame gradient. A radial gradient
+// fill over the whole viewport is one of the most expensive canvas operations
+// on software renderers, and its inputs only change when the canvas, biome or
+// season changes. Cache the rendered sprite and make the steady-state cost one
+// image draw. The cache deliberately holds only the last view: a player can
+// cross many biome edges in one session, but only one atmosphere is on screen
+// at a time.
+let hazeCache = { key: "", sprite: null };
+
+function hazeSpriteFor(width, height, biome, season) {
+    const key = width + "x" + height + "|" + biome + "|" + season;
+    if (hazeCache.key === key) return hazeCache.sprite;
     const identity = BIOME_IDENTITY[biome] || BIOME_IDENTITY.meadow;
     const air = identity.palette.atmosphere;
-    const width = canvas.width, height = canvas.height;
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, width);
+    canvas.height = Math.max(1, height);
+    const haze = canvas.getContext("2d");
+    if (!haze) return null;
     const radius = Math.max(width, height) * 0.76;
-    const gradient = ctx.createRadialGradient(
+    const gradient = haze.createRadialGradient(
         width * 0.5, height * 0.46, Math.min(width, height) * 0.16,
         width * 0.5, height * 0.5, radius
     );
@@ -152,10 +166,17 @@ function drawHaze(ctx, canvas, biome, season, zoom) {
     gradient.addColorStop(0, rgba(air, 0));
     gradient.addColorStop(0.72, rgba(air, alpha * 0.34));
     gradient.addColorStop(1, rgba(air, alpha));
-    ctx.save();
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, width, height);
-    ctx.restore();
+    haze.fillStyle = gradient;
+    haze.fillRect(0, 0, width, height);
+    hazeCache = { key, sprite: canvas };
+    return canvas;
+}
+
+function drawHaze(ctx, canvas, biome, season, zoom) {
+    if (zoom < 0.28) return;
+    const sprite = hazeSpriteFor(canvas.width, canvas.height, biome, season);
+    if (!sprite) return;
+    ctx.drawImage(sprite, 0, 0);
 }
 
 function shadow(ctx, x, y, s, alpha = 0.2) {
@@ -718,7 +739,17 @@ function drawPlantGlyph(ctx, x, y, s, plant, seed, season) {
 }
 
 function drawPlantVignette(ctx, anchor, x, y, s, season, detail) {
-    const active = plantsForBiome(anchor.biome);
+    // A flowering herb under a snow cap is the visual equivalent of a bug: it
+    // tells the player winter never reached the biome. Keep evergreens, shrubs,
+    // ferns, moss and dormant grass, but no flower heads or floating lily pads
+    // in winter. The seasonal palette already turns the survivors grey-straw.
+    const active = plantsForBiome(anchor.biome).filter(id => {
+        const plant = BIOME_PLANTS[id];
+        if (!plant) return false;
+        if (plant.seasons && !plant.seasons.includes(season)) return false;
+        if (season === 3 && (plant.form === "herb" || plant.form === "aquatic")) return false;
+        return true;
+    });
     if (!active.length) return;
     const count = detail > 1 ? 7 : 4;
     for (let index = 0; index < count; index++) {
@@ -731,7 +762,6 @@ function drawPlantVignette(ctx, anchor, x, y, s, season, detail) {
         // registry module and is imported below through the data module.
         const plant = BIOME_PLANTS[plantId];
         if (!plant) continue;
-        if (plant.seasons && !plant.seasons.includes(season)) continue;
         drawPlantGlyph(ctx, px, py, s * 0.42, plant, anchor.seed + index * 977, season);
     }
 }

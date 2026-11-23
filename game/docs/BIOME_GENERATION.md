@@ -1,6 +1,6 @@
 # Biome generation and visual quality (1.2.22)
 
-**Status:** implemented in 3.48.0.
+**Status:** implemented in 3.48.0; seasonal legibility and cost pass in 3.48.1.
 
 1.2.22 turns the continuous terrain field into a stable biome identity and a
 vegetation layer that a player can read from the normal camera. It is a reader
@@ -36,6 +36,46 @@ object graph or second simulation loop.
   ecotone renderer and forest LOD remain the drawing paths. 1.2.22 gives them a
   central definition and a measurable quality contract instead of a second
   visual language.
+
+## Seasonal legibility and measured cost (3.48.1)
+
+The 3.48.0 visual pass proved the registry and the landmarks, but a real-game
+audit of all twelve biomes in autumn and winter showed that the ground still
+read as one green field. Two render inputs were wrong:
+
+- the seasonal wash took `max(snow, foliage)` and dropped the leaf signal as
+  soon as any snow appeared; in a mild wetland winter it was only nine to
+  sixteen percent;
+- the close grass pen stayed green because it only knew about snow, and the
+  landmark vignette kept flowering herbs in winter.
+
+`seasonalTintOverlay` now adds snow and foliage, `drawGroundPen` selects
+ochre litter or grey-straw frost stubble from the same seasonal state, and the
+winter vignette filters flowering herbs and floating aquatics. The result is
+visible underfoot, not only in the panel: autumn keeps gold leaves and brown
+grass, winter turns the same tile grey and adds frost strokes and landmark snow.
+
+Atmosphere haze was also a per-frame full-screen radial gradient. It is now an
+offscreen sprite keyed by canvas size, biome and season; the steady-state path
+is one `drawImage`. On a colossal 576 × 576 realm with 36 landmarks and one
+visible at the camera, the frame A/B changed from 22.27 ms p95 (identity layer
+on) versus 16.77 ms (off) at landscape zoom to 16.67 ms average / 16.8 ms p95
+in both arms and at both landscape and rooftop zoom. That is the 60 Hz cap; the
+remaining p95 difference is at most 0.07 ms.
+
+Run the real-game matrix with:
+
+```sh
+npm run test:biome-identity-seasons
+```
+
+It starts swamp, northern and savanna realms, captures `water`, `beach`,
+`forest`, `meadow`, `swamp`, `dense-forest`, `steppe`, `rock`, `taiga`, `snow`,
+`tundra` and `desert` at noon in autumn and winter, and writes the individual
+images, `autumn-sheet.png`, `winter-sheet.png` and `manifest.json` under
+`artifacts/biome-seasons/`. It fails on a missing biome, a duplicate cell, a
+page error or a console error. The existing four-season panel audit remains
+`npm run test:biome-seasonal`.
 
 ## Generation model
 
