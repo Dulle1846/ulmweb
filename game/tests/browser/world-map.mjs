@@ -180,7 +180,7 @@ try {
     await startRealm(desktop);
 
     await openKingdom(desktop);
-    assert.equal(await desktop.locator("[data-command-tab]").count(), 28, "the desktop deck must expose all twenty-eight management tabs including WORLD");
+    assert.equal(await desktop.locator("[data-command-tab]").count(), 29, "the desktop deck must expose all twenty-nine management tabs including WORLD");
     const worldTab = desktop.locator('[data-command-tab="worldmap"]');
     assert.equal((await worldTab.innerText()).trim(), "WORLD", "the WORLD tab must carry its complete label");
     assert.ok(await worldTab.isVisible(), "the WORLD tab must be reachable in the desktop deck");
@@ -332,7 +332,7 @@ try {
     watch(narrow, "narrow", errors);
     await startRealm(narrow);
     await openKingdom(narrow, true);
-    assert.equal(await narrow.locator("#command-tab-select option").count(), 28, "the narrow selector must expose all twenty-eight management tabs including WORLD");
+    assert.equal(await narrow.locator("#command-tab-select option").count(), 29, "the narrow selector must expose all twenty-nine management tabs including WORLD");
     assert.equal((await narrow.locator('#command-tab-select option[value="worldmap"]').innerText()).trim(), "WORLD", "the narrow WORLD option must carry its complete label");
     const narrowKingdomText = await narrow.locator("#command-panel-content").textContent();
     assert.match(narrowKingdomText, /THE WORLD BEYOND/, "the narrow kingdom overview must expose the world section");
