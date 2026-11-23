@@ -14,7 +14,7 @@ import {
 import { payForCard } from "../../js/systems/resources.js";
 import { executeTrade, getTradePartners } from "../../js/systems/market.js";
 import { setAuditOpening } from "../../js/systems/goods-book.js";
-import { GOOD_KEYS } from "../../js/systems/city-config.js";
+import { GOOD_KEYS, WAREHOUSE_PROFILES } from "../../js/systems/city-config.js";
 import { GOODS_LEDGER_LIMIT } from "../../js/systems/goods-book.js";
 import { updateFields } from "../../js/systems/fields.js";
 import { updateBuildingIncome } from "../../js/simulation/buildings.js";
@@ -616,7 +616,8 @@ test("27 a specialised warehouse profile restricts what its store accepts", () =
     const result = setWarehouseProfile(warehouse, "timber");
     assert.equal(result.ok, true);
     assert.equal(warehouse.warehouse.profile, "timber");
-    assert.deepEqual(warehouse.warehouse.filters, ["logs", "planks", "firewood"]);
+    assert.deepEqual(warehouse.warehouse.filters, WAREHOUSE_PROFILES.timber.filters);
+    assert.ok(warehouse.warehouse.filters.includes("redwood-timber"), "a timber yard accepts every regional timber");
     assert.equal(warehouse.warehouse.capacity, 220);
     assert.equal(getWarehouseProfile(warehouse).id, "timber");
     const sawmill = place(TYPE.SAWMILL, 40, 30);

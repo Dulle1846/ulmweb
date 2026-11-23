@@ -25,9 +25,12 @@ import { BUILDING_SIZE } from "../core/config.js";
 import { TYPE } from "../core/types.js";
 import { CARD_DECK, drawPlayerCard, selectCard } from "../systems/cards.js";
 import { getResourceNodeAt } from "../systems/resource-geography.js";
+import { buildingFormFor } from "../world/building-forms.js";
 import { forestFaunaSummaryAt } from "../systems/forest-fauna.js";
 import { cleanBiomeWater, craftBiomeGoods, drainBiomeRegion, harvestBiomeResource, huntBiomeSpecies, irrigateBiomeRegion, reforestBiomeRegion, reintroduceBiomeSpecies, restoreBiomeRegion, sellBiomeCraft, sellBiomeGoods, setBiomeFocus, setBiomePolicy, setBiomeProtection, slashAndBurnBiomeRegion, surveyBiomeRegion } from "../systems/biome-resource-state.js";
 import { renderBiomePanel } from "./biome-panel.js";
+import { renderForestAtlasPanel } from "./forest-atlas-panel.js";
+import { timberMarketSummary, sellRegionalTimber, TIMBER_SALE_LOT } from "../systems/regional-timber-market.js";
 import { renderScenarioPanel } from "./scenario-panel.js";
 import { renderWorldMapPanel } from "./world-map-panel.js";
 import { closeTradeRoute, getWorldMapSnapshot, openTradeRoute, setFrontierWatch } from "../systems/world-map.js";
@@ -206,7 +209,21 @@ export function resources(){
  '<div class="command-summary"><div><small>WOOD</small><strong>'+number(state.resources.wood)+'</strong></div><div><small>STONE</small><strong>'+number(state.resources.stone)+'</strong></div><div><small>GOLD</small><strong>'+number(state.resources.gold)+'</strong></div><div><small>FOOD</small><strong>'+number(state.resources.food)+'</strong></div></div>'+
  '<div class="command-summary"><div><small>FOOD BALANCE / LEDGER</small><strong>'+(cycle.balance>=0?'+':'')+amount(cycle.balance)+'</strong></div><div><small>STORAGE CAP</small><strong>'+number(cycle.storageCapacity)+'</strong></div><div><small>DEBT</small><strong>'+amount(cycle.debt)+'G</strong></div><div><small>CRISIS</small><strong>'+Math.round(cycle.crisis.severity*100)+'%</strong></div></div>'+
  '<div class="resource-detail-grid">'+RESOURCE_ORDER.map(key=>resourceCard(key,history)).join("")+'</div>'+
- '<p class="command-note">Stock history contains up to 24 completed 20-day settlements. The chart is intentionally blank until two settlements exist; no interpolated or invented points are drawn.</p>';
+ '<p class="command-note">Stock history contains up to 24 completed 20-day settlements. The chart is intentionally blank until two settlements exist; no interpolated or invented points are drawn.</p>'+
+ timberMarketPanel();
+}
+
+// Regional timber is physical warehouse stock, so its market lives beside the
+// royal stores rather than in a separate trade screen. Each row shows the real
+// unit quote and lets the crown sell a bounded lot from the timber yards.
+function timberMarketPanel(){
+ let market;
+ try{market=timberMarketSummary();}catch{return "";}
+ if(!market?.rows?.length)return "";
+ const rows=market.rows.map(row=>'<div class="timber-market__row" data-timber-good="'+esc(row.id)+'"><div class="timber-market__name"><strong>'+esc(row.label)+'</strong><small>'+esc(row.speciesLabel)+' · '+row.planks+' planks per 2 · '+row.stock+' in store</small></div><span class="timber-market__price">'+amount(row.price)+'G</span><button type="button" class="command-choice timber-market__sell" data-command="timber-sell" data-value="'+esc(row.id)+'"'+(row.stock>0?'':' disabled')+'>SELL '+TIMBER_SALE_LOT+'</button></div>').join("");
+ return '<div class="command-section-title">REGIONAL TIMBER MARKET · '+number(market.kinds)+' / '+number(market.totalKinds)+' KINDS IN STORE · '+amount(market.value)+'G VALUE</div>'+
+  '<div class="timber-market">'+rows+'</div>'+
+  '<p class="command-note">A sawmill turns two units of a named timber into its own plank and firewood batch. Timbers reach the yard from a delivered forester haul or from a lumber camp working a regional stand. Selling removes real warehouse stock at the current seasonal quote.</p>';
 }
 function realmCycleStatus(){
  const c=getRealmCycleSnapshot();
@@ -601,6 +618,12 @@ function buildings(){
    }
   }catch{}
   const detail=card?.desc||BUILDING_LABELS[building.type]||"No additional building description is recorded.";
+  const buildingForm=buildingFormFor(building);
+  const formText=buildingForm?(buildingForm.label+" · "+buildingForm.description+" · Hearth insulation "+(buildingForm.warmthPercent>=0?"+":"")+buildingForm.warmthPercent+"%"):"No regional form was assigned to this structure.";
+  const sawInfo=building.type===TYPE.SAWMILL?(()=>{
+   const rows=timberMarketSummary().rows.filter(row=>row.stock>0).slice(0,4);
+   return "2 logs → 2 planks + 1 firewood · 2 regional timber → that wood's own plank and firewood batch"+(rows.length?" · In store: "+rows.map(row=>row.stock+" "+row.label+" ("+row.planks+" planks/2)").join(", "):" · No regional timber in store");
+  })():"";
   const inventory=getInventorySummary(building);
   const jobs=getBuildingLogisticsStatus(building)||[];
   const supply=getBuildingSupplyReason(building)||getServiceReason(building);
@@ -620,7 +643,7 @@ function buildings(){
   const profileField=inventory?.kind==="warehouse"?'<span>Warehouse profile<strong>'+(building.type===TYPE.KEEP?esc(inventory.profileLabel||"General store")+" · fixed by the crown":'<select class="warehouse-profile-select" data-warehouse-profile="'+esc(building.id)+'" aria-label="Warehouse profile for '+esc(name)+'">'+Object.values(WAREHOUSE_PROFILES).map(profile=>'<option value="'+esc(profile.id)+'"'+(inventory.profile===profile.id?' selected':'')+'>'+esc(profile.label)+" · "+number(profile.capacity)+'</option>').join("")+'</select>')+'</strong></span>':"";
   const fieldText=building.field?" · field "+building.field.stage+" ("+Math.round(building.field.growth)+"%) · soil "+Math.round(building.field.fertility)+"%"+(building.field.resting?" · resting":""):"";
   const stewardship=foresterStewardship(building);
-  return '<details class="building-record" data-building-name="'+esc(name.toLowerCase())+'" data-building-id="'+esc(building.id)+'"'+(String(building.id)===String(expandedBuildingId)?' open':'')+'><summary><svg class="building-record-art" viewBox="0 0 64 64" aria-hidden="true"><use href="assets/royal-building-atlas.svg#'+buildingSprite(building.type)+'"></use></svg><span class="building-record-title"><strong>'+esc(name)+'</strong><small>'+esc(building.id||("record-"+index))+' · '+Math.round(building.x)+', '+Math.round(building.y)+'</small></span><span class="building-record-status"><b>'+(isUnderConstruction(building)?site.percent+'%':condition+'%')+'</b><small>'+(isUnderConstruction(building)?"built":"condition")+'</small></span></summary><div class="building-record-details"><p>'+esc(detail)+'</p>'+stewardship+'<div class="building-detail-grid"><span>Footprint<strong>'+amount(width)+' × '+amount(height)+' tiles</strong></span><span>Health<strong>'+amount(hp)+' / '+amount(maxHp)+'</strong></span><span>Construction<strong>'+esc(site.status)+' · '+site.percent+'%</strong></span><span>Staff<strong>'+staff+(capacity?' / '+capacity:' · not staffed')+'</strong></span><span>Workforce efficiency<strong>'+(efficiency===null?'not applicable':efficiency+'%')+'</strong></span><span>Recorded card cost<strong>'+esc(costs)+'</strong></span><span>Local store<strong>'+esc(storeText)+'</strong></span>'+profileField+'<span>Active haul<strong>'+esc(haulText)+'</strong></span><span>Supply / service<strong>'+esc(supply||"Operating")+'</strong></span><span>Site data<strong>'+esc(siteNote)+esc(fieldText)+'</strong></span>'+forestGather+forestPannage+meadowGather+wetlandWorks+mountainWorks+volcanoWorks+coastWorks+'</div></div></details>';
+  return '<details class="building-record" data-building-name="'+esc(name.toLowerCase())+'" data-building-id="'+esc(building.id)+'"'+(String(building.id)===String(expandedBuildingId)?' open':'')+'><summary><svg class="building-record-art" viewBox="0 0 64 64" aria-hidden="true"><use href="assets/royal-building-atlas.svg#'+buildingSprite(building.type)+'"></use></svg><span class="building-record-title"><strong>'+esc(name)+'</strong><small>'+esc(building.id||("record-"+index))+' · '+Math.round(building.x)+', '+Math.round(building.y)+'</small></span><span class="building-record-status"><b>'+(isUnderConstruction(building)?site.percent+'%':condition+'%')+'</b><small>'+(isUnderConstruction(building)?"built":"condition")+'</small></span></summary><div class="building-record-details"><p>'+esc(detail)+'</p>'+stewardship+'<div class="building-detail-grid"><span>Footprint<strong>'+amount(width)+' × '+amount(height)+' tiles</strong></span><span>Health<strong>'+amount(hp)+' / '+amount(maxHp)+'</strong></span><span>Construction<strong>'+esc(site.status)+' · '+site.percent+'%</strong></span><span>Staff<strong>'+staff+(capacity?' / '+capacity:' · not staffed')+'</strong></span><span>Workforce efficiency<strong>'+(efficiency===null?'not applicable':efficiency+'%')+'</strong></span><span>Recorded card cost<strong>'+esc(costs)+'</strong></span><span>Local store<strong>'+esc(storeText)+'</strong></span>'+(sawInfo?'<span>Timber recipe<strong>'+esc(sawInfo)+'</strong></span>':'')+profileField+'<span>Active haul<strong>'+esc(haulText)+'</strong></span><span>Supply / service<strong>'+esc(supply||"Operating")+'</strong></span><span>Building form<strong>'+esc(formText)+'</strong></span><span>Site data<strong>'+esc(siteNote)+esc(fieldText)+'</strong></span>'+forestGather+forestPannage+meadowGather+wetlandWorks+mountainWorks+volcanoWorks+coastWorks+'</div></div></details>';
  }).join("");
  const logisticsClosed=narrowViewport()&&!expandedBuildingLogistics;
  const rejection=!logisticsClosed&&logistics.lastRejection?'<p class="command-note logistics-rejection">LAST ORDER REJECTED · '+esc(logistics.lastRejection.reason)+' · '+esc(logistics.lastRejection.kind||"job")+' '+(logistics.lastRejection.good?esc(logistics.lastRejection.good):"")+' · tick '+number(logistics.lastRejection.tick)+'</p>':"";
@@ -1282,7 +1305,7 @@ function render(resetScroll=false){
  const splitPanelPaint=resetScroll&&narrowViewport();
  const revealToken=++panelRevealToken;
  if(splitPanelPaint)panel.style.visibility="hidden";
- const renderers={kingdom,government,politics,nobility:nobilityPanel,diplomacy,worldmap:renderWorldMapPanel,espionage:espionagePanel,decisions,cards,economy,resources,buildings,city,military,health:healthPanel,faith:faithPanel,justice:justicePanel,research:researchPanel,endeavours:()=>renderEndeavoursPanel(endeavourFunding),population:renderPopulationPanel,dynasty,creatures,biome:renderBiomePanel,hazards:renderHazardPanel,chronicle,atelier:renderAiChroniclePanel,explore:renderExpeditionsPanel};
+ const renderers={kingdom,government,politics,nobility:nobilityPanel,diplomacy,worldmap:renderWorldMapPanel,espionage:espionagePanel,decisions,cards,economy,resources,buildings,city,military,health:healthPanel,faith:faithPanel,justice:justicePanel,research:researchPanel,endeavours:()=>renderEndeavoursPanel(endeavourFunding),population:renderPopulationPanel,dynasty,creatures,biome:renderBiomePanel,forest:renderForestAtlasPanel,hazards:renderHazardPanel,chronicle,atelier:renderAiChroniclePanel,explore:renderExpeditionsPanel};
  // A new tab starts at its title, not at the scroll offset of the previous
  // panel. Reset the old, already-laid-out view before inserting the new DOM:
  // assigning scrollTop after innerHTML forces a synchronous layout of the
@@ -1362,6 +1385,7 @@ function act(b){ const a=b.dataset.command,v=b.dataset.value;let r={ok:false,rea
  else if(a==="special-biome-quest")r=resolveBiomeQuest(v,b.dataset.choice);
  else if(a==="special-blight-choice")r=resolveBlightDecision(v);
  else if(a==="special-good-sell")r=sellSpecialGood(v);
+ else if(a==="timber-sell")r=sellRegionalTimber(v);
  else if(a==="hazard-prepare")r=prepareForHazardSeason();
  else if(a==="hazard-treat")r=treatHazardCasualties();
  else if(a==="hazard-cleanse")r=cleanseHazardCorruption();
@@ -1429,6 +1453,7 @@ function act(b){ const a=b.dataset.command,v=b.dataset.value;let r={ok:false,rea
   else if(a.startsWith("noble-"))toast(String(r.message||"NOBLE HOUSE UPDATED").toUpperCase());
   else if(a.startsWith("expedition-"))toast(String(r.message||"ROYAL EXPEDITION UPDATED").toUpperCase());
   else if(a==="special-good-sell")toast("RARE GOODS SOLD · "+(r.gold||0)+" GOLD");
+  else if(a==="timber-sell")toast(r.ok?("TIMBER SOLD · "+(r.amount||0)+" FOR "+(r.gold||0)+" GOLD"):String(r.reason||"TIMBER NOT SOLD").toUpperCase());
   else if(a==="special-biome-quest")toast("ATLAS QUEST RESOLVED · "+String(r.choice||"CHOICE").toUpperCase());
   else if(a==="special-blight-choice")toast("BLIGHT DECREE ANSWERED · "+String(r.choice||"CHOICE").toUpperCase());
   else if(a.startsWith("special-biome-"))toast("RARE BIOME UPDATED");

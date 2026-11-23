@@ -10,7 +10,7 @@ import { initWorld } from "../../js/world/world.js";
 import { initStartingKingdom } from "../../js/world/entities.js";
 import { TYPE } from "../../js/core/types.js";
 import {
-    initializeCityForRealm, openGoodsBookForNewRealm, updateLogisticsMovement, getWarehouseSnapshot
+    initializeCityForRealm, openGoodsBookForNewRealm, updateLogisticsMovement, getWarehouseSnapshot, getPhysicalStockMap
 } from "../../js/systems/logistics.js";
 import { BUILDING_SIZE } from "../../js/core/config.js";
 import { isWaterAt } from "../../js/world/world.js";
@@ -25,7 +25,7 @@ import { placeRoad } from "../../js/systems/roads.js";
 import { getRoyalHouse, appointRoyalConsort, createRoyalChild } from "../../js/systems/royal-dynasty.js";
 import { addressFactionDemand } from "../../js/systems/court.js";
 import { getResourceNodeAt } from "../../js/systems/resource-geography.js";
-import { REGIONAL_FOREST_TYPE_IDS } from "../../js/world/regional-forests.js";
+import { REGIONAL_FOREST_TYPE_IDS, REGIONAL_TIMBERS } from "../../js/world/regional-forests.js";
 
 export const CAMPAIGN_YEAR_DAYS = 400;
 export const CAMPAIGN_SEED = 20261108;
@@ -708,6 +708,17 @@ export function runCampaign({
         missing: REGIONAL_FOREST_TYPE_IDS.filter(id => !forestCounts[id]),
         counts: forestCounts,
     };
+    // Regional timber is a real economy stream. Report what the twenty-five
+    // years actually produced and what is still sitting in the stores, so a
+    // green campaign cannot hide a recipe that never ran.
+    const physicalStock = getPhysicalStockMap();
+    const timberStock = Object.fromEntries(REGIONAL_TIMBERS.map(timber => [timber.id, Number(physicalStock[timber.id]) || 0]));
+    const timberEconomy = {
+        produced: Math.max(0, Math.round(Number(state.economy?.productionChains?.regionalTimberProduced) || 0)),
+        stored: Object.values(timberStock).reduce((sum, value) => sum + value, 0),
+        kinds: Object.values(timberStock).filter(value => value > 0).length,
+        stock: timberStock,
+    };
 
     return {
         ok,
@@ -726,6 +737,7 @@ export function runCampaign({
         yearly,
         diagnostics,
         forestTypes,
+        timberEconomy,
         gameOver: Boolean(state.gameOver),
         ambition: getAmbitionSnapshot(),
         era: eraSnapshot,

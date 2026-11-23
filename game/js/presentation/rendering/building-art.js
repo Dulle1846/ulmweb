@@ -8,6 +8,7 @@ import { TYPE } from '../../core/types.js';
 import { state } from '../../core/state.js';
 import { PLAN, normalizeLayout, roomsOf } from '../building-layout.js';
 import { getRoomFurniturePlan, MAX_FURNITURE_PER_ROOM } from '../../systems/furniture.js';
+import { buildingFormFor } from '../../world/building-forms.js';
 
 // Cost of rebuilding a structure in the workshop, in materials.
 export const REBUILD_COST = {
@@ -258,13 +259,14 @@ function buildingMetrics(e, cellPx) {
     const w = bw * cellPx;
     const h = bh * cellPx;
     const scale = cellPx / CELL;
-    const style = variantStyle(ROOF_STYLES[e.type] || ROOF_STYLES[TYPE.HOUSE], e);
+    const form = buildingFormFor(e);
+    const style = variantStyle(ROOF_STYLES[e.type] || ROOF_STYLES[TYPE.HOUSE], e, form);
     const detail = Math.max(0, Math.min(1.4, ((Math.min(w, h) - 16) / 40)));
-    return { w, h, scale, style, detail };
+    return { w, h, scale, style, detail, form };
 }
 
 export function drawAuthoredBuilding(ctx, e, sx, sy, cellPx, tick, options = {}) {
-    const { w, h, scale, style, detail } = buildingMetrics(e, cellPx);
+    const { w, h, scale, style, detail, form } = buildingMetrics(e, cellPx);
     const left = sx + cellPx / 2 - w / 2;
     const top = sy + cellPx / 2 - h / 2;
 
@@ -273,7 +275,7 @@ export function drawAuthoredBuilding(ctx, e, sx, sy, cellPx, tick, options = {})
         return;
     }
 
-    const styleKey = `${style.wall}|${style.roof}|${style.trim || ''}`;
+    const styleKey = `${style.wall}|${style.roof}|${style.trim || ''}|${form?.id || ''}`;
     const cacheKey = String(e.id);
     const selected = state.selectedBuildingId === e.id;
     let sprite = buildingSprites.get(cacheKey);
@@ -336,12 +338,12 @@ export function drawAuthoredBuilding(ctx, e, sx, sy, cellPx, tick, options = {})
 }
 
 function paintAuthoredBuilding(ctx, e, sx, sy, cellPx, tick, options = {}) {
-    const { w, h, scale, style, detail } = buildingMetrics(e, cellPx);
+    const { w, h, scale, style, detail, form } = buildingMetrics(e, cellPx);
     const cx = sx + cellPx / 2;
     const cy = sy + cellPx / 2;
     const left = cx - w / 2;
     const top = cy - h / 2;
-    const box = { left, top, w, h, cx, cy, scale, detail, tick, style, e, cellPx };
+    const box = { left, top, w, h, cx, cy, scale, detail, tick, style, e, cellPx, form };
 
     ctx.save();
     // Soft two-step shadow keeps footprints grounded.
@@ -353,7 +355,10 @@ function paintAuthoredBuilding(ctx, e, sx, sy, cellPx, tick, options = {}) {
     ctx.fill();
 
     if (options.interior && state.zoomLevel >= 4) drawAuthoredInterior(ctx, box);
-    else drawRooftopPlan(ctx, box);
+    else {
+        drawRooftopPlan(ctx, box);
+        drawBuildingFormAccents(ctx, box);
+    }
 
     // Selection ring from the workshop.
     if (options.selection !== false && state.selectedBuildingId && e.id === state.selectedBuildingId) {
@@ -683,13 +688,99 @@ function drawKeep(ctx, box) {
 
 // Small per-instance palette shifts keep repeated buildings from looking
 // stamped from one template without abandoning each type's identity.
-function variantStyle(style, e) {
+function variantStyle(style, e, form = null) {
     const seed = Math.abs(Math.floor((Number(e.id) || 0) * 2654435761 + (Number(e.x) || 0) * 97 + (Number(e.y) || 0) * 131)) % 997;
     return {
         ...style,
-        wall: lighten(style.wall, (seed % 7) - 3),
-        roof: lighten(style.roof, ((seed >> 3) % 13) - 6),
+        wall: lighten(style.wall, (seed % 7) - 3 + (form?.wallShift || 0)),
+        roof: lighten(style.roof, ((seed >> 3) % 13) - 6 + (form?.roofShift || 0)),
     };
+}
+
+// A regional form is a small, cheap overlay on the authored rooftop plan, not
+// a second art pipeline. Each accent reads at normal zoom and disappears below
+// the detail threshold where the marks would only become noise.
+function drawBuildingFormAccents(ctx, box) {
+    const form = box.form;
+    if (!form || box.detail < 0.12) return;
+    const { left, top, w, h, scale } = box;
+    const ink = 'rgba(58,41,27,0.55)';
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.lineWidth = Math.max(0.8, 1.1 * scale);
+    if (form.accent === 'frame') {
+        ctx.strokeStyle = ink;
+        ctx.beginPath();
+        ctx.moveTo(left + 3 * scale, top + h * 0.64);
+        ctx.lineTo(left + w - 3 * scale, top + h * 0.64);
+        ctx.moveTo(left + 3 * scale, top + h * 0.62);
+        ctx.lineTo(left + w * 0.34, top + h * 0.86);
+        ctx.moveTo(left + w - 3 * scale, top + h * 0.62);
+        ctx.lineTo(left + w * 0.66, top + h * 0.86);
+        ctx.stroke();
+    } else if (form.accent === 'logs') {
+        ctx.strokeStyle = ink;
+        for (let line = 0; line < 3; line++) {
+            const y = top + h * (0.55 + line * 0.1);
+            ctx.beginPath();
+            ctx.moveTo(left + 3 * scale, y);
+            ctx.lineTo(left + w - 3 * scale, y);
+            ctx.stroke();
+        }
+    } else if (form.accent === 'planks') {
+        ctx.strokeStyle = ink;
+        for (let line = 1; line <= 4; line++) {
+            const x = left + w * (line / 5);
+            ctx.beginPath();
+            ctx.moveTo(x, top + h * 0.52);
+            ctx.lineTo(x, top + h * 0.9);
+            ctx.stroke();
+        }
+    } else if (form.accent === 'stilts') {
+        ctx.strokeStyle = 'rgba(47,33,21,0.78)';
+        ctx.lineWidth = Math.max(1, 1.6 * scale);
+        for (const share of [0.24, 0.4, 0.6, 0.76]) {
+            const x = left + w * share;
+            ctx.beginPath();
+            ctx.moveTo(x, top + h * 0.86);
+            ctx.lineTo(x, top + h + 4 * scale);
+            ctx.stroke();
+        }
+        ctx.beginPath();
+        ctx.moveTo(left + w * 0.28, top + h * 0.98);
+        ctx.lineTo(left + w * 0.72, top + h * 0.98);
+        ctx.stroke();
+    } else if (form.accent === 'stone') {
+        ctx.fillStyle = 'rgba(133,129,117,0.82)';
+        ctx.fillRect(left + 2 * scale, top + h * 0.8, w - 4 * scale, h * 0.14);
+        ctx.strokeStyle = 'rgba(74,70,62,0.5)';
+        ctx.lineWidth = Math.max(0.6, 0.8 * scale);
+        for (let line = 1; line < 3; line++) {
+            const x = left + w * (line / 3);
+            ctx.beginPath();
+            ctx.moveTo(x, top + h * 0.8);
+            ctx.lineTo(x, top + h * 0.94);
+            ctx.stroke();
+        }
+    } else if (form.accent === 'thatch') {
+        ctx.strokeStyle = 'rgba(104,81,45,0.48)';
+        for (let line = 0; line < 4; line++) {
+            const y = top + h * (0.16 + line * 0.08);
+            ctx.beginPath();
+            ctx.moveTo(left + w * 0.16, y);
+            ctx.lineTo(left + w * 0.84, y);
+            ctx.stroke();
+        }
+    } else if (form.accent === 'turf') {
+        ctx.fillStyle = 'rgba(79,106,60,0.78)';
+        ctx.fillRect(left + 2 * scale, top + 2 * scale, w - 4 * scale, Math.max(2, h * 0.12));
+        ctx.fillStyle = 'rgba(146,166,104,0.42)';
+        for (let dot = 0; dot < 4; dot++) {
+            const x = left + w * (0.2 + dot * 0.2);
+            ctx.fillRect(x, top + h * 0.06, Math.max(1, 1.4 * scale), Math.max(1, 1.4 * scale));
+        }
+    }
+    ctx.restore();
 }
 
 function lighten(color, amount) {

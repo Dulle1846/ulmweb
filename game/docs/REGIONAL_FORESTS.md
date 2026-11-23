@@ -1,6 +1,6 @@
 # Regionale Waldtypen — 1.2.23.1
 
-> **Status: implementiert und verifiziert (v3.51.0).** Alle 30 Punkte aus **1.2.23.1 Weitere regionale Waldtypen** laufen als regionale Overlay-Schicht über dem bestehenden `forestStandAt()`-Vertrag. Jede erzeugte Waldkachel erhält deterministisch genau einen Typ; es gibt keinen untypisierten Default. Nachweise: `tests/world/regional-forests.test.js` (30/30 Standortproben, 0 untypisierte Kacheln im 9-Klima-Scan, Save-Roundtrip), ein 25-Jahres-Kampagnenlauf mit Typzählung und `tests/browser/regional-forest-reference.mjs` (Spieler-Inspektor, gerenderte Typen, keine Konsolenfehler). Die konkreten implementierten Werte stehen in Abschnitt 10.
+> **Status: implementiert und verifiziert (v3.52.0).** Alle 30 Punkte aus **1.2.23.1 Weitere regionale Waldtypen** laufen als regionale Overlay-Schicht über dem bestehenden `forestStandAt()`-Vertrag. Jede erzeugte Waldkachel erhält deterministisch genau einen Typ; es gibt keinen untypisierten Default. Mit 3.52.0 sind die 16 regionalen Holzsorten vollständig spielbar: eigenes Sägewerk-Rezept, Lumber-Camp-Signaturholz, Timber-Yard-Lagerkette, saisonaler Markt mit echtem Lagerbestand, Waldtypen-Atlas und regionale Bauformen. Nachweise: `tests/world/regional-forests.test.js` (30/30 Standortproben, 0 untypisierte Kacheln im 9-Klima-Scan, Save-Roundtrip), `tests/systems/regional-timber-economy.test.js`, `tests/world/building-forms.test.js`, `tests/presentation/forest-atlas.test.js`, ein 25-Jahres-Kampagnenlauf mit Typ- und Holzzählung und `tests/browser/regional-forest-reference.mjs` (Inspektor, Atlas, Marktverkauf, gerenderte Typen, keine Konsolenfehler). Die konkreten implementierten Werte stehen in Abschnitt 10; die Holzökonomie in Abschnitt 11.
 
 ## 1. Warum dieser Abschnitt existiert
 
@@ -50,8 +50,8 @@ Der regionale Patch darf **nie** pro Kachel zufällig zwischen zehn ähnlichen T
 ### 2.3 Ressourcen- und Wirtschaftsregeln
 
 - Jeder Typ liefert mindestens ein benanntes Holz und ein saisonales Gut.
-- Neue Güter werden im bestehenden `FOREST_GOODS`-Katalog registriert; es gibt keine typ-lokale Schattenwirtschaft.
-- Knappe Spezialgüter (Kork, Teak, Harz, Mangrovenholz, Bambusfasern) erhalten einen echten Verwendungszweck, nicht nur einen Verkaufspreis.
+- Die 16 regionalen Holzsorten sind echte Waren im bestehenden `GOODS`-Katalog, hinten angehängt; es gibt keine typ-lokale Schattenwirtschaft und keine Verschiebung alter Warenindizes.
+- Jede Holzsorte hat ein echtes Sägewerk-Rezept (2 Holz → 1–3 Planks + Firewood), einen saisonalen Marktpreis und dieselbe Warenhaus-/Logistik-Kette wie die alten Güter. Das alte Logs-Rezept bleibt unverändert.
 - Der Typ darf die vorhandene Holzmenge nicht vervielfachen. Seine Produktivität liegt in einem expliziten Band und wird durch Stock-Ratio, Alter und Bewirtschaftung moduliert.
 - Jede Ernte läuft über den bestehenden Sammel-/Holz-Ledger und reduziert den echten Bestand.
 
@@ -946,7 +946,7 @@ Die 30 Typen sind kein zweiter Wald-Simulator. Sie sind eine regionale Overlay-S
 
 ### 6.1 Daten und Auswahl
 
-- `game/js/world/regional-forests.js` enthält `REGIONAL_FOREST_TYPES` (30 Typen), `REGIONAL_SPECIES` (16 angehängte Arten), `REGIONAL_GOODS` (eigene Holzsorten) und `REGIONAL_FORESTS_TEST_SITES`.
+- `game/js/world/regional-forests.js` enthält `REGIONAL_FOREST_TYPES` (30 Typen), `REGIONAL_SPECIES` (16 angehängte Arten), `REGIONAL_TIMBERS` (16 benannte Holzsorten mit `basePrice`, `planks` und `firewoodYield`), `regionalTimberGood()`/`signatureTimberForRegionalType()` und `REGIONAL_FORESTS_TEST_SITES`.
 - `regionalForestTypeFor()` prüft Klima, Basisformation, Temperatur, Feuchte und Höhe. Innerhalb der passenden Kandidaten entscheidet die ökologische Priorität; ein 7×7-Cell-Hash bricht Gleichstände und macht den Typ als Region lesbar. Es gibt keinen Nachbarscan und keinen untypisierten Rückgabewert für eine echte Waldkachel.
 - `forestStandAt()` ruft den Regionaltyp vor Störung, Alter und Sukzession auf. `stand.type` bleibt die bestehende Formation, `stand.regionalTypeId` und die abgeleiteten Felder tragen den Regionaltyp.
 - `regionalFormationFor()` cached die Kombination aus Basisformation und Regionaltyp. Die Basiszusammensetzung bleibt erhalten, damit alte Saves und die bestehenden Misch-/Nadelwald-Verträge unverändert bleiben. Regionale Güter und Fauna werden additiv ergänzt; die regionale Palette, Kronenhöhe, Stammform und der Nebel kommen aus `regionalType.render`.
@@ -962,14 +962,18 @@ Die 30 Typen sind kein zweiter Wald-Simulator. Sie sind eine regionale Overlay-S
 | `forage` | Sammelproduktivität und saisonale Waldgüter | Forage-Wert und Sammelangebot |
 | `work` | Arbeitsfaktor des Waldknotens | Work-Wert, Ernte- und Wegekosten |
 | `flood` | Hochwasserschutz-/Überflutungsprofil | Hochwasserwert im Inspektor |
+| Signaturholz | Lumber Camp legt alle 5 Produktionsbatches 1 Einheit seiner regionalen Sorte ab | namentliche Ware im Lager, Sägewerk-Rezept, Marktzeile |
+| `timber`-Rezept | Sägewerk verarbeitet regionale Ware bevorzugt, Logs bleiben Fallback | Sägewerk-Inspektor „Timber recipe“, produzierte Planks/Firewood |
+| `insulation` | Hearth-Intervall der Wohnhäuser über die regionale Bauform | wärmere/kältere Häuser im Winter, Formzeile im Inspektor |
 
-Jede Wirkung wird bei Bedarf gelesen und bleibt an den bestehenden Tick bzw. den bestehenden begrenzten Regenerations-/Sukzessionstakt gebunden. Es gibt keine neue globale Wald-simulation und keinen zusätzlichen Per-Frame-Scan.
+Jede Wirkung wird bei Bedarf gelesen und bleibt an den bestehenden Tick bzw. den bestehenden begrenzten Regenerations-/Sukzessionstakt gebunden. Es gibt keine neue globale Wald-simulation und keinen zusätzlichen Per-Frame-Scan. Die Holzverarbeitung läuft im vorhandenen Sägewerksbatch; die Bauform wird pro Gebäude einmal gecacht, nicht pro Frame berechnet.
 
 ### 6.3 Save und Determinismus
 
 - Der Typ wird nicht als neues Pflichtfeld gespeichert. Er wird beim Laden aus Seed, Kachel und Standortfaktoren erneut abgeleitet.
 - `serializeResourceGeography()` und `restoreResourceGeography()` reproduzieren Bestand, Kapazität und daraus abgeleiteten Typ; der Test in `tests/world/regional-forests.test.js` prüft den Roundtrip.
 - Alte Saves ohne Regionaldaten laden unverändert; beim ersten Zugriff entsteht derselbe Typ wie in einer frisch generierten Welt.
+- Alte Timber Yards mit den drei bisherigen Filtern werden beim Laden auf das vollständige 16-Sorten-Profil migriert; echte Custom-Filter bleiben erhalten. Die Bauform ist abgeleitet und braucht kein Save-Feld. Bestehende Lagerbestände werden beim Laden um leere Regionalholz-Slots ergänzt, nicht neu geschrieben.
 
 ## 7. Verifikation
 
@@ -1006,7 +1010,7 @@ Ergebnis: **39.900 Waldkacheln, 0 untypisiert, 30/30 Typen erzeugt.** Die tatsä
 
 ### 7.3 25-Jahres-Kampagne
 
-Der deterministische Lauf `npm run test:campaign` (Seed 20261108, common-weal, 25 Jahre) war grün: 10.040 Ticks, 19,4 s, 1,094 ms pro Tick, alle Kampagnenanforderungen erfüllt, kein Game Over. Die Typzählung nach 25 Jahren:
+Der deterministische Lauf `npm run test:campaign` (Seed 20261108, common-weal, 25 Jahre) war grün: 10.040 Ticks, 19,46 s, 1,237 ms pro Tick, alle Kampagnenanforderungen erfüllt, kein Game Over. Die Typzählung nach 25 Jahren:
 
 | Typ | Kacheln |
 |---|---:|
@@ -1022,6 +1026,8 @@ Der deterministische Lauf `npm run test:campaign` (Seed 20261108, common-weal, 2
 
 Eine temperate Kampagne enthält naturgemäß nur die temperate Typen. Der 9-Klima-Scan oben belegt die Erreichbarkeit aller 30; der Kampagnenlauf belegt, dass die Typisierung auch nach 25 Jahren Waldwirtschaft, Sukzession und Ernte lückenlos bleibt.
 
+Derselbe Lauf schreibt `timberEconomy` in den Bericht: **66 regionale Holzsorten produziert**, davon **2 im Lager** (`cork-timber`), **1 Sorte** mit Bestand. Die Produktion kommt aus dem Lumber-Camp-Signaturpfad und dem Sägewerksverbrauch; der Vorrat bleibt klein, weil das Sägewerk die Ware sofort verarbeitet und der Markt sie nur gegen echten Lagerbestand verkauft.
+
 ### 7.4 Browser-Referenz
 
 `node tests/browser/regional-forest-reference.mjs` startet ein echtes tropisches Reich (Seed 20261104), pausiert die Simulation, scannt alle 9.526 Waldkacheln und öffnet einen echten Lumberyard-Inspektor. Ergebnis:
@@ -1029,13 +1035,15 @@ Eine temperate Kampagne enthält naturgemäß nur die temperate Typen. Der 9-Kli
 - **9.526 Waldkacheln, 0 untypisiert**, sechs tatsächlich vorkommende Regionaltypen im tropischen Reich;
 - Inspektorzeile: `Forest type: Mangrovenwald — … · Timber yield 78% · Regrowth 94% · Fire -6% · Wildlife 124% · Forage 120%`;
 - drei gerenderte Stände (024 Mangrove, 028 Dipterocarpaceenwald, 025 Bambuswald) mit drei unterschiedlichen SHA-256-Bildhashes;
+- **FORESTS-Tab mit 30 Atlas-Karten**, aufgeklappte Karten für Mangrove und Küstenmammutbaum mit namentlicher Holzzeile, Sägewerksausbeute und Basispreis;
+- **STORES-Tab mit 16 Marktzeilen**: 6 Mangrove Timber in den echten Keep gelegt, 5 über den SELL-Button verkauft, **+22 Gold**, 1 Einheit blieb im Lager, Toast `TIMBER SOLD`;
 - keine Konsolenfehler und keine Page-Errors.
 
-Artefakte: `artifacts/regional-forests/regional-forests.json`, `regional-forests.png`, `stand-024.png`, `stand-028.png`, `stand-025.png`.
+Artefakte: `artifacts/regional-forests/regional-forests.json`, `regional-forests.png`, `forest-atlas.png`, `timber-market.png`, `stand-024.png`, `stand-028.png`, `stand-025.png`.
 
 ### 7.5 Performance
 
-Die Auswahl ist O(1) pro Kachel und läuft nur beim Aufbau des Standes. Die 30 Regionalformationen werden pro Basisformation/Typ einmal gecacht; Ressourcenknoten behalten den bereits gebauten Stand. Der Kampagnen-Tick blieb mit 1,094 ms im normalen Bereich. Es gibt keinen neuen Per-Frame-Pfad; der Renderer liest nur die vorhandenen Standfelder.
+Die Auswahl ist O(1) pro Kachel und läuft nur beim Aufbau des Standes. Die 30 Regionalformationen werden pro Basisformation/Typ einmal gecacht; Ressourcenknoten behalten den bereits gebauten Stand. Der Kampagnen-Tick blieb mit 1,237 ms im normalen Bereich. Es gibt keinen neuen Per-Frame-Pfad; der Renderer liest nur die vorhandenen Standfelder. Bauformen werden pro Gebäude/Standort einmal in `building-forms.js` gecacht und nur über eine Palette/Form-Zeile in den bestehenden Sprite-Cache geschlüsselt. Der Atlas-Survey läuft nur beim Öffnen des Tabs und sampelt höchstens 240 Waldkacheln; die Marktzeilen lesen den vorhandenen Lagerbestand, ohne einen Scan über alle Entitäten zu starten.
 
 ## 8. Implementierte Entscheidungen
 
@@ -1045,11 +1053,18 @@ Die Auswahl ist O(1) pro Kachel und läuft nur beim Aufbau des Standes. Die 30 R
 4. **Basisformation bleibt Basis:** Misch- und Nadelwald behalten ihre bestehende Artenmischung; regionale Güter/Fauna sind additiv. Das verhindert, dass ein Mischwald durch ein Overlay seine ökologische Identität verliert.
 5. **Sichtbarkeit:** Regionale Bodenpalette, Kronenhöhe, Stammform, Nebel und Silhouette kommen aus dem Typ; der Inspektor zeigt Label, Kurzprofil und die konkreten Effektwerte.
 6. **Kein Default:** Für eine echte Waldkachel liefert der Selektor immer einen Typ. Der Fallback greift nur für synthetische Aufrufe ohne Basisformation und ist ebenfalls klimatisch bestimmt.
+7. **Holz ist eine echte Ware, kein Zähler:** Die 16 Sorten liegen im bestehenden `GOODS`-Katalog und laufen durch dieselben Lager-, Rezept- und Marktpfade. Das Sägewerk bevorzugt regionale Ware, kann aber immer auf Logs zurückfallen; die alte Kette bleibt damit vollständig intakt.
+8. **Signatur statt Zufallsdropped:** Das Lumber Camp legt nur die Sorte seines Standorts ab, und nur wenn Ausgaberaum und Lagergrenze frei sind. Das verhindert eine unbegrenzte Holzflut und macht die regionale Herkunft im Lager lesbar.
+9. **Markt verkauft Bestand:** Die `regional-timber-market.js` erzeugt keinen Vorrat. Ein Verkauf entfernt die Ware aus einem echten Warenhaus und bucht Gold über `addResource`; ohne Bestand gibt es nur eine Begründung.
+10. **Formen sind abgeleitet:** Klima, Terrain und ein stabiler Hash wählen eine von sieben Bauformen. Sie ändern Silhouette, Palette und Hearth-Isolationsfaktor, aber keine Kachelgröße, kein Rezept und kein Save-Feld.
 
 ## 9. Bewusste Grenzen
 
-- Die regionale Schicht fügt 16 Arten und eigene Holzsorten hinzu, aber die vorhandenen Formationen zeichnen weiterhin ihre Basiszusammensetzung. Die regionale Identität ist heute primär Palette, Kronen-/Stammform, Nebel, Güter, Fauna und Wirkung; ein eigener Baum-Zeichenpfad pro Typ ist nicht Teil dieses Durchgangs.
-- Nicht jede neue Holz sorte hat bereits ein eigenes Rezept oder einen eigenen Marktpreis. Sie ist im bestehenden `FOREST_GOODS`-Katalog registriert und über den Stand sichtbar; die vorhandene Sammel-/Holzökonomie bleibt die Quelle der Ernte.
+- Die regionale Schicht fügt 16 Arten und eigene Holzsorten hinzu, aber die vorhandenen Formationen zeichnen weiterhin ihre Basiszusammensetzung. Die regionale Identität ist primär Palette, Kronen-/Stammform, Nebel, Güter, Fauna, Bauform und Wirkung; ein eigener Baum-Zeichenpfad pro Typ ist nicht Teil dieses Durchgangs.
+- Regionale Ware entsteht über das Lumber Camp und benannte Forester-Lieferungen; nicht jede beliebige Holzfälleraktion erzeugt automatisch eine regionale Sorte. Das hält die Erntemenge im bestehenden Budget.
+- Der Markt verkauft nur physisch vorhandenen Bestand und nur in 5er-Lots. Ein leeres Lager lässt sich nicht über die Marktzeile „auffüllen“.
+- Der Atlas-Survey ist eine begrenzte Stichprobe (maximal 240 Waldkacheln), keine vollständige Karte; die Kachelzahl pro Typ ist eine Orientierung, keine exakte Volkszählung.
+- Bauformen sind ein visueller und Wärme-Faktor. Sie ändern keine Grundfläche, keine Baukosten und keine Rezepte.
 - Ein einzelnes Reich enthält nur die Typen seiner Klimazone. Alle 30 sind über den 9-Klima-Scan und die 30 Standortproben belegt, nicht alle gleichzeitig in einem einzelnen Seed.
 - Der 60-Jahres-Soak wurde für diesen Batch nicht erneut gefahren; die 25-Jahres-Kampagne und der 9-Klima-Scan sind die verlangten Nachweise. Der Nightly-Soak bleibt das Release-Gate.
 
@@ -1161,4 +1176,77 @@ Die folgenden Tabellen werden aus `REGIONAL_FOREST_TYPES` erzeugt und geben den 
 | 028 | Dipterocarpaceenwald | #2f4f30 #42653b #557546 #263f28 #687f55 |
 | 029 | Lorbeerwald | #3b5335 #506b3e #647a49 #2e452d #778c5b |
 | 030 | Monsunwald | #3f6136 #557844 #6b824d #304b2e #7d905b |
+
+## 11. Regionale Holzökonomie (3.52.0)
+
+Die 16 Holzsorten sind keine Anzeige-Trophäen. Sie laufen durch dieselben vier Stufen wie die alten Holzketten: Ernte → Lager → Rezept → Markt.
+
+### 11.1 Ernte und Lagerkette
+
+- **Lumber Camp:** alle 5 Produktionsbatches legt das Camp 1 Einheit der Signatur-Holzart seines Standorts ab, sofern `outputSpace` und Lagergrenze frei sind. Der Standort wird über `getResourceNodeAt()` gelesen; `findNearestResourceNode()` bleibt unverändert, damit der Pfad keine zusätzlichen Regionalfelder tragen muss.
+- **Forester:** liefert weiterhin benannte Waldgüter. Eine benannte Holzsorte bleibt ihre eigene Ware; das generische `timber` wird wie bisher zu `logs`. `delivered.timber` zählt beide Pfade.
+- **Timber Yard:** akzeptiert alle 16 neuen Sorten und hält ein Ziel von 18 pro Sorte. Alte Yards mit den drei bisherigen Filtern werden beim Laden auf das vollständige Profil migriert; echte Custom-Filter bleiben unangetastet.
+- **Sägewerk:** Das alte Rezept bleibt exakt `2 Logs → 2 Planks + 1 Firewood`. Zusätzlich verarbeitet das Sägewerk regionale Ware: `2 regionale Einheiten → planks` (1–3 je nach Dichte) `+ firewoodYield` (1). Regionale Ware wird bevorzugt, wenn sie am Sägewerk liegt; Logs bleiben der Fallback. Jede fünfte Lieferung fordert regionale Ware an, damit die Kette nicht an einem leeren regionalen Lager hängen bleibt.
+- **Bestand:** Der Sägewerksbatch verbraucht die Ware über `consumeFromWarehouse` und schreibt `regionalTimberProduced`; es entsteht kein Holz aus dem Nichts.
+
+### 11.2 Markt und Preise
+
+`regional-timber-market.js` liest den echten Warenhausbestand und berechnet pro Sorte eine saisonale Basisquote:
+
+- Saisonfaktor `0.94 / 1.00 / 1.06 / 1.12` für Frühling, Sommer, Herbst, Winter;
+- Marktfaktor aus dem bestehenden Holzpreis, begrenzt auf `0.8–1.5`;
+- Lagerfaktor `1.12 − min(1, Bestand/60) × 0.18`, begrenzt auf `0.94–1.12`;
+- `price = basePrice × Saison × Markt × Lager`, auf zwei Stellen gerundet.
+
+Der STORES-Tab zeigt alle 16 Zeilen mit Bestand, Quote und SELL-Button. Ein Verkauf entfernt bis zu 5 Einheiten aus echten Warenhäusern (nur unreservierten Bestand), bucht die Bewegung im Goods Book und schreibt das Gold über `addResource`. Ohne Bestand gibt es keine Auszahlung, nur eine Begründung. Die Marktzeilen selbst erzeugen keinen Vorrat und laufen nicht pro Tick.
+
+| Sorte | Art | Basispreis | Planks aus 2 | Firewood |
+|---|---|---:|---:|---:|
+| Southern Beech Timber | Southern Beech | 4,1 G | 2 | 1 |
+| Podocarp Timber | Podocarp | 3,9 G | 2 | 1 |
+| Tree Fern Trunks | Tree Fern | 2,7 G | 1 | 1 |
+| Redwood Timber | Coast Redwood | 4,8 G | 3 | 1 |
+| Sitka Spruce Timber | Sitka Spruce | 4,4 G | 2 | 1 |
+| Hemlock Timber | Western Hemlock | 4,2 G | 2 | 1 |
+| Eucalyptus Timber | Eucalyptus | 4,2 G | 2 | 1 |
+| Cork Oak Timber | Cork Oak | 3,9 G | 2 | 1 |
+| Holm Oak Timber | Holm Oak | 3,8 G | 2 | 1 |
+| Aleppo Pine Timber | Aleppo Pine | 3,5 G | 1 | 1 |
+| Miombo Timber | Miombo | 3,8 G | 2 | 1 |
+| Teak Timber | Teak | 5,3 G | 2 | 1 |
+| Sal Timber | Sal | 5,0 G | 2 | 1 |
+| Dipterocarp Timber | Dipterocarp | 5,1 G | 2 | 1 |
+| Mangrove Timber | Mangrove | 4,3 G | 1 | 1 |
+| Laurel Timber | Laurel | 3,7 G | 2 | 1 |
+
+### 11.3 Save und Kompatibilität
+
+Die Waren liegen hinten im `GOODS`-Katalog; alte Warenindizes und Rezepte bleiben unverändert. Lagerbestände werden beim Laden um leere Slots ergänzt. Die Timber-Yard-Migration ist idempotent. Es gibt kein neues Pflichtfeld und keinen neuen Save-Schema-Schritt: Ein Save mit den alten Ketten lädt weiter, ein Save mit regionaler Ware behält seinen Bestand.
+
+## 12. Waldtypen-Atlas
+
+Der FORESTS-Tab ist der Spieler-Katalog aller 30 Typen. Jede Karte zeigt:
+
+- ID, Kurzname, Klima und Priorität;
+- die Bodenpalette als Farbstreifen;
+- eine begrenzte Präsenzangabe (`N SAMPLED · X%` oder `NOT SURVEYED`);
+- aufgeklappt: Profil, Timber-/Regrowth-/Fire-/Wildlife-/Forage-/Work-Balken, Signaturholz mit Sägewerksausbeute und aktueller saisonaler Quote sowie Arten- und Güterchips.
+
+Der Survey ist bewusst eine Stichprobe: maximal 240 Waldkacheln, deterministisch aus dem Realm gezogen, gecacht pro Seed/Jahr/Tick und 30 Typen. Er läuft nur beim Öffnen/Rendern des Tabs, nicht pro Frame. Die angezeigte Kachelzahl ist eine Orientierung; die exakte Typzählung liefert weiterhin der Kampagnenbericht. Fehlt ein Survey (kein laufendes Reich), erklärt der Tab das statt eine leere Karte zu zeigen.
+
+## 13. Regionale Bauformen
+
+`building-forms.js` leitet für Wohn- und Wirtschaftsgebäude eine sichtbare Bautradition aus Klima, Terrain und einem stabilen Gebäude-Hash ab. Die Form ist rein abgeleitet; sie kostet kein Save-Feld und keine zusätzliche Simulation.
+
+| Form | Akzent | Isolationsfaktor | Typische Region |
+|---|---|---:|---|
+| Timber frame | Fachwerk | 1,02 | gemäßigt, Küste |
+| Log house | Blockbau | 1,05 | Taiga, Schnee, Berg |
+| Plank house | Bretterbau | 0,99 | trockene Tropen |
+| Stilt house | Pfahlbau | 0,94 | Tropen, Sumpf |
+| Stone-footed house | Steinsockel | 1,07 | Mittelmeer, Berg, Vulkan |
+| Thatched house | Reetdach | 0,97 | Savanne |
+| Turf house | Torfhaus | 1,09 | Tundra |
+
+Der Renderer nutzt die Form für Wand-/Dachfarbton, Silhouette und einen kleinen Akzent (Fachwerk, Blockfugen, Pfähle, Steinsockel, Reet, Torf). Der Sprite-Cache ist um die Form-ID erweitert; die Form selbst wird pro Gebäude/Standort in einem Cache mit 900 Einträgen gehalten und beim Seed-Wechsel geleert. `settlement.js` multipliziert das Hearth-Intervall mit dem Isolationsfaktor: Ein Torfhaus hält eine Feuerholzladung länger, ein Pfahlhaus kürzer. Die Form ändert keine Grundfläche, keine Baukosten und kein Rezept.
 

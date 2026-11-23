@@ -573,6 +573,55 @@ export const REGIONAL_FOREST_TYPES = Object.freeze([
     }),
 ]);
 
+// Every regional species names one physical timber good. The economy uses the
+// same record for its warehouse label, its sawmill batch and its market quote,
+// so a redwood beam cannot drift into a different price on another screen.
+// Prices are base silver per unit; the market module applies season and stock
+// pressure on top and never writes the base back into the save.
+export const REGIONAL_TIMBERS = Object.freeze(Object.values(REGIONAL_SPECIES)
+    .filter(species => species.wood)
+    .map(species => {
+        const tropical = Boolean(species.tropical);
+        const basePrice = Math.round((2.2 + species.timber * 1.9 + (tropical ? 0.7 : 0)) * 10) / 10;
+        return Object.freeze({
+            id: species.wood,
+            label: REGIONAL_GOODS[species.wood]?.label || species.wood,
+            species: species.id,
+            speciesLabel: species.label,
+            tropical,
+            timber: species.timber,
+            firewood: species.firewood,
+            basePrice,
+            // Two units of timber go on the saw bench. Dense hardwoods give a
+            // third plank; soft regional woods still give firewood. The old
+            // logs recipe (2 logs -> 2 planks + 1 firewood) is unchanged.
+            planks: Math.max(1, Math.round(2 * species.timber)),
+            firewoodYield: Math.max(1, Math.round(species.firewood)),
+        });
+    }));
+
+export const REGIONAL_TIMBER_KEYS = Object.freeze(REGIONAL_TIMBERS.map(timber => timber.id));
+export const REGIONAL_TIMBER_BY_GOOD = Object.freeze(Object.fromEntries(REGIONAL_TIMBERS.map(timber => [timber.id, timber])));
+
+export function regionalTimberGood(id) {
+    return REGIONAL_TIMBER_BY_GOOD[id] || null;
+}
+
+// A forest type's signature timber is the heaviest species that actually names
+// a timber. Types built from generic spruce/pine/acacia keep returning null and
+// fall back to the ordinary log chain instead of inventing a new good.
+export function signatureTimberForRegionalType(type) {
+    if (!type?.species) return null;
+    let best = null, bestWeight = -1;
+    for (const [speciesId, weight] of Object.entries(type.species)) {
+        const species = REGIONAL_SPECIES[speciesId];
+        if (!species?.wood || !(weight > bestWeight)) continue;
+        best = REGIONAL_TIMBER_BY_GOOD[species.wood] || null;
+        bestWeight = Number(weight) || 0;
+    }
+    return best;
+}
+
 export const REGIONAL_FOREST_TYPE_IDS = Object.freeze(REGIONAL_FOREST_TYPES.map(type => type.id));
 export const REGIONAL_FOREST_TYPE_BY_ID = Object.freeze(Object.fromEntries(REGIONAL_FOREST_TYPES.map(type => [type.id, type])));
 export const REGIONAL_FOREST_TYPE_BY_KEY = Object.freeze(Object.fromEntries(REGIONAL_FOREST_TYPES.map(type => [type.key, type])));

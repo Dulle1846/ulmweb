@@ -41,6 +41,7 @@ import {
 import { addMedicineStock, tropicalExposure } from "./health.js";
 import { harvestForestGameAt } from "./forest-fauna.js";
 import { addLocalOutput, outputSpace, requestHaul } from "./logistics.js";
+import { REGIONAL_TIMBER_SET } from "./city-config.js";
 import { addResource } from "./resources.js";
 import { recordResourceMovement } from "./goods-book.js";
 import { isHazardForageBlocked } from "./hazard-scars.js";
@@ -432,7 +433,7 @@ export function deliverForestGoods(building) {
     if (availability.available <= 0) return { ok: false, reason: availability.reason };
     const ledger = activeLedger();
     if (!ledger) return { ok: false, reason: "No forest products have been gathered" };
-    const delivered = { logs: 0, firewood: 0, food: 0, gold: 0, medicine: 0, spoiled: 0 };
+    const delivered = { logs: 0, timber: 0, firewood: 0, food: 0, gold: 0, medicine: 0, spoiled: 0 };
     const goods = [];
     const canUseLocalStore = building.type === TYPE.LUMBER;
     const bx = Math.floor(Number(building.x) || 0), by = Math.floor(Number(building.y) || 0);
@@ -448,13 +449,19 @@ export function deliverForestGoods(building) {
         if (channel === "wood") {
             if (!canUseLocalStore) continue;
             const isTimber = id !== "firewood" && id !== "charcoal";
-            const accepted = addLocalOutput(building, isTimber ? "logs" : "firewood", amount,
+            // A named regional timber keeps its identity into the timber yard
+            // so the sawmill can saw it and the market can price it. Generic
+            // timber and old saves still become logs, exactly as before.
+            const target = isTimber ? (REGIONAL_TIMBER_SET.has(id) ? id : "logs") : "firewood";
+            const accepted = addLocalOutput(building, target, amount,
                 { cause: "forest-delivery" });
             if (accepted <= 0) continue;
             ledger.stock[id] -= accepted;
-            if (isTimber) { delivered.logs += accepted; requestHaul(building, "logs", accepted); }
-            else { delivered.firewood += accepted; requestHaul(building, "firewood", accepted); }
-            goods.push({ id, to: isTimber ? "logs" : "firewood", amount: accepted });
+            if (target === "logs") delivered.logs += accepted;
+            else if (target === "firewood") delivered.firewood += accepted;
+            else delivered.timber += accepted;
+            requestHaul(building, target, accepted);
+            goods.push({ id, to: target, amount: accepted });
             continue;
         }
         if (channel === "medicine") {

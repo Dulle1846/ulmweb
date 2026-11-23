@@ -1,13 +1,52 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.50.0`
-**Next development line:** `3.51.0-dev`
+**Current production version:** `3.52.0`
+**Next development line:** `3.53.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
 **Last repository verification:** 2026-11-23 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.52.0 — The regional woods become real
+
+3.51.0 catalogued the 30 regional forests. 3.52.0 makes their **16 named
+timbers fully playable** without touching the old log chain, adds the forest
+types atlas and gives every settlement a visible regional building form.
+
+- **Timber is a real good.** The 16 regional timbers sit after the existing
+  goods, so every old goods index and recipe is unchanged. The sawmill keeps
+  its exact `2 logs → 2 planks + 1 firewood` recipe and additionally accepts
+  two units of regional timber for 1–3 planks plus firewood; stored regional
+  wood is preferred, logs remain the fallback, and every fifth delivery asks
+  for regional stock so the chain cannot deadlock. The lumber camp drops one
+  unit of its site's signature timber every five production batches when
+  output space and the storage cap allow it. Foresters keep named deliveries
+  named; generic `timber` still becomes `logs`.
+- **Warehouse chain and market.** Timber yards accept all 16 timbers with a
+  stock target of 18 each; legacy yards with the old three filters migrate on
+  load while genuine custom filters survive. `regional-timber-market.js`
+  quotes each wood from its density, climate, the existing wood price, the
+  season and the real warehouse stock. The STORES tab lists all 16 rows; SELL
+  moves five unreserved units out of real warehouses, books the movement and
+  pays gold. With no stock there is no payout, only a reason. Old saves gain
+  empty timber slots and load unchanged.
+- **Forest atlas and building forms.** A new FORESTS command tab lists all 30
+  regional types with palette, profile, effects, named timber, species and
+  goods; the bounded survey samples at most 240 forest tiles and is cached by
+  seed, year, tick and type. Seven regional building forms (timber frame, log,
+  plank, stilt, stone-footed, thatched, turf) follow climate and terrain,
+  redraw wall/roof/silhouette accents and scale the hearth interval through a
+  real insulation factor. Forms are derived, cached and add no save field.
+- **Gates.** The 25-year campaign (seed 20261108) stays green: 10,040 ticks,
+  1.237 ms/tick, 3,507 typed forest tiles, 0 untyped, 66 regional timbers
+  produced, 2 stored (cork), old log chains intact. The browser reference
+  founds a tropical realm, checks 30 atlas cards, opens the Mangrove and
+  Redwood timber lines, deposits 6 Mangrove Timber, sells 5 for +22 gold and
+  leaves 1 in store. Focused suites cover economy, logistics, forms and atlas;
+  the full sharded `npm test` reports **1,410 passing tests** and syntax/imports
+  for 217 source files with 253 UI ids.
 
 ## 3.50.0 — The world beyond the realm
 

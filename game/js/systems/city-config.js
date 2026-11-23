@@ -2,6 +2,7 @@
 // and service radii in one frozen module prevents the UI and the simulation
 // from drifting into different versions of the same rules.
 import { TYPE } from "../core/types.js";
+import { REGIONAL_TIMBER_KEYS, REGIONAL_TIMBERS } from "../world/regional-forests.js";
 
 export const CITY_VERSION = 1;
 
@@ -159,6 +160,13 @@ export const CRAFT_RECIPES = Object.freeze({
     })
 });
 
+// The ten original goods keep their order and meaning. Regional timbers are
+// appended after them, so older inventories, jobs and saves gain empty slots
+// instead of a changed key. Each timber is a real hauled good: it can sit in a
+// timber yard, be requested by a sawmill and be sold at the timber market.
+const REGIONAL_TIMBER_GOODS = Object.freeze(Object.fromEntries(REGIONAL_TIMBERS.map(timber => [
+    timber.id, Object.freeze({ label: timber.label, plural: timber.label.toLowerCase() })
+])));
 export const GOODS = Object.freeze({
     logs: Object.freeze({ label: "Logs", plural: "logs" }),
     planks: Object.freeze({ label: "Planks", plural: "planks" }),
@@ -169,17 +177,20 @@ export const GOODS = Object.freeze({
     bread: Object.freeze({ label: "Bread", plural: "bread" }),
     water: Object.freeze({ label: "Water", plural: "water" }),
     firewood: Object.freeze({ label: "Firewood", plural: "firewood" }),
-    ale: Object.freeze({ label: "Ale", plural: "ale" })
+    ale: Object.freeze({ label: "Ale", plural: "ale" }),
+    ...REGIONAL_TIMBER_GOODS
 });
 
 export const GOOD_KEYS = Object.freeze(Object.keys(GOODS));
+export const REGIONAL_TIMBER_SET = Object.freeze(new Set(REGIONAL_TIMBER_KEYS));
+export { REGIONAL_TIMBER_KEYS };
 
 // A warehouse profile is not a second building type: it narrows what an
 // existing store accepts and how much it can hold. The royal keep is always a
 // general store so bread and construction materials can always find a home.
 export const WAREHOUSE_PROFILES = Object.freeze({
     general: Object.freeze({ id: "general", label: "General store", capacity: 180, filters: GOOD_KEYS, description: "Accepts every hauled good." }),
-    timber: Object.freeze({ id: "timber", label: "Timber yard", capacity: 220, filters: Object.freeze(["logs", "planks", "firewood"]), description: "Logs, planks and firewood only." }),
+    timber: Object.freeze({ id: "timber", label: "Timber yard", capacity: 220, filters: Object.freeze(["logs", "planks", "firewood", ...REGIONAL_TIMBER_KEYS]), description: "Logs, planks, firewood and every regional timber." }),
     stone: Object.freeze({ id: "stone", label: "Stone depot", capacity: 220, filters: Object.freeze(["stoneBlocks", "cutStone"]), description: "Rough and dressed stone only." }),
     food: Object.freeze({ id: "food", label: "Granary", capacity: 210, filters: Object.freeze(["grain", "flour", "bread"]), description: "Grain, flour and bread only." }),
     water: Object.freeze({ id: "water", label: "Cistern", capacity: 160, filters: Object.freeze(["water"]), description: "Drawn water only." }),
@@ -195,7 +206,7 @@ export function warehouseProfile(id) {
 // input store; carriers move goods between those stores and a warehouse.
 export const RECIPES = Object.freeze({
     [TYPE.LUMBER]: Object.freeze({ label: "Harvest timber", workers: 3, site: "forest", output: Object.freeze({ logs: 2 }), outputCapacity: 28, batch: 2 }),
-    [TYPE.SAWMILL]: Object.freeze({ label: "Saw planks", workers: 2, input: Object.freeze({ logs: 2 }), output: Object.freeze({ planks: 2, firewood: 1 }), inputCapacity: 28, outputCapacity: 32, batch: 2 }),
+    [TYPE.SAWMILL]: Object.freeze({ label: "Saw planks", workers: 2, input: Object.freeze({ logs: 2 }), regionalTimber: true, output: Object.freeze({ planks: 2, firewood: 1 }), inputCapacity: 28, outputCapacity: 32, batch: 2 }),
     [TYPE.FARM]: Object.freeze({ label: "Grow grain", workers: 4, field: true, output: Object.freeze({ grain: 2 }), outputCapacity: 36, batch: 2 }),
     [TYPE.MILL]: Object.freeze({ label: "Mill flour", workers: 2, input: Object.freeze({ grain: 2 }), output: Object.freeze({ flour: 2 }), inputCapacity: 28, outputCapacity: 28, batch: 2 }),
     [TYPE.BAKERY]: Object.freeze({ label: "Bake bread", workers: 2, input: Object.freeze({ flour: 1 }), output: Object.freeze({ bread: 4 }), inputCapacity: 24, outputCapacity: 24, batch: 1 }),

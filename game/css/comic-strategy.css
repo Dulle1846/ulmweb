@@ -351,3 +351,48 @@
  .scenario-objective__head{flex-direction:column;gap:5px}
  .scenario-progress__label{flex-direction:column;gap:2px}
 }
+
+/* Regional timber market in the Royal Stores. */
+.timber-market{display:grid;gap:6px;margin:8px 0 2px}
+.timber-market__row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center;padding:7px 9px;border:1px solid var(--ui-line);border-radius:var(--ui-radius-sm);background:rgba(28,26,23,.28)}
+.timber-market__name{display:flex;min-width:0;flex-direction:column;gap:2px}
+.timber-market__name strong{color:var(--ui-paper-text);font:700 8px/1.25 var(--ui-title-font,Georgia,serif);letter-spacing:.04em}
+.timber-market__name small{overflow:hidden;color:var(--ui-paper-muted);font:700 6px/1.3 var(--ui-body-font,sans-serif);letter-spacing:.06em;text-overflow:ellipsis;white-space:nowrap}
+.timber-market__price{color:var(--color-antique-gold);font:700 9px/1 var(--ui-number-font,monospace)}
+.timber-market__sell{padding:5px 9px;font-size:6px}
+.timber-market__sell:disabled{opacity:.42}
+
+/* Regional forest type atlas. */
+.forest-atlas{display:grid;gap:7px;margin:10px 0 2px}
+.forest-atlas__card{border:1px solid var(--ui-line);border-radius:6px;background:rgba(28,26,23,.26)}
+.forest-atlas__card.is-present{border-color:var(--ui-line-strong);background:rgba(64,91,67,.16)}
+.forest-atlas__card>summary{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 10px;cursor:pointer;list-style:none}
+.forest-atlas__card>summary::-webkit-details-marker{display:none}
+.forest-atlas__palette{display:flex;gap:2px;align-items:stretch;height:24px;padding:2px;border:1px solid rgba(0,0,0,.28);border-radius:3px;background:rgba(0,0,0,.18)}
+.forest-atlas__palette i{display:block;width:9px;border-radius:1px}
+.forest-atlas__title{display:flex;min-width:0;flex-direction:column;gap:2px}
+.forest-atlas__title strong{overflow:hidden;color:var(--ui-paper-text);font:700 9px/1.2 var(--ui-title-font,Georgia,serif);letter-spacing:.03em;text-overflow:ellipsis;white-space:nowrap}
+.forest-atlas__title small{color:var(--ui-paper-muted);font:700 6px/1.25 var(--ui-body-font,sans-serif);letter-spacing:.08em;text-transform:uppercase}
+.forest-atlas__presence{padding:3px 6px;border:1px solid var(--ui-line);border-radius:999px;color:var(--ui-paper-muted);font:700 6px/1.2 var(--ui-number-font,monospace);letter-spacing:.06em;white-space:nowrap}
+.forest-atlas__card.is-present .forest-atlas__presence{border-color:rgba(120,160,110,.65);color:#9fc397}
+.forest-atlas__profile{margin:0;padding:0 10px 8px;color:var(--ui-paper-text);font:400 8px/1.45 var(--ui-body-font,sans-serif)}
+.forest-atlas__stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:5px 12px;padding:0 10px 9px}
+.forest-atlas__meter{display:grid;grid-template-columns:44px minmax(0,1fr) 38px;gap:5px;align-items:center}
+.forest-atlas__meter small{color:var(--ui-paper-muted);font:700 6px/1 var(--ui-body-font,sans-serif);letter-spacing:.08em;text-transform:uppercase}
+.forest-atlas__meter i{display:block;height:4px;border-radius:999px;background:rgba(0,0,0,.3);overflow:hidden}
+.forest-atlas__meter b{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#6f8a58,#b99a59)}
+.forest-atlas__meter em{color:var(--ui-paper-text);font:700 6px/1 var(--ui-number-font,monospace);font-style:normal;text-align:right}
+.forest-atlas__timber{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:baseline;margin:0 10px 8px;padding:6px 8px;border-left:2px solid var(--color-antique-gold);background:rgba(185,154,89,.09)}
+.forest-atlas__timber strong{color:var(--ui-paper-text);font:700 8px/1.2 var(--ui-title-font,Georgia,serif);letter-spacing:.03em}
+.forest-atlas__timber span{color:var(--ui-paper-muted);font:700 6px/1.3 var(--ui-body-font,sans-serif);letter-spacing:.05em}
+.forest-atlas__chips,.forest-atlas__goods{display:flex;flex-wrap:wrap;gap:4px;padding:0 10px 8px}
+.forest-atlas__chip{padding:2px 6px;border:1px solid var(--ui-line);border-radius:999px;color:var(--ui-paper-text);font:700 6px/1.2 var(--ui-body-font,sans-serif);letter-spacing:.03em}
+.forest-atlas__chip b{color:var(--color-antique-gold)}
+.forest-atlas__good{padding:2px 5px;border-radius:3px;background:rgba(0,0,0,.22);color:var(--ui-paper-muted);font:700 6px/1.2 var(--ui-body-font,sans-serif);letter-spacing:.04em;text-transform:capitalize}
+@media(max-width:620px){
+ .timber-market__row{grid-template-columns:minmax(0,1fr) auto}
+ .timber-market__sell{grid-column:1 / -1}
+ .forest-atlas__card>summary{grid-template-columns:auto minmax(0,1fr)}
+ .forest-atlas__presence{grid-column:1 / -1;justify-self:start}
+ .forest-atlas__stats{grid-template-columns:1fr}
+}

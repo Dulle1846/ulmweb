@@ -11,6 +11,7 @@ import { HOUSING_TIERS, SERVICE_DEFINITIONS, isHousingType } from "./city-config
 import { getCrownWaterCoverage } from "./crown-supply.js";
 import { getCivicModifiers } from "./civic.js";
 import { getHazardFoodDemandFactor } from "./hazard-modifiers.js";
+import { buildingFormFor } from "../world/building-forms.js";
 
 export const SETTLEMENT_INTERVAL = 10;
 export const NEED_WEIGHTS = Object.freeze({ food: 1.25, water: 1.1, warmth: 0.9, safety: 0.8, social: 0.65, health: 0.6 });
@@ -163,9 +164,14 @@ function warmthSatisfaction(house, season) {
     // Savanna winters are dry and mild, not freezing. A hearth load lasts
     // longer there, so the same store supports the settlement without the
     // frozen-climate burn rate.
-    const interval = state.worldOptions?.climate === "savanna" ? 160
+    const baseInterval = state.worldOptions?.climate === "savanna" ? 160
         : state.worldOptions?.climate === "snow" ? 56
         : state.worldOptions?.climate === "taiga" ? 32 : 40;
+    // The regional building form is real insulation: a turf or stone-footed
+    // house holds a hearth load longer, a stilt house loses it sooner. The
+    // multiplier is derived and bounded, so no new save field is needed.
+    const form = buildingFormFor(house);
+    const interval = Math.round(baseInterval * (Number(form?.insulation) || 1));
     const lastHeated = Math.max(0, number(house.lastHeatedTick));
     if (lastHeated > 0 && state.tick - lastHeated < interval) return 1;
     const needed = 1;

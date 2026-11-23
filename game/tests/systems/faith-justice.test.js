@@ -413,7 +413,7 @@ test("the save, load and UI source contracts include both annual systems", async
     assert.ok(saveRuntime.includes("state.justice=normalizeJusticeState"), "loading must normalize justice");
     assert.ok(migrations.includes("4:snapshot=>") && migrations.includes("5:snapshot=>"), "schema 4 and 5 saves must migrate into schema 6");
     assert.ok(validation.includes("validateFaithState") && validation.includes("validateJusticeState"));
-    assert.equal((html.match(/data-command-tab=/g) || []).length, 28, "the command deck must expose twenty-eight tabs, including the world map, biome atlas, hazard panel, Explore survey, Atelier, city charter, item lexicon, noble houses and the Whisper Court");
+    assert.equal((html.match(/data-command-tab=/g) || []).length, 29, "the command deck must expose twenty-nine tabs, including the world map, biome atlas, forest atlas, hazard panel, Explore survey, Atelier, city charter, item lexicon, noble houses and the Whisper Court");
     assert.ok(ui.includes("faith:faithPanel") && ui.includes("justice:justicePanel"));
     assert.ok(ui.includes("faith-festival") && ui.includes("justice-verdict"));
     const faith = await readFile(new URL("../../js/systems/faith.js", import.meta.url), "utf8");

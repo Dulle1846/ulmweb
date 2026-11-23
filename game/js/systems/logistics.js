@@ -13,7 +13,7 @@ import { addResource } from "./resources.js";
 import { getForestMovementFactorAt, getResourceNodeAt } from "./resource-geography.js";
 import { findPath, isWalkable, rebuildBlockedBuildingTiles } from "../simulation/villagers.js";
 import { getRoadSpeedMultiplier } from "./roads.js";
-import { GOOD_KEYS, GOODS, CITY_VERSION, NEW_BUILDING_TYPES, RECIPES, WAREHOUSE_PROFILES, WAREHOUSE_PROFILE_IDS } from "./city-config.js";
+import { GOOD_KEYS, GOODS, CITY_VERSION, NEW_BUILDING_TYPES, RECIPES, REGIONAL_TIMBER_KEYS, REGIONAL_TIMBER_SET, WAREHOUSE_PROFILES, WAREHOUSE_PROFILE_IDS } from "./city-config.js";
 import { GOODS_LEDGER_LIMIT, ensureGoodsBook, findGoodsMovementByKey, recordGoodsMovement, setAuditOpening, readAuditTotals, recordResourceMovement } from "./goods-book.js";
 import { getHazardCaravanMovementFactor } from "./hazard-modifiers.js";
 import { getCrossBiomeMovementFactorAt } from "./cross-biome-state.js";
@@ -134,21 +134,38 @@ export function ensureInventory(entity) {
     if (entity.type === TYPE.WAREHOUSE || entity.type === TYPE.KEEP) {
         if (!entity.warehouse || typeof entity.warehouse !== "object") entity.warehouse = {};
         const savedFilters = Array.isArray(entity.warehouse.filters) ? entity.warehouse.filters.filter(key => GOOD_KEYS.includes(key)) : null;
-        let profileId = WAREHOUSE_PROFILES[entity.warehouse.profile] ? entity.warehouse.profile : null;
+        const explicitProfile = Boolean(WAREHOUSE_PROFILES[entity.warehouse.profile]);
+        let profileId = explicitProfile ? entity.warehouse.profile : null;
+        let legacyMatched = false;
+        // A timber yard saved before the regional timbers existed carries
+        // exactly the three old core goods. That exact set is upgraded; a
+        // custom store with a subset of them is not, because its narrower
+        // filter list is a real contract the player chose.
+        const legacyTimberCore = Boolean(savedFilters) && savedFilters.length === 3
+            && ["logs", "planks", "firewood"].every(good => savedFilters.includes(good));
         if (!profileId && savedFilters) {
             // A legacy save predates profiles. Recognise the shipped filter sets
-            // instead of silently relabelling a specialised store as general.
+            // by exact equality instead of silently relabelling a specialised
+            // or custom store as general.
             profileId = WAREHOUSE_PROFILE_IDS.find(id => {
                 const filters = WAREHOUSE_PROFILES[id].filters;
                 return filters.length === savedFilters.length && filters.every(good => savedFilters.includes(good));
-            }) || null;
+            }) || (legacyTimberCore ? "timber" : null);
+            legacyMatched = Boolean(profileId);
         }
         const profile = WAREHOUSE_PROFILES[profileId || "general"];
         entity.warehouse.profile = profile.id;
         const defaultCapacity = entity.type === TYPE.KEEP ? WAREHOUSE_CAPACITY[TYPE.KEEP] : (WAREHOUSE_CAPACITY[entity.type] || profile.capacity);
         entity.warehouse.capacity = Math.max(1, Math.floor(number(entity.warehouse.capacity, defaultCapacity)));
         entity.warehouse.stored = entity.warehouse.stored && typeof entity.warehouse.stored === "object" ? entity.warehouse.stored : {};
-        entity.warehouse.filters = savedFilters || [...profile.filters];
+        // A timber yard learns the regional timbers even when an old save
+        // stored only its three core filters; a recognised legacy profile set
+        // is upgraded in the same way. Any other saved filter list is a real
+        // custom store contract and must survive the load unchanged.
+        const upgradeTimber = Boolean(savedFilters) && profile.id === "timber" && legacyTimberCore;
+        entity.warehouse.filters = (legacyMatched || upgradeTimber)
+            ? [...profile.filters]
+            : (savedFilters || [...profile.filters]);
         entity.warehouse.reservedIn = entity.warehouse.reservedIn && typeof entity.warehouse.reservedIn === "object" ? entity.warehouse.reservedIn : {};
         entity.warehouse.reservedOut = entity.warehouse.reservedOut && typeof entity.warehouse.reservedOut === "object" ? entity.warehouse.reservedOut : {};
         for (const key of GOOD_KEYS) {
@@ -707,7 +724,13 @@ export function requestHaul(building, good, quantity) {
 }
 
 export function requestSupply(building, good, quantity) {
-    if (!building || building.dead || !RECIPES[building.type] || !RECIPES[building.type].input?.[good]) return null;
+    const recipe = RECIPES[building.type];
+    // A sawmill's ordinary recipe is logs, but a regional timber is an accepted
+    // alternative input. Every other building still asks only for its declared
+    // recipe goods.
+    const accepts = Boolean(recipe && (recipe.input?.[good]
+        || (recipe.regionalTimber && REGIONAL_TIMBER_SET.has(good))));
+    if (!building || building.dead || !accepts) return null;
     ensureInventory(building);
     const amount = Math.min(cleanQuantity(quantity), inputSpace(building));
     if (amount <= 0 || hasActiveJob(job => job.kind === "supply" && job.to?.id === building.id && job.good === good)) return null;
@@ -737,6 +760,25 @@ export function requestSupply(building, good, quantity) {
     job.sourceReserved = true;
     job.targetReserved = true;
     return job;
+}
+
+// A sawmill that cannot reach any logs still has a real second recipe. Ask for
+// the regional timber that is actually stored in the largest reachable amount
+// instead of idling beside a full timber yard. Bounded: one warehouse lookup
+// per regional timber, only while a sawmill is missing its input.
+export function requestTimberSupply(building, goods = REGIONAL_TIMBER_KEYS) {
+    const recipe = RECIPES[building.type];
+    if (!building || building.dead || !recipe?.regionalTimber || !Array.isArray(goods)) return null;
+    let best = null, bestStock = 0;
+    for (const good of goods) {
+        if (!REGIONAL_TIMBER_SET.has(good)) continue;
+        const warehouse = pickWarehouse(good, 1, building, { requireStock: true });
+        if (!warehouse) continue;
+        const stock = availableIn(warehouse, good);
+        if (stock <= bestStock) continue;
+        best = good; bestStock = stock;
+    }
+    return best ? requestSupply(building, best, CARRIER_CAPACITY) : null;
 }
 
 export function requestConstructionDelivery(site, material, quantity) {

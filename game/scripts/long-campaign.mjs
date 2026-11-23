@@ -68,6 +68,7 @@ try {
                 yearly: result.yearly,
                 diagnostics: result.diagnostics,
                 forestTypes: result.forestTypes,
+                timberEconomy: result.timberEconomy,
                 gameOver: result.gameOver,
                 ambition: result.ambition,
                 era: result.era,
@@ -100,6 +101,7 @@ try {
                     observed: result.forestTypes.observed,
                     missing: result.forestTypes.missing
                 } : null,
+                timberEconomy: result.timberEconomy || null,
                 fuelBackfill: fuel ? {
                     orders: fuel.orders,
                     phases: fuel.phases,

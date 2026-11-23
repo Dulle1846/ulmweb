@@ -7,13 +7,14 @@ import { state } from "../core/state.js";
 import { getEntitiesOfType } from "../world/entities.js";
 import { addResource } from "../systems/resources.js";
 import { getWorkforceSnapshot, getBuildingEfficiency } from "../systems/economy.js";
-import { RECIPES } from "../systems/city-config.js";
+import { RECIPES, REGIONAL_TIMBER_KEYS, REGIONAL_TIMBER_SET } from "../systems/city-config.js";
 import {
     ensureInventory, addLocalOutput, getAvailableOutput, getInputCapacity, getPhysicalStock,
-    requestSupply, requestHaul, getBuildingSupplyReason, outputSpace, recordGoodMovement,
+    requestSupply, requestTimberSupply, requestHaul, getBuildingSupplyReason, outputSpace, recordGoodMovement,
     findLocalWarehouse, consumeFromWarehouse
 } from "../systems/logistics.js";
-import { findNearestResourceNode, harvestForest, extractStone } from "../systems/resource-geography.js";
+import { REGIONAL_FOREST_TYPE_BY_ID, regionalTimberGood, signatureTimberForRegionalType } from "../world/regional-forests.js";
+import { findNearestResourceNode, getResourceNodeAt, harvestForest, extractStone } from "../systems/resource-geography.js";
 import { getHazardExtractionFactor } from "../systems/hazard-modifiers.js";
 
 import { recordResourceMovement } from "../systems/goods-book.js";
@@ -39,15 +40,20 @@ function entriesFor(recipe) {
     }
     return entries;
 }
-const STOCK_TARGETS = Object.freeze({
+// Every physical good has a bounded production ceiling. Regional timbers get
+// a smaller one: they are a specialty stream beside the ordinary log chain,
+// not a second bulk timber economy.
+const stockTargetList = {
     logs: 80, planks: 60, firewood: 50, stoneBlocks: 60, cutStone: 60,
     water: 40, grain: 120, flour: 40, ale: 40
-});
+};
+for (const good of REGIONAL_TIMBER_KEYS) stockTargetList[good] = 18;
+const STOCK_TARGETS = Object.freeze(stockTargetList);
 
 function ledger() {
     const economy = state.economy || (state.economy = {});
     const production = economy.productionChains || (economy.productionChains = {});
-    for (const key of ["logsHarvested", "stoneExtracted", "planksProduced", "flourProduced", "breadProduced", "waterDrawn", "grainHarvested", "farmFood", "farmFoodBooked", "millWoodConsumed", "millBonusFood", "tavernFoodConsumed", "tavernGoldProduced", "aleBrewed", "aleConsumed"]) {
+    for (const key of ["logsHarvested", "stoneExtracted", "planksProduced", "flourProduced", "breadProduced", "waterDrawn", "grainHarvested", "farmFood", "farmFoodBooked", "millWoodConsumed", "millBonusFood", "tavernFoodConsumed", "tavernGoldProduced", "aleBrewed", "aleConsumed", "regionalTimberProduced"]) {
         production[key] = Math.max(0, Number(production[key]) || 0);
     }
     return production;
@@ -116,9 +122,79 @@ function finishOutput(building, output, production) {
             else if (good === "water") production.waterDrawn += accepted;
             else if (good === "grain") production.grainHarvested += accepted;
             else if (good === "ale") production.aleBrewed += accepted;
+            else if (REGIONAL_TIMBER_SET.has(good)) {
+                production.regionalTimberProduced = Math.max(0, Number(production.regionalTimberProduced) || 0) + accepted;
+            }
             requestHaul(building, good, getAvailableOutput(building, good));
         }
     }
+}
+
+// The sawmill has two real recipes. Logs keep their shipped yield byte for
+// byte; a named regional timber is sawn by its own density. The plan is read
+// only from the mill's own input store, so no warehouse is scanned per tick.
+function bestStoredTimber(inventory) {
+    let best = null, bestPlanks = 0;
+    for (const good of REGIONAL_TIMBER_KEYS) {
+        if (Math.max(0, Number(inventory?.input?.[good]) || 0) < 2) continue;
+        const def = regionalTimberGood(good);
+        const planks = def?.planks || 1;
+        if (planks <= bestPlanks) continue;
+        best = good; bestPlanks = planks;
+    }
+    return best;
+}
+
+function planSawBatch(building) {
+    const inventory = ensureInventory(building);
+    // A regional timber already delivered to the bench is sawn first: it is
+    // the specialty product the player asked for, and every regional board
+    // yields at least the ordinary plank batch. Logs remain the fallback for
+    // every realm and every old save that has no regional timber at all.
+    const good = bestStoredTimber(inventory);
+    if (good) {
+        const def = regionalTimberGood(good);
+        return {
+            good, amount: 2,
+            output: { planks: def.planks, firewood: def.firewoodYield },
+        };
+    }
+    if (Math.max(0, Number(inventory?.input?.logs) || 0) >= 2) {
+        return { good: "logs", amount: 2, output: { planks: 2, firewood: 1 } };
+    }
+    return null;
+}
+
+function sawSupplyPhase(building) {
+    const id = String(building.id ?? "");
+    let hash = 0;
+    for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) | 0;
+    return (Math.floor(state.tick / PRODUCTION_INTERVAL) + Math.abs(hash)) % 5;
+}
+
+// Logs stay the primary supply order. Every fifth order asks for a reachable
+// regional timber so the specialty recipe actually runs in a mature realm
+// without starving the ordinary log chain. If no timber is stored, the order
+// falls back to logs in the same tick.
+function requestSawInputs(building) {
+    if (sawSupplyPhase(building) === 0 && requestTimberSupply(building, REGIONAL_TIMBER_KEYS)) return false;
+    if (requestSupply(building, "logs", SUPPLY_BATCH)) return false;
+    requestTimberSupply(building, REGIONAL_TIMBER_KEYS);
+    return false;
+}
+
+function consumeSawInput(building, plan) {
+    const inventory = ensureInventory(building);
+    const available = Math.max(0, Number(inventory.input[plan.good]) || 0);
+    const amount = Math.min(plan.amount, available);
+    if (amount < plan.amount) return false;
+    inventory.input[plan.good] -= amount;
+    recordGoodMovement({
+        type: "consumed", good: plan.good, quantity: amount,
+        from: { kind: "building", id: building.id }, to: { kind: "recipe", id: RECIPES[building.type].label },
+        cause: "recipe-input"
+    });
+    return true;
 }
 
 function canStoreOutput(building, output) {
@@ -155,16 +231,25 @@ function produceRecipe(building, workforce, production, knownEfficiency = null, 
         building.productionReason = building.foresterReason || "Tending the forest";
         return;
     }
+    // The saw bench decides its recipe from the input store before the stock
+    // ceiling is applied, because a regional hardwood yields a different plank
+    // count than the ordinary log batch.
+    const sawBatch = building.type === TYPE.SAWMILL ? planSawBatch(building) : null;
+    if (building.type === TYPE.SAWMILL && !sawBatch) {
+        requestSawInputs(building);
+        building.productionReason = getBuildingSupplyReason(building) || "Waiting for logs or regional timber";
+        return;
+    }
     // Skip goods that are already stockpiled, but keep a secondary output
     // flowing: a sawmill whose plank rack is full can still burn logs for
     // firewood instead of idling through the winter.
     const allowedOutput = {};
-    for (const [good, amount] of entriesFor(recipe).output) {
+    for (const [good, amount] of Object.entries(sawBatch ? sawBatch.output : recipe.output)) {
         const target = STOCK_TARGETS[good];
         if (target && getPhysicalStock(good) >= target) continue;
         allowedOutput[good] = amount;
     }
-    if (entriesFor(recipe).output.length && !Object.keys(allowedOutput).length) {
+    if ((sawBatch ? Object.keys(sawBatch.output).length : entriesFor(recipe).output.length) && !Object.keys(allowedOutput).length) {
         building.productionReason = "Reserve is fully stocked";
         return;
     }
@@ -184,6 +269,20 @@ function produceRecipe(building, workforce, production, knownEfficiency = null, 
             const taken = harvestForest(node.x, node.y, batch);
             if (taken <= 0) { building.productionReason = "Forest stand is depleted"; return; }
             finishOutput(building, { logs: taken }, production);
+            // A regional stand yields its signature timber beside the log
+            // batch. One unit every fifth batch keeps the specialty chain fed
+            // without displacing the ordinary logs that construction needs.
+            // The full site node is read only on that cadence: the cheap
+            // nearest-node search does not carry the regional survey fields.
+            if (outputSpace(building) > 0
+                && ((Math.floor(state.tick / PRODUCTION_INTERVAL) + Math.floor(node.x) * 7 + Math.floor(node.y) * 13) % 5 === 0)) {
+                const site = getResourceNodeAt(node.x, node.y);
+                const regionalType = site?.forestRegionalType ? REGIONAL_FOREST_TYPE_BY_ID[site.forestRegionalType] : null;
+                const signature = signatureTimberForRegionalType(regionalType);
+                if (signature && getPhysicalStock(signature.id) < (STOCK_TARGETS[signature.id] || 18)) {
+                    finishOutput(building, { [signature.id]: 1 }, production);
+                }
+            }
             return;
         }
         if (recipe.site === "stone") {
@@ -199,7 +298,7 @@ function produceRecipe(building, workforce, production, knownEfficiency = null, 
             return;
         }
     }
-    if (!requestInputs(building)) {
+    if (!sawBatch && !requestInputs(building)) {
         building.productionReason = getBuildingSupplyReason(building) || "Waiting for input stock";
         return;
     }
@@ -210,7 +309,8 @@ function produceRecipe(building, workforce, production, knownEfficiency = null, 
         building.productionReason = "Output store is full";
         return;
     }
-    if (!consumeInputs(building)) return;
+    if (sawBatch && !consumeSawInput(building, sawBatch)) return;
+    if (!sawBatch && !consumeInputs(building)) return;
     finishOutput(building, output, production);
     // Grain used to exist only inside the mill -> bakery -> carrier chain. A
     // realm with active farms and no spare carrier could starve beside a full

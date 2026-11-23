@@ -190,6 +190,67 @@ try {
     assert.ok(inspectorText.includes("Wildlife"), "the inspector must show the fauna effect");
     assert.ok(inspectorText.includes("Forage"), "the inspector must show the forage effect");
     await page.screenshot({ path: resolve(outputDir, "regional-forests.png"), fullPage: false });
+
+    // The forest atlas is the player-facing catalogue of all 30 types. Open it
+    // through the real tab and assert the complete catalogue is mounted.
+    await page.locator('[data-command-tab="forest"]').click();
+    await page.locator("#command-panel-content .forest-atlas__card").first().waitFor({ state: "visible", timeout: 5000 });
+    const atlasCards = await page.locator("#command-panel-content .forest-atlas__card").count();
+    const atlasText = (await page.locator("#command-panel-content").innerText()).trim();
+    assert.equal(atlasCards, 30, "the atlas must list all 30 regional forest types");
+    assert.match(atlasText, /Thirty regional woodlands/);
+    assert.match(atlasText, /SURVEYED/);
+    // Cards are collapsed by default, so open the two tropical/conifer profiles
+    // a player would inspect and read the named timber line inside them.
+    await page.locator('details[data-forest-type="1.2.23.1.024"] summary').click();
+    await page.locator('details[data-forest-type="1.2.23.1.024"] .forest-atlas__timber').waitFor({ state: "visible", timeout: 5000 });
+    const mangroveText = await page.locator('details[data-forest-type="1.2.23.1.024"]').innerText();
+    assert.match(mangroveText, /Mangrove Timber/);
+    assert.match(mangroveText, /planks/);
+    await page.locator('details[data-forest-type="1.2.23.1.016"] summary').click();
+    await page.locator('details[data-forest-type="1.2.23.1.016"] .forest-atlas__timber').waitFor({ state: "visible", timeout: 5000 });
+    const redwoodText = await page.locator('details[data-forest-type="1.2.23.1.016"]').innerText();
+    assert.match(redwoodText, /Redwood Timber/);
+    evidence.atlas = { cards: atlasCards, sampled: /SURVEYED/.test(atlasText), mangrove: true, redwood: true };
+    await page.screenshot({ path: resolve(outputDir, "forest-atlas.png"), fullPage: false });
+
+    // The regional timber market is physical warehouse stock. Deposit a real
+    // lot into the royal store, sell it through the player button and prove the
+    // treasury rose while the goods actually left the store.
+    const deposit = await page.evaluate(async () => {
+        const [{ state }, { depositGood }, { getPhysicalStock }] = await Promise.all([
+            import("./js/core/state.js"),
+            import("./js/systems/logistics.js"),
+            import("./js/systems/logistics.js"),
+        ]);
+        const keep = state.entities.find(entity => !entity.dead && entity.type === 0);
+        const amount = depositGood("mangrove-timber", 6, keep?.x || 0, keep?.y || 0);
+        return { amount, stock: getPhysicalStock("mangrove-timber"), gold: Number(state.resources.gold) || 0 };
+    });
+    assert.equal(deposit.amount, 6, "the royal store must accept the regional timber");
+    await page.locator('[data-command-tab="resources"]').click();
+    const marketRows = page.locator("#command-panel-content .timber-market__row");
+    await marketRows.first().waitFor({ state: "visible", timeout: 5000 });
+    assert.equal(await marketRows.count(), 16, "the timber market must list all 16 regional timbers");
+    const mangroveRow = page.locator('#command-panel-content .timber-market__row[data-timber-good="mangrove-timber"]');
+    await mangroveRow.waitFor({ state: "visible", timeout: 5000 });
+    const rowText = (await mangroveRow.innerText()).trim();
+    assert.match(rowText, /6 in store/);
+    await mangroveRow.locator("button.timber-market__sell").click();
+    await page.waitForTimeout(500);
+    const sale = await page.evaluate(async () => {
+        const [{ state }, { getPhysicalStock }] = await Promise.all([
+            import("./js/core/state.js"),
+            import("./js/systems/logistics.js"),
+        ]);
+        return { stock: getPhysicalStock("mangrove-timber"), gold: Number(state.resources.gold) || 0 };
+    });
+    assert.ok(sale.gold > deposit.gold, "selling timber must pay the treasury");
+    assert.equal(sale.stock, deposit.stock - 5, "the sale removes five real units from the store");
+    const toastText = (await page.locator("#action-toast").innerText()).trim();
+    assert.match(toastText, /TIMBER SOLD/);
+    evidence.market = { rows: 16, deposited: deposit.amount, sold: 5, goldGained: sale.gold - deposit.gold, stockLeft: sale.stock };
+    await page.screenshot({ path: resolve(outputDir, "timber-market.png"), fullPage: false });
     await page.locator("#command-close").click();
     await page.waitForFunction(() => document.getElementById("command-modal")?.classList.contains("hidden"), null, { timeout: 5000 });
     if (await page.locator("#realm-event-modal").isVisible()) await page.locator("#realm-event-dismiss").click();
