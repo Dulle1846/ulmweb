@@ -55,13 +55,15 @@ function initializeAuditRealm() {
     state.legacy = createLegacyState({ foundedYear: 1 });
 }
 
-test("a mature realm survives an exact save/load round-trip through schema 8 and 9 into schema 14", () => {
+test("a mature realm survives an exact save/load round-trip through schema 8 and 9 into schema 15", () => {
     const previousDocument = globalThis.document;
     globalThis.document = { createElement: () => makeCanvas() };
     try {
         const campaign = runCampaign({ years: 25, onInitialized: initializeAuditRealm });
         assert.equal(campaign.ok, true, "the fixture campaign must remain healthy");
         const saved = JSON.parse(JSON.stringify(createSaveSnapshot()));
+        assert.equal(saved.worldMap.version, 1, "the world survey is part of the saved realm");
+        assert.equal(saved.worldMap.frontiers.length, 4, "all four frontiers are saved");
         // The browser validates an import before initWorld replaces the current
         // realm. Its initial 160×160 world is smaller than this 176×176 fixture;
         // geography indices above 160×160 used to be rejected even though they
@@ -75,7 +77,7 @@ test("a mature realm survives an exact save/load round-trip through schema 8 and
             state.worldW = 160;
             state.worldH = 160;
             const prepared = prepareSaveSnapshot(legacy);
-            assert.equal(prepared.saveSchemaVersion, 14, "the load path must migrate to the current schema");
+            assert.equal(prepared.saveSchemaVersion, 15, "the load path must migrate to the current schema");
 
             resetState();
             state.activeProfileId = "save-runtime-test";

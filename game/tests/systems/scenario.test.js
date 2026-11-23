@@ -155,7 +155,7 @@ test("a missed deadline applies its consequence once and records the failure", (
 });
 
 test("old saves migrate to free realm and scenario state survives normalization", () => {
-    assert.equal(SAVE_SCHEMA_VERSION, 14);
+    assert.equal(SAVE_SCHEMA_VERSION, 15);
     assert.equal(SCENARIO_VERSION, 1);
     const legacy = { saveSchemaVersion: 13 };
     SAVE_SCHEMA_MIGRATIONS[13](legacy);

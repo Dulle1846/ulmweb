@@ -32,10 +32,11 @@ import { validateBiomeAtlasSnapshot } from "../systems/biome-resource-state.js";
 import { validateAiChronicleState } from "./ai-chronicle-state.js";
 import { validateEventTimelineState } from "./event-timeline.js";
 import { validateScenarioState } from "../systems/scenario.js";
+import { validateWorldMapSnapshot } from "../systems/world-map.js";
 import { validateCraftedItems } from "../systems/item-lexicon.js";
 import { resolveWorldDimensions } from "../world/terrain-model.js";
 
-export const SAVE_SCHEMA_VERSION = 14;
+export const SAVE_SCHEMA_VERSION = 15;
 
 const RESOURCE_KEYS = Object.freeze(["wood", "stone", "gold", "food"]);
 const RESOURCE_KEY_SET = new Set(RESOURCE_KEYS);
@@ -217,6 +218,9 @@ export function validateSaveSnapshot(snapshot) {
     if (snapshot.city !== undefined) validateDomainSnapshot(snapshot.city, "city", validateCitySnapshot);
     if (snapshot.scenario !== undefined && snapshot.scenario !== null) {
         validateDomainSnapshot(snapshot.scenario, "scenario", validateScenarioState);
+    }
+    if (snapshot.worldMap !== undefined) {
+        validateDomainSnapshot(snapshot.worldMap, "worldMap", validateWorldMapSnapshot);
     }
     if (snapshot.settlements !== undefined) validateDomainSnapshot(snapshot.settlements, "settlements", validateSettlementOwnersSnapshot);
     if (snapshot.diplomacy !== undefined) {

@@ -2,18 +2,18 @@
 export const SPEC_COVERAGE = Object.freeze({
   "version": 2,
   "generatedBy": "scripts/spec-audit.mjs",
-  "commit": "281d585c7a44b8f0d4d9d5ed0a7ac227988621d4",
-  "sourceHash": "a305264422e7bffec2da54a399bf6f23fd346ce91b5597fd5e481d399305e616",
+  "commit": "18754da90e6cbc82cdbd61e147641472a6876dcc",
+  "sourceHash": "b18188823931c2f0828efeff5824f161e8352be9de2b13f8546dbbe6761e842f",
   "totals": {
     "total": 1618,
-    "implemented": 1615,
-    "open": 3,
+    "implemented": 1616,
+    "open": 2,
     "sections": 38
   },
   "nextSection": {
     "id": "4.0",
     "title": "Great World and long-running history",
-    "open": 3,
+    "open": 2,
     "total": 6,
     "firstOpen": "4.0.1"
   },
@@ -656,8 +656,8 @@ export const SPEC_COVERAGE = Object.freeze({
       "id": "4.0",
       "title": "Great World and long-running history",
       "total": 6,
-      "implemented": 3,
-      "open": 3,
+      "implemented": 4,
+      "open": 2,
       "source": "system registry"
     }
   ],
@@ -669,15 +669,6 @@ export const SPEC_COVERAGE = Object.freeze({
       "label": "Multiple kingdoms and map regions",
       "missing": [
         "Diplomacy models four abstract neighbouring realms; there is no multi-kingdom world map or region ownership consumer."
-      ]
-    },
-    {
-      "id": "4.0.2",
-      "section": "4.0",
-      "title": "Great World and long-running history",
-      "label": "World map, trade routes, borders and frontier settlements",
-      "missing": [
-        "Local roads and trade partners exist, but no world-map border, route or frontier-settlement layer is implemented."
       ]
     },
     {

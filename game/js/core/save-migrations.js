@@ -45,6 +45,12 @@ export const SAVE_SCHEMA_MIGRATIONS = Object.freeze({
         // Schema 14 adds authored scenarios. A legacy realm was not founded
         // under one, so it migrates to the free-realm state without a deadline.
         if(snapshot.scenario===undefined)snapshot.scenario=null;
+    },
+    14:snapshot=>{
+        // Schema 15 adds the world map, standing trade routes and frontiers. A
+        // legacy realm keeps its diplomacy and settlements; the new layer is
+        // derived quietly on the next annual survey instead of inventing routes.
+        if(snapshot.worldMap===undefined)snapshot.worldMap=null;
     }
 });
 

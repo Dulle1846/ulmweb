@@ -1,13 +1,67 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.49.0`
-**Next development line:** `3.50.0-dev`
+**Current production version:** `3.50.0`
+**Next development line:** `3.51.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
 **Last repository verification:** 2026-11-23 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.50.0 — The world beyond the realm
+
+Roadmap 4.0.2 closes with the **World Map**: a WORLD management tab over the
+real settlement seats and four diplomatic realms, standing annual caravans, and
+saved frontiers that follow treaties and can put raiders over the border. The
+audit moves from **1615/1618 to 1616/1618**; 4.0.1 and 4.0.6 remain open.
+
+- **A map the player can open in normal play.** The WORLD tab sits beside
+  DIPLOMACY in Realm Management. It draws the four neighbouring regions at their
+  compass bearings, every real settlement seat at its actual world position, and
+  every standing route between them. Each region card reads the existing treaty,
+  relation, trust, specialty, ruler and frontier band. At 390 px the map, cards
+  and selects stay inside the viewport with no horizontal overflow.
+- **Trade routes are real caravans.** Pick a settlement depot, goods (wood,
+  stone or food) and flow (import or export), then pay 15 gold and 8 wood to
+  charter the route. Once per year the caravan moves six units through the same
+  market stock, partner treasury and market prices manual trade uses. Timber and
+  stone unload into that settlement's own stores, which its road-repair
+  obligation spends; food uses the royal granary. Exports draw the named depot,
+  pay the crown and leave the settlement up to 2 gold as a handling fee. War
+  closes the route without moving goods; peace reopens it on the next survey.
+  At most six routes may stand at once, and every caravan calls the existing
+  `recordTradeInfluence`, so relation, trust, trade volume and the realm record
+  move exactly as they do for a manual market sale.
+- **Frontiers follow the existing court.** Pressure is one bounded reading of
+  treaty (+42 at war, +18 neutral, +7 trade, +1 alliance), low relation and
+  trust, nearby settlement seats, watch levels, active caravans, the standing
+  army's existing dread and the existing crown border levy. The player can raise
+  a three-step watch at 12 gold per step; each level cuts pressure by 9. Above
+  58 pressure a deterministic raid may cross, above 75 it is certain. A raid
+  takes at most one wood, one stone and one gold from the nearest seat (or two
+  food from the crown when no seat is in reach), lowers relation and trust,
+  raises fear, writes `lastIncidentYear` for the existing diplomacy levy, and
+  spends 12 pressure for the following year. No shared random stream is drawn.
+- **Bounded and saved.** `updateWorldMap` is one annual task after diplomacy,
+  the settlement grant and the road survey: four regions, at most six routes and
+  the existing seat list. It adds no per-tick or per-frame work and no second
+  ecological pass. Save schema 15 stores routes, four frontier entries
+  (pressure, watch, relief, incidents, years), a 24-entry history and totals.
+  Schema-14 saves migrate to a quiet map and keep playing; routes and watch
+  levels survive an exact save/load round-trip.
+- **Gates.** `tests/systems/world-map.test.js` covers route validation,
+  import/export movement, war closure, watch cost and pressure, a certain raid,
+  malformed data, schema-14 migration and normalized round-trips. New
+  `tests/browser/world-map.mjs` founds a real realm, opens WORLD through the
+  normal deck, charters a route with the real controls, raises a watch, runs the
+  annual survey, verifies the moved goods in live market and seat stores, saves
+  and reloads, and repeats the panel at 390 × 844. The full suite reports
+  **1,388 passing tests** (syntax/imports 213 files, 253 UI ids); the
+  deterministic 25-year campaign completes every requirement and ambition at
+  **10,040 ticks / 0.799 ms per tick**; the browser reference finishes with zero
+  page or console errors and zero narrow overflow. `npm run spec:audit` reports
+  **1616/1618**.
 
 ## 3.49.0 — The realm begins on your terms
 

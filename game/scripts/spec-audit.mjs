@@ -689,7 +689,20 @@ const SYSTEM_SPECS = [
     }),
     section("4.0", "Great World and long-running history", [
         { id: "4.0.1", label: "Multiple kingdoms and map regions", status: "open", missing: "Diplomacy models four abstract neighbouring realms; there is no multi-kingdom world map or region ownership consumer.", tests: ["tests/systems/diplomacy.test.js"] },
-        { id: "4.0.2", label: "World map, trade routes, borders and frontier settlements", status: "open", missing: "Local roads and trade partners exist, but no world-map border, route or frontier-settlement layer is implemented.", tests: ["tests/systems/roads.test.js"] },
+        {
+            id: "4.0.2", label: "World map, trade routes, borders and frontier settlements",
+            evidence: [
+                { file: "js/systems/world-map.js", symbol: "getWorldMapSnapshot", role: "world-state" },
+                { file: "js/systems/world-map.js", symbol: "openTradeRoute", role: "trade-routes" },
+                { file: "js/systems/world-map.js", symbol: "updateWorldMap", role: "annual-simulation" },
+                { file: "js/systems/world-map.js", symbol: "frontierPressureFor", role: "frontier-pressure" },
+                { file: "js/presentation/world-map-panel.js", symbol: "renderWorldMapPanel", role: "gameplay" },
+                { file: "js/core/save-runtime.js", symbol: "normalizeWorldMapSnapshot", role: "persistence" },
+                { file: "js/core/save-migrations.js", symbol: "worldMap", role: "save-migration" },
+                { file: "js/simulation/simulation.js", symbol: "worldMap", role: "simulation-cadence" }
+            ],
+            tests: ["tests/systems/world-map.test.js", "tests/browser/world-map.mjs"]
+        },
         { id: "4.0.3", label: "Long-term world history and generational change", evidence: [{ file: "js/presentation/ai-chronicle-panel.js", symbol: "renderAiChroniclePanel" }, { file: "js/systems/micro-events.js", symbol: "updateMicroEvents" }], tests: ["tests/systems/ai-chronicle.test.js"] },
         {
             id: "4.0.4", label: "Scenario editor and multiple start conditions",

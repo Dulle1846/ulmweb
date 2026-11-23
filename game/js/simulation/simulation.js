@@ -63,6 +63,7 @@ import { updateSpecialBiomes } from "../systems/special-biome-state.js";
 import { updateRoadWear } from "../systems/roads.js";
 import { updateSettlementMaintenance } from "../systems/settlement-owners.js";
 import { updateScenario } from "../systems/scenario.js";
+import { updateWorldMap } from "../systems/world-map.js";
 
 // The annual rollover is deep but its systems are independent in strict order.
 // Headless callers run all of them in one call; the presented game loop runs
@@ -105,6 +106,10 @@ const ANNUAL_TASKS = [
     // obligation. Neither pass touches the per-tick hot path.
     { name: "settlementMaintenance", run(annual) { annual.settlementMaintenance = updateSettlementMaintenance(); } },
     { name: "roadSurvey", run(annual) { annual.roadSurvey = updateRoadWear(); } },
+    // The world survey runs once per year, after diplomacy and the settlement
+    // grants: it moves standing caravans through the existing market stock and
+    // reads the border pressure the realms just settled.
+    { name: "worldMap", run(annual) { annual.worldMap = updateWorldMap(); } },
     // One bounded hazard pass at the year boundary: eruption, earthquake,
     // ashfall and real destruction on volcanic ground. Temperate worlds return
     // immediately, so the shared campaign keeps its existing tick cost.
@@ -178,6 +183,7 @@ function createAnnualMaintenance() {
         coastHazards: null,
         roadSurvey: null,
         settlementMaintenance: null,
+        worldMap: null,
         winterAnnual: null,
         environmentalHazards: null,
         biomeAtlas: null

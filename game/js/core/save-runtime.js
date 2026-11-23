@@ -54,6 +54,7 @@ import { normalizeRoyalState } from "../systems/royal-dynasty.js";
 import { restoreWinterState, serializeWinterState } from "../world/winter-economy.js";
 import { normalizeEndlessState } from "../systems/endless.js";
 import { normalizeScenarioState } from "../systems/scenario.js";
+import { normalizeWorldMapSnapshot } from "../systems/world-map.js";
 import { restoreSpecialBiomeState, serializeSpecialBiomeState } from "../systems/special-biome-state.js";
 import { restoreEnvironmentalHazardState, serializeEnvironmentalHazardState } from "../systems/environmental-hazards.js";
 import { restoreBiomeAtlasState, serializeBiomeAtlasState } from "../systems/biome-resource-state.js";
@@ -241,6 +242,7 @@ export function createSaveSnapshot() {
         winter: serializeWinterState(),
         endless: JSON.parse(JSON.stringify(state.endless || {})),
         scenario: normalizeScenarioState(state.scenario),
+        worldMap: normalizeWorldMapSnapshot(state.worldMap),
         specialBiomes: serializeSpecialBiomeState(),
         environmentalHazards: serializeEnvironmentalHazardState(),
         biomeAtlas: serializeBiomeAtlasState(),
@@ -410,6 +412,9 @@ export function restoreSaveSnapshot(snapshot) {
     // progress. Older saves without the field become a free realm; no existing
     // realm is silently given a deadline it never had.
     state.scenario = normalizeScenarioState(snapshot.scenario);
+    // Schema 15: routes, watch levels and frontier incident history survive a
+    // reload. Legacy saves restore an empty world map and keep playing.
+    state.worldMap = normalizeWorldMapSnapshot(snapshot.worldMap);
     state.gameOver = Boolean(snapshot.gameOver);
     // A realm saved at a terminal moment is resumed as a recoverable endless
     // realm. The next tick restores morale and the chronicle continues.

@@ -158,7 +158,7 @@ Art:
 ## 4.0 — Great World and long-running history
 
 - Multiple kingdoms and map regions.
-- World map, trade routes, borders and frontier settlements.
+- World map, trade routes, borders and frontier settlements. **Implemented in 3.50.0:** a WORLD management tab over the real settlement seats and diplomatic realms, standing annual caravans that move goods through the existing market stock and seat depots, and saved frontiers that follow treaties and can raid; see [WORLD_MAP.md](WORLD_MAP.md).
 - Long-term world history, chronicles and generational change.
 - Scenario editor and multiple start conditions. **Implemented in 3.49.0:** five authored openings, a local custom editor and a daily objective that reads the live realm; see [SCENARIOS.md](SCENARIOS.md).
 - Save migration and world simulation performance for long campaigns.

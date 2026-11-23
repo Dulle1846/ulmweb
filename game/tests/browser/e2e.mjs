@@ -515,8 +515,8 @@ try{
     await page.locator("#command-open-btn").click();
     await page.locator("#command-modal").waitFor({state:"visible"});
     assert.ok(await page.locator("#command-modal").isVisible(),"management dialog must open from the top bar");
-    assert.equal(await page.locator("#command-modal .command-deck [data-command-tab]").count(),27,"all twenty-seven management tabs, including the hazard panel, Explore, Biomes, the Atelier, city charter, noble houses, item lexicon and the Whisper Court, must live inside the dialog");
-    // The 1.2.20 hazard panel is the twenty-seventh tab. Prove it opens with the
+    assert.equal(await page.locator("#command-modal .command-deck [data-command-tab]").count(),28,"all twenty-eight management tabs, including the world map, hazard panel, Explore, Biomes, the Atelier, city charter, noble houses, item lexicon and the Whisper Court, must live inside the dialog");
+    // The 1.2.20 hazard panel is the twenty-eighth tab. Prove it opens with the
     // real panel and that the two movement rows render the same factors the
     // simulation reads, rather than only counting a button in the deck.
     await page.locator('[data-command-tab="hazards"]').click();
@@ -1896,6 +1896,20 @@ try{
     const savePauseTick=await page.evaluate(async()=>(await import("./js/core/state.js")).state.tick);
     await page.waitForTimeout(500);
     assert.equal(await page.evaluate(async()=>(await import("./js/core/state.js")).state.tick),savePauseTick,"the save fixture must pause on a settled tick");
+    // A paused realm cannot advance a pending annual maintenance window, but
+    // saving completes it before writing the snapshot. Settle that window here
+    // first so the ecology fixture is sampled from the same state the save
+    // will contain, instead of racing the longer annual task list.
+    const settledMaintenance=await page.evaluate(async()=>{
+        const simulation=await import("./js/simulation/simulation.js");
+        if(!simulation.hasPendingAnnualMaintenance())return false;
+        simulation.finishAnnualMaintenanceForSave();
+        return true;
+    });
+    if(settledMaintenance){
+        await page.waitForTimeout(150);
+        assert.equal(await page.evaluate(async()=>(await import("./js/core/state.js")).state.tick),savePauseTick,"the completed annual window must not advance the settled tick");
+    }
     const savedTick=await page.evaluate(async()=>(await import("./js/core/state.js")).state.tick);
     const savedHand=await page.evaluate(async()=>{const {state}=await import("./js/core/state.js");return state.hand.map(card=>card.instanceId);});
     const savedRoadCount=await page.evaluate(()=>(import("./js/systems/roads.js")).then(module=>module.getRoadCount()));

@@ -1,0 +1,97 @@
+/* World map, standing trade routes and frontier pressure. */
+.world-map-panel{display:flex;flex-direction:column;gap:2px;min-width:0}
+.world-map-panel *{box-sizing:border-box}
+.world-map-panel .command-panel-intro{max-width:960px}
+
+.world-map__legend{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:2px 0 12px}
+.world-map__legend>span{display:inline-flex;align-items:center;gap:5px;padding:3px 7px;border:1px solid #a57c43;border-radius:999px;background:#f7edd8;color:#4b3927;font:700 9px/1.2 "Cinzel",Georgia,serif;letter-spacing:.06em;text-transform:uppercase}
+.world-map__legend>span::before{content:"";width:8px;height:8px;border-radius:50%;background:#9aa77c}
+.world-map__legend>.is-watchful::before{background:#c7a15c}
+.world-map__legend>.is-tense::before{background:#c9834f}
+.world-map__legend>.is-contested::before{background:#b8524c}
+.world-map__legend-note{border-style:dashed!important;background:#efe2c6!important;font-weight:600!important;letter-spacing:.02em!important;text-transform:none!important}
+
+.world-map{margin:0 0 16px;padding:10px;border:2px solid #a57c43;border-radius:10px;background:linear-gradient(160deg,#f9f0d9,#e6d2a8);box-shadow:inset 0 1px #fff8}
+.world-map__canvas{display:block;width:100%;max-width:820px;height:auto;margin:0 auto;border:1px solid #8a6a3c;border-radius:7px;background:#e9dfc4}
+.world-map__sea{fill:#e9dfc4}
+.world-map__grid{stroke:#cdbd97;stroke-width:.35;opacity:.75}
+.world-map__frontier{fill:#9aa77c;fill-opacity:.30;stroke:#7d8a60;stroke-width:1.6}
+.world-map__realm--watchful .world-map__frontier{fill:#c7a15c;stroke:#a8813c}
+.world-map__realm--tense .world-map__frontier{fill:#c9834f;stroke:#a45f34}
+.world-map__realm--contested .world-map__frontier{fill:#b8524c;stroke:#8d332f;fill-opacity:.38}
+.world-map__keep{fill:#4b3927;stroke:#f7ecd4;stroke-width:.6}
+.world-map__realm text{fill:#3d2d20;font:800 3.3px/1 "Cinzel",Georgia,serif;letter-spacing:.06em;text-anchor:middle;paint-order:stroke;stroke:#f5ecd7;stroke-width:1.3}
+.world-map__seat circle{fill:#2f5d7a;stroke:#f7ecd4;stroke-width:.55}
+.world-map__seat .world-map__seat-halo{fill:#2f5d7a;fill-opacity:.18;stroke:none}
+.world-map__route{stroke:#3f6b4b;stroke-width:1.1;stroke-linecap:round;stroke-dasharray:none;opacity:.82}
+.world-map__route.is-stalled{stroke:#b07a36;stroke-dasharray:2.4 1.6}
+.world-map__route.is-closed{stroke:#a34c47;stroke-dasharray:1.4 2}
+#world-map-arrow path{fill:#3f6b4b}
+.world-map figcaption{display:flex;flex-direction:column;gap:2px;margin-top:7px;color:#6d5b40;font:600 10px/1.45 "Cinzel",Georgia,serif;letter-spacing:.04em}
+.world-map figcaption span:first-child{color:#4b3927;font-weight:800}
+
+.world-frontier-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:10px 0 18px}
+.world-frontier{display:flex;flex-direction:column;gap:8px;min-width:0;padding:12px;border:2px solid #a57c43;border-radius:10px;background:linear-gradient(150deg,#fff8e4,#ecd9b2);box-shadow:inset 0 1px #fff9}
+.world-frontier--tense{border-color:#c08a4a}
+.world-frontier--contested{border-color:#a94f49;background:linear-gradient(150deg,#fff0e6,#ecd0c0)}
+.world-frontier__head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.world-frontier__head h4{margin:1px 0 2px;color:#3d2d20;font:800 17px/1.15 "Cinzel",Georgia,serif;letter-spacing:.02em}
+.world-frontier__head p{margin:0;color:#6f5d44;font:500 11px/1.35 Georgia,serif}
+.world-frontier__region{display:block;color:#8a6a3c;font:800 9px/1.2 "Cinzel",Georgia,serif;letter-spacing:.13em;text-transform:uppercase}
+.world-frontier__band{flex:0 0 auto;padding:4px 8px;border:1px solid #7d8a60;border-radius:999px;background:#e9efdc;color:#3f4d2d;font:800 9px/1.2 "Cinzel",Georgia,serif;letter-spacing:.08em;white-space:nowrap}
+.world-frontier--watchful .world-frontier__band{border-color:#a8813c;background:#f7e9c8;color:#6c4d16}
+.world-frontier--tense .world-frontier__band{border-color:#a45f34;background:#f8dfc9;color:#713a18}
+.world-frontier--contested .world-frontier__band{border-color:#8d332f;background:#f3c9c4;color:#6d211e}
+.world-frontier__stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+.world-frontier__stats span{display:flex;flex-direction:column;gap:1px;padding:5px 6px;border:1px solid #c4aa7b;border-radius:5px;background:#fff8e8;color:#806d52;font:700 8px/1.25 "Cinzel",Georgia,serif;letter-spacing:.06em}
+.world-frontier__stats b{color:#3d2d20;font-size:12px;letter-spacing:.01em}
+.world-frontier__hint{margin:0;color:#5d4b35;font:500 11.5px/1.45 Georgia,serif}
+.world-frontier__note{margin:0;color:#7b6a52;font:500 10px/1.4 Georgia,serif}
+.world-frontier__watch{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.world-frontier__watch>span{color:#806d52;font:800 9px/1.2 "Cinzel",Georgia,serif;letter-spacing:.1em}
+.world-watch{display:flex;gap:4px}
+.world-watch__step{display:flex;flex-direction:column;align-items:center;gap:1px;min-width:40px;padding:4px 6px;border:1px solid #a57c43;border-radius:5px;background:#f7ecd4;color:#4b3927;font:800 12px/1 "Cinzel",Georgia,serif;cursor:pointer}
+.world-watch__step small{font:700 7px/1 "Cinzel",Georgia,serif;letter-spacing:.05em;color:#8a6a3c}
+.world-watch__step.is-current{border-color:#3f5d39;background:#dce8d1;color:#2f4429}
+.world-watch__step:disabled{opacity:.55;cursor:default}
+.world-order{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) auto;gap:6px;align-items:end;padding:8px;border:1px dashed #a57c43;border-radius:7px;background:#fff8e8}
+.world-order label{display:flex;flex-direction:column;gap:3px;min-width:0;color:#806d52;font:800 8px/1.2 "Cinzel",Georgia,serif;letter-spacing:.08em}
+.world-order select{width:100%;min-width:0;max-width:100%;padding:5px 4px;border:1px solid #a57c43;border-radius:4px;background:#fffdf5;color:#3d2d20;font:600 10px/1.25 Georgia,serif}
+.world-order>button{min-height:32px;padding:6px 9px;border:1px solid #3f5d39;border-radius:5px;background:#dce8d1;color:#2f4429;font:800 9px/1.2 "Cinzel",Georgia,serif;letter-spacing:.05em;cursor:pointer}
+.world-order>button:disabled{opacity:.55;cursor:default}
+
+.world-routes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:10px 0 16px}
+.world-route{display:flex;flex-direction:column;gap:6px;min-width:0;padding:11px;border:2px solid #a57c43;border-radius:9px;background:linear-gradient(150deg,#fff8e4,#ecd9b2)}
+.world-route--closed{border-color:#a34c47;background:linear-gradient(150deg,#fff0ea,#eccfc6)}
+.world-route--unfunded,.world-route--no-stock,.world-route--depot-short,.world-route--no-buyer,.world-route--abandoned,.world-route--depot-full{border-color:#b07a36}
+.world-route__head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.world-route__head span{display:block;color:#8a6a3c;font:800 8px/1.2 "Cinzel",Georgia,serif;letter-spacing:.1em}
+.world-route__head strong{display:block;margin:2px 0;color:#3d2d20;font:800 13px/1.25 "Cinzel",Georgia,serif}
+.world-route__head small{display:block;color:#6f5d44;font:500 10px/1.35 Georgia,serif}
+.world-route__status{flex:0 0 auto;padding:3px 7px;border:1px solid #3f5d39;border-radius:999px;background:#dce8d1;color:#2f4429;font:800 8px/1.2 "Cinzel",Georgia,serif;letter-spacing:.06em;white-space:nowrap}
+.world-route--closed .world-route__status{border-color:#8d332f;background:#f3c9c4;color:#6d211e}
+.world-route--unfunded .world-route__status,.world-route--no-stock .world-route__status,.world-route--depot-short .world-route__status,.world-route--no-buyer .world-route__status,.world-route--abandoned .world-route__status,.world-route--depot-full .world-route__status{border-color:#a8813c;background:#f7e9c8;color:#6c4d16}
+.world-route__result{margin:0;color:#5d4b35;font:500 11px/1.4 Georgia,serif}
+.world-route__stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
+.world-route__stats span{display:flex;flex-direction:column;gap:1px;padding:4px 5px;border:1px solid #c4aa7b;border-radius:5px;background:#fff8e8;color:#806d52;font:700 7px/1.2 "Cinzel",Georgia,serif;letter-spacing:.05em}
+.world-route__stats b{color:#3d2d20;font-size:11px}
+.world-route__close{align-self:flex-start;padding:4px 8px;border:1px solid #8d332f;border-radius:4px;background:#f3d9d4;color:#6d211e;font:800 8px/1.2 "Cinzel",Georgia,serif;letter-spacing:.06em;cursor:pointer}
+.world-map__record p{margin:0;font-size:10.5px}
+
+@media (max-width:900px){
+ .world-frontier-grid,.world-routes{grid-template-columns:1fr}
+}
+@media (max-width:640px){
+ .world-map{padding:6px}
+ .world-map__canvas{max-width:100%}
+ .world-map__legend{gap:4px}
+ .world-map__legend>span{font-size:8px;padding:2px 6px}
+ .world-frontier{padding:9px}
+ .world-frontier__head{flex-wrap:wrap}
+ .world-frontier__stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .world-frontier__watch{justify-content:flex-start}
+ .world-order{grid-template-columns:1fr 1fr}
+ .world-order>button{grid-column:1 / -1;width:100%}
+ .world-route__stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .world-route__head{flex-wrap:wrap}
+}
