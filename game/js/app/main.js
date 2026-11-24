@@ -841,6 +841,12 @@ function loadCurrentGame(){
     try{
         loadSnapshotIntoGame(profile,save.snapshot);
         markLoadTime("totalMs",loadStarted);
+        // A load replaces the realm under any toast left by the previous one.
+        // Clear that action toast so it cannot report a trade or order that no
+        // longer belongs to the realm now on screen; the save status and event
+        // log carry the load confirmation instead.
+        const actionToast=document.getElementById("action-toast");
+        if(actionToast){actionToast.textContent="";actionToast.classList.remove("is-visible");}
         syncWorldForge(state.worldOptions);
         showStatus("Loaded realm"+(save.migratedFrom!=null?" · save migrated from schema "+save.migratedFrom:"")+(save.restoredFromBackup?" · previous backup restored":"")+" · "+new Date(save.savedAt).toLocaleString());
         setSaveStatus("LOADED · "+new Date(save.savedAt).toLocaleTimeString(),"saved");

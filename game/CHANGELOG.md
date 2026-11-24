@@ -1,6 +1,6 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.53.3`
+**Current production version:** `3.53.4`
 **Next development line:** `3.54.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
@@ -8,6 +8,47 @@
 **Last repository verification:** 2026-11-24 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.53.4 — Quotes, orders and quests tell the truth
+
+The 3.53.3 player pass never actually used the city building, market, realm
+issue, noble host, garrison or expedition controls. This pass drove those
+surfaces at 1440 × 900 and 820 × 1180, and closed the tablet save-slot and
+desktop year-rollover evidence gaps. Two controls were lying and one stale
+toast survived a realm switch:
+
+- **Exact market quotes.** Trade buttons now show the gold the next settlement
+  will really charge or pay, including pacts, health, faith, court, research,
+  debt, spies and weather. Base prices stay on the row labelled `BASE`, and the
+  note explains why the row and the button can differ. Settlement arithmetic
+  is unchanged; both now read one shared quote path.
+- **Truthful noble orders.** A quartered land host shows a disabled `AT HOME`
+  instead of an enabled `RETURN HOME` that did nothing, and a returning host
+  shows a disabled `RETURNING`. Mustering and returning hosts say `NEXT ANNUAL
+  AUDIT` instead of a tick countdown the annual simulation never fulfilled.
+- **A load clears the previous realm's toast.** Loading while `TRADE COMPLETED`
+  was still visible used to leave that action message over the newly loaded
+  realm. The toast is cleared on a successful load; the save status and
+  `SAVE LOADED` event-log entry carry the confirmation.
+- **Player checks.** At 1440 × 900 a cottage charged 5.5 wood + 2 stone and
+  completed at tick 1635 with capacity 28 → 32; its stone upgrade cost 42 gold
+  and raised capacity 26 → 28; demolition returned 8 wood + 2 stone. A city
+  event cost 9 wood + 5 stone and cleared the active event, a realm issue cost
+  5 gold with `REALM ISSUE RESOLVED`, and a Sunken Ruins expedition cost 12 gold
+  + 37 food, returned 36 gold + 18 stone and one survey. At 820 × 1180 a tent
+  cost 2 wood + 0.75 food, completed with capacity 26 → 28, upgraded for 42
+  gold to 28 → 30 and demolished for 2 wood + 2 food. Garrison equipment cost
+  11 gold + 6 wood, added 14 equipment and readiness 63 → 65; a warhorse cost
+  22 gold + 10 food and raised mounted power 26.4 → 31.6. Survey and omen atlas
+  decisions spent their stated 4 food + 2 gold and 3 food, paid their rare-good
+  and 10-gold rewards and reported `ATLAS QUEST RESOLVED`.
+- **Save and year evidence.** The tablet save slot round-tripped tick 1815 with
+  gold 148.5192345772846, wood 376.2638047112622, stone 335.5621014854731 and
+  food 301.8165879180918 exactly. A desktop year 5 → 6 rollover showed `YEAR 6
+  / SPRING` in the HUD, a `YEAR 6 · DAY 2` living notification, year-6 noble and
+  civic audits and the year-6 `The Missing Ledger` issue.
+- **No save or simulation change.** No save field was added or changed and the
+  deterministic simulation, resource costs and annual schedules are untouched.
 
 ## 3.53.3 — A placed card says so
 

@@ -164,6 +164,71 @@ export function getTradePartners() {
     return state.market.partners;
 }
 
+// The price chart is a base quote. Every settlement also reads the partner's
+// diplomatic terms and the current health, faith, court, research, debt and
+// weather factors. Keep those factors in one place so the buttons can show the
+// exact gold the player is about to pay or receive.
+function getTradeFactors(partnerId) {
+    const terms = getDiplomaticTradeTerms(state.diplomacy, partnerId, getCourtModifiers().tradeBonus);
+    const healthTerms = getHealthEconomicEffects();
+    const faithTerms = getFaithModifiers();
+    const justiceTerms = getJusticeModifiers();
+    const researchTerms = getResearchModifiers();
+    const eraTradeFactor = Math.max(1, Math.min(1.20, Number(state.ambitions?.era?.agenda?.modifiers?.tradeFactor) || 1));
+    const tradeFactor = Math.max(0.55, faithTerms.tradeFactor * justiceTerms.tradeFactor * researchTerms.tradeFactor * (1 + getEndeavourModifiers().trade) * eraTradeFactor);
+    const demandFactor = 1 + Math.max(0, Number(faithTerms.festivalDemand) || 0);
+    const debtFactor = getDebtMarketFactor();
+    const spyTerms = getEspionageMarketTerms();
+    const hazardBuy = getHazardTradeBuyFactor();
+    const hazardSell = getHazardTradeSellFactor();
+    return {
+        terms,
+        buyFactor: terms.buyFactor * (1 + healthTerms.tradePenalty) * debtFactor / tradeFactor * spyTerms.buyFactor * hazardBuy,
+        sellFactor: terms.sellFactor * (1 - healthTerms.tradePenalty) * tradeFactor * demandFactor / debtFactor * spyTerms.sellFactor * hazardSell
+    };
+}
+
+function quoteSettlement(partner, resource, direction, quantity, factors) {
+    if (!partner || !MARKET_RESOURCES.includes(resource) || !["buy","sell"].includes(direction)) {
+        return {ok:false,reason:"INVALID TRADE"};
+    }
+    const requestedAmount = Math.max(1,Math.min(25,Math.floor(Number(quantity)||1)));
+    const available = direction === "sell" ? Math.max(0, Number(state.resources[resource]) || 0) : 0;
+    const amount = available > 0 && available < requestedAmount ? available : requestedAmount;
+    if (direction === "sell" && amount <= 0) return {ok:false,reason:"NOT ENOUGH "+resource.toUpperCase()};
+    const price = state.market.prices[resource];
+    if (factors.terms.blocked) return {ok:false,reason:"AT WAR — THE TRADE ROAD IS CLOSED"};
+    if (direction === "buy") {
+        if ((partner.stock[resource]||0) < amount) return {ok:false,reason:"PARTNER OUT OF STOCK"};
+        const gold = Math.ceil(price*amount*factors.buyFactor);
+        return {ok:true,amount,gold,price};
+    }
+    const gold = Math.floor(price*amount*0.82*factors.sellFactor);
+    if (partner.treasury < gold) return {ok:false,reason:"PARTNER TREASURY TOO LOW"};
+    return {ok:true,amount,gold,price};
+}
+
+export function getTradeQuote(partnerId, resource, direction, quantity = 5) {
+    ensureMarket();
+    const partner = state.market.partners.find(item=>item.id===partnerId);
+    if (!partner) return {ok:false,reason:"INVALID TRADE"};
+    return quoteSettlement(partner, resource, direction, quantity, getTradeFactors(partnerId));
+}
+
+// The trade tab needs six quotes per partner. Read the expensive diplomacy,
+// health, faith, court, research, debt and weather terms once per partner and
+// reuse them for every resource and direction.
+export function getTradeOffers(partnerId) {
+    ensureMarket();
+    const partner = state.market.partners.find(item=>item.id===partnerId);
+    if (!partner) return null;
+    const factors = getTradeFactors(partnerId);
+    return Object.fromEntries(MARKET_RESOURCES.map(resource => [resource, {
+        buy: quoteSettlement(partner, resource, "buy", 5, factors),
+        sell: quoteSettlement(partner, resource, "sell", 5, factors)
+    }]));
+}
+
 export function executeTrade(partnerId, resource, direction, quantity = 5) {
     ensureMarket();
     updateMarket();
@@ -178,32 +243,9 @@ export function executeTrade(partnerId, resource, direction, quantity = 5) {
     const available = direction === "sell" ? Math.max(0, Number(state.resources[resource]) || 0) : 0;
     const amount = available > 0 && available < requestedAmount ? available : requestedAmount;
     const price = state.market.prices[resource];
-    const terms = getDiplomaticTradeTerms(state.diplomacy, partnerId, getCourtModifiers().tradeBonus);
     state.market.debtPressure = getDebtPressure();
+    const {terms,buyFactor,sellFactor} = getTradeFactors(partnerId);
     if (terms.blocked) return {ok:false,reason:"AT WAR — THE TRADE ROAD IS CLOSED"};
-    // Quarantine and an active outbreak make every caravan more expensive and
-    // every sale less valuable. Food is still traded, but not exempt from the
-    // public-health surcharge: isolation has a real commercial cost.
-    const healthTerms = getHealthEconomicEffects();
-    const faithTerms = getFaithModifiers();
-    const justiceTerms = getJusticeModifiers();
-    const researchTerms = getResearchModifiers();
-    const eraTradeFactor = Math.max(1, Math.min(1.20, Number(state.ambitions?.era?.agenda?.modifiers?.tradeFactor) || 1));
-    const tradeFactor = Math.max(0.55, faithTerms.tradeFactor * justiceTerms.tradeFactor * researchTerms.tradeFactor * (1 + getEndeavourModifiers().trade) * eraTradeFactor);
-    const demandFactor = 1 + Math.max(0, Number(faithTerms.festivalDemand) || 0);
-    // A crown living on arrears pays more for grain and receives less for what
-    // it sells. The penalty is bounded by the same debt pressure the ledger uses.
-    const debtFactor = getDebtMarketFactor();
-    // Market-watch reports are real commercial intelligence: a bribed clerk
-    // tells the crown which caravan is overstocked before the price moves.
-    const spyTerms = getEspionageMarketTerms();
-    // Caravans price the weather: blocked passes and ruined roads make a
-    // purchase dearer and a sale cheaper. Both factors are exactly 1 in calm
-    // weather, so the old terms remain byte-identical.
-    const hazardBuy = getHazardTradeBuyFactor();
-    const hazardSell = getHazardTradeSellFactor();
-    const buyFactor = terms.buyFactor * (1 + healthTerms.tradePenalty) * debtFactor / tradeFactor * spyTerms.buyFactor * hazardBuy;
-    const sellFactor = terms.sellFactor * (1 - healthTerms.tradePenalty) * tradeFactor * demandFactor / debtFactor * spyTerms.sellFactor * hazardSell;
     if (direction === "buy") {
         const cost = Math.ceil(price*amount*buyFactor);
         if ((partner.stock[resource]||0)<amount) return {ok:false,reason:"PARTNER OUT OF STOCK"};

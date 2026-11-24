@@ -1,7 +1,7 @@
 // UI presentation: player hand, realm events, trade market and statistics.
 import { SEASONS } from "../../core/config.js";
 import { state } from "../../core/state.js";
-import { getTradePartners,MARKET_RESOURCES } from "../../systems/market.js";
+import { getTradePartners,getTradeOffers,MARKET_RESOURCES } from "../../systems/market.js";
 import { getBiomeFrontierSupply } from "../../systems/biome-market-link.js";
 import { getHousingSnapshot } from "../../systems/population.js";
 import { getRoomBonusSnapshot, roomBonusSignature } from "../../systems/rooms.js";
@@ -272,12 +272,18 @@ function renderTrade(container){
         return '<div class="price-chart-row"><strong>'+resource.toUpperCase()+'</strong><div class="price-bars">'+bars+'</div><b>'+Number(prices[resource]).toFixed(2)+'</b></div>';
     }).join("");
     const markup=partners.map(partner=>{
-        const rows=MARKET_RESOURCES.map(resource=>
-            '<div class="trade-resource"><div><strong>'+resource.toUpperCase()+'</strong><small>'+
-            Number(prices[resource]||1).toFixed(2)+' GOLD · STOCK '+(partner.stock[resource]||0)+'</small></div>'+
-            '<div class="trade-actions"><button data-trade="buy" data-partner="'+partner.id+'" data-resource="'+resource+'" data-quantity="5">BUY 5</button>'+
-            '<button data-trade="sell" data-partner="'+partner.id+'" data-resource="'+resource+'" data-quantity="5">SELL 5</button></div></div>'
-        ).join("");
+        const offers=getTradeOffers(partner.id)||{};
+        const rows=MARKET_RESOURCES.map(resource=>{
+            const buyQuote=offers[resource]?.buy||{ok:false};
+            const sellQuote=offers[resource]?.sell||{ok:false};
+            const sellAmount=sellQuote.ok?String(Number.isInteger(sellQuote.amount)?sellQuote.amount:Number(sellQuote.amount.toFixed(1))):"5";
+            const buyLabel=buyQuote.ok?'BUY 5 · '+buyQuote.gold+'G':'BUY 5';
+            const sellLabel=sellQuote.ok?'SELL '+sellAmount+' · '+sellQuote.gold+'G':'SELL 5';
+            return '<div class="trade-resource"><div><strong>'+resource.toUpperCase()+'</strong><small>'+
+            'BASE '+Number(prices[resource]||1).toFixed(2)+' GOLD · STOCK '+(partner.stock[resource]||0)+'</small></div>'+
+            '<div class="trade-actions"><button data-trade="buy" data-partner="'+partner.id+'" data-resource="'+resource+'" data-quantity="5" title="'+(buyQuote.ok?'Buy 5 '+resource+' for '+buyQuote.gold+' gold':'Buy 5 '+resource)+'">'+buyLabel+'</button>'+
+            '<button data-trade="sell" data-partner="'+partner.id+'" data-resource="'+resource+'" data-quantity="5" title="'+(sellQuote.ok?'Sell '+sellAmount+' '+resource+' for '+sellQuote.gold+' gold':'Sell '+resource)+'">'+sellLabel+'</button></div></div>';
+        }).join("");
         return '<article class="trade-partner"><div class="trade-partner-head"><div><strong>'+esc(partner.name)+'</strong>'+
             '<small>'+esc(partner.region)+' · '+esc(partner.specialty)+'</small></div><span class="trade-treasury">✦ '+partner.treasury+' gold</span></div>'+rows+'</article>';
     }).join("");
@@ -288,7 +294,7 @@ function renderTrade(container){
         '<div class="trade-summary"><span>FRONTIER SUPPLY</span><strong>CHARTED BIOMES → NEXT QUOTE</strong></div>'+
         '<div class="price-chart frontier-supply">'+frontierRows+'</div>'+
         '<div class="trade-note">Harvesting lowers a region\'s stock and extraction health, so the next 90-day quote rises; protection and regrowth ease it. Stored frontier goods sell at the current quote.</div>'+
-        '<div class="trade-note">Seasonal prices and regional stock fluctuate. Selling pays 82% of the listed price.</div>'+
+        '<div class="trade-note">Buttons quote the gold actually settled for this partner now; row prices are base quotes before pacts, health, court, debt and weather terms.</div>'+
         '<div class="price-chart">'+chart+'</div>'+
         '<div class="trade-partners">'+markup+'</div>';
 }

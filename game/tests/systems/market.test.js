@@ -1,7 +1,7 @@
 import test,{beforeEach} from "node:test";
 import assert from "node:assert/strict";
 import {resetState,state} from "../../js/core/state.js";
-import {createMarketState,executeTrade,updateMarket} from "../../js/systems/market.js";
+import {createMarketState,executeTrade,getTradeOffers,getTradeQuote,updateMarket} from "../../js/systems/market.js";
 
 beforeEach(()=>{
     resetState();
@@ -28,6 +28,25 @@ test("selling goods pays gold and adds stock to the partner",()=>{
     assert.equal(state.incomeThisTick.gold,result.gold);
     assert.equal(state.market.partners[0].stock.wood,stockBefore+5);
 });
+test("trade buttons quote the exact gold the settlement charges and pays",()=>{
+    const buyQuote=getTradeQuote("northmere","wood","buy",5);
+    assert.equal(buyQuote.ok,true);
+    const bought=executeTrade("northmere","wood","buy",5);
+    assert.equal(bought.ok,true);
+    assert.equal(bought.amount,buyQuote.amount);
+    assert.equal(bought.gold,buyQuote.gold);
+
+    const offers=getTradeOffers("northmere");
+    assert.equal(offers.wood.buy.gold,buyQuote.gold);
+    const sellQuote=getTradeQuote("northmere","wood","sell",5);
+    assert.equal(sellQuote.ok,true);
+    assert.equal(offers.wood.sell.gold,sellQuote.gold);
+    const sold=executeTrade("northmere","wood","sell",5);
+    assert.equal(sold.ok,true);
+    assert.equal(sold.amount,sellQuote.amount);
+    assert.equal(sold.gold,sellQuote.gold);
+});
+
 test("selling clears a fractional remainder below a whole lot",()=>{
     state.resources.food=4.62;
     const before=state.resources.gold;
