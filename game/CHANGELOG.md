@@ -1,6 +1,6 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.53.0`
+**Current production version:** `3.53.1`
 **Next development line:** `3.54.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
@@ -8,6 +8,25 @@
 **Last repository verification:** 2026-11-24 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.53.1 — The mobile map holds still
+
+On a phone, the world stage was sized with `dvh`. When the browser address bar
+hid while the page scrolled, the stage grew by about 33 px, the canvas was
+resized and everything below it reflowed — the visible screen shake players
+reported. The phone layout now uses the stable small viewport (`svh`, with a
+`vh` fallback) for the map and shell, and the page refuses overscroll bounce, so
+scrolling no longer drags or resizes the realm. The Settings plate also reports
+the real release version instead of the stale `v3.14.2` marker.
+
+- **Stable phone stage.** `48svh` with a `48vh` fallback replaces `48dvh`;
+  `100svh` with `100vh` replaces the dynamic shell minimum. The canvas keeps its
+  size while browser chrome appears or disappears.
+- **No page drag.** Mobile `html, body` use `overscroll-behavior-y:none`, so a
+  pan that reaches a page edge cannot rubber-band the whole game shell.
+- **Player check.** The real game was driven at 390 × 844 through founding, the
+  map, Management (Realm, People, Nobility, Diplomacy), Build and Settings. No
+  screen had horizontal overflow, clipped controls or console errors.
 
 ## 3.53.0 — Heavy panels open without a hitch
 

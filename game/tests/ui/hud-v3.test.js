@@ -135,3 +135,9 @@ test("the founding plate never traps the form on short or narrow screens",()=>{
   assert.ok(hud.includes(".start-panel .start-form{"));
   assert.ok(hud.includes(".world-forge{display:grid;grid-template-columns:1fr 1fr;"));
 });
+
+test("the mobile map stays stable when browser chrome changes the dynamic viewport",()=>{
+  assert.ok(hud.includes("overscroll-behavior-y:none"),"page overscroll must not drag the whole game shell");
+  assert.ok(hud.includes("height:clamp(260px,48vh,520px);height:clamp(260px,48svh,520px)"),"the map needs a stable svh size with a vh fallback");
+  assert.ok(hud.includes("min-height:100vh;min-height:100svh"),"the shell needs the same stable viewport fallback");
+});

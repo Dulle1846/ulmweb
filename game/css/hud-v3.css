@@ -838,10 +838,15 @@ body.reduce-interface-motion .tab-button{transition:none;animation:none}
    and the panel grows to its content instead of hiding it behind a 120px
    internal scrollport. */
 @media(max-width:900px){
-  html,body{height:auto;min-height:100%;overflow-x:hidden;overflow-y:auto}
-  .game-shell{height:auto;min-height:100dvh}
+  /* Mobile browser chrome (address bar) changes the dynamic viewport height.
+     Sizing the map with dvh made it grow and shrink by ~33px whenever that
+     chrome hid or reappeared, which resized the canvas and visibly shook the
+     page while scrolling. svh is the stable small viewport; vh is the fallback
+     for browsers without svh. */
+  html,body{height:auto;min-height:100%;overflow-x:hidden;overflow-y:auto;overscroll-behavior-y:none}
+  .game-shell{height:auto;min-height:100vh;min-height:100svh}
   .game-layout{flex:1 1 auto;overflow:visible}
-  .world-stage{flex:0 0 auto;height:clamp(260px,48dvh,520px);min-height:260px}
+  .world-stage{flex:0 0 auto;height:clamp(260px,48vh,520px);height:clamp(260px,48svh,520px);min-height:260px}
   .side-panel{flex:0 0 auto;max-height:none;min-height:0;overflow:visible;padding-bottom:14px}
   .realm-action-dock{position:sticky;bottom:0;z-index:45}
 }
