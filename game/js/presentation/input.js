@@ -12,6 +12,7 @@ import { getRoadBuildMode,placeRoad,removeRoad } from "../systems/roads.js";
 import { isWorkshopOpen,handleWorkshopClick,cancelWorkshopTool,closeWorkshop } from "./build-mode.js";
 import { placeDirectBuilding,constructionStatus } from "../systems/construction.js";
 import { cancelBuildPlacement } from "./build-ui.js";
+import { mapKeyboardIntent, mapModifiedKeyboardIntent, isInteractiveTarget } from "./keyboard-map.js";
 
 export function setupInput(){
     const canvas=state.canvas;
@@ -187,16 +188,59 @@ export function setupInput(){
         }
     }
 
-    // Escape is the only gameplay-independent key the page still listens for:
-    // it cancels a drag or closes the topmost dialog. Panning and every other
-    // control are pointer- or button-driven.
+    // Escape cancels a drag or closes the topmost dialog. The other shortcuts
+    // mirror the visible controls so keyboard and switch users can play without
+    // a pointer. Text entry, open dialogs and focused controls keep their own
+    // key handling.
     window.addEventListener("keydown",event=>{
-        if(event.key!=="Escape")return;
-        if(cardPointerId!==null)endCardDrag();
-        if(state.buildTool){cancelWorkshopTool();return;}
-        if(isWorkshopOpen()){closeWorkshop();return;}
-        if(state.directBuildType||getRoadBuildMode()){cancelBuildPlacement();return;}
-        closeTopModal();
+        if(event.key==="Escape"){
+            if(cardPointerId!==null)endCardDrag();
+            if(state.buildTool){cancelWorkshopTool();return;}
+            if(isWorkshopOpen()){closeWorkshop();return;}
+            if(state.directBuildType||getRoadBuildMode()){cancelBuildPlacement();return;}
+            closeTopModal();
+            return;
+        }
+        if(isInteractiveTarget(event.target))return;
+        const modifiedIntent=mapModifiedKeyboardIntent(event.key,event);
+        if(modifiedIntent){
+            event.preventDefault();
+            if(event.repeat||isMapInputBlocked())return;
+            if(modifiedIntent.save)document.getElementById("save-btn")?.click();
+            else if(modifiedIntent.load)document.getElementById("load-btn")?.click();
+            return;
+        }
+        if(event.ctrlKey||event.metaKey||event.altKey)return;
+        if(isMapInputBlocked())return;
+        const intent=mapKeyboardIntent(event.key);
+        if(!intent)return;
+        if(intent.place){
+            if(event.repeat||!state.currentCard)return;
+            event.preventDefault();
+            const centerX=canvas.clientWidth/2||canvas.width/((state.renderScale||1)*2);
+            const centerY=canvas.clientHeight/2||canvas.height/((state.renderScale||1)*2);
+            const world=screenToWorld(centerX,centerY);
+            if(placeCurrentCard(Math.floor(world.x),Math.floor(world.y)))renderUI();
+            return;
+        }
+        if(intent.togglePause||intent.help){
+            if(event.repeat)return;
+            event.preventDefault();
+            if(intent.togglePause)togglePause();else showHelp();
+            return;
+        }
+        if(intent.zoomLevel||intent.zoomDelta){
+            if(event.repeat)return;
+            event.preventDefault();
+            if(intent.zoomLevel)setZoomLevel(intent.zoomLevel);
+            else applyZoomDelta(intent.zoomDelta,canvas.clientWidth/2,canvas.clientHeight/2);
+            return;
+        }
+        event.preventDefault();
+        state.zoomAnchor=null;
+        state.camera.x+=intent.panX;
+        state.camera.y+=intent.panY;
+        clampCamera();
     });
 
     document.getElementById("pause-btn")?.addEventListener("click",togglePause);
@@ -340,7 +384,7 @@ function setSpeed(speed){state.gameSpeed=speed;document.querySelectorAll(".speed
 function switchTab(tab){state.selectedTab=tab;document.querySelectorAll(".tab-button").forEach((button,index)=>button.classList.toggle("is-active",index===tab));renderUI();}
 function showHelp(){
     showBigMessage("HOW TO PLAY",
-        "• Drag anywhere on the map to pan; scroll to change detail level<br>• Open the Cards tab and draw a card when you want one<br>• Select it, then drag it from the Selected Card panel onto the map, or tap a map tile on a touch device<br>• Use the zoom presets and the pause button; no keyboard is needed<br><br><strong>Build. Protect. Prosper.</strong>",0);
+        "• Drag anywhere on the map to pan; scroll to change detail level<br>• Arrow keys or WASD pan; Enter or Space places a selected card on the centre tile<br>• P pauses, 1–4 and +/− change detail level, ? opens this sheet and Esc closes dialogs<br>• Open the Cards tab and draw a card when you want one<br>• Select it, then drag it from the Selected Card panel onto the map, or tap a map tile on a touch device<br><br><strong>Build. Protect. Prosper.</strong>",0);
 }
 function showToast(message){
     const el=document.getElementById("action-toast");if(!el)return;
@@ -348,7 +392,26 @@ function showToast(message){
     window.clearTimeout(showToast.timer);showToast.timer=window.setTimeout(()=>el.classList.remove("is-visible"),1800);
 }
 function closeTopModal(){
-    for(const id of ["settings-modal","people-modal","big-message"]){
-        const el=document.getElementById(id);if(el&&!el.classList.contains("hidden")){el.classList.add("hidden");return;}
+    const realmEvent=document.getElementById("realm-event-modal");
+    if(realmEvent&&!realmEvent.classList.contains("hidden")){
+        if(state.activeEvent)state.activeEvent.dismissed=true;
+        realmEvent.classList.add("hidden");
+        renderUI();
+        return;
     }
+    for(const id of ["settings-modal","people-modal","big-message"]){
+        const el=document.getElementById(id);
+        if(el&&!el.classList.contains("hidden")){
+            el.classList.add("hidden");
+            if(id==="settings-modal")document.dispatchEvent(new CustomEvent("kac:settings-dismissed"));
+            return;
+        }
+    }
+}
+function isMapInputBlocked(){
+    if(state.buildTool||isWorkshopOpen()||state.directBuildType||getRoadBuildMode())return true;
+    for(const el of document.querySelectorAll(".screen-overlay")){
+        if(!el.classList.contains("hidden"))return true;
+    }
+    return false;
 }

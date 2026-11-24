@@ -159,6 +159,12 @@ export function validateSaveSnapshot(snapshot) {
     if (!Number.isSafeInteger(Number(snapshot.worldSeed)) || Number(snapshot.worldSeed) <= 0) {
         fail("Save data has an invalid world seed.", { code: "INVALID_WORLD_SEED", field: "worldSeed", valueType: typeOf(snapshot.worldSeed), phase: "structure" });
     }
+    if (snapshot.timeOfDay !== undefined) {
+        const hour = Number(snapshot.timeOfDay);
+        if (!Number.isFinite(hour) || hour < 0 || hour > 23) {
+            fail("Save data has an invalid time of day.", { code: "INVALID_TIME_OF_DAY", field: "timeOfDay", valueType: typeOf(snapshot.timeOfDay), phase: "structure" });
+        }
+    }
     if (!Array.isArray(snapshot.entities) || snapshot.entities.length > 900) {
         fail("Save data has an invalid or oversized entity list.", { code: "INVALID_ENTITY_LIST", field: "entities", valueType: typeOf(snapshot.entities), phase: "entities" });
     }

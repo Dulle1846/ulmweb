@@ -179,6 +179,7 @@ const DEFAULT_SETTINGS = Object.freeze({
     frameLimit: 60,
     renderScale: 1,
     showFps: false,
+    timeOfDay: 12,
 });
 
 export function normalizeSettings(rawSettings = {}) {
@@ -186,6 +187,7 @@ export function normalizeSettings(rawSettings = {}) {
     const musicVolume = Number(settings.musicVolume);
     const frameLimit = Number(settings.frameLimit);
     const renderScale = Number(settings.renderScale);
+    const timeOfDay = Number(settings.timeOfDay);
     return {
         musicEnabled: settings.musicEnabled !== false,
         musicVolume: Number.isFinite(musicVolume) ? Math.max(0, Math.min(1, musicVolume)) : DEFAULT_SETTINGS.musicVolume,
@@ -196,6 +198,7 @@ export function normalizeSettings(rawSettings = {}) {
         frameLimit: FRAME_LIMITS.has(frameLimit) ? frameLimit : DEFAULT_SETTINGS.frameLimit,
         renderScale: RENDER_SCALES.has(renderScale) ? renderScale : DEFAULT_SETTINGS.renderScale,
         showFps: settings.showFps === true,
+        timeOfDay: Number.isFinite(timeOfDay) ? Math.max(0, Math.min(23, Math.round(timeOfDay))) : DEFAULT_SETTINGS.timeOfDay,
     };
 }
 

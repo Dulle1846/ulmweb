@@ -1098,3 +1098,12 @@ test("51 producers cannot reserve more inbound warehouse space than remains", ()
     assert.equal(sources[2].inventory.reservedOut.logs, 0);
     assertPhysicalBooks();
 });
+
+test("the repeated-normalization fast path never enters a saved city", () => {
+    setup();
+    const mill = place(TYPE.MILL, 70, 70);
+    ensureInventory(mill);
+    ensureInventory(mill);
+    assert.equal(Object.keys(mill.inventory).some(key => key.startsWith("__kac")), false);
+    assert.equal(JSON.stringify(serializeCity()).includes("__kacNormalized"), false);
+});

@@ -4,11 +4,12 @@ import {readFile} from "node:fs/promises";
 import {activateSkipLink,createBackgroundInert} from "../../js/presentation/modal-accessibility.js";
 
 const root=new URL("../../",import.meta.url);
-const [html,css,main,modal]=await Promise.all([
+const [html,css,main,modal,input]=await Promise.all([
   readFile(new URL("index.html",root),"utf8"),
   readFile(new URL("css/ui-design-system.css",root),"utf8"),
   readFile(new URL("js/app/main.js",root),"utf8"),
-  readFile(new URL("js/presentation/modal-accessibility.js",root),"utf8")
+  readFile(new URL("js/presentation/modal-accessibility.js",root),"utf8"),
+  readFile(new URL("js/presentation/input.js",root),"utf8")
 ]);
 
 class FakeElement{
@@ -51,6 +52,14 @@ test("all full-screen overlays expose accessible modal names",()=>{
     assert.ok(tag.includes('role="dialog"')&&tag.includes('aria-modal="true"'),id+" must expose dialog semantics");
     assert.ok(tag.includes("aria-labelledby="),id+" must have an accessible name");
   }
+});
+
+test("Escape dismisses realm issues and reports settings dismissal",()=>{
+  assert.ok(input.includes('id of ["settings-modal","people-modal","big-message"]'),"Escape must still close the ordinary dialogs");
+  assert.ok(input.includes('getElementById("realm-event-modal")'));
+  assert.ok(input.includes("state.activeEvent.dismissed=true"));
+  assert.ok(input.includes('new CustomEvent("kac:settings-dismissed")'));
+  assert.ok(main.includes('addEventListener("kac:settings-dismissed"'));
 });
 
 test("modal focus manager traps tab navigation and restores the opener",()=>{

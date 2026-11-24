@@ -135,6 +135,24 @@ test("an objective is completed once, rewards the live economy and never pays tw
     assert.equal(validateScenarioState(state.scenario), true);
 });
 
+test("a custom scenario name is escaped before it reaches a presentation message", () => {
+    resetState();
+    state.legacy = createLegacyState({ foundedYear: 1 });
+    state.resources.food = 120;
+    state.scenario = createScenarioState(customDefinition({
+        name: '<img src=x onerror="alert(1)">'
+    }), { year: 1, day: 20 });
+    state.year = 1;
+    state.dayOfYear = 20;
+    assert.equal(updateScenario(), true);
+    const messages = (state.pendingPresentationEffects || []).filter(effect => effect.type === "message");
+    assert.ok(messages.length > 0, "completion must queue a presentation message");
+    const subtitle = messages[messages.length - 1].subtitle;
+    assert.equal(subtitle.includes("<img"), false, "raw markup must not reach the message");
+    assert.ok(subtitle.includes("&lt;IMG"), "the name must be HTML-escaped");
+    assert.ok(subtitle.includes("&quot;"), "quotes must be HTML-escaped");
+});
+
 test("a missed deadline applies its consequence once and records the failure", () => {
     resetState();
     state.legacy = createLegacyState({ foundedYear: 1 });

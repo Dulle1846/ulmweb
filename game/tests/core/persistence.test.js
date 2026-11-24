@@ -77,7 +77,7 @@ test("a save envelope is linked to its local profile and version",()=>{
 });
 test("settings are clamped and persisted with safe defaults",()=>{
     installStorage();
-    saveSettings({musicEnabled:true,musicVolume:2,showTooltips:false,reduceMotion:true,highContrast:true});
+    saveSettings({musicEnabled:true,musicVolume:2,showTooltips:false,reduceMotion:true,highContrast:true,timeOfDay:19});
     const settings=loadSettings();
     assert.equal(settings.musicEnabled,true);
     assert.equal(settings.musicVolume,1);
@@ -87,6 +87,7 @@ test("settings are clamped and persisted with safe defaults",()=>{
     assert.equal(settings.frameLimit,60);
     assert.equal(settings.renderScale,1);
     assert.equal(settings.showFps,false);
+    assert.equal(settings.timeOfDay,19);
     assert.equal("terrainRenderer" in settings,false,"the removed renderer switch must not persist");
     assert.equal("adaptiveQuality" in settings,false,"the removed adaptive setting must not persist");
 
@@ -97,10 +98,11 @@ test("settings are clamped and persisted with safe defaults",()=>{
     assert.equal(performanceSettings.showFps,true);
     assert.equal(performanceSettings.highContrast,false);
 
-    saveSettings({frameLimit:120,renderScale:0.33});
+    saveSettings({frameLimit:120,renderScale:0.33,timeOfDay:42.6});
     const sanitized=loadSettings();
     assert.equal(sanitized.frameLimit,60);
     assert.equal(sanitized.renderScale,1);
+    assert.equal(sanitized.timeOfDay,23);
 });
 
 test("a second save preserves the previous valid realm as a recovery backup",()=>{

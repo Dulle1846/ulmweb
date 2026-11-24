@@ -156,6 +156,10 @@ test("interface settings ship with safe defaults and persist", () => {
     }
     assert.ok(main.includes("hide-resource-deltas"));
     assert.ok(main.includes("reduce-interface-motion"));
+    assert.ok(main.includes('deltasToggle.checked=settings.showDeltas!==false'), "the toggle must reflect the saved setting");
+    assert.ok(main.includes('deltasToggle.addEventListener("change"'), "the toggle must react to player changes");
+    assert.ok(main.includes("settings.showDeltas=event.target.checked"), "changes must update the persisted setting");
+    assert.ok(main.includes("applyInterfaceSettings();saveSettings(settings)"), "changes must apply and persist immediately");
 });
 
 test("cards are drawn on request instead of on a hidden timer", () => {

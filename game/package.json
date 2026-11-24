@@ -1,10 +1,10 @@
 {
   "name": "kings-and-cards",
-  "version": "3.53.4",
+  "version": "3.54.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test && node scripts/check-syntax.js",
+    "test": "node --test --test-concurrency=2 && node scripts/check-syntax.js",
     "spec:audit": "node scripts/spec-audit.mjs",
     "build:runtime": "node scripts/build-runtime.mjs",
     "test:e2e:setup": "node tests/browser/setup-e2e.mjs",

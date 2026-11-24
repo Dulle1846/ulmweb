@@ -906,7 +906,13 @@ try{
     });
     console.log("Creature species fixture:",JSON.stringify(speciesFixture));
     assert.ok(speciesFixture.some(creature=>creature.species==="wyvern"&&!creature.isDragon&&creature.icon==="🦇"),"the species selector must create a real non-dragon creature");
-    assert.ok((await page.locator("#command-panel-content").innerText()).includes("WYVERN"),"the bestiary must expose the new species");
+    // Species rows use content-visibility:auto, so off-screen rows are absent
+    // from innerText until painted. The DOM contract is what the bestiary
+    // exposes; wait for that text and read it from the same source as the
+    // panel's other hydration waits.
+    await waitForPanelText("WYVERN");
+    assert.ok((await page.locator("#command-panel-content").textContent()).includes("WYVERN"),"the bestiary must expose the new species");
+    await waitForPanelSelector('#command-panel-content .creature-record:not(.is-memorial) [data-creature-species="wyvern"] use');
     const wyvernPortrait=page.locator('#command-panel-content .creature-record:not(.is-memorial) [data-creature-species="wyvern"] use').last();
     assert.equal(await wyvernPortrait.getAttribute("href"),"assets/royal-creature-atlas.svg#wyvern","the wyvern must use its authored species portrait");
 

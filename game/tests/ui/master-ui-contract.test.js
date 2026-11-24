@@ -196,7 +196,7 @@ test("settings expose local save slots, import/export and version/credits metada
   assert.ok(html.includes('id="export-save-btn"'));
   assert.ok(html.includes('id="import-save-input"'));
   assert.ok(html.includes('id="save-archive-status"'));
-  assert.ok(html.includes("KINGS &amp; CARDS · <b>v3.53.4</b>"));
+  assert.ok(html.includes("KINGS &amp; CARDS · <b>v3.54.0</b>"));
   assert.ok(management.includes('data-command="crown-grain"'));
   assert.ok(management.includes('data-command="crown-water"'));
   assert.ok(management.includes('data-command="crown-housing"'));
@@ -213,6 +213,17 @@ test("settings expose local save slots, import/export and version/credits metada
   }
 });
 
+test("advertised keyboard shortcuts match the wired commands",()=>{
+  const shortcutStart=html.indexOf('<div class="shortcut-list">');
+  const shortcutEnd=html.indexOf('<div class="profile-note">',shortcutStart);
+  assert.ok(shortcutStart>=0&&shortcutEnd>shortcutStart);
+  const shortcuts=html.slice(shortcutStart,shortcutEnd);
+  assert.ok(!shortcuts.includes("<kbd>SPACE</kbd>"),"Space places a card, it must not be advertised as pause");
+  for(const binding of ["<kbd>P</kbd>","<kbd>ENTER / SPACE</kbd>","<kbd>1–4</kbd>","<kbd>+ / −</kbd>","<kbd>W A S D / ARROWS</kbd>","<kbd>CTRL+S / CTRL+O</kbd>","<kbd>? / ESC</kbd>"]){
+    assert.ok(shortcuts.includes(binding),"shortcut list is missing "+binding);
+  }
+});
+
 test("settings expose a live device benchmark with visible results and safe restoration",()=>{
   for(const id of ["run-performance-benchmark","performance-benchmark-status","performance-benchmark-progress","performance-benchmark-results","performance-benchmark-body","performance-benchmark-live","performance-benchmark-live-status","performance-benchmark-live-progress","performance-benchmark-cancel"]){
     assert.ok(html.includes('id="'+id+'"'),"benchmark UI is missing "+id);
@@ -225,6 +236,14 @@ test("settings expose a live device benchmark with visible results and safe rest
   assert.ok(main.includes("BENCHMARK_MIN_FRAMES"));
   assert.ok(main.includes("setBenchmarkLiveVisible(true)"));
   assert.ok(main.includes("setBenchmarkLiveVisible(false)"));
+  assert.ok(html.includes('id="performance-benchmark-status" class="performance-benchmark__status" role="status" aria-live="polite">Start or load a realm first.'),"disabled benchmark must not claim it found a realm");
+  assert.ok(main.includes("function benchmarkUnavailableMessage()"));
+  assert.ok(main.includes('"Start or load a realm first."'));
+  assert.ok(main.includes('"Renderer unavailable after an internal error."'));
+  assert.ok(main.includes('"Live scene ready · measure your device below."'),"a live realm must replace the stale blocked hint");
+  assert.ok(main.includes("benchmarkSettingsWasOpen"));
+  assert.ok(main.includes("benchmarkSettingsDismissed"));
+  assert.ok(main.includes('addEventListener("kac:settings-dismissed"'));
   assert.ok(hud.includes(".performance-benchmark__table"));
   assert.ok(hud.includes(".benchmark-live__panel"));
 });

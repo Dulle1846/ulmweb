@@ -53,7 +53,7 @@
             <button id="road-build-cancel" class="control-button hidden" type="button">EXIT BUILD</button>
             <button id="command-open-btn" class="control-button" type="button" aria-haspopup="dialog" aria-controls="command-modal">MANAGEMENT</button>
             <button id="settings-btn" class="control-button settings-button" type="button" title="Settings" aria-label="Settings"><svg class="settings-glyph" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V21h-4v-.09A1.7 1.7 0 0 0 9 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1.03H3v-4h.09A1.7 1.7 0 0 0 4.6 8.96a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-1.56V3h4v.09A1.7 1.7 0 0 0 15 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 8.96 1.7 1.7 0 0 0 20.96 10H21v4h-.04A1.7 1.7 0 0 0 19.4 15Z"/></svg></button>
-            <button id="pause-btn" class="control-button" type="button" aria-label="Pause simulation"><span id="pause-text">PAUSE</span></button>
+            <button id="pause-btn" class="control-button" type="button" aria-label="Pause simulation" title="Pause · P"><span id="pause-text">PAUSE</span></button>
             <div class="speed-group" role="group" aria-label="Simulation speed">
                 <button id="speed-0-5" class="speed-button" data-speed="0.5" type="button">0.5×</button>
                 <button id="speed-1" class="speed-button is-active" data-speed="1" type="button">1×</button>
@@ -490,7 +490,7 @@
                 <div><strong id="performance-benchmark-title">Device benchmark</strong><small>Measure the live Canvas 2D scene at 100, 85, 70 and 50% scale. Your saved settings return when it finishes.</small></div>
                 <button id="run-performance-benchmark" class="ui-button ui-button--secondary secondary-button performance-benchmark__run" type="button" disabled>RUN BENCHMARK</button>
             </div>
-            <p id="performance-benchmark-status" class="performance-benchmark__status" role="status" aria-live="polite">Found a realm to benchmark the live scene.</p>
+            <p id="performance-benchmark-status" class="performance-benchmark__status" role="status" aria-live="polite">Start or load a realm first.</p>
             <div id="performance-benchmark-meta" class="performance-benchmark__device hidden"></div>
             <progress id="performance-benchmark-progress" class="performance-benchmark__progress hidden" max="4" value="0" aria-label="Benchmark progress"></progress>
             <div id="performance-benchmark-results" class="performance-benchmark__results hidden">
@@ -514,13 +514,13 @@
         </section>
         <div class="shortcut-list">
             <h3>KEYBOARD &amp; SHORTCUTS</h3>
-            <div><span>Pause / Resume</span><kbd>SPACE</kbd></div><div><span>Zoom detail levels</span><kbd>1–4</kbd></div>
-            <div><span>Zoom in / out</span><kbd>+ / −</kbd></div><div><span>Pan the world</span><kbd>W A S D / ARROWS</kbd></div>
-            <div><span>Toggle music</span><kbd>M</kbd></div><div><span>Save / Load</span><kbd>CTRL+S / CTRL+O</kbd></div>
-            <div><span>Help / close</span><kbd>? / ESC</kbd></div>
+            <div><span>Pause / Resume</span><kbd>P</kbd></div><div><span>Place selected card</span><kbd>ENTER / SPACE</kbd></div>
+            <div><span>Zoom detail levels</span><kbd>1–4</kbd></div><div><span>Zoom in / out</span><kbd>+ / −</kbd></div>
+            <div><span>Pan the world</span><kbd>W A S D / ARROWS</kbd></div><div><span>Toggle music</span><kbd>M</kbd></div>
+            <div><span>Save / Load</span><kbd>CTRL+S / CTRL+O</kbd></div><div><span>Help / close</span><kbd>? / ESC</kbd></div>
         </div>
         <div class="profile-note">Saves are currently stored per local browser profile. Do not use this as secure multi-user authentication or cloud backup.</div>
-        <div class="settings-meta"><span>KINGS &amp; CARDS · <b>v3.53.4</b></span><span>ORIGINAL INTERFACE · LOCAL-FIRST · VANILLA HTML / CSS / JS</span></div>
+        <div class="settings-meta"><span>KINGS &amp; CARDS · <b>v3.54.0</b></span><span>ORIGINAL INTERFACE · LOCAL-FIRST · VANILLA HTML / CSS / JS</span></div>
     </div>
 </div>
 

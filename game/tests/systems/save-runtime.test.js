@@ -61,7 +61,9 @@ test("a mature realm survives an exact save/load round-trip through schema 8 and
     try {
         const campaign = runCampaign({ years: 25, onInitialized: initializeAuditRealm });
         assert.equal(campaign.ok, true, "the fixture campaign must remain healthy");
+        state.timeOfDay = 19;
         const saved = JSON.parse(JSON.stringify(createSaveSnapshot()));
+        assert.equal(saved.timeOfDay, 19, "the chosen hour is part of the saved realm");
         assert.equal(saved.worldMap.version, 1, "the world survey is part of the saved realm");
         assert.equal(saved.worldMap.frontiers.length, 4, "all four frontiers are saved");
         // The browser validates an import before initWorld replaces the current
@@ -89,6 +91,7 @@ test("a mature realm survives an exact save/load round-trip through schema 8 and
             const restored = JSON.parse(JSON.stringify(createSaveSnapshot()));
             const delta = differences(saved, restored);
             assert.deepEqual(delta, [], "schema " + schema + " round-trip must reproduce the exact snapshot");
+            assert.equal(restored.timeOfDay, 19, "schema " + schema + " load must restore the chosen hour");
             assert.equal(restored.tick, saved.tick);
             assert.equal(restored.year, saved.year);
             assert.deepEqual(restored.resources, saved.resources);

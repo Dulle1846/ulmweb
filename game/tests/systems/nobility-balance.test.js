@@ -46,34 +46,46 @@ test("the noble health gate rejects permanent dormancy and withheld dues", () =>
     assert.equal(evaluateNobleHealth({ finalMembers: 3, audits: missing }).ok, false);
 });
 
-test("noble houses stay viable across the fixed 25-year seed sweep", { timeout: 240_000 }, async () => {
-    const audited = [];
-    for (const seed of NOBLE_AUDIT_SEEDS) {
-        let stdout;
-        try {
-            const result = await execFileAsync(process.execPath, [auditChild], {
-                cwd: gameRoot,
-                timeout: 120_000,
-                maxBuffer: 4 * 1024 * 1024,
-                env: {
-                    ...process.env,
-                    NOBLE_AUDIT_CHILD: "1",
-                    NOBLE_AUDIT_SEED: String(seed),
-                    NOBLE_AUDIT_YEARS: String(NOBLE_AUDIT_YEARS)
-                }
-            });
-            stdout = result.stdout;
-        } catch (error) {
-            const detail = String(error?.stderr || error?.message || error);
-            assert.fail(`noble audit failed for seed ${seed}: ${detail}`);
+// Each seed still runs in its own process, so no campaign module state can
+// leak between seeds. Two workers keep the sweep responsive on shared runners.
+// The harness timeout only guards against a hung child; the real gates are the
+// eight full 25-year audits and their unchanged health assertions below.
+test("noble houses stay viable across the fixed 25-year seed sweep", { timeout: 600_000 }, async () => {
+    const audited = new Array(NOBLE_AUDIT_SEEDS.length);
+    let nextSeed = 0;
+    const auditWorker = async () => {
+        while (nextSeed < NOBLE_AUDIT_SEEDS.length) {
+            const index = nextSeed++;
+            const seed = NOBLE_AUDIT_SEEDS[index];
+            let stdout;
+            try {
+                const result = await execFileAsync(process.execPath, [auditChild], {
+                    cwd: gameRoot,
+                    timeout: 120_000,
+                    maxBuffer: 4 * 1024 * 1024,
+                    env: {
+                        ...process.env,
+                        NOBLE_AUDIT_CHILD: "1",
+                        NOBLE_AUDIT_SEED: String(seed),
+                        NOBLE_AUDIT_YEARS: String(NOBLE_AUDIT_YEARS)
+                    }
+                });
+                stdout = result.stdout;
+            } catch (error) {
+                const detail = String(error?.stderr || error?.message || error);
+                assert.fail(`noble audit failed for seed ${seed}: ${detail}`);
+            }
+            try {
+                audited[index] = JSON.parse(stdout);
+            } catch {
+                assert.fail(`noble audit for seed ${seed} did not emit JSON: ${stdout?.slice(0, 400)}`);
+            }
         }
-        let audit;
-        try {
-            audit = JSON.parse(stdout);
-        } catch {
-            assert.fail(`noble audit for seed ${seed} did not emit JSON: ${stdout?.slice(0, 400)}`);
-        }
-        audited.push(audit);
+    };
+    await Promise.all([auditWorker(), auditWorker()]);
+    for (let index = 0; index < NOBLE_AUDIT_SEEDS.length; index++) {
+        const seed = NOBLE_AUDIT_SEEDS[index];
+        const audit = audited[index];
         assert.equal(audit.gameOver, false, `seed ${seed} ended the realm during the noble audit`);
         assert.equal(audit.auditYears, NOBLE_AUDIT_YEARS, `seed ${seed} must record every annual noble audit`);
         assert.equal(audit.initialHouseCount, 4, `seed ${seed} must found four noble houses`);

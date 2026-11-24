@@ -105,10 +105,25 @@ export function ensureCityState() {
     return city;
 }
 
+function markNormalized(target) {
+    // Non-enumerable so never serialized into a save. It only marks an object
+    // that this module already repaired; live mutations keep the invariants.
+    if (target.__kacNormalized !== LOGISTICS_VERSION) {
+        Object.defineProperty(target, "__kacNormalized", {
+            value: LOGISTICS_VERSION, writable: true, configurable: true, enumerable: false
+        });
+    }
+}
+
 export function ensureInventory(entity) {
     if (!entity || !entity.isBuilding?.()) return null;
     if (!entity.inventory || typeof entity.inventory !== "object") entity.inventory = {};
     const inventory = entity.inventory;
+    const needsWarehouse = entity.type === TYPE.WAREHOUSE || entity.type === TYPE.KEEP;
+    if (needsWarehouse && (!entity.warehouse || typeof entity.warehouse !== "object")) entity.warehouse = {};
+    // Warehouse profile migration is intentionally always re-checked: legacy
+    // saves and tests change filters/profile on an otherwise normalised entity.
+    if (inventory.__kacNormalized === LOGISTICS_VERSION && !needsWarehouse) return inventory;
     inventory.version = LOGISTICS_VERSION;
     inventory.input = inventory.input && typeof inventory.input === "object" ? inventory.input : {};
     inventory.output = inventory.output && typeof inventory.output === "object" ? inventory.output : {};
@@ -131,7 +146,7 @@ export function ensureInventory(entity) {
             inventory.reservedOut[key] = inventory.output[key];
         }
     }
-    if (entity.type === TYPE.WAREHOUSE || entity.type === TYPE.KEEP) {
+    if (needsWarehouse) {
         if (!entity.warehouse || typeof entity.warehouse !== "object") entity.warehouse = {};
         const savedFilters = Array.isArray(entity.warehouse.filters) ? entity.warehouse.filters.filter(key => GOOD_KEYS.includes(key)) : null;
         const explicitProfile = Boolean(WAREHOUSE_PROFILES[entity.warehouse.profile]);
@@ -181,6 +196,7 @@ export function ensureInventory(entity) {
             }
         }
     }
+    markNormalized(inventory);
     return inventory;
 }
 
@@ -220,17 +236,22 @@ export function getCarrierLimit() {
 export function getWarehouses() {
     return state.entities.filter(entity => isWarehouse(entity)).map(entity => { ensureInventory(entity); return entity; });
 }
+function sumWarehouseMap(map) {
+    let total = 0;
+    for (const key of GOOD_KEYS) total += cleanQuantity(map?.[key]);
+    return total;
+}
 export function warehouseUsed(warehouse) {
     ensureInventory(warehouse);
-    return GOOD_KEYS.reduce((sum, key) => sum + cleanQuantity(warehouse.warehouse?.stored?.[key]), 0);
+    return sumWarehouseMap(warehouse.warehouse?.stored);
 }
 export function warehouseReservedIn(warehouse) {
     ensureInventory(warehouse);
-    return GOOD_KEYS.reduce((sum, key) => sum + cleanQuantity(warehouse.warehouse?.reservedIn?.[key]), 0);
+    return sumWarehouseMap(warehouse.warehouse?.reservedIn);
 }
 export function warehouseReservedOut(warehouse) {
     ensureInventory(warehouse);
-    return GOOD_KEYS.reduce((sum, key) => sum + cleanQuantity(warehouse.warehouse?.reservedOut?.[key]), 0);
+    return sumWarehouseMap(warehouse.warehouse?.reservedOut);
 }
 export function getWarehouseStock(good) {
     return getWarehouses().reduce((sum, warehouse) => sum + cleanQuantity(warehouse.warehouse?.stored?.[good]), 0);
@@ -259,7 +280,9 @@ export function getWarehouseSnapshot() {
 }
 export function getWarehouseSpace(warehouse) {
     ensureInventory(warehouse);
-    return Math.max(0, warehouse.warehouse.capacity - warehouseUsed(warehouse) - warehouseReservedIn(warehouse));
+    const store = warehouse.warehouse;
+    if (!store) return 0;
+    return Math.max(0, store.capacity - sumWarehouseMap(store.stored) - sumWarehouseMap(store.reservedIn));
 }
 export function getWarehouseProfile(entity) {
     if (!isWarehouse(entity)) return null;

@@ -33,6 +33,7 @@ const DEFAULT_STORES = Object.freeze({ wood: 180, stone: 95, gold: 75, food: 120
 const clamp = (value, min, max) => Math.max(min, Math.min(max, Number.isFinite(Number(value)) ? Number(value) : min));
 const integer = (value, min, max, fallback = min) => clamp(Math.floor(Number(value) || fallback), min, max);
 const clean = (value, max) => String(value ?? "").replace(/[\u0000-\u001f\u007f]/g, "").replace(/\s+/g, " ").trim().slice(0, max);
+const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[character]));
 const has = (object, key) => Object.prototype.hasOwnProperty.call(object, key);
 
 function stores(input = DEFAULT_STORES) {
@@ -431,7 +432,7 @@ function completeScenario(scenario, won) {
     });
     queueMessage(
         won ? "SCENARIO COMPLETE" : "SCENARIO FAILED",
-        won ? scenario.name.toUpperCase() + " · THE REALM REMEMBERS" : scenario.name.toUpperCase() + " · THE CHRONICLE CONTINUES",
+        won ? escapeHtml(String(scenario.name).toUpperCase()) + " · THE REALM REMEMBERS" : escapeHtml(String(scenario.name).toUpperCase()) + " · THE CHRONICLE CONTINUES",
         8000
     );
     return scenario;

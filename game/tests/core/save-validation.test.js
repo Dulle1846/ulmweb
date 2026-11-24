@@ -50,6 +50,14 @@ test("validation is side-effect free and normalization returns a new snapshot", 
     assert.equal(snapshot.resources.wood, "15", "normalization must not touch the source map");
 });
 
+test("time of day is optional for legacy saves but bounded when present", () => {
+    assert.equal(validateSaveSnapshot(validSnapshot()), true);
+    assert.equal(validateSaveSnapshot(validSnapshot({ timeOfDay: 0 })), true);
+    assert.equal(validateSaveSnapshot(validSnapshot({ timeOfDay: 23 })), true);
+    rejects(validSnapshot({ timeOfDay: 24 }), { code: "INVALID_TIME_OF_DAY", field: "timeOfDay", phase: "structure" });
+    rejects(validSnapshot({ timeOfDay: "night" }), { code: "INVALID_TIME_OF_DAY", field: "timeOfDay", phase: "structure" });
+});
+
 test("a snapshot without optional resource maps remains compatible", () => {
     const snapshot = validSnapshot({ resources: undefined, incomeThisTick: undefined });
     assert.equal(validateSaveSnapshot(snapshot), true);

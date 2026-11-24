@@ -205,6 +205,7 @@ export function createSaveSnapshot() {
         tick: state.tick,
         year: state.year,
         dayOfYear: state.dayOfYear,
+        timeOfDay: state.timeOfDay,
         seasonIndex: state.seasonIndex,
         gameSpeed: state.gameSpeed,
         morale: state.morale,
@@ -382,6 +383,8 @@ export function restoreSaveSnapshot(snapshot) {
     state.tick = snapshot.tick || 0;
     state.year = snapshot.year || 1;
     state.dayOfYear = snapshot.dayOfYear || 0;
+    const savedHour = Number(snapshot.timeOfDay);
+    if (Number.isFinite(savedHour)) state.timeOfDay = Math.max(0, Math.min(23, Math.round(savedHour)));
     const savedSpeed = Number(snapshot.gameSpeed);
     state.gameSpeed = [0.5, 1, 2, 4].includes(savedSpeed) ? savedSpeed : 1;
     state.creatureArchive = Array.isArray(snapshot.creatureArchive) ? snapshot.creatureArchive.filter(entry => entry && typeof entry === "object").slice(-100) : [];

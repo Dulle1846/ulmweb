@@ -52,11 +52,15 @@ function sampleTerrain(tx,ty){
         temperature:clamp(Number(state.temperatureMap?.[index] ?? 0.55)||0,0,1),
     };
 }
+let validatedGeography=null,validatedGeographyCells=0;
 function ensureGeography(){
     const geo=state.resourceGeography;
-    if(!geo||geo.version!==VERSION||!(geo.forestStock instanceof Uint16Array)||geo.forestStock.length!==cellCount()){
+    const cells=cellCount();
+    if(geo===validatedGeography&&cells===validatedGeographyCells)return geo;
+    if(!geo||geo.version!==VERSION||!(geo.forestStock instanceof Uint16Array)||geo.forestStock.length!==cells){
         throw new Error("Resource geography has not been generated for this realm.");
     }
+    validatedGeography=geo;validatedGeographyCells=cells;
     return geo;
 }
 

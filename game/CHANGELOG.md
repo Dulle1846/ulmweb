@@ -1,13 +1,56 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.53.4`
-**Next development line:** `3.54.0-dev`
+**Current production version:** `3.54.0`
+**Next development line:** `3.55.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
 **Last repository verification:** 2026-11-24 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.54.0 — Keyboard play, honest controls and faithful realm settings
+
+The map was strictly pointer-driven, a visible settings control had no effect,
+the shortcut list promised keys that were never wired, and a chosen hour or an
+open settings dialog could silently snap back. Locally authored scenario names
+could also inject markup into a completion banner. This release makes the
+player-facing controls truthful and keeps realm presentation faithful across
+new games, loads and benchmarks.
+
+- **Keyboard map controls.** Arrow keys or WASD pan the camera by a bounded step
+  and clamp to the world edge; Enter/Space places the selected card on the
+  centre tile. `P` pauses, `1`–`4` and `+`/`−` change detail level, `?` opens the
+  help sheet, `Ctrl/Cmd+S` and `Ctrl/Cmd+O` use the real save/load buttons, and
+  Esc also dismisses a realm issue. Text fields, open dialogs and focused
+  controls keep their own key handling; repeated Enter presses cannot place
+  twice. The mapping is a pure presentation module with focused unit tests.
+- **Honest resource-badge setting.** The settings toggle now initialises from
+  the saved `showDeltas` value, applies the CSS class immediately and persists
+  every change, matching the neighbouring tooltip and motion controls.
+- **Persistent time of day.** The hour is saved both as a setting and in the
+  realm snapshot, restored by legacy and current saves, and validated on
+  import. Dusk and night no longer snap back to noon when a realm starts or
+  loads, so the renderer, construction and hazard profiles stay faithful.
+- **Truthful benchmark and settings.** A disabled benchmark now says to start
+  or load a realm, or reports a renderer fault, instead of claiming it found a
+  realm. Once a realm is live, that stale blocked hint is replaced by a ready
+  hint while completed-run messages stay intact. Closing settings during a
+  benchmark requests cancellation and is no longer undone when the run finishes.
+- **Safe scenario banners.** Custom scenario names are HTML-escaped before they
+  reach the completion message, so local scenario text can no longer inject
+  markup. Authored help text still uses HTML where intended.
+- **Bounded logistics work.** Warehouse free-space checks normalise an entity
+  once instead of three times per query; stock, reservation and capacity rules
+  are unchanged.
+- **Player check.** The new controls, settings persistence and benchmark states
+  are covered by focused contract and save round-trip tests. The local build
+  was played in Chrome without console errors: arrow keys and WASD panned the
+  camera, `P` paused, `1`–`4` changed detail level, `?` opened the help sheet and
+  Esc dismissed overlays. An 18:00 hour stayed at 18:00 through save and reload,
+  the benchmark switched from blocked to ready when a realm started, and the
+  browser E2E now waits for panel content that CSS intentionally skips while it
+  is off-screen.
 
 ## 3.53.4 — Quotes, orders and quests tell the truth
 

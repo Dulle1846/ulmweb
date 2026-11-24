@@ -1,6 +1,5 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {performance} from "node:perf_hooks";
 import {resetState,state} from "../../js/core/state.js";
 import {TYPE} from "../../js/core/types.js";
 import {WORLD_W,WORLD_H} from "../../js/core/config.js";
@@ -45,10 +44,14 @@ function prepareCampaign(){
 
 test("a controlled settlement survives a 25-year deterministic campaign horizon",()=>{
     prepareCampaign();
-    const started=performance.now();
+    // CPU time, not wall time: the gate measures simulation work. A shared CI
+    // runner or other local processes must not turn scheduling latency into a
+    // false performance regression.
+    const started=process.cpuUsage();
     const targetTicks=10000;
     for(let tick=0;tick<targetTicks;tick++)updateSimulation();
-    const elapsed=performance.now()-started;
+    const used=process.cpuUsage(started);
+    const elapsed=(used.user+used.system)/1000;
     assert.equal(state.tick,targetTicks,"the simulation must not stop before the 25-year horizon");
     assert.equal(state.year,26,"10,000 simulation days should complete 25 full years from year one");
     assert.equal(state.gameOver,false,"the staffed baseline settlement should remain recoverable");

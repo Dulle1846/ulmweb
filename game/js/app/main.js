@@ -70,6 +70,7 @@ import { addScenarioToLibrary, readScenarioLibrary, removeScenarioFromLibrary } 
 
 let loopStarted=false;
 let settings=loadSettings();
+state.timeOfDay=settings.timeOfDay;
 let customScenarios=[];
 let selectedScenarioId="free-realm";
 let selectedScenarioDefinition=SCENARIO_PRESETS["free-realm"];
@@ -120,6 +121,8 @@ function applyPerformanceSettings(){
 
 let benchmarkRunning=false;
 let benchmarkCancelRequested=false;
+let benchmarkSettingsWasOpen=false;
+let benchmarkSettingsDismissed=false;
 
 function setBenchmarkStatus(message,tone=""){
     const status=document.getElementById("performance-benchmark-status");
@@ -158,13 +161,30 @@ function benchmarkReady(){
     return state.hasStarted===true&&state.frameFaulted!==true&&Boolean(state.canvas&&state.ctx);
 }
 
+function benchmarkUnavailableMessage(){
+    return state.frameFaulted===true
+        ?{message:"Renderer unavailable after an internal error.",tone:"error"}
+        :{message:"Start or load a realm first.",tone:""};
+}
+
 function refreshBenchmarkAvailability(){
     const button=document.getElementById("run-performance-benchmark");
     if(!button||benchmarkRunning)return;
     const ready=benchmarkReady();
     button.disabled=!ready;
     button.textContent="RUN BENCHMARK";
-    if(!ready)setBenchmarkStatus("Found a realm to benchmark the live scene.");
+    if(!ready){
+        const unavailable=benchmarkUnavailableMessage();
+        setBenchmarkStatus(unavailable.message,unavailable.tone);
+        return;
+    }
+    // Once a realm is live the stale "start or load a realm first" hint must
+    // not linger in settings. Keep completed/cancelled run messages intact:
+    // only the blocked-state hint is replaced by the ready hint.
+    const status=document.getElementById("performance-benchmark-status");
+    if(status&&(status.textContent==="Start or load a realm first."||status.textContent==="Renderer unavailable after an internal error.")){
+        setBenchmarkStatus("Live scene ready · measure your device below.");
+    }
 }
 
 function benchmarkDeviceSummary(){
@@ -259,13 +279,17 @@ async function runPerformanceBenchmark(){
         return;
     }
     if(!benchmarkReady()){
-        setBenchmarkStatus("Found a realm to benchmark the live scene.");
+        const unavailable=benchmarkUnavailableMessage();
+        setBenchmarkStatus(unavailable.message,unavailable.tone);
         refreshBenchmarkAvailability();
         return;
     }
 
     const originalSettings={...settings};
     const wasPaused=state.isPaused===true;
+    const settingsModal=document.getElementById("settings-modal");
+    benchmarkSettingsWasOpen=Boolean(settingsModal&&!settingsModal.classList.contains("hidden"));
+    benchmarkSettingsDismissed=false;
     const plan=buildBenchmarkPlan();
     const deviceLabel=benchmarkDeviceSummary();
     const results=[];
@@ -279,7 +303,7 @@ async function runPerformanceBenchmark(){
     document.getElementById("performance-benchmark-results")?.classList.add("hidden");
     if(meta){meta.textContent=deviceLabel;meta.classList.remove("hidden");}
     updateBenchmarkProgress(0,plan.length);
-    document.getElementById("settings-modal")?.classList.add("hidden");
+    if(benchmarkSettingsWasOpen)settingsModal?.classList.add("hidden");
     setBenchmarkLiveVisible(true);
     const cancelButton=document.getElementById("performance-benchmark-cancel");
     if(cancelButton){cancelButton.disabled=false;cancelButton.textContent="CANCEL";cancelButton.focus({preventScroll:true});}
@@ -335,7 +359,9 @@ async function runPerformanceBenchmark(){
         if(progress)progress.classList.add("hidden");
         button.textContent="RUN BENCHMARK";
         button.disabled=!benchmarkReady();
-        document.getElementById("settings-modal")?.classList.remove("hidden");
+        if(benchmarkSettingsWasOpen&&!benchmarkSettingsDismissed)settingsModal?.classList.remove("hidden");
+        benchmarkSettingsWasOpen=false;
+        benchmarkSettingsDismissed=false;
         if(cancelButton){cancelButton.disabled=false;cancelButton.textContent="CANCEL";}
         if(results.length)renderBenchmarkResults(results,plan.length,deviceLabel);
         if(!failed){
@@ -547,6 +573,7 @@ function resetForRun(profile){
     state.gameSpeed=1;
     state.isPaused=false;
     state.zoom=1;state.zoomTarget=1;state.zoomLevel=3;
+    state.timeOfDay=settings.timeOfDay;
     applyPerformanceSettings();
 }
 
@@ -1255,8 +1282,18 @@ function bindMenu(){
         await importRealm(file);
         event.target.value="";
     });
+    const dismissSettingsDuringBenchmark=()=>{
+        if(!benchmarkRunning)return;
+        benchmarkCancelRequested=true;
+        benchmarkSettingsDismissed=true;
+        setBenchmarkStatus("Stopping after the current sample…");
+        setBenchmarkLiveStatus("Stopping after the current sample…");
+        const cancelButton=document.getElementById("performance-benchmark-cancel");
+        if(cancelButton){cancelButton.disabled=true;cancelButton.textContent="STOPPING…";}
+    };
+    document.addEventListener("kac:settings-dismissed",dismissSettingsDuringBenchmark);
     document.getElementById("settings-close")?.addEventListener("click",()=>{
-        if(benchmarkRunning)benchmarkCancelRequested=true;
+        dismissSettingsDuringBenchmark();
         document.getElementById("settings-modal").classList.add("hidden");
     });
     document.getElementById("settings-music-toggle")?.addEventListener("change",event=>{
@@ -1281,6 +1318,7 @@ function bindMenu(){
         saveSettings(settings);
     });
     const deltasToggle=document.getElementById("settings-deltas-toggle");
+    if(deltasToggle){deltasToggle.checked=settings.showDeltas!==false;deltasToggle.addEventListener("change",event=>{settings.showDeltas=event.target.checked;applyInterfaceSettings();saveSettings(settings);});}
     const tooltipsToggle=document.getElementById("settings-tooltips-toggle");
     if(tooltipsToggle){tooltipsToggle.checked=settings.showTooltips!==false;tooltipsToggle.addEventListener("change",event=>{settings.showTooltips=event.target.checked;applyInterfaceSettings();saveSettings(settings);});}
     const motionToggle=document.getElementById("settings-motion-toggle");
@@ -1292,7 +1330,9 @@ function bindMenu(){
     if(timeOfDayControl){
         const syncTimeOfDay=()=>{
             const value=Number(timeOfDayControl.value);
-            state.timeOfDay=Number.isFinite(value)?Math.max(0,Math.min(23,value)):12;
+            state.timeOfDay=Number.isFinite(value)?Math.max(0,Math.min(23,Math.round(value))):12;
+            settings.timeOfDay=state.timeOfDay;
+            saveSettings(settings);
             const hour=Math.floor(state.timeOfDay)%24;
             const minutes=Math.round((state.timeOfDay-hour)*60)%60;
             const label=String(hour).padStart(2,"0")+":"+String(minutes).padStart(2,"0");
