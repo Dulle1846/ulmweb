@@ -1,6 +1,6 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.53.2`
+**Current production version:** `3.53.3`
 **Next development line:** `3.54.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
@@ -8,6 +8,26 @@
 **Last repository verification:** 2026-11-24 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.53.3 — A placed card says so
+
+A desktop drag placed the selected card, consumed it from the hand and wrote the
+play to the log, but the toast kept saying “CARD SELECTED — DRAG OR TAP IT ONTO
+THE MAP.” Touch placement already changed to “CARD PLACED”, so desktop was
+telling the player the opposite of what had just happened. A successful drag now
+shows the same placement toast, and the placement status falls back to the
+placed/next-card prompt instead of the selection prompt.
+
+- **Truthful drag feedback.** The pointer-up path reports `CARD PLACED` only
+  after `placeCurrentCard` succeeds. Failed drops keep the selection prompt.
+- **Regression guard.** Browser E2E now asserts the toast after the real desktop
+  drag placement.
+- **Player check.** At 1440 × 900 a drawn `EMBASSIES OF WINTERFELL` was dragged
+  onto a legal tile: hand 1 → 0, gold 137.169 → 132.169, food 313.329 → 309.329,
+  the selection cleared, and the toast read `CARD PLACED`. At 820 × 1180 the
+  separate touch path already reported `CARD PLACED` and is unchanged.
+- **No simulation or save change.** Card selection, placement rules, costs,
+  effects and the deterministic simulation are untouched.
 
 ## 3.53.2 — The desktop ledger stays in reach
 

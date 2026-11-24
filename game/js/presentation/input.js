@@ -151,7 +151,7 @@ export function setupInput(){
         // The hand dock and zoom/minimap controls overlay the canvas rectangle.
         // Releasing on one of those controls must never place the selected card.
         const releasedOnMap=document.elementFromPoint(event.clientX,event.clientY)===canvas;
-        if(inside&&releasedOnMap&&state.cardPreview?.valid&&!isWorkshopOpen())placeCurrentCard(state.cardPreview.tx,state.cardPreview.ty);
+        if(inside&&releasedOnMap&&state.cardPreview?.valid&&!isWorkshopOpen()&&placeCurrentCard(state.cardPreview.tx,state.cardPreview.ty))showToast("CARD PLACED");
         endCardDrag();
         renderUI();
     });
@@ -179,7 +179,12 @@ export function setupInput(){
         cardContainer?.classList.remove("is-dragging");
         document.body.classList.remove("card-dragging");
         dragGhost?.classList.remove("is-visible");
-        if(placementStatus){placementStatus.textContent="DRAG OR TAP THE SELECTED CARD ONTO THE MAP";delete placementStatus.dataset.valid;}
+        if(placementStatus){
+            placementStatus.textContent=state.currentCard
+                ?"DRAG OR TAP THE SELECTED CARD ONTO THE MAP"
+                :"CARD PLACED · SELECT ANOTHER CARD TO PLACE";
+            delete placementStatus.dataset.valid;
+        }
     }
 
     // Escape is the only gameplay-independent key the page still listens for:
