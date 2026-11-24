@@ -150,7 +150,7 @@ try {
 
     await page.locator("#command-close").click();
     await openPanel("diplomacy");
-    await page.waitForFunction(() => (document.querySelector("#command-panel-content")?.textContent || "").includes("CROWN DREAD"), null, { timeout: 15000 });
+    await page.waitForFunction(() => document.querySelectorAll("#command-panel-content [data-diplomacy-realm]").length === 4, null, { timeout: 15000 });
     const diplomacyPanel = await page.locator("#command-panel-content").evaluate(element => element.textContent || "");
     assert.match(diplomacyPanel, /CROWN DREAD/);
     assert.match(diplomacyPanel, /FEAR/);

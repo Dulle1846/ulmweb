@@ -75,6 +75,11 @@ import { renderItemLexicon } from "./item-lexicon-panel.js";
 import { renderProgressive, cancelProgressiveRender } from "./progressive-render.js";
 let activePanel="kingdom",panelRevealToken=0,expandedBuildingId=null,expandedBuildingLogistics=false,buildingShowAll=false,courtShowAll=false,dynastyStylesRequested=false,endeavourFunding=1,timelineRefreshFrame=0,timelineHydrationToken=0,chronicleProgressToken=0,chronicleSectionsToken=0,detailRefreshToken=0;
 const FRAME_WORK_BUDGET=7;
+// These ledgers carry the most nested cards per open. Their full innerHTML
+// layout measured 52-75 ms at 4x CPU throttle, so they use the existing
+// frame-budgeted hydrator on desktop as well as on a phone. Kingdom is
+// included because opening the deck first paints the previously active tab.
+const STAGED_OPEN_PANELS=new Set(["kingdom","population","nobility","diplomacy"]);
 let frameWorkQueue=[],frameWorkFrame=0;
 // At phone width the court and diplomacy selects contain the same long list of
 // named residents once per office/realm. Keep those option sets out of the
@@ -344,9 +349,10 @@ function nobilityPanel(){
   const hostBlock=host
    ?'<div class="command-note"><strong>LAND HOST · '+esc(String(host.status).toUpperCase())+'</strong> '+host.strength+' retainers · readiness '+host.readiness+'/100 · equipment '+Math.round(host.equipment)+' · morale '+Math.round(host.morale)+' · '+host.wages+'G / '+host.supplies+'F per year'+(host.joinedWar?' · AT WAR':'')+(host.feudSeverity?' · FEUD '+host.feudSeverity+'/5':'')+'<br><small>COMMANDER '+esc(host.commanderName||"VACANT")+' · '+(host.status==="mustering"?'MUSTERING '+host.readyIn+' TICKS':host.status==="returning"?'RETURNING IN '+host.returnIn+' TICKS':host.status==="revolted"?'IN REVOLT':'QUARTERED')+'</small></div><div class="noble-house__actions"><button type="button" data-command="noble-host-order" data-order="march" data-value="'+esc(h.id)+'"'+((host.canMarch&&gold>=hostSnapshot.marchCost.gold&&food>=hostSnapshot.marchCost.food)?'':' disabled')+'>MARCH · '+hostSnapshot.marchCost.gold+'G / '+hostSnapshot.marchCost.food+'F</button><button type="button" data-command="noble-host-order" data-order="quarter" data-value="'+esc(h.id)+'">RETURN HOME</button><button type="button" data-command="noble-host-order" data-order="disband" data-value="'+esc(h.id)+'">DISBAND</button></div>'
    :'<div class="command-note"><strong>NO LAND HOST</strong> This house has not raised retainers. A host draws its size, equipment and upkeep from real adults, levy, wealth, power, offices and charter. Loyalty below '+hostSnapshot.loyaltyFloor+' or a severe feud blocks it.</div><div class="noble-house__actions"><button type="button" data-command="noble-host-order" data-order="raise" data-value="'+esc(h.id)+'"'+((h.head&&h.loyalty>=hostSnapshot.loyaltyFloor&&gold>=hostSnapshot.raiseCost.gold)?'':' disabled')+'>RAISE LAND HOST · '+hostSnapshot.raiseCost.gold+'G</button></div>';
-  return '<article class="noble-house" data-noble-house="'+esc(h.id)+'"><header class="noble-house__head"><div><span class="command-ribbon">'+esc(String(h.status).toUpperCase())+(h.mustered?' · LEVY MUSTERED':'')+(h.feudSeverity?' · FEUD '+h.feudSeverity+'/5':'')+'</span><h4>HOUSE '+esc(h.familyName.toUpperCase())+'</h4><p>'+esc(h.seat)+' · founded year '+number(h.foundedYear)+'</p></div><div class="noble-house__power"><strong>'+Math.round(h.power)+'</strong><small>POWER</small></div></header>'+
-   meter("LOYALTY",h.loyalty)+'<div class="noble-house__stats"><span>HEAD<b>'+esc(h.head?.name||"VACANT")+'</b></span><span>MEMBERS<b>'+h.memberCount+'</b></span><span>WEALTH<b>'+Math.round(h.wealth)+'</b></span><span>LEVY<b>'+h.levyActive+'</b></span><span>COURT OFFICES<b>'+h.heldOffices+'</b></span><span>DUES / YEAR<b>'+h.dues+'G</b></span></div>'+
-   '<p class="noble-house__people"><strong>NOBLE MEMBERS</strong> '+esc(people)+'</p><p class="command-note">'+esc(latest)+'</p>'+hostBlock+'<div class="noble-house__actions"><button type="button" data-command="noble-charter" data-value="'+esc(h.id)+'"'+(canCharter?'':' disabled')+'>'+(h.charter?'CHARTER GRANTED':'GRANT CHARTER · '+cost.gold+'G / '+cost.wood+' WOOD')+'</button><button type="button" data-command="noble-levy" data-value="'+esc(h.id)+'"'+(canLevy?'':' disabled')+'>'+(h.feudSeverity>=4?'FEUD BLOCKS THE LEVY':cooldown?'LEVY COOLDOWN · '+cooldown+'Y':'CALL THE LEVY · 2 YEARS')+'</button></div></article>';
+  const stats=[["HEAD",h.head?.name||"VACANT"],["MEMBERS",h.memberCount],["WEALTH",Math.round(h.wealth)],["LEVY",h.levyActive],["COURT OFFICES",h.heldOffices],["DUES / YEAR",h.dues+"G"]];
+  return '<article class="noble-house" data-noble-house="'+esc(h.id)+'"><header class="noble-house__head"><div><span class="command-ribbon">'+esc(String(h.status).toUpperCase())+(h.mustered?' · LEVY MUSTERED':'')+(h.feudSeverity?' · FEUD '+h.feudSeverity+'/5':'')+'</span><h4>HOUSE '+esc(h.familyName.toUpperCase())+'</h4><p>'+esc(h.seat)+' · founded year '+number(h.foundedYear)+'</p></div><div class="noble-house__power" aria-label="Power '+Math.round(h.power)+'"><strong>'+Math.round(h.power)+'</strong></div></header>'+
+   meter("LOYALTY",h.loyalty)+'<p class="noble-house__stats" aria-label="'+stats.map(([label,value])=>label+' '+esc(String(value))).join(", ")+'">'+stats.map(([label,value])=>label+' '+esc(String(value))).join(" · ")+'</p>'+
+   '<p class="noble-house__people" aria-label="Noble members: '+esc(people)+'">'+esc(people)+'</p><p class="command-note">'+esc(latest)+'</p>'+hostBlock+'<div class="noble-house__actions"><button type="button" data-command="noble-charter" data-value="'+esc(h.id)+'"'+(canCharter?'':' disabled')+'>'+(h.charter?'CHARTER GRANTED':'GRANT CHARTER · '+cost.gold+'G / '+cost.wood+' WOOD')+'</button><button type="button" data-command="noble-levy" data-value="'+esc(h.id)+'"'+(canLevy?'':' disabled')+'>'+(h.feudSeverity>=4?'FEUD BLOCKS THE LEVY':cooldown?'LEVY COOLDOWN · '+cooldown+'Y':'CALL THE LEVY · 2 YEARS')+'</button></div></article>';
  }).join("");
  const feudCards=feuds.feuds.length?feuds.feuds.map(f=>{
   const active=f.status==="active",names=f.houses.map(house=>house.familyName).join(" vs ");
@@ -1322,21 +1328,32 @@ function render(resetScroll=false){
   const __t0=performance.now();
   const markup=(renderers[activePanel]||kingdom)();
   window.__panelTiming={panel:activePanel,renderMs:Math.round((performance.now()-__t0)*10)/10};
-  // Progressive hydration is the narrow-screen path. Desktop already renders
-  // the panel synchronously and has the headroom for one parse; using the
-  // phone scheduler there left only the first region card in the DOM for
-  // hundreds of milliseconds while the rest of the archive was queued. Keep
-  // the phone budget, but do not make a desktop player wait for a panel that
-  // the same click could have painted whole.
-  if(resetScroll&&activePanel!=="chronicle"&&narrowViewport()){
+  // Every phone panel is hydrated progressively. On desktop, the heavy
+  // ledgers named above use the same scheduler: one full innerHTML insertion
+  // spent 52-75 ms in style and layout on a 4x-throttled renderer. The parse
+  // and mount tasks stay inside the existing 4 ms frame budget, so the panel
+  // still fills in a few frames without blocking the click or the game loop.
+  if(resetScroll&&activePanel!=="chronicle"&&(narrowViewport()||STAGED_OPEN_PANELS.has(activePanel))){
    progressiveDynasty=false;
    // Building a mature ledger and parsing it in one frame left a 50-57 ms
    // task at 4x CPU throttle. Let the markup generation settle in this task;
    // parse and mount the first chunk in the next one.
    const mountToken=revealToken;
+   // A desktop record card now mounts atomically, so it must also be the only
+   // card in its animation frame: appending two or three whole houses or
+   // neighbouring courts in one task still forced a 55-60 ms style/layout pass
+   // at 4x CPU. Phones keep their existing chunk size; their cards are already
+   // narrower and their hydration is bounded by the same 4 ms frame budget.
+   // The population register is mostly small chunks; batch them up to the
+   // scheduler's 4 ms budget. The larger noble houses and neighbouring courts
+   // still mount two chunks at a time: eight let two whole cards land in one
+   // task and produced a 54-69 ms long task at 4x CPU. Phones keep their
+   // existing smaller count-based slices.
+   const nodesPerFrame=narrowViewport()?(activePanel==="nobility"?3:2):4;
+   const cardsPerFrame=narrowViewport()?Infinity:(activePanel==="population"?4:(activePanel==="nobility"?1:2));
    requestAnimationFrame(()=>{
     if(mountToken!==panelRevealToken)return;
-    renderProgressive(panel,markup,{resetScroll,nodesPerFrame:activePanel==="nobility"?3:2,onDone:()=>{
+    renderProgressive(panel,markup,{resetScroll,nodesPerFrame,cardsPerFrame,immediate:narrowViewport()?1:0,onDone:()=>{
      if(activePanel==="dynasty")requestAnimationFrame(drawDynastyConnectors);
     }});
    });

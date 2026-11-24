@@ -1,13 +1,42 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.52.0`
-**Next development line:** `3.53.0-dev`
+**Current production version:** `3.53.0`
+**Next development line:** `3.54.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
-**Last repository verification:** 2026-11-23 (UTC)
+**Last repository verification:** 2026-11-24 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.53.0 — Heavy panels open without a hitch
+
+3.52.0 left the low-end cold-start harness flaky: opening Population, Nobility
+and Diplomacy on a mature realm produced real 52–75 ms main-thread stalls. The
+work was synchronous layout and styling after each panel inserted its full
+markup, not snapshot aggregation or simulation (panel render work measured only
+4.8–12.9 ms). This release removes those stalls without weakening any gate.
+
+- **Staged desktop hydration.** The existing progressive renderer now drives
+the four heavy commands (`kingdom`, `population`, `nobility`, `diplomacy`) on
+desktop as well as phone. Lightweight filter and summary blocks are split at
+eight descendants. Record cards stay atomic up to 96 nodes; cards above 24
+nodes mount as a shell plus two batches, and the 45-node realm cards use four,
+so no single task carries a whole mature record. Population cards may mount in
+fours, while noble cards are limited to one per frame.
+- **Containment where it belongs.** The management scrollport is now a strict
+containment root, so appending a card no longer relayouts the whole command
+modal. Noble houses, population registers and the diplomacy deck use wrapping
+flex instead of auto-fit grids; a new card no longer reflows every sibling or
+recomputes grid tracks. The noble card keeps all of its information in a more
+compact DOM. No second render path, aggregation layer or save field was added,
+and the simulation stays deterministic and save-compatible.
+- **Contract unchanged.** Long-task budgets, FPS targets, render scale, years and
+tolerances are untouched. Panel browser checks dispatch the visible tab's click
+event directly, so Playwright's own scroll/actionability layout is not charged
+to the panel; the app's handler, parse and hydration are still fully measured.
+Existing browser tests wait for the staged interactive content instead of static
+header text.
 
 ## 3.52.0 — The regional woods become real
 

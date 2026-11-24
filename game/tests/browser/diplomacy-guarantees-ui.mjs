@@ -65,7 +65,9 @@ try {
 
     await page.locator("#command-open-btn").click();
     await page.locator('[data-command-tab="diplomacy"]').click();
-    await page.waitForFunction(() => (document.querySelector("#command-panel-content")?.textContent || "").includes("GUARANTEE STANDING"), null, { timeout: 10000 });
+    // Realm cards hydrate after the static summary; wait for the actual
+    // guarantee control before reading the card text or clicking it.
+    await page.waitForFunction(() => document.querySelectorAll('[data-command="diplomacy-guarantee"][data-value="northmere"]').length === 1, null, { timeout: 10000 });
     const panelBefore = await page.locator("#command-panel-content").evaluate(element => element.textContent || "");
     assert.match(panelBefore, /GUARANTEE STANDING/);
     assert.match(panelBefore, /GUARANTEE · 12G/);
@@ -103,7 +105,7 @@ try {
 
     await page.locator('[data-command-tab="politics"]').click();
     await page.locator('[data-command-tab="diplomacy"]').click();
-    await page.waitForFunction(() => (document.querySelector("#command-panel-content")?.textContent || "").includes("GUARANTEE CALL"), null, { timeout: 10000 });
+    await page.waitForFunction(() => document.querySelectorAll('[data-command="diplomacy-honor"][data-value="northmere"]').length === 1, null, { timeout: 10000 });
     const panelCall = await page.locator("#command-panel-content").evaluate(element => element.textContent || "");
     assert.match(panelCall, /GUARANTEE CALL/);
     assert.match(panelCall, /Redpass Companies THREATENS THIS COURT/);
@@ -158,7 +160,7 @@ try {
     });
     await page.locator('[data-command-tab="politics"]').click();
     await page.locator('[data-command-tab="diplomacy"]').click();
-    await page.waitForFunction(() => (document.querySelector("#command-panel-content")?.textContent || "").includes("TRADE AGREEMENT OFFER"), null, { timeout: 10000 });
+    await page.waitForFunction(() => document.querySelectorAll("#trade-sign-northmere").length === 1, null, { timeout: 10000 });
     assert.equal(await page.locator("#trade-sign-northmere").count(), 1);
     await page.locator("#trade-sign-northmere").click();
     await page.waitForFunction(async () => Boolean((await import("./js/core/state.js")).state.diplomacy.realms.find(item => item.id === "northmere").tradeAgreement), null, { timeout: 10000 });
@@ -230,7 +232,7 @@ try {
     await page.evaluate(async () => { (await import("./js/core/state.js")).state.isPaused = true; });
     await page.locator("#command-open-btn").click();
     await page.locator('[data-command-tab="diplomacy"]').click();
-    await page.waitForFunction(() => (document.querySelector("#command-panel-content")?.textContent || "").includes("GUARANTEE STANDING"), null, { timeout: 10000 });
+    await page.waitForFunction(() => document.querySelectorAll("#trade-cancel-northmere").length === 1, null, { timeout: 10000 });
     const restored = await page.evaluate(async () => {
         const { state } = await import("./js/core/state.js");
         const { getDiplomacySnapshot } = await import("./js/systems/diplomacy.js");
@@ -273,7 +275,7 @@ try {
     await page.waitForFunction(async () => {
         const { state } = await import("./js/core/state.js");
         return !state.diplomacy.realms.find(item => item.id === "northmere").tradeAgreement &&
-            (document.querySelector("#command-panel-content")?.textContent || "").includes("TRADE AGREEMENT OFFER");
+            document.querySelectorAll("#trade-sign-northmere").length === 1;
     }, null, { timeout: 10000 });
     const afterCancel = await page.evaluate(async () => {
         const { state } = await import("./js/core/state.js");

@@ -171,7 +171,9 @@ try {
 
     await page.locator("#command-open-btn").click();
     await page.locator('[data-command-tab="nobility"]').click();
-    await page.waitForFunction(() => (document.querySelector("#command-panel-content")?.textContent || "").includes("DUES LAST AUDIT"), null, { timeout: 10000 });
+    // The deck hydrates its panels across frames; wait for the later feud
+    // section before reading the full record, not only the first summary band.
+    await page.waitForFunction(() => (document.querySelector("#command-panel-content")?.textContent || "").includes("FEUDS BETWEEN HOUSES"), null, { timeout: 10000 });
     const panelText = await page.locator("#command-panel-content").innerText();
     assert.match(panelText, /Last audit year 2/);
     assert.match(panelText, /gold dues/);

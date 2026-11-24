@@ -18,7 +18,7 @@
 .command-panel-header{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:104px;padding:12px 16px;background:linear-gradient(90deg,#fff1cbf2 0%,#fff1cbc9 48%,#fff1cb22 100%),url("../assets/comic-realm-banner.svg") right center/auto 100% no-repeat;border:2px solid #a77b42;border-radius:11px;border-bottom:4px solid #b38b4e}
 .command-panel-header h2{margin:4px 0;color:#243d57;font: bold 25px Georgia,serif}
 .command-ribbon,.command-panel-intro>span{color:#9b4a2a;font-size:8px;font-weight:1000;letter-spacing:.2em}
-.command-panel-content{flex:1 1 0;min-height:0;overflow:auto;padding:16px 4px 8px;contain:layout paint}
+.command-panel-content{flex:1 1 0;min-height:0;overflow:auto;padding:16px 4px 8px;contain:strict}
 /* A progressive insert must not re-layout the sections already painted. */
 .command-panel-content>*{contain:content}
 .command-panel-content .command-history-list>*,
@@ -198,6 +198,18 @@
     contain-intrinsic-size: auto 64px;
 }
 
+/* The diplomacy deck holds four bounded courts, not a long archive. Deferring
+   their first layout made Chromium perform one combined reveal pass after the
+   progressive insert: 59 ms at 4x CPU. The population register is likewise
+   inserted one complete card per frame on desktop; its deferred reveal added
+   a 52 ms task. Let those desktop cards lay out as they mount; phones keep the
+   archive containment above. */
+@media (min-width: 641px) {
+    #command-panel-content .diplomacy-realm,
+    #command-panel-content .population-citizen,
+    #command-panel-content .population-household { content-visibility: visible; }
+}
+
 /* On a phone the illustrated building register is intentionally folded: it is
    reference material, not a control the player needs on every visit. Opening
    it fills the grid once, and the same lazy images are used as on desktop. */
@@ -232,22 +244,20 @@
 }
 
 /* Living noble houses: resident-led estates, loyalty and levies. */
-.noble-house-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px}
-.noble-house{padding:12px;border:2px solid #ad8750;border-radius:10px;background:linear-gradient(145deg,#fff8df,#ecd8ad);color:#243a50}
+.noble-house-grid{display:flex;flex-wrap:wrap;gap:10px}
+.noble-house{flex:1 1 280px;min-width:0;padding:12px;border:2px solid #ad8750;border-radius:10px;background:linear-gradient(145deg,#fff8df,#ecd8ad);color:#243a50}
 .noble-house__head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
 .noble-house__head h4{margin:4px 0 2px;color:#203c58;font:bold 18px Georgia,serif;letter-spacing:.02em}
 .noble-house__head p{margin:0;color:#756445;font-size:8px}
 .noble-house__power{min-width:54px;text-align:right;color:#9b4a2a;font:bold 26px Georgia,serif}
-.noble-house__power small{display:block;color:#756445;font:700 6px sans-serif;letter-spacing:.14em}
-.noble-house__stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin:8px 0}
-.noble-house__stats span{display:flex;flex-direction:column;gap:2px;padding:5px;border:1px solid #cfb47f;border-radius:5px;color:#756445;font-size:7px;overflow:hidden}
-.noble-house__stats b{color:#263b52;font-size:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.noble-house__power::after{content:"POWER";display:block;color:#756445;font:700 6px sans-serif;letter-spacing:.14em}
+.noble-house__stats{margin:8px 0;padding:6px 8px;border:1px solid #cfb47f;border-radius:5px;color:#554a3a;font-size:7.5px;line-height:1.7;letter-spacing:.01em}
 .noble-house__people{margin:6px 0;color:#554a3a;font-size:8px;line-height:1.5}
-.noble-house__people strong{color:#806d52;letter-spacing:.08em}
+.noble-house__people::before{content:"NOBLE MEMBERS ";color:#806d52;letter-spacing:.08em}
 .noble-house__actions{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
 .noble-house__actions button{min-height:30px;padding:0 8px;border:1px solid #20374d;border-radius:5px;background:linear-gradient(#f7d67f,#d69a37);color:#24384d;font-size:6px;font-weight:1000;cursor:pointer}
 .noble-house__actions button:disabled{opacity:.45;cursor:not-allowed}
-@media(max-width:560px){.noble-house-grid{grid-template-columns:1fr}.noble-house__stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.noble-house-grid{flex-direction:column}.noble-house{flex-basis:auto}}
 
 .spy-agent-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:9px}
 .spy-agent{padding:11px;border:2px solid #ad8750;border-radius:10px;background:linear-gradient(145deg,#fff7dc,#ecd6a8)}
