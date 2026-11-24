@@ -1760,6 +1760,7 @@ try{
     }));
     assert.equal(handAfterDrag,countBeforeClick-1,"a valid drag must consume exactly the selected card");
     assert.deepEqual(selectionAfterDrag,{selected:null,current:null},"placing a card must not auto-select the next one");
+    assert.equal((await page.locator("#action-toast").innerText()).trim(),"CARD PLACED","a successful drag must replace the selection prompt with placement feedback");
 
     // At phone width the Selected Card panel sits below the map, so the two
     // surfaces cannot be on screen together and a drag has no possible gesture.
