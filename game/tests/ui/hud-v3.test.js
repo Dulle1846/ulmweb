@@ -3,9 +3,10 @@ import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
 
 const root=new URL("../../",import.meta.url);
-const [html,hud,ui,world,entities,renderer,favicon,terrainModel,management]=await Promise.all([
+const [html,hud,uiComponents,ui,world,entities,renderer,favicon,terrainModel,management]=await Promise.all([
   readFile(new URL("index.html",root),"utf8"),
   readFile(new URL("css/hud-v3.css",root),"utf8"),
+  readFile(new URL("css/ui-components.css",root),"utf8"),
   readFile(new URL("js/presentation/rendering/ui.js",root),"utf8"),
   readFile(new URL("js/world/world.js",root),"utf8"),
   readFile(new URL("js/presentation/rendering/entities.js",root),"utf8"),
@@ -44,6 +45,14 @@ test("administration rail reserves readable width for every label",()=>{
   assert.ok(hud.includes("white-space:nowrap"));
   assert.ok(hud.includes("overflow-y:auto"));
   assert.ok(html.includes('class="realm-nav-divider"'));
+});
+
+test("desktop administration and dock hints keep their reachable layer contract",()=>{
+  assert.ok(hud.includes("overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain"),"desktop panel must scroll to its card inspector and tabs");
+  assert.ok(hud.includes("@media(min-width:901px){.realm-action-dock{position:relative;z-index:985}}"),"dock hints must paint above the event bulletin");
+  assert.ok(uiComponents.includes("width:max-content;max-width:220px"),"dock hints must not wrap one word per line");
+  assert.ok(uiComponents.includes("z-index:990"),"dock hints stay above the notice and below dialogs");
+  assert.ok(management.includes('else if(a==="show-active-event")toast("ISSUE OPENED")'),"opening an issue must not claim a decision was recorded");
 });
 
 test("short desktop windows compact the rail so every destination stays visible",()=>{

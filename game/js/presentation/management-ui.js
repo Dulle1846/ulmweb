@@ -1477,6 +1477,7 @@ function act(b){ const a=b.dataset.command,v=b.dataset.value;let r={ok:false,rea
   else if(a.startsWith("biome-"))toast(String(r.message||"BIOME ATLAS UPDATED").toUpperCase());
   else if(a.startsWith("hazard-"))toast(String(r.message||"HAZARD RESPONSE RECORDED").toUpperCase());
   else if(a==="open-atelier")toast("ATELIER OPEN");
+  else if(a==="show-active-event")toast("ISSUE OPENED");
   else toast("DECISION RECORDED");
   if(a.startsWith("special-"))window.dispatchEvent(new CustomEvent("kac:special-biome-change"));
   renderUI();render();

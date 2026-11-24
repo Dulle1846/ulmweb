@@ -27,9 +27,10 @@
 .ui-panel{border:1px solid var(--ui-line,#8d7046);box-shadow:0 12px 32px #0007,inset 0 1px #f6e8c155}
 .ui-panel__header{display:flex;align-items:center;justify-content:space-between;gap:12px}
 [data-ui-tooltip]{position:relative}
+/* Above the event bulletin (980) but below modal dialogs (1000+). */
 [data-ui-tooltip]::after{
- content:attr(data-ui-tooltip);position:absolute;z-index:100;left:50%;bottom:calc(100% + 7px);transform:translate(-50%,4px);
- max-width:220px;padding:6px 9px;border:1px solid #a88a58;border-radius:3px;background:#211c17;color:#f1e3c5;
+ content:attr(data-ui-tooltip);position:absolute;z-index:990;left:50%;bottom:calc(100% + 7px);transform:translate(-50%,4px);
+ width:max-content;max-width:220px;padding:6px 9px;border:1px solid #a88a58;border-radius:3px;background:#211c17;color:#f1e3c5;
  box-shadow:0 4px 12px #0008;font:600 9px/1.35 var(--ui-body-font,Arial,sans-serif);letter-spacing:.02em;text-align:center;
  white-space:normal;opacity:0;pointer-events:none;transition:opacity .12s ease,transform .12s ease;
 }

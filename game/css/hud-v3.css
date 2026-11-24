@@ -311,6 +311,9 @@
 
 .side-panel{
   flex:0 0 var(--hud-panel-width);min-width:330px;
+  /* Desktop panels are taller than a 900 px viewport. Keep the card
+     inspector, tabs and footer reachable instead of clipping them. */
+  overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;
   border-left:2px solid #8f7448;
   background:
     repeating-linear-gradient(0deg,#ffffff04 0 1px,transparent 1px 3px),
@@ -439,6 +442,9 @@
   flex:0 0 auto;min-width:118px;min-height:34px;
   font-size:9px;letter-spacing:.1em;
 }
+/* Keep the toolbar hints above the event bulletin (z 980) without lifting
+   the dock over phone notifications. Dialogs stay above both. */
+@media(min-width:901px){.realm-action-dock{position:relative;z-index:985}}
 .realm-action-dock>button:first-child{border-color:#c3a566}
 .save-status{
   flex:1 1 auto;grid-column:auto;margin-left:auto;text-align:right;

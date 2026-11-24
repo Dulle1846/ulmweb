@@ -1,6 +1,6 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.53.1`
+**Current production version:** `3.53.2`
 **Next development line:** `3.54.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
@@ -8,6 +8,32 @@
 **Last repository verification:** 2026-11-24 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.53.2 — The desktop ledger stays in reach
+
+At 1440 × 900 the administration sidebar held 1,046 px of content inside a
+730 px column while its overflow stayed visible. The Selected Card inspector,
+the Event Log tabs and the panel footer were painted below the action dock with
+no way to scroll to them, so a desktop player could draw a card but not reach
+the surface that explains or places it. The panel now scrolls on desktop; the
+tablet and phone document-scroll layouts are unchanged.
+
+- **Desktop sidebar scroll.** The 352 px column keeps every ambition, room and
+  card section and gains a contained vertical scroll path. At maximum scroll the
+  card, tabs, tab content and footer sit above the action dock. No save field,
+  simulation state or rendering path changed.
+- **Readable dock hints.** The five toolbar tooltips were shrink-to-fit against
+  the 59 px of space left of their anchor, stacking labels one word per line.
+  They now use `max-content` up to 220 px and paint above the event bulletin
+  (z 980) while staying below modal dialogs. `ISSUE OPENED` replaces the false
+  `DECISION RECORDED` toast when an active realm issue is reopened.
+- **Player check.** The real build was driven at 1440 × 900 and 820 × 1180
+  through the start screen, map, army panel, diplomacy gift, a drawn card,
+  event choice, save/load, pause and all four speeds, and notifications. No
+  horizontal overflow, clipped controls or console errors were found on the
+  reviewed surfaces; the desktop sidebar and tooltip findings above were fixed.
+  The existing UI contract suites now assert the desktop scroll and tooltip
+  layers plus the corrected issue toast.
 
 ## 3.53.1 — The mobile map holds still
 
