@@ -51,6 +51,12 @@ ledger.
   stores and pilgrim hostels. All five ids are live generator families and the
   reward categories are asserted to instantiate, so no save field, random stream
   or per-tick cost was added.
+- **Night batch 4 — event outcomes explain themselves.** Resolving an issue now
+  appends one compact line of plain consequences to the existing resolution entry:
+  signed resource and faction changes, morale, and the direction of hidden pressure.
+  Card rewards now say they are queued for the next draw, and a full archive says
+  to draw a card to make room. This reuses the shared event log and card queue with
+  no new save field, ledger or per-tick work.
 - **Overnight work log.** `docs/NIGHT_SHIFT_2026-11-25.md` records each batch of
   this night shift and its verification.
 

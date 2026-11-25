@@ -36,6 +36,7 @@ plans, commit and deploy, and keep watching what `freebuff` commits.
 | 2026-11-25T01:15Z | Eight new authored chronicles plus noble-house heir continuity | `js/systems/event-chains.js`, `js/systems/nobility.js`, `tests/event-chains.test.js`, `tests/systems/nobility.test.js`, version `3.55.0`, changelog, generated spec audit | Focused suites 15/15; eight-seed 25-year noble sweep green after heir fix (seed 20261106 restored to 4 living houses); full `npm test` 1426/1426 plus syntax check (218 sources, 253 UI ids); `spec:audit` 3/3; `test:chronicles`, `test:nobility-ui` and `test:e2e` green; live production verified at 2026-11-25T01:20Z (`v3.55.0`, new chains and heir logic present) | `2684f5d` |
 | 2026-11-25T00:24Z | Four more everyday chronicles: caravan, illness, bandits, festival | `js/systems/event-chains.js`, `tests/event-chains.test.js`, `CHANGELOG.md`, generated spec audit, night log | Focused event/events suites 19/19; all four reward categories instantiate; `spec:audit` 3/3; eight isolated 25-year noble audits and targeted `nobility-balance` 2/2 green; full `npm test` 1427/1427 plus syntax check (218 sources, 253 UI ids) on the clean rerun after one transient load-related noble-sweep failure; `test:chronicles` green; live production verified at 2026-11-25T01:04Z (`v3.55.0`, all four new chains served) | `bab8278` |
 | 2026-11-25T01:27Z | Last five chronicles: feud, craft, omens, winter, pilgrimage | `js/systems/event-chains.js`, `tests/event-chains.test.js`, `CHANGELOG.md`, generated spec audit, night log | Focused event/events suites 20/20; all five reward categories instantiate; all 30 live event families now have a three-stage chain; `spec:audit` 3/3; first full `npm test` hit a load-related 30 s campaign budget (35.5 s) with 1427/1428, isolated `long-campaign` 1/1 in 13 s with the unchanged gate; clean full `npm test` 1428/1428 plus syntax check (218 sources, 253 UI ids); `test:chronicles` green; live production verified at 2026-11-25T01:52Z (`v3.55.0`, all five new chains served) | `587f183` |
+| 2026-11-25T01:58Z | Clearer event outcomes and card-reward notices | `js/systems/events.js`, `tests/systems/events.test.js`, `CHANGELOG.md`, generated spec audit, night log | Focused event/chronicle suites 22/22; `spec:audit` 3/3; full `npm test` 1430/1430 plus syntax check (218 sources, 253 UI ids); browser `test:e2e` green (toasts, resolution feedback, save/load, no page errors); live deploy pending | pending |
 
 ## Freebuff watch
 
@@ -44,8 +45,8 @@ plans, commit and deploy, and keep watching what `freebuff` commits.
   still `6ec6f43` ("Save chat files from Freebuff", 2026-11-24); no new commits since batch 1. Other historical matches are `c176d36`
   (retire the Freebuff Sites origins) and `dd978c3` (old merge). The retired Freebuff Sites
   origins are intentionally HTTP 404 and are not deploy targets.
-- Checked again at 2026-11-25T01:28Z after `git fetch --all`: head still `6ec6f43`,
-  no new `freebuff` commits in the last 100 commits across all refs.
+- Checked again at 2026-11-25T01:28Z and 01:58Z after `git fetch --all`: head still
+  `6ec6f43`, no new `freebuff` commits in the last 100 commits across all refs.
 - The first full run flagged the hard 16 ms grassland-overlay frame budget once under parallel
   load; the test passed 6/6 in isolation and the unchanged gate passed in the clean full rerun.
   No budget, assertion or gate was altered.

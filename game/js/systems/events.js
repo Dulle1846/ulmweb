@@ -22,6 +22,32 @@ export { addLog };
 const PLACES=["the lower fields","the eastern orchards","the old river road","the northern watch","the abbey lands","the market square","the western marshes","the old quarry road","the royal granaries","the border villages"];
 const STAGES=["At dawn","Before the evening bell","Beyond the old stone bridge","Under a pale sky","Near the forest edge","At the king's own table","As the harvest moon rises","During the first winter frost","After the midnight watch","At the opening of the spring fair"];
 const DETAILS=["a sealed letter has arrived","the village elders have sent a petition","workers report an unusual discovery","a trusted steward has raised a concern","travellers bring an unsettling rumour","the matter has reached the royal household","a long-forgotten record has resurfaced","a guild has refused its customary duty","an unfamiliar banner has been sighted","a strange pattern has appeared in the old accounts"];
+const OUTCOME_LABELS=Object.freeze({
+    gold:"GOLD",food:"FOOD",wood:"WOOD",stone:"STONE",morale:"MORALE",
+    commons:"COMMONS",nobility:"NOBILITY",guilds:"GUILDS",clergy:"CLERGY",legitimacy:"LEGITIMACY"
+});
+const HIDDEN_OUTCOMES=Object.freeze({
+    tension:["EASES","RISES"],prosperity:["FALLS","GROWS"],mystery:["FADES","DEEPENS"]
+});
+// One bounded line of plain feedback: resources and factions with signed amounts,
+// hidden pressures by direction only, never a new ledger or per-tick work.
+function describeEventOutcome(effects){
+    const parts=[],add=(label,value)=>{
+        if(parts.length>=10||!Number.isFinite(value)||!value)return;
+        parts.push(label+" "+(value>0?"+":"")+value);
+    };
+    for(const [key,value] of Object.entries(effects.resources||{}))add(OUTCOME_LABELS[key]||key.toUpperCase(),value);
+    add("MORALE",effects.morale);
+    for(const [key,value] of Object.entries(effects.politics||{}))add(OUTCOME_LABELS[key]||key.toUpperCase(),value);
+    for(const [key,value] of Object.entries(effects.hidden||{})){
+        if(parts.length>=10||!Number.isFinite(value)||!value)continue;
+        const words=HIDDEN_OUTCOMES[key];
+        parts.push((OUTCOME_LABELS[key]||key.toUpperCase())+" "+(words?words[value>0?1:0]:(value>0?"UP":"DOWN")));
+    }
+    const arrivals=Math.min(10,Math.max(0,Math.floor(Number(effects.villagers)||0)));
+    if(arrivals&&parts.length<10)parts.push(arrivals+" SETTLER"+(arrivals===1?"":"S")+" JOIN");
+    return parts.length?parts.join(" · "):"";
+}
 const FAMILY_ROWS=[
  ["harvest",["A Bountiful Harvest","The Fields Sing","The Granaries Overflow","The Reapers' Fortune","The Harvest Moon Rises"],"food",34,10,4,-2,0],
  ["shortage",["A Sudden Shortage","The Stores Run Thin","A Hard Winter Approaches","The Empty Cart","The Quartermaster's Alarm"],"wood",26,12,-2,3,0],
@@ -211,8 +237,8 @@ export function resolveEventChoice(index){
   state.cardRewardQueue=Array.isArray(state.cardRewardQueue)?state.cardRewardQueue:[];
   if(state.cardRewardQueue.length<12){
    state.cardRewardQueue.push(rewardCard);
-   addLog("A CARD HAS BEEN SECURED: "+rewardCard.categoryName.toUpperCase(),"#e4bd72","card");
-  }else addLog("THE CARD ARCHIVE IS FULL — THE REWARD WAS NOT STORED","#e9857b","card");
+   addLog("A CARD HAS BEEN SECURED: "+rewardCard.categoryName.toUpperCase()+" — QUEUED FOR YOUR NEXT DRAW","#e4bd72","card");
+  }else addLog("THE CARD ARCHIVE IS FULL — DRAW A CARD TO MAKE ROOM; REWARD NOT STORED","#e9857b","card");
  }
  if(effects.politics&&typeof effects.politics==="object")applyPoliticalEffects(effects.politics);
  if(typeof effects.crownEra==="string"&&!chooseCrownEra(effects.crownEra))return false;
@@ -256,7 +282,8 @@ export function resolveEventChoice(index){
   }
  }
  recordPersonEventOutcome(issue,choice,effects,state.tick);
- addLog(issue.title.toUpperCase()+": "+choice.label,"#a5d6a7","resolution");
+ const outcome=describeEventOutcome(effects);
+ addLog(issue.title.toUpperCase()+": "+choice.label+(outcome?" · "+outcome:""),"#a5d6a7","resolution");
  state.statistics.totalEventsResolved++;state.activeEvent=null;return true;
 }
 export function checkRandomEvents(){

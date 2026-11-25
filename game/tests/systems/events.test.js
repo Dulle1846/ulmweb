@@ -102,6 +102,43 @@ test("a resolved discovery can secure a related card for the next draw",()=>{
     assert.equal(state.cardRewardQueue[0].category,"gold-mines");
     assert.ok(state.eventLog.some(entry=>entry.text.includes("GOLD MINES")));
 });
+test("a resolved issue reports its concrete consequences in one bounded log line",()=>{
+    state.resources.food=500;
+    state.activeEvent={
+        id:"outcome-test",family:"harvest",title:"A test outcome",
+        choices:[{label:"Send grain to the wards",effects:{
+            resources:{food:-8},morale:3,politics:{commons:2},
+            hidden:{tension:-2,prosperity:1}
+        }}]
+    };
+    assert.equal(resolveEventChoice(0),true);
+    const entry=state.eventLog.find(item=>item.text.startsWith("A TEST OUTCOME: "));
+    assert.ok(entry);
+    assert.match(entry.text,/FOOD -8/);
+    assert.match(entry.text,/MORALE \+3/);
+    assert.match(entry.text,/COMMONS \+2/);
+    assert.match(entry.text,/TENSION EASES/);
+    assert.match(entry.text,/PROSPERITY GROWS/);
+    assert.equal(state.resources.food,492);
+});
+
+test("card reward notices say where the reward went and when it can be drawn",()=>{
+    state.cardRewardQueue=[];
+    state.activeEvent={
+        id:"reward-notice-test",family:"discovery",title:"A hidden seam",
+        choices:[{label:"Claim the seam",effects:{cardReward:"gold-mines"}}]
+    };
+    assert.equal(resolveEventChoice(0),true);
+    assert.ok(state.eventLog.some(entry=>/QUEUED FOR YOUR NEXT DRAW/.test(entry.text)));
+    state.cardRewardQueue=new Array(12).fill({});
+    state.activeEvent={
+        id:"reward-full-test",family:"discovery",title:"Another hidden seam",
+        choices:[{label:"Claim the seam",effects:{cardReward:"gold-mines"}}]
+    };
+    assert.equal(resolveEventChoice(0),true);
+    assert.ok(state.eventLog.some(entry=>/CARD ARCHIVE IS FULL.*DRAW A CARD TO MAKE ROOM/.test(entry.text)));
+});
+
 test("event variants exceed one hundred thousand combinations",()=>{
     assert.ok(EVENT_VARIANT_COUNT>=100000);
 });
