@@ -57,6 +57,27 @@ test("the first-session checklist follows the existing house, road, card and amb
     assert.ok(snapshot.items.every(item => item.done));
 });
 
+test("the first-session HUD carries the real latest twenty-day ledger in plain language", () => {
+    resetState();
+    state.hasStarted = true;
+    state.economy.lastLedger = {
+        foodInflow: 120,
+        foodConsumed: 90,
+        foodSpoiled: 4,
+        wagesPaid: 12,
+        upkeepPaid: 6,
+        netGold: -18
+    };
+    const snapshot = getFirstSessionSnapshot();
+    assert.match(snapshot.ledgerBrief, /LAST 20-DAY SETTLEMENT/);
+    assert.match(snapshot.ledgerBrief, /120 food in/);
+    assert.match(snapshot.ledgerBrief, /90 eaten/);
+    assert.match(snapshot.ledgerBrief, /4 spoiled/);
+    assert.match(snapshot.ledgerBrief, /-18 gold net after 12 wages and 6 upkeep/);
+    delete state.economy.lastLedger;
+    assert.equal(getFirstSessionSnapshot().ledgerBrief, "", "no ledger must not invent a settlement");
+});
+
 test("the HUD section, CSS states and on-demand renderer are wired", async () => {
     const root = new URL("../../", import.meta.url);
     const [html, hud, ui] = await Promise.all([
@@ -68,14 +89,18 @@ test("the HUD section, CSS states and on-demand renderer are wired", async () =>
     assert.ok(html.includes('id="first-session-list"'));
     assert.ok(html.includes('id="first-session-complete"'));
     assert.ok(html.includes('id="first-session-need"'));
+    assert.ok(html.includes('id="first-session-ledger"'));
     assert.ok(html.includes('id="ambition-counsel-evidence"'));
     assert.ok(hud.includes(".first-session-step.is-done"));
     assert.ok(hud.includes(".first-session-step.is-current"));
     assert.ok(hud.includes(".first-session-complete"));
+    assert.ok(hud.includes(".first-session-ledger"));
     assert.ok(hud.includes(".first-session-list[hidden]"));
     assert.ok(ui.includes("renderFirstSession"));
     assert.ok(ui.includes('setText("first-session-count"'));
     assert.ok(ui.includes('"FIRST SESSION COMPLETE"'));
     assert.ok(ui.includes("list.hidden=snapshot.allComplete"));
     assert.ok(ui.includes("complete.hidden=!snapshot.allComplete"));
+    assert.ok(ui.includes('setText("first-session-ledger"'));
+    assert.ok(ui.includes("snapshot.ledgerBrief"));
 });

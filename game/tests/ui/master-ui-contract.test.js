@@ -101,6 +101,8 @@ test("save status reflects actual save/load outcomes, not an autosave promise",(
   assert.ok(main.includes('setSaveStatus("LAST SAVED'));
   assert.ok(main.includes('setSaveStatus("SAVE FAILED'));
   assert.ok(main.includes('setSaveStatus("LOADED'));
+  assert.ok(main.includes('setSaveStatus("FOUNDING REALM SAVED'));
+  assert.ok(main.includes("persistFoundingRealm()"),"a founded realm must be resumable without a Save click");
   assert.ok(!html.toLowerCase().includes("autosave"));
 });
 

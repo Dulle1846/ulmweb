@@ -61,6 +61,22 @@ the ten visible in a sample.
   during normalization, before validation, and preserves the rest of the realm;
   no schema or save field was added.
 
+## 3.62.0-dev - A clearer, sturdier first hour
+
+- **A founded realm saves itself.** After the opening world, caches and first
+  sixty deterministic ticks are ready, `startNewRealm()` writes the normal
+  versioned local save for the active profile and reports `FOUNDING REALM SAVED`.
+  A player who reloads before discovering Save can now press Continue and get
+  the same seed, ruler, year, hand and first-session checklist. The old save is
+  kept as the existing recovery backup; storage errors never block play.
+- **The first hour tells the truth about its two most misread states.** An open
+  cottage site no longer counts as beds in NEXT MOVE: the counsel now says the
+  site is not operational, names its stage, reason and outstanding materials,
+  and opens the Buildings register. FIRST SESSION also shows the latest real
+  20-day settlement as one plain line — food in, eaten and spoiled, gold net
+  after wages and upkeep. Both are presentation-only reads; no statistic,
+  completion rule or save field changed.
+
 ## 3.60.0 — Every forest profile now has a job
 
 The 30-point forest record is no longer only a survey. It resolves into one
@@ -165,7 +181,6 @@ proof over the real lumber-yard and atlas controls.
   logs), gathers herbs/timber, opens 14 ecology cards, and plays three years at
   4×. It records one observable effect for every point in
   `docs/FOREST_DYNAMICS.md`.
-
 ## 3.58.0 — Every wood has a species history, a seed source and a working system
 
 The sixty regional forests named their species, but the canopy still kept the

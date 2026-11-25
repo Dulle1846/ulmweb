@@ -55,6 +55,25 @@ function shortfallText(state, cost) {
     return rows.length ? rows.join(" · ") : "nothing";
 }
 
+function openHousingSite(state) {
+    return (Array.isArray(state?.entities) ? state.entities : [])
+        .find(entity => !entity?.dead && isHousingType(entity?.type) &&
+            entity?.construction && typeof entity.construction === "object" &&
+            Number(entity.construction.stage || 0) < 3) || null;
+}
+
+function siteMaterialText(site) {
+    const construction = site?.construction || {};
+    const rows = Object.entries(construction.materialNeed || {})
+        .filter(([, quantity]) => Number(quantity) > 0)
+        .map(([good, quantity]) => {
+            const remaining = Math.max(0, Number(quantity) - (Number(construction.delivered?.[good]) || 0));
+            return remaining > 0 ? formatAmount(remaining) + " " + good : null;
+        })
+        .filter(Boolean);
+    return rows.length ? rows.join(" · ") : "materials delivered";
+}
+
 function farmCost() {
     return costShare(BUILDING_COSTS[TYPE.FARM] || {}, CONSTRUCTION_SHARE);
 }
@@ -135,6 +154,21 @@ export function getCoreCounsel(state) {
         };
     }
     if (people >= beds) {
+        const site = openHousingSite(state);
+        if (site) {
+            return {
+                id: "housing-site",
+                stepId: "house",
+                text: "A cottage site is open but not operational. Its beds arrive when construction completes.",
+                evidence: "Site opened · stage " + Math.max(0, Math.floor(Number(site.construction?.stage) || 0)) +
+                    " · " + String(site.construction?.reason || "SITE PREPARATION") +
+                    " · beds " + beds + " · " + people + " residents · needs " + siteMaterialText(site),
+                actionLabel: "OPEN BUILDINGS",
+                panel: "buildings",
+                buildCategory: null,
+                buildType: null
+            };
+        }
         if (!canAfford(state, cottage)) {
             return {
                 id: "housing",

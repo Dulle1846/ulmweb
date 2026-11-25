@@ -179,7 +179,7 @@ function renderFirstSession(){
     const section=document.getElementById("first-session-section");
     if(!section)return;
     const snapshot=getFirstSessionSnapshot();
-    const signature=snapshot.items.map(item=>item.done?1:0).join("")+"|"+snapshot.completed+"|"+snapshot.currentId+"|"+(snapshot.currentDetail||"")+"|"+(snapshot.needText||"");
+    const signature=snapshot.items.map(item=>item.done?1:0).join("")+"|"+snapshot.completed+"|"+snapshot.currentId+"|"+(snapshot.currentDetail||"")+"|"+(snapshot.needText||"")+"|"+(snapshot.ledgerBrief||"");
     if(signature===lastFirstSessionSignature)return;
     lastFirstSessionSignature=signature;
     setText("first-session-heading",snapshot.allComplete?"FIRST SESSION COMPLETE":"FIRST SESSION");
@@ -192,6 +192,13 @@ function renderFirstSession(){
     if(need){
         need.hidden=!snapshot.needText;
         setText("first-session-need",snapshot.needText?"REALM NEED · "+snapshot.needText:"");
+    }
+    // The latest settlement stays visible even after the checklist completes;
+    // it is a factual ledger line, not another progress step.
+    const ledger=document.getElementById("first-session-ledger");
+    if(ledger){
+        ledger.hidden=!snapshot.ledgerBrief;
+        setText("first-session-ledger",snapshot.ledgerBrief||"");
     }
     if(!list)return;
     list.hidden=snapshot.allComplete;

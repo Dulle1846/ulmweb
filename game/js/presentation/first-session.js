@@ -18,6 +18,20 @@ function safeNumber(value) {
     return Math.max(0, Number(value) || 0);
 }
 
+function ledgerNumber(value) {
+    const amount = Number(value) || 0;
+    return Number.isInteger(amount) ? String(amount) : amount.toFixed(1);
+}
+
+function ledgerBrief(ledger) {
+    if (!ledger || typeof ledger !== "object") return "";
+    const net = Number(ledger.netGold) || 0;
+    return "LAST 20-DAY SETTLEMENT · " + ledgerNumber(ledger.foodInflow) + " food in · " +
+        ledgerNumber(ledger.foodConsumed) + " eaten · " + ledgerNumber(ledger.foodSpoiled) + " spoiled · " +
+        (net >= 0 ? "+" : "") + ledgerNumber(net) + " gold net after " +
+        ledgerNumber(ledger.wagesPaid) + " wages and " + ledgerNumber(ledger.upkeepPaid) + " upkeep";
+}
+
 export function getFirstSessionSnapshot() {
     const statistics = state.statistics || {};
     const ambition = getAmbitionSnapshot();
@@ -67,6 +81,7 @@ export function getFirstSessionSnapshot() {
         currentId: current ? current.id : null,
         currentDetail: current ? (counsel.evidence || current.detail) : null,
         counselId: counsel.id,
-        needText
+        needText,
+        ledgerBrief: ledgerBrief(state.economy?.lastLedger)
     };
 }

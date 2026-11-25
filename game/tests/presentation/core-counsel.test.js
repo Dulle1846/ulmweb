@@ -104,6 +104,24 @@ test("core counsel carries the exact build target and measured evidence for an a
     assert.match(housing.evidence, /Beds 4 · 4 residents/);
 });
 
+test("core counsel explains an open cottage site instead of counting it as beds", () => {
+    const villagers = Array.from({ length: 4 }, () => ({ dead: false, type: TYPE.VILLAGER }));
+    const site = {
+        dead: false,
+        type: TYPE.HOUSE,
+        construction: { stage: 0, reason: "WAITING FOR PLANKS", materialNeed: { planks: 4 }, delivered: { planks: 1 } }
+    };
+    const counsel = getCoreCounsel(realm({ entities: [...villagers, { dead: false, type: TYPE.HOUSE }, site] }));
+    assert.equal(counsel.id, "housing-site");
+    assert.equal(counsel.stepId, "house", "the checklist step stays open until the site is complete");
+    assert.equal(counsel.panel, "buildings", "the player must see the stalled site, not start a second one");
+    assert.match(counsel.text, /site is open but not operational/i);
+    assert.match(counsel.text, /beds arrive when construction completes/i);
+    assert.match(counsel.evidence, /Site opened · stage 0/);
+    assert.match(counsel.evidence, /WAITING FOR PLANKS/);
+    assert.match(counsel.evidence, /needs 3 planks/);
+});
+
 test("core counsel does not recommend a step before the realm is founded", () => {
     const counsel = getCoreCounsel({ hasStarted: false });
     assert.equal(counsel.id, "found");

@@ -773,6 +773,25 @@ async function startNewRealm(seed,profile,worldOptions=readWorldOptions(),scenar
     // The full HUD was already rendered behind the start overlay. Starting a
     // second refresh chain on the first visible frame only competes with it.
     startSoundtrack().catch(()=>{});
+    // A newly founded realm must survive a reload even if the player never
+    // discovers the Save button. This is the same snapshot the explicit Save
+    // writes; it never changes the schema and a storage error must not undo an
+    // otherwise playable founding.
+    persistFoundingRealm();
+}
+
+function persistFoundingRealm(){
+    if(!state.hasStarted||!state.activeProfileId)return false;
+    try{
+        const savedAt=writeLocalSave(state.activeProfileId,createSaveSnapshot());
+        setSaveStatus("FOUNDING REALM SAVED · "+new Date(savedAt).toLocaleTimeString(),"saved");
+        renderSaveSlots();
+        addLog("FOUNDING REALM SAVED","#a3d6a7","system");
+        return true;
+    }catch(error){
+        setSaveStatus("FOUNDING SAVE FAILED · "+error.message,"error");
+        return false;
+    }
 }
 
 function saveCurrentGame(){
