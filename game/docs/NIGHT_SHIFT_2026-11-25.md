@@ -53,3 +53,17 @@ plans, commit and deploy, and keep watching what `freebuff` commits.
 - The first full run flagged the hard 16 ms grassland-overlay frame budget once under parallel
   load; the test passed 6/6 in isolation and the unchanged gate passed in the clean full rerun.
   No budget, assertion or gate was altered.
+- Final check at 2026-11-25T04:08Z after `git fetch --all`: head still `6ec6f43`; no new
+  `freebuff` commits in the last 100 commits across all refs. Nothing to integrate.
+
+## Final audit (after 04:00 UTC, no new content)
+
+- 2026-11-25T04:04Z — final full `npm test` on the shipped tree: **1433/1433**, no failures,
+  syntax check passed (218 source files, 253 referenced UI ids); 25-year campaign gate unchanged.
+- 2026-11-25T04:08Z — production E2E against `https://kings-and-cards.pages.dev/`: green
+  (world forge, seed, dossiers, memorial archive, card draw/selection/drag, settings, pause,
+  save/load, forest products, ecology, legacy saves; no page errors).
+- 2026-11-25T04:08Z — final deploy check with cache-buster: index HTTP 200 and `v3.55.0`;
+  `js/systems/ambitions.js`, `js/systems/scenario.js`, `js/systems/events.js` and
+  `js/systems/event-chains.js` all HTTP 200 with their new content. All seven batches are
+  committed, pushed and live. Night shift closed.
