@@ -351,5 +351,75 @@ export const EVENT_CHAINS = Object.freeze({
             {label:"Endow annual feast days",description:"Spend food and gold on a yearly festival and secure a feast-day card for the next draw.",effects:{resources:{food:-12,gold:-10},morale:5,hidden:{prosperity:6,tension:-4,mystery:0},politics:{commons:3,guilds:1,legitimacy:2},cardReward:"feast-days"}},
             {label:"Sell the festival to merchants",description:"Gain twenty gold from private stalls, but the old shared celebration is lost.",effects:{resources:{gold:20},morale:-2,hidden:{prosperity:2,tension:4,mystery:0},politics:{guilds:3,commons:-2,clergy:-1}}}
         ]}
+    ]),
+    feud: Object.freeze([
+        {title:"The Quarrel at the Dais",description:"Two noble houses trade insults before the whole court and wait to see which one the crown will favour.",choices:[
+            {label:"Hear both houses in council",description:"Spend six gold on a public hearing that gives each house a chance to state its grievance.",effects:{resources:{gold:-6},morale:2,hidden:{tension:-2,prosperity:0,mystery:1},politics:{nobility:2,commons:1,legitimacy:1}}},
+            {label:"Let their retainers settle it",description:"Save the crown's coin, but armed retainers start settling the quarrel in the streets.",effects:{morale:-3,hidden:{tension:4,prosperity:-1,mystery:1},politics:{nobility:-1,commons:-2,legitimacy:-1}}}
+        ]},
+        {title:"The Broken Oath",description:"A vassal renounces an old oath of service and offers a purse of gold to buy his freedom.",choices:[
+            {label:"Buy back the oath with land",description:"Spend twelve gold to confirm the vassal's duty and keep the border lords content.",effects:{resources:{gold:-12},morale:1,hidden:{tension:-2,prosperity:2,mystery:0},politics:{nobility:3,guilds:-1,legitimacy:1}}},
+            {label:"Summon both banners to court",description:"Spend wood and food to feed two armed retinues until the crown hears their cases.",effects:{resources:{wood:-6,food:-8},morale:-2,hidden:{tension:5,prosperity:0,mystery:1},politics:{nobility:2,commons:-1,legitimacy:-2}}}
+        ]},
+        {title:"The Crown's Arbitration",description:"The feud has reached the throne. The judgment will decide whether the houses ever trust the crown again.",choices:[
+            {label:"Write a lasting peace bond",description:"Spend gold and food on a sealed bond and secure a noble-house card for the next draw.",effects:{resources:{gold:-10,food:-6},morale:4,hidden:{prosperity:5,tension:-4,mystery:0},politics:{nobility:3,commons:2,legitimacy:2},cardReward:"noble-houses"}},
+            {label:"Let the feud burn itself out",description:"Gain eight gold from abandoned estates, but the houses remember the crown's silence.",effects:{resources:{gold:8},morale:-2,hidden:{tension:4,prosperity:-2,mystery:1},politics:{nobility:-2,commons:-1,legitimacy:-1}}}
+        ]}
+    ]),
+    craft: Object.freeze([
+        {title:"A Masterwork Offered",description:"A master smith lays a finely made prototype before the throne and asks the crown to back her guild.",choices:[
+            {label:"Fund the guild's workshop",description:"Spend gold and wood on tools and a hall where the craft can be taught.",effects:{resources:{gold:-8,wood:-6},morale:2,hidden:{prosperity:4,tension:-1,mystery:1},politics:{guilds:3,nobility:1,legitimacy:1}}},
+            {label:"Keep the royal purse closed",description:"Send the smith away empty-handed; the guild quietly withdraws its best work.",effects:{morale:-2,hidden:{tension:3,prosperity:-1,mystery:0},politics:{guilds:-2,commons:-1}}}
+        ]},
+        {title:"The Guild's Secret",description:"Two masters claim the same secret recipe, and each threatens to take it to a rival court.",choices:[
+            {label:"Buy the recipe for the realm",description:"Spend gold on a public purchase so the craft stays within the kingdom.",effects:{resources:{gold:-10},morale:1,hidden:{prosperity:5,mystery:2,tension:-2},politics:{guilds:2,commons:1,legitimacy:1}}},
+            {label:"Order the recipe seized",description:"Spend gold on officers and seize the papers, but the guilds now guard every secret more closely.",effects:{resources:{gold:-4},morale:-4,hidden:{tension:6,mystery:1,prosperity:1},politics:{guilds:-4,nobility:2,legitimacy:-2}}}
+        ]},
+        {title:"The Charter of Crafts",description:"The masters ask the crown to recognise their craft in law rather than protect it by decree.",choices:[
+            {label:"Charter the craft fairs",description:"Spend gold and wood on a chartered fair and secure a craft-fair card for the next draw.",effects:{resources:{gold:-10,wood:-8},morale:4,hidden:{prosperity:6,tension:-3,mystery:0},politics:{guilds:3,commons:2,legitimacy:2},cardReward:"craft-fairs"}},
+            {label:"Sell the charter to one guild",description:"Gain sixteen gold from a private charter, while the other guilds take their trade elsewhere.",effects:{resources:{gold:16},morale:-2,hidden:{tension:4,prosperity:2,mystery:1},politics:{guilds:2,commons:-2,nobility:1}}}
+        ]}
+    ]),
+    omens: Object.freeze([
+        {title:"An Omen in the Heavens",description:"A strange light hangs over the palace, and the clergy and astronomers offer opposing readings.",choices:[
+            {label:"Call the clergy to read the sky",description:"Spend gold and food on a public vigil and a careful interpretation.",effects:{resources:{gold:-6,food:-4},morale:2,hidden:{mystery:4,tension:-2,prosperity:0},politics:{clergy:3,legitimacy:1,commons:1}}},
+            {label:"Order the astronomers silenced",description:"Save the expense of a vigil, but rumours of a suppressed prophecy spread through the wards.",effects:{morale:-3,hidden:{mystery:5,tension:4,prosperity:-1},politics:{clergy:-2,nobility:1,legitimacy:-1}}}
+        ]},
+        {title:"The Raven at the Gate",description:"A black raven has taken to the palace gate, and the households read it as a warning of hunger.",choices:[
+            {label:"Feed the poor and open the granaries",description:"Spend twelve food on relief so the warning becomes a reason to prepare.",effects:{resources:{food:-12},morale:3,hidden:{tension:-4,prosperity:2,mystery:1},politics:{commons:3,clergy:1,legitimacy:2}}},
+            {label:"Ignore the warning",description:"Gain four gold from unspent stores, but the wards grow certain the crown does not listen.",effects:{resources:{gold:4},morale:-2,hidden:{tension:5,mystery:3,prosperity:-1},politics:{commons:-2,clergy:-1}}}
+        ]},
+        {title:"The Year of Signs",description:"The year has brought too many signs to dismiss. The crown must preserve their meaning or bury it.",choices:[
+            {label:"Record the omens in a royal almanac",description:"Spend gold and stone on an official record and secure a dream-omen card for the next draw.",effects:{resources:{gold:-8,stone:-4},morale:4,hidden:{mystery:6,tension:-3,prosperity:3},politics:{clergy:2,nobility:1,legitimacy:2},cardReward:"dream-omens"}},
+            {label:"Burn the almanacs",description:"Gain five gold from avoided expense, but every private prophecy now sounds like treason.",effects:{resources:{gold:5},morale:-1,hidden:{mystery:2,tension:4,prosperity:0},politics:{clergy:-2,commons:-1,legitimacy:-1}}}
+        ]}
+    ]),
+    winter: Object.freeze([
+        {title:"The First Frost",description:"Frost comes early to the fields and the stewards ask whether the winter stores should be opened.",choices:[
+            {label:"Open the winter stores early",description:"Spend food and wood on fuel and meals while the roads are still passable.",effects:{resources:{food:-12,wood:-6},morale:3,hidden:{prosperity:2,tension:-2,mystery:0},politics:{commons:3,legitimacy:1},health:{containment:1}}},
+            {label:"Ration nothing and wait",description:"Save the stores for now, but a cold fever takes hold in the unheated rows.",effects:{morale:-3,hidden:{tension:5,prosperity:-2,mystery:0},politics:{commons:-2,guilds:-1,legitimacy:-1},health:{outbreak:true,severity:1,containment:0,disease:"winter-fever"}}}
+        ]},
+        {title:"Snow at the Pass",description:"Snow has closed the mountain pass and the towns beyond it are waiting for the royal road crews.",choices:[
+            {label:"Clear the road with royal crews",description:"Spend gold and wood on a crew that brings the sick down from the pass.",effects:{resources:{gold:-8,wood:-8},morale:2,hidden:{prosperity:4,tension:-2,mystery:0},politics:{guilds:2,commons:2,legitimacy:1},health:{treatment:1}}},
+            {label:"Let the pass close",description:"Gain six gold from the unused crews, but isolation leaves the fever longer to run.",effects:{resources:{gold:6},morale:-2,hidden:{tension:4,prosperity:-3,mystery:0},politics:{guilds:-2,commons:-1,legitimacy:-1},health:{containment:-1}}}
+        ]},
+        {title:"The Thaw",description:"The snow is gone. The realm must decide whether this winter taught the crown anything.",choices:[
+            {label:"Endow permanent winter stores",description:"Spend gold, stone and food on a standing reserve and secure a winter-store card for the next draw.",effects:{resources:{gold:-10,stone:-8,food:-8},morale:5,hidden:{prosperity:6,tension:-4,mystery:0},politics:{commons:3,nobility:1,legitimacy:2},health:{containment:1},cardReward:"winter-stores"}},
+            {label:"Sell the remaining stores",description:"Gain eighteen gold from the sale, but the next frost will find the granaries empty.",effects:{resources:{gold:18},morale:-2,hidden:{tension:5,prosperity:-2,mystery:0},politics:{commons:-3,guilds:2,legitimacy:-2},health:{containment:-1}}}
+        ]}
+    ]),
+    pilgrimage: Object.freeze([
+        {title:"The Pilgrim Road Fills",description:"Travellers have begun arriving for a distant shrine and the road needs food and safe lodging.",choices:[
+            {label:"Open the royal hostels",description:"Spend gold and food on beds and meals for the pilgrims.",effects:{resources:{gold:-6,food:-10},morale:3,hidden:{prosperity:3,tension:-2,mystery:2},politics:{clergy:3,commons:1,legitimacy:1}}},
+            {label:"Turn the pilgrims back at the gate",description:"Save the stores, but the clergy and the villages on the road object loudly.",effects:{morale:-3,hidden:{tension:5,mystery:2,prosperity:-1},politics:{clergy:-2,commons:-1,legitimacy:-1}}}
+        ]},
+        {title:"The Travellers' Blessing",description:"A holy teacher asks the crown to fund a wayside shrine where every traveller can stop.",choices:[
+            {label:"Fund a shared shrine",description:"Spend wood and stone on a shrine that no single family can claim.",effects:{resources:{wood:-8,stone:-6},morale:3,hidden:{prosperity:4,tension:-3,mystery:3},politics:{clergy:3,commons:2,legitimacy:1}}},
+            {label:"Charge for every blessing",description:"Gain twelve gold from the pilgrims, but the road fills with angry disputes over fees.",effects:{resources:{gold:12},morale:-2,hidden:{tension:4,prosperity:2,mystery:1},politics:{clergy:-2,guilds:2,commons:-1}}}
+        ]},
+        {title:"The Long Procession",description:"The procession is ready to leave. Its welcome will outlast the season if the crown builds on it.",choices:[
+            {label:"Charter the pilgrim hostels",description:"Spend gold and stone on permanent lodging and secure a pilgrim-hostel card for the next draw.",effects:{resources:{gold:-10,stone:-8},morale:5,hidden:{prosperity:5,tension:-4,mystery:4},politics:{clergy:3,commons:2,legitimacy:2},cardReward:"pilgrim-hostels"}},
+            {label:"Keep the road as a royal toll",description:"Gain sixteen gold from the tolls, but the shrines close their doors to royal travellers.",effects:{resources:{gold:16},morale:-2,hidden:{tension:5,prosperity:1,mystery:1},politics:{guilds:2,clergy:-2,commons:-2,legitimacy:-1}}}
+        ]}
     ])
 });

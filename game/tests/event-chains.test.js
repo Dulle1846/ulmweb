@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { EVENT_CHAINS } from "../js/systems/event-chains.js";
+import { createCardForCategory } from "../js/systems/card-catalog.js";
 
 test("authored story arcs have multiple stages and meaningful choices", () => {
     assert.ok(Object.keys(EVENT_CHAINS).length >= 13);
@@ -121,9 +122,39 @@ test("caravan, illness, bandits and festival chronicles cover trade, health, saf
     assert.ok(EVENT_CHAINS.caravan[1].choices.every(choice=>choice.effects.resources));
 });
 
+test("feud, craft, omens, winter and pilgrimage finish the chronicle library",()=>{
+    const ids=["feud","craft","omens","winter","pilgrimage"];
+    for(const id of ids){
+        assert.equal(EVENT_CHAINS[id].length,3,id+" should have three stages");
+        for(const stage of EVENT_CHAINS[id]){
+            assert.ok(stage.description.length>20);
+            assert.equal(stage.choices.length,2,id+" stage should offer two real decisions");
+            for(const choice of stage.choices){
+                assert.ok(choice.description.length>10);
+                assert.ok(choice.effects.politics&&Object.keys(choice.effects.politics).length>0);
+                for(const value of Object.values(choice.effects.politics))assert.ok(Number.isFinite(value));
+                for(const key of ["tension","prosperity","mystery"]){
+                    assert.ok(Number.isFinite(choice.effects.hidden?.[key]||0),id+" must record hidden consequences");
+                }
+            }
+        }
+    }
+    const rewards={feud:"noble-houses",craft:"craft-fairs",omens:"dream-omens",winter:"winter-stores",pilgrimage:"pilgrim-hostels"};
+    for(const [id,card] of Object.entries(rewards)){
+        assert.equal(EVENT_CHAINS[id][2].choices[0].effects.cardReward,card,id+" should end with a real card reward");
+        assert.equal(EVENT_CHAINS[id][2].choices[1].effects.cardReward,undefined,id+" alternate ending must stay distinct");
+        assert.ok(createCardForCategory(card).name,id+" reward must be a real card category");
+    }
+    for(const stage of EVENT_CHAINS.winter){
+        for(const choice of stage.choices)assert.ok(choice.effects.health&&typeof choice.effects.health==="object");
+    }
+    assert.ok(EVENT_CHAINS.feud[1].choices.every(choice=>choice.effects.resources));
+    assert.ok(EVENT_CHAINS.craft[1].choices.every(choice=>choice.effects.resources));
+});
+
 test("every new chronicle is anchored to an event family that can actually generate it",()=>{
     const source=readFileSync(new URL("../js/systems/events.js",import.meta.url),"utf8");
-    for(const id of ["harvest","discovery","storm","taxation","border","faith","invention","monster","caravan","illness","bandits","festival"]){
+    for(const id of ["harvest","discovery","storm","taxation","border","faith","invention","monster","caravan","illness","bandits","festival","feud","craft","omens","winter","pilgrimage"]){
         assert.match(source,new RegExp('^\\s*\\["'+id+'",',"m"),id+" must be a live event family");
         assert.ok(EVENT_CHAINS[id],id+" must have an authored chain");
     }

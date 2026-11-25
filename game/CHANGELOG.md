@@ -43,6 +43,14 @@ ledger.
   hidden ledgers; the final choices secure merchant stalls, healers' rounds,
   watchtowers or festival weeks. All four ids are anchored to live generator
   families, so the arcs are reachable without a new save field or random stream.
+- **Night batch 3 — the chronicle library is complete.** Noble feuds, master crafts,
+  heavenly omens, winter and pilgrimage now each run for three authored stages
+  instead of ending with a single issue. Every decision changes existing resources,
+  political factions and hidden pressures; winter choices also alter the health
+  ledger. The five endings secure noble houses, craft fairs, dream omens, winter
+  stores and pilgrim hostels. All five ids are live generator families and the
+  reward categories are asserted to instantiate, so no save field, random stream
+  or per-tick cost was added.
 - **Overnight work log.** `docs/NIGHT_SHIFT_2026-11-25.md` records each batch of
   this night shift and its verification.
 
