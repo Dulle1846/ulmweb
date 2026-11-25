@@ -412,6 +412,7 @@
 .forest-atlas__chip{padding:2px 6px;border:1px solid var(--ui-line);border-radius:999px;color:var(--ui-paper-text);font:700 6px/1.2 var(--ui-body-font,sans-serif);letter-spacing:.03em}
 .forest-atlas__chip b{color:var(--color-antique-gold)}
 .forest-atlas__good{padding:2px 5px;border-radius:3px;background:rgba(0,0,0,.22);color:var(--ui-paper-muted);font:700 6px/1.2 var(--ui-body-font,sans-serif);letter-spacing:.04em;text-transform:capitalize}
+.forest-atlas__good small{display:block;font:500 5px/1.2 var(--ui-body-font,sans-serif);color:rgba(227,189,113,.85);text-transform:none;letter-spacing:0}
 @media(max-width:620px){
  .timber-market__row{grid-template-columns:minmax(0,1fr) auto}
  .timber-market__sell{grid-column:1 / -1}

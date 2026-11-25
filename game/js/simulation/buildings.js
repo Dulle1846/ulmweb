@@ -59,11 +59,23 @@ function regionalForestAt(x, y) {
     if (cached !== undefined) return cached;
     const habitat = getForestHabitatAt(Math.floor(x), Math.floor(y));
     const stand = habitat?.forestStand || null;
+    const working = stand.dynamics?.working || null;
     const value = stand ? Object.freeze({
         effects: stand.regionalEffects || null,
         type: stand.regionalType || null,
         timberFactor: Number(stand.dynamics?.silviculture?.timberFactor) || 1,
         system: stand.dynamics?.silviculture?.system || null,
+        // The working-wood profile is part of the site's productive identity.
+        // Keeping it on the same cached subset means the camp reads it without
+        // rebuilding a stand, and every value has a real production consumer.
+        working: working ? Object.freeze({
+            sawlog: Number(working.timber?.sawlog) || 0,
+            firewood: Number(working.timber?.firewood) || 0,
+            specialty: Number(working.timber?.specialty) || 0,
+            quality: Number(working.timber?.quality) || 0,
+            logShare: Number(working.timber?.logShare) || 1,
+            volume: Number(working.timber?.volume) || 1,
+        }) : null,
     }) : null;
     if (REGIONAL_SITE_CACHE.size >= REGIONAL_SITE_CACHE_LIMIT) REGIONAL_SITE_CACHE.clear();
     REGIONAL_SITE_CACHE.set(key, value);
@@ -292,7 +304,12 @@ function produceRecipe(building, workforce, production, knownEfficiency = null, 
             const regionalSite = regionalForestAt(node.x, node.y);
             const regionalTimber = Math.max(0.7, Math.min(1.35, Number(regionalSite?.effects?.timber) || 1));
             const managementTimber = Math.max(0.75, Math.min(1.10, Number(regionalSite?.timberFactor) || 1));
-            const batch = Math.max(1, Math.round(recipe.batch * extractionFactor * regionalTimber * managementTimber));
+            // Working volume is the stand's own physical yield, separate from
+            // the regional species factor and the silvicultural system. It is
+            // bounded so a single batch cannot exceed the harvest ceiling; the
+            // removed stock is still exactly the logs that are produced.
+            const workingVolume = Math.max(0.85, Math.min(1.15, Number(regionalSite?.working?.volume) || 1));
+            const batch = Math.max(1, Math.round(recipe.batch * extractionFactor * regionalTimber * managementTimber * workingVolume));
             const taken = harvestForest(node.x, node.y, batch);
             if (taken <= 0) { building.productionReason = "Forest stand is depleted"; return; }
             finishOutput(building, { logs: taken }, production);
@@ -308,8 +325,16 @@ function produceRecipe(building, workforce, production, knownEfficiency = null, 
             // A regional stand yields its signature timber beside the log
             // batch. One unit every few batches keeps the specialty chain fed
             // without displacing the ordinary logs that construction needs.
-            // Dense timbers earn a shorter cadence, soft pioneers a longer one.
-            const cadence = regionalTimber >= 1.15 ? 4 : regionalTimber <= 0.8 ? 6 : 5;
+            // Dense timbers earn a shorter cadence, soft pioneers a longer one;
+            // high working quality/specialty shortens it further, while a
+            // rough stand takes one batch longer. The signature unit is still
+            // carved from the same harvest, so no yield is counted twice.
+            const fineWood = Math.max(0, Math.min(1,
+                (Number(regionalSite?.working?.quality) || 0) * 0.65
+                + (Number(regionalSite?.working?.specialty) || 0) * 0.35));
+            let cadence = regionalTimber >= 1.15 ? 4 : regionalTimber <= 0.8 ? 6 : 5;
+            if (fineWood >= 0.62) cadence = Math.max(3, cadence - 1);
+            else if (fineWood <= 0.35) cadence = Math.min(7, cadence + 1);
             if (outputSpace(building) > 0
                 && ((Math.floor(state.tick / PRODUCTION_INTERVAL) + Math.floor(node.x) * 7 + Math.floor(node.y) * 13) % cadence === 0)) {
                 const regionalType = regionalSite?.type || null;

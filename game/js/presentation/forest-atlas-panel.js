@@ -10,6 +10,7 @@ import {
 import { FOREST_GOODS, forestStandAt } from "../world/forest-ecology.js";
 import { FOREST_MANAGEMENT_SYSTEMS } from "../world/forest-dynamics.js";
 import { timberQuote } from "../systems/regional-timber-market.js";
+import { forestGoodUseLabel } from "../systems/forest-gathering.js";
 
 const esc = value => String(value ?? "").replace(/[&<>"']/g, character => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
@@ -146,7 +147,8 @@ function speciesList(type) {
 function goodsList(type) {
     const goods = (type.goods || []).slice(0, 10);
     return goods.map(id => '<span class="forest-atlas__good">'
-        + esc(FOREST_GOODS[id]?.label || String(id).replace(/-/g, " ")) + '</span>').join("");
+        + esc(FOREST_GOODS[id]?.label || String(id).replace(/-/g, " "))
+        + ' <small>' + esc(forestGoodUseLabel(id) || "market") + '</small></span>').join("");
 }
 
 function characterLine(type, currentSeason) {
@@ -201,7 +203,8 @@ function dynamicsBlock(dynamics) {
         ['REGEN', 'seedling ' + pct(regeneration.seedlingBank) + '%', 'rain ' + pct(regeneration.seedRain) + '% · germ ' + pct(regeneration.germination) + '% · recruit ' + pct(regeneration.saplingRecruitment) + '%'],
         ['GENETICS', pct(regeneration.geneticDiversity) + '%', 'quality ' + pct(regeneration.seedQuality) + '% · ' + (regeneration.provenance?.regional >= 0.5 ? 'regional provenance' : 'local provenance')],
         ['SITE FIT', pct(health.siteFitness) + '%', 'disease resistance ' + pct(health.diseaseResistance) + '%'],
-        ['SYSTEM', system.label || '—', number(system.rotationYears) + 'y · timber ' + pct(system.timberFactor) + '% · retention ' + number(system.retentionTreesPerHa) + '/ha · sawlogs ' + pct(working.timber?.sawlog) + '% · firewood ' + pct(working.timber?.firewood) + '%'],
+        ['SYSTEM', system.label || '—', number(system.rotationYears) + 'y · timber ' + pct(system.timberFactor) + '% · retention ' + number(system.retentionTreesPerHa) + '/ha'],
+        ['WORKING', 'sawlogs ' + pct(working.timber?.sawlog) + '% · firewood ' + pct(working.timber?.firewood) + '%', 'specialty ' + pct(working.timber?.specialty) + '% · quality ' + pct(working.timber?.quality) + '% · log share ' + pct(working.timber?.logShare) + '% · volume ' + pct(working.timber?.volume) + '%'],
         ['REGIME', regime.label || '—', 'fire ' + pct(regime.fire) + '% · wind ' + pct(regime.wind) + '% · return ' + number(regime.returnIntervalYears) + 'y'],
         ['DEADWOOD', pct(deadwood.total) + '%', 'standing ' + pct(deadwood.standing) + '% · fallen ' + pct(deadwood.fallen) + '% · decay ' + pct(deadwood.decay) + '%'],
         ['SOIL', soil.humusForm || '—', (soil.rootingType || 'roots') + ' · uptake ' + pct(soil.waterUptake) + '% · ' + number(soil.humusDepthCm) + 'cm humus · ' + pct(litter.broadleaf) + '/' + pct(litter.needle) + ' leaf/needle'],

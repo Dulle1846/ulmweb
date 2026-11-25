@@ -382,8 +382,8 @@ try {
         ["rooting type", /Rooting (Deep taproot|Heart root|Sinker roots|Shallow plate)/],
         ["liana and epiphyte groups", /Liana (Ivy|Honeysuckle|Rattan|Liana vines|none)/],
         ["herb profile", /Herb food\/medicine \d+%\/\d+%/],
-        ["working timber", /Working sawlogs \d+% · firewood \d+% · specialty \d+% · volume \d+%/],
-        ["working forage and habitat", /mushrooms \d+% · herbs \d+% · mast \d+% · game \d+% · habitat \d+%/],
+        ["working timber", /Working sawlogs \d+% · firewood \d+% · specialty \d+% · quality \d+% · log share \d+% · volume \d+%/],
+        ["working forage and habitat", /mushrooms \d+% · herbs \d+% · mast \d+% · game \d+% · honey \d+% · berries \d+% · fibre \d+% · habitat \d+%/],
         ["treatment detail", /Treatment rotation \d+% · retention \d+\/ha/],
     ]) {
         assert.match(inspector, pattern, "the lumber inspector must expose " + label);
@@ -461,6 +461,109 @@ try {
     report.actions.gather = { before: beforeGather, after: afterGather };
     assert.ok(afterGather.summary.length > 0, "GATHER FOREST PRODUCTS must produce real goods");
 
+    // The gathered food and medicine goods must have a way to become player
+    // value. Sell the non-timber lot through the visible market button and
+    // check the real treasury delta before delivering the wood to the yard.
+    if (!await record.evaluate(element => element.open)) {
+        await record.locator("summary").click();
+        await page.clock.runFor(250);
+    }
+    const sellButton = page.locator('[data-sell-forest="' + scan.lumber.id + '"]');
+    await sellButton.waitFor({ state: "visible", timeout: 5000 });
+    assert.equal(await sellButton.isDisabled(), false, "the visible sale must be available for gathered non-timber goods");
+    assert.match((await sellButton.innerText()).trim(), /SELL FOREST GOODS \(\+\d+G\)/,
+        "the player must see the market quote before pressing sell");
+    const beforeSell = await page.evaluate(async lumberId => {
+        const [{ state }, { forestSellAvailability, forestDeliveryChannel, serializeForestGathering }] = await Promise.all([
+            import("./js/core/state.js"),
+            import("./js/systems/forest-gathering.js"),
+        ]);
+        const b = state.entities.find(entity => String(entity.id) === String(lumberId));
+        const snapshot = serializeForestGathering();
+        const nonWood = Object.entries(snapshot.stock || {})
+            .filter(([id]) => forestDeliveryChannel(id) !== "wood")
+            .reduce((sum, [, amount]) => sum + Math.max(0, Math.floor(Number(amount) || 0)), 0);
+        return {
+            gold: Math.round(Number(state.resources?.gold) || 0), nonWood,
+            stock: { ...snapshot.stock }, availability: forestSellAvailability(b),
+        };
+    }, scan.lumber.id);
+    await sellButton.click();
+    await page.clock.runFor(600);
+    const afterSell = await page.evaluate(async lumberId => {
+        const [{ state }, { forestSellAvailability, forestDeliveryChannel, serializeForestGathering }] = await Promise.all([
+            import("./js/core/state.js"),
+            import("./js/systems/forest-gathering.js"),
+        ]);
+        const b = state.entities.find(entity => String(entity.id) === String(lumberId));
+        const snapshot = serializeForestGathering();
+        const nonWood = Object.entries(snapshot.stock || {})
+            .filter(([id]) => forestDeliveryChannel(id) !== "wood")
+            .reduce((sum, [, amount]) => sum + Math.max(0, Math.floor(Number(amount) || 0)), 0);
+        return {
+            gold: Math.round(Number(state.resources?.gold) || 0), nonWood,
+            stock: { ...snapshot.stock }, availability: forestSellAvailability(b),
+            toast: document.querySelector("#action-toast")?.textContent?.trim() || "",
+        };
+    }, scan.lumber.id);
+    report.actions.sell = { before: beforeSell, after: afterSell };
+    assert.ok(afterSell.gold > beforeSell.gold, "SELL FOREST GOODS must raise the real treasury");
+    assert.ok(afterSell.nonWood < beforeSell.nonWood, "the sold food/market goods must leave the forest ledger");
+    assert.equal(afterSell.stock.timber, beforeSell.stock.timber, "timber must stay for the productive log chain");
+    assert.equal(afterSell.stock.firewood, beforeSell.stock.firewood);
+    assert.match(afterSell.toast, /SOLD .*\+\d+ GOLD/, "the player must see the sold goods and the gold paid");
+
+    // Deliver the remaining timber and firewood into the ordinary yard store.
+    if (!await record.evaluate(element => element.open)) {
+        await record.locator("summary").click();
+        await page.clock.runFor(250);
+    }
+    const beforeDeliver = await page.evaluate(async lumberId => {
+        const [{ state }, { serializeForestGathering }, { getWarehouseStock }] = await Promise.all([
+            import("./js/core/state.js"),
+            import("./js/systems/forest-gathering.js"),
+            import("./js/systems/logistics.js"),
+        ]);
+        const b = state.entities.find(entity => String(entity.id) === String(lumberId));
+        return {
+            stock: { ...serializeForestGathering().stock },
+            logs: Math.round(Number(b?.inventory?.output?.logs) || 0),
+            firewood: Math.round(Number(b?.inventory?.output?.firewood) || 0),
+            warehouseLogs: Math.round(Number(getWarehouseStock("logs")) || 0),
+            warehouseFirewood: Math.round(Number(getWarehouseStock("firewood")) || 0),
+        };
+    }, scan.lumber.id);
+    const deliverButton = page.locator('[data-deliver-forest="' + scan.lumber.id + '"]');
+    assert.equal(await deliverButton.isDisabled(), false, "the remaining wood must be deliverable");
+    await deliverButton.click();
+    await page.clock.runFor(600);
+    const afterDeliver = await page.evaluate(async lumberId => {
+        const [{ state }, { serializeForestGathering }, { getWarehouseStock }] = await Promise.all([
+            import("./js/core/state.js"),
+            import("./js/systems/forest-gathering.js"),
+            import("./js/systems/logistics.js"),
+        ]);
+        const b = state.entities.find(entity => String(entity.id) === String(lumberId));
+        return {
+            stock: { ...serializeForestGathering().stock },
+            logs: Math.round(Number(b?.inventory?.output?.logs) || 0),
+            firewood: Math.round(Number(b?.inventory?.output?.firewood) || 0),
+            warehouseLogs: Math.round(Number(getWarehouseStock("logs")) || 0),
+            warehouseFirewood: Math.round(Number(getWarehouseStock("firewood")) || 0),
+            toast: document.querySelector("#action-toast")?.textContent?.trim() || "",
+        };
+    }, scan.lumber.id);
+    report.actions.delivery = { before: beforeDeliver, after: afterDeliver };
+    const deliveredWood = (afterDeliver.logs - beforeDeliver.logs) + (afterDeliver.firewood - beforeDeliver.firewood)
+        + (afterDeliver.warehouseLogs - beforeDeliver.warehouseLogs)
+        + (afterDeliver.warehouseFirewood - beforeDeliver.warehouseFirewood);
+    assert.ok(deliveredWood > 0,
+        "DELIVER FOREST GOODS must put real wood into the lumber yard or the royal warehouse");
+    assert.ok((afterDeliver.stock.timber || 0) < (beforeDeliver.stock.timber || 0)
+        || (afterDeliver.stock.firewood || 0) < (beforeDeliver.stock.firewood || 0),
+    "delivered wood must leave the forest ledger");
+    assert.match(afterDeliver.toast, /DELIVERED/);
+
     // Open the player's forest atlas and read several different stands. The
     // cards are the actual catalogue used by the player, not a test fixture.
     await page.locator('[data-command-tab="forest"]').click();
@@ -488,7 +591,7 @@ try {
     report.atlasBefore = { text: atlasText.slice(0, 4000), missingSystems };
     if (missingSystems.length) console.error("ATLAS DEBUG", JSON.stringify({ missingSystems, atlasText: atlasText.slice(0, 3000) }));
     assert.deepEqual(missingSystems, [], "the player atlas must expose every silvicultural system");
-    for (const label of ["MIX", "COHORTS", "PHASE", "PIONEER / CLIMAX", "SEED BANK", "REGEN", "GENETICS", "SITE FIT", "SYSTEM", "REGIME", "DEADWOOD", "SOIL", "MYCORRHIZA", "STRUCTURE", "EDGE", "LIGHT", "GAPS", "HERB"]) {
+    for (const label of ["MIX", "COHORTS", "PHASE", "PIONEER / CLIMAX", "SEED BANK", "REGEN", "GENETICS", "SITE FIT", "SYSTEM", "WORKING", "REGIME", "DEADWOOD", "SOIL", "MYCORRHIZA", "STRUCTURE", "EDGE", "LIGHT", "GAPS", "HERB"]) {
         assert.ok(atlasCorpus.includes(label), "the atlas must expose " + label);
     }
     assert.match(atlasCorpus, /fire \d+% · wind \d+%/);
@@ -498,6 +601,8 @@ try {
     assert.match(atlasCorpus, /return \d+y/);
     assert.match(atlasCorpus, /retention \d+\/ha/);
     assert.match(atlasCorpus, /sawlogs \d+% · firewood \d+%/);
+    assert.match(atlasCorpus, /specialty \d+% · quality \d+% · log share \d+%/);
+    assert.match(atlasCorpus, /logs → planks|food \/ market|pannage \/ market/);
     assert.match(atlasCorpus, /uptake \d+%/);
     assert.match(atlasCorpus, /decomposition \d+%/);
     assert.match(atlasCorpus, /gap age \d+d/);

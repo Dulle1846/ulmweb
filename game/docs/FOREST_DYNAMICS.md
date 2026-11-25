@@ -1,6 +1,6 @@
 # Baumarten, Mischung, Genetik und Sukzession · 1.2.23.1.061–090
 
-> **Status: implementiert, vertieft und als Spielmechanik verdrahtet (v3.60.0).** Die 30 Punkte laufen als reine, abgeleitete
+> **Status: implementiert, vertieft und als Spielmechanik verdrahtet (v3.61.0).** Die 30 Punkte laufen als reine, abgeleitete
 > `forest-dynamics`-Schicht über dem bestehenden `forestStandAt()`-Vertrag. Es
 > gibt keinen zweiten Waldsimulator, keine neue Karte, keinen neuen Save-Typ und
 > keine zusätzliche Pro-Tick-Schleife. Jede Waldkachel berechnet beim Lesen
@@ -194,12 +194,46 @@ neu berechnet und niemals gespeichert.
 | **075–080** Waldweide, Nieder-, Mittel-, Hoch-, Plenter- und Dauerwald | Lumberyard-Knopf nutzen | Der Knopf heißt jetzt CUT COPPICE / CUT UNDERWOOD / SELECT FELLING / SINGLE-TREE CUT / POLLARD AND CLEAR / THIN NEAREST STAND; `logShare` teilt den Hieb in Logs und Firewood, Coppice/Wood-Pasture erzeugen zusätzliches Firewood im Lumber-Camp |
 | **081–083** Waldrand, Lichtwald, Kronenlücken | Rand oder Lücke aufsuchen | Manteldeckung, Lücken-Verjüngung und Krautlicht erhöhen Wild, Beeren, Kräuter und Habitat; Lückenalter bleibt lesbar |
 | **084–085** Lianen und Epiphyten | Feuchten/alten Bestand aufsuchen | Lianen liefern Weidenruten/Rattan und Fasern, Epiphyten Moos/Flechte/Orchideen; beide erhöhen die Habitatnote |
+| **080–090** Arbeitsholz und Markt | Sammeln, durchforsten, verkaufen oder liefern | `volume` skaliert Lumber-Batch und Durchforstung, `quality`/`specialty` verkürzen oder verlängern den Signature-Timber-Takt; `sawlog`/`firewood`/`logShare` teilen den Hieb. Jedes gesammelte Gut hat einen individuellen Marktpreis oder einen echten Verbraucher (Nahrung, Medizin, Pannage, Sägewerk) — siehe 3b. |
 | **086–087** Unterholz und Krautschicht | Durchforsten, Licht schaffen, sammeln | Strauch-/Jungbaumschicht speist Wild und Beeren, Krautnahrung/Medizin/Blüte speisen Kräuter, Honig und Wild; Verbiss bremst die Regeneration |
 | **088–090** Wurzeln, Streu/Humus, Mykorrhiza | Alten, humusreichen Bestand stehen lassen | Wurzeltiefe senkt Staunässe, Streu/Humus erhöhen Wasserretention und Pilzertrag, Mykorrhiza-Typ/Reichweite speisen Pilze, Regeneration, Resistenz und Insekten |
 
 Die Werte sind keine Parallelökonomie: Holz geht in denselben Lumber-/Sawmill-/
 Timber-Market-Pfad, Mast in dieselbe Pannage-Reserve, Wild in dieselben Herden,
 Insekten in dieselben Kolonien und die Störung in dieselbe Sukzession.
+
+## 3b. Jedes Waldgut hat einen Preis oder einen Verbraucher (v3.61.0)
+
+Der Audit umfasst alle **260** Einträge in `FOREST_GOODS`, nicht nur die zehn
+Güter einer Stichprobe. `tests/systems/forest-goods-economy.test.js` prüft für
+jede ID drei Dinge: einen `forestDeliveryChannel()`, einen positiven
+`forestGoodMarketPrice()` und ein sichtbares `forestGoodUseLabel()`.
+
+| Gut / Gruppe | Preis | Verbraucher / Spielerweg |
+|---|---|---|
+| `timber`, `firewood`, regionale Timbers | Holzmarkt / Sägewerk | `DELIVER FOREST GOODS` → Lumber-/Sawmill-Kette; Firewood bleibt Feuerung, regionale Timbers behalten ihre Identität und ihren Markt |
+| `honey`, `game`, `mushrooms`, Beeren, Obst, Fisch, Mast | `tradeValue` + Kategorie-Fallback, saisonal und nach Nahrungsnachfrage | `DELIVER` → royal food store; alternativ `SELL` → Gold; Mast zusätzlich Pannage |
+| Kräuter, Flechten, Rinde, Harz, Medizin-Güter | Kategorie-/`tradeValue`-Preis | `DELIVER` → `addMedicineStock()` (Heiler/`brewMedicine`); alternativ Markt |
+| Felle, Häute, gefärbt/gegerbt, Bienenwachs, Luxus-, Gift-, Faser-, Stein-, Salz- und alle übrigen Regionalgüter | individueller `tradeValue` oder Kategorie-Fallback | `DELIVER` → Gold; `SELL` → Gold; keine ID bleibt ohne Kanal |
+| `acorns`, `beechnuts`, `chestnuts`, `hazelnuts`, `hornbeam-seeds`, `spruce-cones`, `fir-cones`, `pine-cones`, `dwarf-pine-cones` | Mast-Preis | Pannage-Futter (`feedStableFromMast`) und Markt |
+| `hay`, `meadow-grass`, `steppe-grass` | Futter-Preis | Pannage-Futter und Markt |
+
+`forestGoodMarketPrice()` nutzt zuerst den vorhandenen
+`BIOME_RESOURCE_BY_ID[].tradeValue`, dann wenige Wald-Overrides und zuletzt
+den Kategoriepreis. Der Preis ist saisonal (0,94–1,12) und bei Nahrung zusätzlich
+an die bestehende Lebensmittelnachfrage gebunden. `SELL FOREST GOODS` verkauft
+das nicht-hölzerne Los zu diesem Quote, bucht Gold in dieselbe Staatskasse und
+protokolliert die Bewegung im Goods Book. `DELIVER FOREST GOODS` nutzt denselben
+Quote für Marktgüter und zeigt statt „X gold“ den tatsächlich gezahlten Betrag.
+Ist der lokale Yard voll, geht der Holzrest in dieselbe gefilterte
+Warehouse-Kette; dadurch wird eine echte Lieferung nicht zu totem Bestand. Holz
+bleibt bewusst im Yard, weil Logs → Planks → Bauen/Firewood die produktive Kette
+sind.
+
+Die Pannage-Liste ist keine zweite Datenpflege mehr: `MAST_GOODS` und
+`FODDER_GOODS` werden direkt aus den Kategorien in `FOREST_GOODS` abgeleitet.
+Damit sind Kegel, Haselnüsse, Hainbuchen-Samen und Steppengras echte Reserve,
+sobald sie im gemeinsamen Sammel-Ledger liegen.
 
 ## 3. Echte Wirkungen
 
@@ -209,11 +243,13 @@ Insekten in dieselben Kolonien und die Störung in dieselbe Sukzession.
   auf demselben begrenzten Takt.
 - **Holzernte:** Lumber-Camp-Batch und Durchforstung multiplizieren den
   regionalen Timber-Wert mit `silviculture.timberFactor` (0,75–1,10) und dem
-  abgeleiteten `working.timber.volume` (0,80–1,20). Die Durchforstung teilt den
+  abgeleiteten `working.timber.volume` (Durchforstung 0,80–1,20; Lumber-Batch
+  0,85–1,15). Die Durchforstung teilt den
   tatsächlich entnommenen Bestand über `logShare` in Logs und Firewood; ein
   Niederwald/Mittelwald/Waldweide-Camp erzeugt zusätzlich einen begrenzten
   Firewood-Nebenertrag. Der Lumber-Cache speichert dafür zusätzlich
-  `timberFactor` und `system`.
+  `timberFactor`, `system` und das begrenzte `working`-Profil; `quality` und
+  `specialty` ändern den Signature-Timber-Takt, ohne den Hieb zu verdoppeln.
 - **Sammeln:** Kräuter, Pilze, Moos/Flechte, Weidenruten/Rattan und Orchideen
   erscheinen nur, wenn die abgeleitete Struktur sie trägt; `forestGoodsFor()`
   multipliziert die Abundanz jetzt zusätzlich mit dem passenden
@@ -243,9 +279,11 @@ Insekten in dieselben Kolonien und die Störung in dieselbe Sukzession.
 - **Produktivität:** Standortfit fließt mit 0,86–1,06 in die bestehende
   Produktivität ein; keine neue Ökonomie.
 - **Darstellung:** Der Atlas zeigt pro anwesendem Typ einen echten
-  18-Zellen-Ökologieblock; die SYSTEM-Zeile nennt jetzt Sawlog- und
-  Firewood-Anteil. Der Inspektor druckt eine eigene Working-Zeile mit Sawlogs,
-  Firewood, Specialty, Volume, Pilzen, Kräutern, Mast, Wild und Habitat. Der
+  19-Zellen-Ökologieblock; die SYSTEM-Zeile nennt Rotation, Timber-Faktor und
+  Retention, die eigene WORKING-Zeile Sawlog, Firewood, Specialty, Quality,
+  Log Share und Volume. Jeder Güter-Chip nennt seine Verwendung. Der Inspektor
+  druckt dieselbe Working-Zeile plus Pilze, Kräuter, Mast, Wild, Honig, Beeren,
+  Fasern und Habitat sowie eine Forest-goods-Zeile mit Preis und Verwendung. Der
   Ökologieblock selbst zeigt Mischung, Alterscohorten, Phase, Pionier/Klimax,
   Samenbank, Regenerationsnische, Genetik, Standortfit, System/Retention,
   Regime/Severity/Return, Totholzfraktionen, Boden/Litter/Humus,
@@ -283,7 +321,7 @@ Insekten in dieselben Kolonien und die Störung in dieselbe Sukzession.
 - `tests/systems/forest-gathering.test.js` — echte Standdynamik im
   Sammelergebnis, Saison, Bounty, Durchforstung und die Aufteilung eines
   Niederwald-Hiebs in Logs und Firewood.
-- `tests/presentation/forest-atlas.test.js` — 60 Karten, 18-Zellen-Ökologieblock,
+-   `tests/presentation/forest-atlas.test.js` — 60 Karten, 19-Zellen-Ökologieblock,
   alle sechs Systeme, Cohorten-, Regen-, Totholz-, Rand-, Kraut- und
   Sawlog/Firewood-Zeilen.
 - `tests/systems/forest-fauna.test.js` und `forest-insects.test.js` —
@@ -302,22 +340,25 @@ Insekten in dieselben Kolonien und die Störung in dieselbe Sukzession.
 
 ## 6. Verifikation
 
-Stand 2026-11-25: **1.463/1.463 Tests** grün. Die deterministische
-25-Jahres-Kampagne läuft **10.040 Ticks** in **20.682,3 ms** (**1,224 ms/Tick**),
+Stand 2026-11-25: **1.467/1.467 Tests** grün. Die deterministische
+25-Jahres-Kampagne läuft **10.040 Ticks** in **21.642,2 ms** (**1,533 ms/Tick**),
 64 Bewohner, alle 13 Ambitionen, alle Anforderungen wahr, **3.507 Waldkacheln**,
 **0 untypisiert**, 20 echte Fuel-Backfill-Aufträge (max. 1 pro Phase), kein Game
 Over. Die tropische Browser-Referenz sieht **9.526 Waldkacheln**, **0 untypisiert**,
 **60 Atlas-Karten**, **18 Timber-Market-Zeilen**, drei verschiedene gerenderte
-Bestände, den 18-Zellen-Ökologieblock und die Lianen-/Epiphytenzeile, ohne
+Bestände, den 19-Zellen-Ökologieblock und die Lianen-/Epiphytenzeile, ohne
 Konsolen- oder Seitenfehler. Der neue Spieler-Live-Beweis spielt **4.274
 Waldkacheln**, **238 Bestände**, **60 Atlas-Karten**, **14 Ökologiekarten**, drei
 Jahre und alle 30 Punkte ohne Seiten-, Konsolen- oder Netzwerkfehler durch;
 Ernte, Sammeln, Durchforstung, Sukzession und alle sechs Systeme sind darin
 belegt. Der Durchforstungsklick liefert **7 Logs + 3 Firewood** (Stock 181 →
 171), der Sammelklick **2 Timber, 3 Birch sap, 2 Firewood, 2 Beech timber,
-2 Birch timber und 2 Mushrooms**; der Endbestand liegt bei **629.126** und die
-Working-Zeile zeigt in jedem der 12 Atlas-Samples Sawlog, Firewood, Pilze, Mast,
-Wild und Habitat. Der Spec-Audit meldet **1.616/1.618 implementiert** in 38 Abschnitten;
-offen bleiben nur 4.0.1 und 4.0.6. Der Produktionsdeploy wird aus genau diesem
+2 Birch timber und 2 Mushrooms**. Der sichtbare Verkauf hebt die Staatskasse von
+**101 auf 107 Gold** (+6 für 3 Birch sap und 2 Mushrooms), die Lieferung bringt
+**6 Logs und 2 Firewood** in Yard/Warehouse und leert das Holz-Ledger; der
+Endbestand liegt bei **629.138**. Die Working-Zeile zeigt in jedem der 12
+Atlas-Samples Sawlog, Firewood, Quality, Log Share, Pilze, Mast, Wild und Habitat.
+Der Spec-Audit meldet **1.616/1.618 implementiert** in 38 Abschnitten; offen
+bleiben nur 4.0.1 und 4.0.6. Der Produktionsdeploy wird aus genau diesem
 getesteten Commit gebaut; beide Hosts werden danach auf denselben Commit und
 den Live-Beweis geprüft.

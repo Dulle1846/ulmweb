@@ -69,3 +69,25 @@ test("hay and meadow grass feed a stable when mast is exhausted", () => {
     assert.equal(state.forestGathering.stock["meadow-grass"], 0);
     assert.match(pannageSummary(stable), /3 days/);
 });
+
+test("cones, hazelnuts and steppe grass are real pannage feed", () => {
+    const stable = setup();
+    assert.ok(PANNAGE_LIMITS.mastGoods.includes("spruce-cones"));
+    assert.ok(PANNAGE_LIMITS.mastGoods.includes("pine-cones"));
+    assert.ok(PANNAGE_LIMITS.mastGoods.includes("hazelnuts"));
+    assert.ok(PANNAGE_LIMITS.fodderGoods.includes("steppe-grass"));
+    restoreForestGathering({
+        version: 1,
+        stock: { "spruce-cones": 2, "pine-cones": 1, "steppe-grass": 1 },
+        totalGathered: { "spruce-cones": 2, "pine-cones": 1, "steppe-grass": 1 },
+        quality: {},
+        history: [],
+        lastGather: {},
+    });
+    const result = feedStableFromMast(stable, 6);
+    assert.equal(result.ok, true);
+    assert.equal(result.fed, 4);
+    assert.equal(state.forestGathering.stock["spruce-cones"], 0);
+    assert.equal(state.forestGathering.stock["pine-cones"], 0);
+    assert.equal(state.forestGathering.stock["steppe-grass"], 0);
+});

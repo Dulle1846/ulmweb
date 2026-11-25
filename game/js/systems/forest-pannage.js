@@ -8,14 +8,17 @@
 import { TYPE } from "../core/types.js";
 import { state } from "../core/state.js";
 import { ensureForestGathering } from "./forest-gathering.js";
+import { FOREST_GOODS } from "../world/forest-ecology.js";
 
 const VERSION = 1;
 const MAX_DAYS = 30;
-const MAST_GOODS = Object.freeze(["acorns", "beechnuts", "chestnuts"]);
-// Hay and meadow grass are the grassland counterpart to mast. They are less
-// concentrated, so one unit still feeds one reserve day, but they let a stable
-// survive when the wood has no mast left.
-const FODDER_GOODS = Object.freeze(["hay", "meadow-grass"]);
+// Every mast and fodder good in the shared catalogue is real feed. This keeps
+// spruce/fir/pine cones, hazelnuts, hornbeam seed and steppe grass from being
+// stock with no consumer, without adding a second feed list to maintain.
+const MAST_GOODS = Object.freeze(Object.keys(FOREST_GOODS).filter(id => FOREST_GOODS[id].category === "mast"));
+// Hay, meadow grass and steppe grass are the grassland counterpart to mast.
+// They are less concentrated, so one unit still feeds one reserve day.
+const FODDER_GOODS = Object.freeze(Object.keys(FOREST_GOODS).filter(id => FOREST_GOODS[id].category === "fodder"));
 
 const number = (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback;
 
@@ -64,7 +67,7 @@ export function feedStableFromMast(building, rations = 6) {
         remaining -= amount;
     }
     const fed = Object.values(taken).reduce((sum, amount) => sum + amount, 0);
-    if (fed <= 0) return { ok: false, reason: "No mast, hay or meadow grass in the stores" };
+    if (fed <= 0) return { ok: false, reason: "No mast, cones or fodder in the stores" };
     reserve.days += fed;
     reserve.fedTotal += fed;
     reserve.mastUsed += fed;

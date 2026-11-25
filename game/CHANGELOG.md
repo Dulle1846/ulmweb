@@ -1,13 +1,57 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.60.0`
-**Next development line:** `3.61.0-dev`
+**Current production version:** `3.61.0`
+**Next development line:** `3.62.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
 **Last repository verification:** 2026-11-25 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.61.0 — Every forest good now has a buyer or a use
+
+The 3.60.0 wiring made the forest produce goods; this release makes the goods
+worth something. The audit covered all 260 entries in `FOREST_GOODS`, not only
+the ten visible in a sample.
+
+- **No stranded good.** Every catalogued forest good now resolves through
+  `forestDeliveryChannel()`: wood to the yard, food to the royal stores,
+  medicine to the healer, and every remaining regional specialty to a real gold
+  market quote. The previous ten goods with no channel (mast, cones, steppe
+  fibre/grass, clay) are gone as a category.
+- **Individual prices, not a flat haul.** Gold delivery and the new market sale
+  use `forestGoodMarketPrice()`: existing biome `tradeValue` data first, forest
+  overrides and category fallbacks second. Food prices follow the existing food
+  market demand and all quotes follow the existing four-season factor. The old
+  flat `0.5` gold per unit is removed, and the toast reports the actual gold
+  paid instead of calling the units "gold".
+- **A player can choose the market.** `SELL FOREST GOODS` sells the held
+  non-timber lot at the visible quote and books the gold into the existing
+  treasury/goods book; `DELIVER FOREST GOODS` still fills food, medicine and the
+  local timber store. A full yard store hands the remainder to the existing
+  filtered warehouse chain instead of reporting a false "no products". The
+  inspector prints each held good's use and approximate value, so the choice is
+  readable before pressing either button.
+- **Mast and fodder are real feed.** Pannage now consumes every `mast` and
+  `fodder` category good, including spruce/fir/pine cones, hazelnuts, hornbeam
+  seed and steppe grass, instead of only acorns/beechnuts/chestnuts and two
+  meadow goods.
+- **Working wood is fully consumed.** `working.timber.volume` now scales the
+  lumber-camp batch as well as thinning. `quality` and `specialty` shorten or
+  lengthen the signature-timber cadence, while `sawlog`, `firewood` and
+  `logShare` keep driving the existing log/firewood split. The signature unit is
+  still carved from the same harvested batch, so no yield is double-counted.
+- **Readable in play.** The forest atlas now has a separate WORKING row with
+  sawlogs, firewood, specialty, quality, log share and volume; every good chip
+  names its use. The inspector adds those working values and a Forest goods
+  line with per-good use and quote. The sale and delivery toasts show real
+  stock/gold outcomes.
+- **Verification.** Focused system/atlas tests, the full suite, the
+  deterministic 25-year campaign and the forest live proof on both production
+  hosts cover the new sale/delivery loop. The audit is executable at
+  `tests/systems/forest-goods-economy.test.js`; all 260 goods are asserted to
+  have a channel, a positive quote and a player-facing use.
 
 ## 3.60.0 — Every forest profile now has a job
 

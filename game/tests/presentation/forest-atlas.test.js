@@ -91,6 +91,10 @@ test("the rendered atlas lists all 60 types, their effects and their signature t
     assert.match(markup, /liana \d+%/);
     assert.match(markup, /SITE FIT/);
     assert.match(markup, /SYSTEM/);
+    assert.match(markup, /WORKING/);
+    assert.match(markup, /quality \d+%/);
+    assert.match(markup, /log share \d+%/);
+    assert.match(markup, /logs → planks|food \/ market|pannage \/ market/);
     assert.match(markup, /MYCORRHIZA|mycorrhiza/);
     assert.match(markup, /STRUCTURE/);
     assert.match(markup, /GAPS/);

@@ -43,7 +43,7 @@ import {
     resettleHazardGround, sendHazardAid, setHazardQuarantine, takeHazardLoan,
     trainHazardCrew, treatHazardDisease
 } from "../systems/hazard-response.js";
-import { deliverForestGoods, forestDeliveryAvailability, forestGatheringSummary, forestThinningAvailability, gatherNearestForestProducts, gatherNearestGrasslandProducts, performMountainWork, performSwampWork, performVolcanoWork, performCoastWork, processForestHunt, mountainWorkAvailability, swampWorkAvailability, volcanoWorkAvailability, coastWorkAvailability, thinNearestForest } from "../systems/forest-gathering.js";
+import { deliverForestGoods, forestDeliveryAvailability, forestGatheringEconomySummary, forestGatheringSummary, forestSellAvailability, forestThinningAvailability, gatherNearestForestProducts, gatherNearestGrasslandProducts, performMountainWork, performSwampWork, performVolcanoWork, performCoastWork, processForestHunt, sellForestGoods, mountainWorkAvailability, swampWorkAvailability, volcanoWorkAvailability, coastWorkAvailability, thinNearestForest } from "../systems/forest-gathering.js";
 import { grasslandSiteSummaryAt } from "../systems/grassland-use.js";
 import { feedStableFromMast, pannageSummary } from "../systems/forest-pannage.js";
 import { suppressNearestForestDisturbance } from "../systems/forest-succession.js";
@@ -151,7 +151,7 @@ function forestDynamicsDetail(dynamics){
  const edge=structure.edgeProfile||{},litter=soil.litterProfile||{},herb=structure.herbProfile||{};
  const working=dynamics.working||{},timber=working.timber||{},forage=working.forage||{},habitat=working.habitat||{};
  const cohorts=age.cohorts||{},bits=[
-  "Working sawlogs "+pct(timber.sawlog)+"% · firewood "+pct(timber.firewood)+"% · specialty "+pct(timber.specialty)+"% · volume "+pct(timber.volume)+"% · mushrooms "+pct(forage.mushrooms)+"% · herbs "+pct(forage.herbs)+"% · mast "+pct(forage.mast)+"% · game "+pct(forage.game)+"% · habitat "+pct(habitat.score)+"%",
+  "Working sawlogs "+pct(timber.sawlog)+"% · firewood "+pct(timber.firewood)+"% · specialty "+pct(timber.specialty)+"% · quality "+pct(timber.quality)+"% · log share "+pct(timber.logShare)+"% · volume "+pct(timber.volume)+"% · mushrooms "+pct(forage.mushrooms)+"% · herbs "+pct(forage.herbs)+"% · mast "+pct(forage.mast)+"% · game "+pct(forage.game)+"% · honey "+pct(forage.honey)+"% · berries "+pct(forage.berries)+"% · fibre "+pct(forage.fibre)+"% · habitat "+pct(habitat.score)+"%",
   "Cohorts "+pct(cohorts.young)+"/"+pct(cohorts.mature)+"/"+pct(cohorts.ancient)+"% young/mature/ancient ("+(age.uneven?"uneven":"even")+", spread "+Math.round(Number(age.spreadYears)||0)+"y)",
   "Seed source "+esc(regen.seedSource||"stand")+" · rain "+pct(regen.seedRain)+"% · germ "+pct(regen.germination)+"% · seedlings "+pct(regen.seedlingBank)+"% · recruit "+pct(regen.saplingRecruitment)+"%",
   "Deadwood "+pct(deadwood.total)+"% (standing "+pct(deadwood.standing)+"% / fallen "+pct(deadwood.fallen)+"% / stumps "+pct(deadwood.stumps)+"% · decay "+pct(deadwood.decay)+"% · cavities "+Math.round(Number(deadwood.cavityTreesPerHa)||0)+"/ha)",
@@ -620,12 +620,16 @@ function buildings(){
    else if(building.type===TYPE.STABLE)siteNote="Feed reserve: "+esc(pannageSummary(building))+" · feed comes from mast, hay and meadow grass gathered in the stores."+(grasslandSiteSummaryAt(building.x,building.y)?" · pasture: "+esc(grasslandSiteSummaryAt(building.x,building.y)):"");
   }catch{}
   const deliveryAvailability=forestDeliveryAvailability(building);
+  const sellAvailability=[TYPE.LUMBER,TYPE.FORESTER].includes(building.type)?forestSellAvailability(building):null;
+  const forestEconomy=[TYPE.LUMBER,TYPE.FORESTER].includes(building.type)?forestGatheringEconomySummary():"";
   const thinningAvailability=building.type===TYPE.LUMBER?forestThinningAvailability(building,6):null;
   const thinSystem=thinningAvailability?.point?.forestDynamics?.silviculture?.system||null;
   const thinLabel=thinSystem==="coppice"?"CUT COPPICE":thinSystem==="coppice-with-standards"?"CUT UNDERWOOD":thinSystem==="selection"?"SELECT FELLING":thinSystem==="continuous-cover"?"SINGLE-TREE CUT":thinSystem==="wood-pasture"?"POLLARD AND CLEAR":"THIN NEAREST STAND";
   const forestGather=[TYPE.LUMBER,TYPE.FORESTER].includes(building.type)?[
+   ...(forestEconomy?['<span class="building-detail-wide" data-forest-economy><strong>Forest goods</strong><small>'+esc(forestEconomy)+'</small></span>']:[]),
    '<button type="button" class="command-choice" data-gather-forest="'+esc(building.id)+'">GATHER FOREST PRODUCTS</button>',
-   '<button type="button" class="command-choice" data-deliver-forest="'+esc(building.id)+'"'+(deliveryAvailability.available>0?'':' disabled title="'+esc(deliveryAvailability.reason)+'"')+'>DELIVER FOREST GOODS</button>',
+   '<button type="button" class="command-choice" data-deliver-forest="'+esc(building.id)+'"'+(deliveryAvailability.available>0?' title="'+esc(deliveryAvailability.summary)+'"':' disabled title="'+esc(deliveryAvailability.reason)+'"')+'>DELIVER FOREST GOODS</button>',
+   '<button type="button" class="command-choice" data-sell-forest="'+esc(building.id)+'"'+(sellAvailability?.ok?' title="'+esc(sellAvailability.summary)+'"':' disabled title="'+esc(sellAvailability?.reason||"No non-timber forest goods to sell")+'"')+'>SELL FOREST GOODS'+(sellAvailability?.gold?' (+'+sellAvailability.gold+'G)':'')+'</button>',
    '<button type="button" class="command-choice" data-process-hunt="'+esc(building.id)+'">PROCESS FOREST HUNT</button>',
    '<button type="button" class="command-choice" data-suppress-forest="'+esc(building.id)+'">SUPPRESS FOREST DISTURBANCE</button>',
    ...(building.type===TYPE.LUMBER?['<button type="button" class="command-choice" data-thin-forest="'+esc(building.id)+'"'+(thinningAvailability.ok?'':' disabled title="'+esc(thinningAvailability.reason)+'"')+'>'+esc(thinLabel)+'</button>']:[]),
@@ -1774,11 +1778,19 @@ export function setupManagementUI(){
    else toast(String(result.reason||"THINNING FAILED").toUpperCase());
    return;
   }
+  const sell=e.target.closest("[data-sell-forest]");
+  if(sell){
+   const entity=state.entities.find(item=>!item.dead&&String(item.id)===String(sell.dataset.sellForest));
+   const result=entity?sellForestGoods(entity):{ok:false,reason:"Building not found"};
+   if(result.ok){toast("SOLD "+result.goods.map(good=>good.amount+" "+good.label).join(" · ")+" · +"+result.gold+" GOLD");renderUI();render();}
+   else toast(String(result.reason||"SALE FAILED").toUpperCase());
+   return;
+  }
   const deliver=e.target.closest("[data-deliver-forest]");
   if(deliver){
    const entity=state.entities.find(item=>!item.dead&&String(item.id)===String(deliver.dataset.deliverForest));
    const result=entity?deliverForestGoods(entity):{ok:false,reason:"Building not found"};
-   if(result.ok){toast("DELIVERED "+result.goods.map(good=>good.amount+" "+good.to).join(" · "));renderUI();render();}
+   if(result.ok){toast("DELIVERED "+result.goods.map(good=>good.to==="gold"?good.amount+" SOLD FOR "+good.value+"G":good.amount+" "+good.to).join(" · "));renderUI();render();}
    else toast(String(result.reason||"DELIVERY FAILED").toUpperCase());
    return;
   }

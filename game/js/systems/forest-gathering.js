@@ -8,6 +8,7 @@ import { state } from "../core/state.js";
 import { TYPE } from "../core/types.js";
 import { getHeightAt, getMoistureAt, getTemperatureAt } from "../world/world.js";
 import { FOREST_GOODS, forestGoodsFor, forestSnowDepthAt, forestStandAt } from "../world/forest-ecology.js";
+import { BIOME_RESOURCE_BY_ID } from "../world/biome-resource-data.js";
 import { grasslandProductsAt } from "../world/grassland-ecology.js";
 import { isSteppeSite, steppeProductsAt } from "../world/steppe-ecology.js";
 import { isDesertSite, desertProductsAt } from "../world/desert-ecology.js";
@@ -40,7 +41,7 @@ import {
 } from "./resource-geography.js";
 import { addMedicineStock, tropicalExposure } from "./health.js";
 import { harvestForestGameAt } from "./forest-fauna.js";
-import { addLocalOutput, outputSpace, requestHaul } from "./logistics.js";
+import { addLocalOutput, depositGood, outputSpace, requestHaul } from "./logistics.js";
 import { REGIONAL_TIMBER_SET } from "./city-config.js";
 import { addResource } from "./resources.js";
 import { recordResourceMovement } from "./goods-book.js";
@@ -74,6 +75,71 @@ const GOLD_DELIVERY = Object.freeze(new Set([
 ]));
 const TROPICAL_GOLD_HUNT = Object.freeze(new Set(["hides", "feathers"]));
 
+// Every catalogued forest good must have a market quote. Existing biome trade
+// values are the first source; a few forest-only ids and the category fallback
+// cover the rest. These are unit quotes, not a parallel currency: a sale pays
+// into the same gold treasury and is booked in the goods book.
+const FOREST_GOOD_PRICE_ALIASES = Object.freeze({
+    beeswax: "wax", truffles: "truffle", "juniper-berries": "juniper", reed: "reeds",
+});
+const FOREST_GOOD_PRICE_OVERRIDES = Object.freeze({
+    honey: 3.8, "maple-syrup": 2.8, "birch-sap": 1.4, "linden-flower": 2.4,
+    acorns: 0.7, beechnuts: 0.8, chestnuts: 1.0, hazelnuts: 1.3,
+    "spruce-cones": 0.7, "fir-cones": 0.7, "pine-cones": 0.7, "dwarf-pine-cones": 0.9,
+    "tanned-fur": 4.4, "cured-hides": 3.0, "yew-berries": 1.8, "willow-withies": 1.1,
+    "tinder-fungus": 1.6, "steppe-fibre": 1.0, "steppe-grass": 0.45, clay: 0.9,
+});
+const FOREST_GOOD_CATEGORY_PRICE = Object.freeze({
+    wood: 1.0, gather: 0.9, mast: 0.7, hunt: 1.8, medicine: 2.2, luxury: 4.0,
+    poison: 2.5, fibre: 1.0, resin: 1.8, fodder: 0.45, material: 0.9,
+    food: 1.1, fruit: 1.0, spice: 2.8, grain: 0.8, fish: 1.2, meat: 1.5,
+    honey: 3.8, fungus: 1.2, dairy: 1.4, egg: 1.1, dye: 2.2, salt: 1.0,
+    stone: 1.0, ore: 3.0, gem: 5.0, crystal: 4.0,
+});
+const FOREST_SEASON_PRICE = Object.freeze([0.94, 1, 1.06, 1.12]);
+
+function forestSeasonPriceFactor() {
+    return FOREST_SEASON_PRICE[Number(state.seasonIndex) || 0] || 1;
+}
+
+function forestFoodDemandFactor() {
+    const food = Number(state.market?.prices?.food);
+    return Number.isFinite(food) && food > 0 ? clamp(food / 2, 0.8, 1.4) : 1;
+}
+
+/** Unit market quote for a forest good, in gold. */
+export function forestGoodMarketPrice(id) {
+    const good = FOREST_GOODS[id];
+    if (!good) return 0;
+    const alias = FOREST_GOOD_PRICE_ALIASES[id] || id;
+    const catalogValue = Number(BIOME_RESOURCE_BY_ID[alias]?.tradeValue);
+    const base = FOREST_GOOD_PRICE_OVERRIDES[id]
+        ?? (Number.isFinite(catalogValue) && catalogValue > 0 ? catalogValue : null)
+        ?? FOREST_GOOD_CATEGORY_PRICE[good.category]
+        ?? 0.9;
+    const demand = forestDeliveryChannel(id) === "food" ? forestFoodDemandFactor() : 1;
+    return Math.max(0.25, Math.round(base * demand * forestSeasonPriceFactor() * 100) / 100);
+}
+
+/** What the player can do with a forest good today. */
+export function forestGoodUseLabel(id) {
+    const good = FOREST_GOODS[id];
+    if (!good) return "";
+    const channel = forestDeliveryChannel(id);
+    if (channel === "wood") return id === "firewood" || id === "charcoal" ? "fuel / hearths" : "logs → planks";
+    if (channel === "food") return "food / market";
+    if (channel === "medicine") return "healer / market";
+    if (good.category === "mast") return "pannage / market";
+    return "market";
+}
+
+/** Gold a sale of this many units would pay at today's quote. */
+export function forestGoodSaleValue(id, amount = 1) {
+    const units = Math.max(0, Math.floor(number(amount)));
+    if (!units || !FOREST_GOODS[id]) return 0;
+    return Math.max(1, Math.round(units * forestGoodMarketPrice(id)));
+}
+
 export function forestDeliveryChannel(id) {
     const good = FOREST_GOODS[id];
     if (!good) return null;
@@ -92,7 +158,7 @@ export function forestDeliveryChannel(id) {
     if (savanna) {
         if (["sorghum", "millet", "marula-fruit", "baobab-fruit", "meat"].includes(id)) return "food";
         if (["gum-arabic", "savanna-salt", "thorn-branches", "termite-earth", "charcoal", "ivory", "baobab-fibre", "thatching-grass"].includes(id)) return "gold";
-        return null;
+        return "gold";
     }
     const swamp = SWAMP_GOODS[id];
     if (swamp) {
@@ -100,7 +166,7 @@ export function forestDeliveryChannel(id) {
         if (swamp.category === "medicine") return "medicine";
         if (["bog-cranberry", "bog-bean", "water-lily", "cattail-flour", "waterfowl", "marsh-fish"].includes(id)) return "food";
         if (["bog-orchid", "sphagnum", "reed-matting", "bog-cotton", "swamp-mud"].includes(id)) return "gold";
-        return null;
+        return "gold";
     }
     const mountain = MOUNTAIN_GOODS[id];
     if (mountain) {
@@ -123,12 +189,12 @@ export function forestDeliveryChannel(id) {
         return "gold";
     }
     const tropical = TROPICAL_GOODS[id];
-    if (!tropical) return null;
+    if (!tropical) return "gold";
     if (tropical.category === "gather" || tropical.category === "hunt") {
         return TROPICAL_GOLD_HUNT.has(id) ? "gold" : "food";
     }
     if (["fibre", "resin", "luxury", "poison"].includes(tropical.category)) return "gold";
-    return null;
+    return "gold";
 }
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
@@ -445,6 +511,9 @@ export function gatherForestProducts(x, y, options = {}) {
                 sawlog: dynamics.working.timber.sawlog,
                 firewood: dynamics.working.timber.firewood,
                 volume: dynamics.working.timber.volume,
+                specialty: dynamics.working.timber.specialty,
+                quality: dynamics.working.timber.quality,
+                logShare: dynamics.working.timber.logShare,
                 mushrooms: dynamics.working.forage.mushrooms,
                 herbs: dynamics.working.forage.herbs,
                 mast: dynamics.working.forage.mast,
@@ -482,15 +551,15 @@ export function gatherForestProducts(x, y, options = {}) {
 export function forestDeliveryAvailability(building) {
     if (!building || building.dead || building.isBuilding?.() !== true
         || ![TYPE.LUMBER, TYPE.FORESTER].includes(building.type)) {
-        return { available: 0, reason: "A lumber yard or forester is required" };
+        return { available: 0, food: 0, medicine: 0, wood: 0, gold: 0, summary: "", reason: "A lumber yard or forester is required" };
     }
     if (building.construction && Number(building.construction.stage) < 3) {
-        return { available: 0, reason: "The forest building is still under construction" };
+        return { available: 0, food: 0, medicine: 0, wood: 0, gold: 0, summary: "", reason: "The forest building is still under construction" };
     }
     const ledger = activeLedger();
-    if (!ledger) return { available: 0, reason: "No forest products have been gathered" };
+    if (!ledger) return { available: 0, food: 0, medicine: 0, wood: 0, gold: 0, summary: "", reason: "No forest products have been gathered" };
     const canUseLocalStore = building.type === TYPE.LUMBER;
-    let available = 0;
+    let available = 0, food = 0, medicine = 0, wood = 0, gold = 0;
     for (const [id, raw] of Object.entries(ledger.stock)) {
         const amount = Math.max(0, Math.floor(number(raw)));
         if (!amount || !FOREST_GOODS[id]) continue;
@@ -498,13 +567,90 @@ export function forestDeliveryAvailability(building) {
         if (!channel) continue;
         if (channel === "wood" && !canUseLocalStore) continue;
         available += amount;
+        if (channel === "wood") wood += amount;
+        else if (channel === "food") food += amount;
+        else if (channel === "medicine") medicine += amount;
+        else if (channel === "gold") gold += forestGoodSaleValue(id, amount);
     }
+    const parts = [];
+    if (food) parts.push(food + " food");
+    if (medicine) parts.push(medicine + " medicine");
+    if (wood) parts.push(wood + " timber/fuel");
+    if (gold) parts.push(gold + "G market");
     return {
-        available,
+        available, food, medicine, wood, gold,
+        summary: parts.join(" · "),
         reason: available > 0 ? "" : (canUseLocalStore
             ? "No deliverable forest products"
             : "This forester has no food, medicine or market goods to deliver"),
     };
+}
+
+// A market sale is the explicit alternative to delivery: food can fill the
+// royal stores, or the player can take today's quote instead. Wood stays with
+// the timber yard because logs, planks and fuel are the productive path.
+export function forestSellAvailability(building) {
+    if (!building || building.dead || building.isBuilding?.() !== true
+        || ![TYPE.LUMBER, TYPE.FORESTER].includes(building.type)) {
+        return { ok: false, available: 0, gold: 0, goods: [], reason: "A lumber yard or forester is required" };
+    }
+    if (building.construction && Number(building.construction.stage) < 3) {
+        return { ok: false, available: 0, gold: 0, goods: [], reason: "The forest building is still under construction" };
+    }
+    const ledger = activeLedger();
+    if (!ledger) return { ok: false, available: 0, gold: 0, goods: [], reason: "No forest products have been gathered" };
+    let available = 0, gold = 0;
+    const goods = [];
+    for (const [id, raw] of Object.entries(ledger.stock)) {
+        const amount = Math.max(0, Math.floor(number(raw)));
+        if (!amount || !FOREST_GOODS[id] || forestDeliveryChannel(id) === "wood") continue;
+        const value = forestGoodSaleValue(id, amount);
+        if (value <= 0) continue;
+        available += amount;
+        gold += value;
+        goods.push({
+            id, amount, value, label: FOREST_GOODS[id].label,
+            price: forestGoodMarketPrice(id), use: forestGoodUseLabel(id),
+        });
+    }
+    return {
+        ok: available > 0,
+        available, gold, goods,
+        reason: available > 0 ? "" : "No non-timber forest goods to sell",
+        summary: goods.map(good => good.amount + " " + good.label + " (" + good.value + "G)").join(" · "),
+    };
+}
+
+export function sellForestGoods(building) {
+    const availability = forestSellAvailability(building);
+    if (!availability.ok) return { ok: false, reason: availability.reason };
+    const ledger = activeLedger();
+    if (!ledger) return { ok: false, reason: "No forest products have been gathered" };
+    const goods = [];
+    let gold = 0, total = 0;
+    for (const row of availability.goods) {
+        const held = Math.max(0, Math.floor(number(ledger.stock[row.id])));
+        const amount = Math.min(row.amount, held);
+        if (amount <= 0) continue;
+        const value = forestGoodSaleValue(row.id, amount);
+        if (value <= 0) continue;
+        ledger.stock[row.id] -= amount;
+        gold += value;
+        total += amount;
+        goods.push({
+            id: row.id, label: row.label, amount, price: forestGoodMarketPrice(row.id),
+            value, use: forestGoodUseLabel(row.id), to: "gold",
+        });
+    }
+    if (!goods.length || gold <= 0) return { ok: false, reason: "No non-timber forest goods to sell" };
+    addResource("gold", gold);
+    recordResourceMovement("gold", gold, "forest-market", {
+        from: { kind: "building", id: building.id },
+        to: { kind: "market", id: "forest-goods" },
+        key: "forest-goods:" + building.id + ":" + state.tick,
+    });
+    state.statistics.totalTrades = Math.max(0, Number(state.statistics.totalTrades) || 0) + 1;
+    return { ok: true, goods, total, gold, buildingId: building.id };
 }
 
 export function deliverForestGoods(building) {
@@ -532,15 +678,21 @@ export function deliverForestGoods(building) {
             // so the sawmill can saw it and the market can price it. Generic
             // timber and old saves still become logs, exactly as before.
             const target = isTimber ? (REGIONAL_TIMBER_SET.has(id) ? id : "logs") : "firewood";
-            const accepted = addLocalOutput(building, target, amount,
+            const localAccepted = addLocalOutput(building, target, amount,
                 { cause: "forest-delivery" });
+            // A full yard store must not turn a real delivery into dead stock.
+            // The remainder goes into the same filtered warehouse chain the
+            // normal hauls use; the local store keeps first claim on space.
+            const overflow = Math.max(0, amount - localAccepted);
+            const stored = overflow > 0 ? depositGood(target, overflow, bx, by) : 0;
+            const accepted = localAccepted + stored;
             if (accepted <= 0) continue;
             ledger.stock[id] -= accepted;
             if (target === "logs") delivered.logs += accepted;
             else if (target === "firewood") delivered.firewood += accepted;
             else delivered.timber += accepted;
-            requestHaul(building, target, accepted);
-            goods.push({ id, to: target, amount: accepted });
+            if (localAccepted > 0) requestHaul(building, target, localAccepted);
+            goods.push({ id, to: target, amount: accepted, ...(stored > 0 ? { stored } : {}) });
             continue;
         }
         if (channel === "medicine") {
@@ -569,11 +721,17 @@ export function deliverForestGoods(building) {
             continue;
         }
         if (channel === "gold") {
-            const value = Math.max(1, Math.round(amount * 0.5 * (riverTrade ? 1.5 : 1)));
+            const price = forestGoodMarketPrice(id);
+            const value = Math.max(1, Math.round(amount * price * (riverTrade ? 1.5 : 1)));
             addResource("gold", value);
+            recordResourceMovement("gold", value, "forest-market", {
+                from: { kind: "building", id: building.id },
+                to: { kind: "market", id: "forest-goods" },
+                key: "forest-goods:" + building.id + ":" + state.tick,
+            });
             ledger.stock[id] -= amount;
             delivered.gold += value;
-            goods.push({ id, to: "gold", amount, value, ...(riverTrade ? { riverTrade: true } : {}) });
+            goods.push({ id, to: "gold", amount, price, value, ...(riverTrade ? { riverTrade: true } : {}) });
         }
     }
     if (!goods.length) return { ok: false, reason: canUseLocalStore ? "No deliverable forest products" : "This forester has no food, medicine or market goods to deliver" };
@@ -582,6 +740,33 @@ export function deliverForestGoods(building) {
         total: goods.reduce((sum, good) => sum + good.amount, 0),
         buildingId: building.id,
     };
+}
+
+/** Player-readable stock line: what each held good is for and what it is worth. */
+export function forestGatheringEconomySummary(limit = 4) {
+    const ledger = activeLedger();
+    if (!ledger) return "";
+    let marketGold = 0;
+    const rows = [];
+    for (const [id, raw] of Object.entries(ledger.stock)) {
+        const amount = Math.max(0, Math.floor(number(raw)));
+        if (!amount || !FOREST_GOODS[id]) continue;
+        const channel = forestDeliveryChannel(id);
+        const value = channel === "wood" ? 0 : forestGoodSaleValue(id, amount);
+        marketGold += value;
+        rows.push({
+            id, amount, value, channel,
+            label: FOREST_GOODS[id].label, use: forestGoodUseLabel(id),
+        });
+    }
+    if (!rows.length) return "";
+    rows.sort((a, b) => b.value - a.value || b.amount - a.amount || a.id.localeCompare(b.id));
+    const shown = rows.slice(0, Math.max(1, Math.floor(limit)));
+    const parts = shown.map(row => row.label + " " + row.amount + " → " + row.use
+        + (row.value > 0 ? " (≈" + row.value + "G)" : ""));
+    if (rows.length > shown.length) parts.push("+" + (rows.length - shown.length) + " more");
+    if (marketGold > 0) parts.push("market quote " + marketGold + "G");
+    return parts.join(" · ");
 }
 
 // Curing and tanning turn raw wild products into storable processed goods. The
@@ -1281,7 +1466,8 @@ export function thinNearestForest(building, radius = 6) {
         systemLabel: point.forestDynamics?.silviculture?.label || null,
         working: working ? {
             sawlog: timber.sawlog, firewood: timber.firewood,
-            volume: timber.volume, habitat: working.habitat?.score,
+            volume: timber.volume, specialty: timber.specialty, quality: timber.quality,
+            logShare, habitat: working.habitat?.score,
         } : null,
     };
 }
