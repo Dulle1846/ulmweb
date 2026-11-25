@@ -1,6 +1,6 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.58.0`
+**Current production version:** `3.58.1`
 **Next development line:** `3.59.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
@@ -8,6 +8,38 @@
 **Last repository verification:** 2026-11-25 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.58.1 — The forest values a player can actually see and use
+
+The fresh-player audit of 1.2.23.1.061–090 found seven values that were only
+strings in the derived record, one form that could not be reached through the
+normal mixed-plantation branch, and three traits that no player-facing system
+consumed. This patch connects them to the existing forest path and adds a live
+proof over the real lumber-yard and atlas controls.
+
+- **Gap age is no longer always zero.** Every real canopy gap now carries an
+  age derived from stand age, clearing and active succession; old woods carry
+  older gaps. The atlas LIGHT cell and the inspector show it.
+- **Water uptake and decomposition do work.** Water uptake now reduces the
+  stand's derived wetness instead of being a second root-depth label;
+  decomposition now feeds mushroom gathering, and medicinal herbs feed the herb
+  bundle. The atlas shows both soil values and the medicine value.
+- **Regime is visible.** The dominant fire/wind/ice/water regime and its fire and
+  wind shares appear in the atlas and inspector, not only in the record.
+- **All six systems are findable.** A young mixed plantation with coppice use
+  is classified as Niederwald instead of being swallowed by the generic
+  wood-pasture rule. The atlas now shows a bounded silviculture summary with all
+  six names and sample counts, so Waldweide, Niederwald, Mittelwald, Hochwald,
+  Plenterwald and Dauerwald can be found without surveying every tile.
+- **Fire and coppice traits reach real outputs.** Fire tolerance raises the
+  post-burn seed bank; coppice tolerance raises the regeneration factor of
+  Niederwald and Mittelwald. The remaining traits were already wired to fitness,
+  risk, structure or yield.
+- **Live player proof.** `tests/browser/forest-dynamics-live-proof.mjs` starts a
+  save-free realm, thins 10 logs from a stand (181 → 171 stock, 18 → 28 local
+  logs), gathers herbs/timber, opens 14 ecology cards, and plays three years at
+  4×. It records one observable effect for every point in
+  `docs/FOREST_DYNAMICS.md`.
 
 ## 3.58.0 — Every wood has a species history, a seed source and a working system
 

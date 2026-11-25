@@ -8,6 +8,7 @@ import {
     regionalCharacterFor, signatureTimberForRegionalType,
 } from "../world/regional-forests.js";
 import { FOREST_GOODS, forestStandAt } from "../world/forest-ecology.js";
+import { FOREST_MANAGEMENT_SYSTEMS } from "../world/forest-dynamics.js";
 import { timberQuote } from "../systems/regional-timber-market.js";
 
 const esc = value => String(value ?? "").replace(/[&<>"']/g, character => ({
@@ -62,7 +63,7 @@ export function forestAtlasSurvey(limit = SURVEY_LIMIT) {
     const indices = [];
     for (let index = 0; index < total; index++) if (geo.forestStock[index] > 0) indices.push(index);
     const stride = Math.max(1, Math.ceil(indices.length / Math.max(1, limit)));
-    const counts = {}, transitions = {}, samples = {};
+    const counts = {}, transitions = {}, samples = {}, systemCounts = {};
     let sampled = 0, transitionSamples = 0;
     const climate = state.worldOptions?.climate || "temperate";
     for (let slot = 0; slot < indices.length; slot += stride) {
@@ -83,6 +84,8 @@ export function forestAtlasSurvey(limit = SURVEY_LIMIT) {
         if (!id) continue;
         counts[id] = (counts[id] || 0) + 1;
         if (!samples[id] && stand.dynamics) samples[id] = stand.dynamics;
+        const system = stand.dynamics?.silviculture?.system;
+        if (system) systemCounts[system] = (systemCounts[system] || 0) + 1;
         sampled++;
         if (stand.regionalTransitionId) {
             transitionSamples++;
@@ -103,6 +106,13 @@ export function forestAtlasSurvey(limit = SURVEY_LIMIT) {
         transitionSamples,
         present: types.filter(type => type.count > 0).length,
         types,
+        // The card sample keeps one dynamics record per regional type. A type
+        // can carry several real management forms across its formation windows,
+        // so this bounded count is the player's view of every system observed
+        // in the same sample. It is not a second forest survey.
+        systems: Object.entries(FOREST_MANAGEMENT_SYSTEMS).map(([id, meta]) => ({
+            id, label: meta.label, count: systemCounts[id] || 0,
+        })),
         climate,
         season: seasonNames[Math.max(0, Math.min(3, Number(state.seasonIndex) || 0))],
     };
@@ -169,6 +179,8 @@ function dynamicsBlock(dynamics) {
     const health = dynamics.health || {};
     const age = dynamics.age || {};
     const system = dynamics.silviculture || {};
+    const hazard = dynamics.hazard || {};
+    const regime = hazard.regime || {};
     const soil = dynamics.soil || {};
     const structure = dynamics.structure || {};
     const facts = [
@@ -179,9 +191,12 @@ function dynamicsBlock(dynamics) {
         ['GENETICS', pct(regeneration.geneticDiversity) + '%', 'quality ' + pct(regeneration.seedQuality) + '%'],
         ['SITE FIT', pct(health.siteFitness) + '%', 'disease resistance ' + pct(health.diseaseResistance) + '%'],
         ['SYSTEM', system.label || '—', number(system.rotationYears) + 'y · timber ' + pct(system.timberFactor) + '%'],
-        ['SOIL', soil.humusForm || '—', 'roots ' + pct(soil.rootDepth) + '% · ' + (soil.mycorrhizaLabel || 'mycorrhiza —')],
+        ['REGIME', regime.label || '—', 'fire ' + pct(regime.fire) + '% · wind ' + pct(regime.wind) + '%'],
+        ['SOIL', soil.humusForm || '—', 'roots ' + pct(soil.rootDepth) + '% · uptake ' + pct(soil.waterUptake) + '%'],
+        ['MYCORRHIZA', soil.mycorrhizaLabel || '—', 'decomposition ' + pct(soil.decomposition) + '% · network ' + pct(soil.mycorrhiza) + '%'],
         ['STRUCTURE', structure.understoryLabel || '—', 'herb ' + pct(structure.herbLayer) + '% · liana ' + pct(structure.lianaCover) + '% · epiphyte ' + pct(structure.epiphyteCover) + '%'],
-        ['GAPS', pct(structure.canopyGap) + '%', 'edge diversity ' + pct(structure.edgeDiversity) + '% · ' + number(structure.layers) + ' layers'],
+        ['LIGHT', structure.lightWoodland ? 'Open woodland' : 'Closed canopy', 'gap age ' + number(structure.gapAge) + 'd · edge diversity ' + pct(structure.edgeDiversity) + '%'],
+        ['GAPS', pct(structure.canopyGap) + '%', 'medicine ' + pct(structure.medicinalHerbs) + '% · ' + number(structure.layers) + ' layers'],
     ];
     return '<div class="forest-atlas__dynamics">' + facts.map(([label, value, detail]) =>
         '<span><small>' + esc(label) + '</small><strong>' + esc(value) + '</strong><em>' + esc(detail) + '</em></span>').join('')
@@ -238,6 +253,15 @@ export function renderForestAtlasPanel() {
         "Every forest tile belongs to exactly one regional type, and boundary tiles name the woodland they blend into. Open a type to read its field marks, its signature good, its timber, its ecological effects and the named wood its sawmill can produce.")
         + '<div class="command-summary"><div><small>CATALOGUED</small><strong>' + number(REGIONAL_FOREST_TYPES.length) + ' TYPES</strong></div>'
         + '<div><small>IN THIS REALM</small><strong>' + number(present) + ' TYPES</strong></div>'
+        + '<div><small>SILVICULTURE</small><strong>' + survey.systems.filter(row => row.count > 0).length + ' / 6 SYSTEMS</strong></div>'
+        + '<div><small>ECOLOGY SAMPLE</small><strong>' + number(survey.sampled) + ' STANDS</strong></div>'
+        + '</div>'
+        + '<div class="command-section-title">SILVICULTURE IN SAMPLE</div>'
+        + '<div class="command-summary forest-atlas__systems">' + survey.systems.map(row =>
+            '<div data-forest-system="' + esc(row.id) + '"><small>' + esc(row.label) + '</small><strong>'
+            + number(row.count) + '</strong></div>').join('')
+        + '</div>'
+        + '<div class="command-summary">'
         + '<div><small>FOREST TILES</small><strong>' + number(survey.forestTiles) + '</strong></div>'
         + '<div><small>SURVEYED</small><strong>' + number(survey.sampled) + ' SAMPLES</strong></div>'
         + '<div><small>TRANSITION EDGES</small><strong>' + number(survey.transitionSamples) + '</strong></div>'

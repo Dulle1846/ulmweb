@@ -227,7 +227,15 @@ try {
     assert.match(ecologyText, /SEED BANK/, "a surveyed atlas card must show the seed bank");
     assert.match(ecologyText, /GENETICS/, "a surveyed atlas card must show genetic breadth");
     assert.match(ecologyText, /SYSTEM/, "a surveyed atlas card must show the silvicultural system");
+    assert.match(ecologyText, /REGIME/, "a surveyed atlas card must show the disturbance regime");
     assert.match(ecologyText, /STRUCTURE/, "a surveyed atlas card must show understorey and epiphytes");
+    assert.match(ecologyText, /LIGHT/, "a surveyed atlas card must show light woodland and gap age");
+    assert.match(ecologyText, /GAPS/, "a surveyed atlas card must show canopy gaps and medicine");
+    assert.match(ecologyText, /fire \d+% · wind \d+%/, "the regime must expose both fire and wind shares");
+    assert.match(ecologyText, /uptake \d+%/, "the soil block must expose water uptake");
+    assert.match(ecologyText, /decomposition \d+%/, "the soil block must expose decomposition");
+    assert.match(ecologyText, /gap age \d+d/, "the light block must expose a real gap age");
+    assert.match(ecologyText, /medicine \d+%/, "the gap block must expose medicinal herbs");
     evidence.atlas = { cards: atlasCards, sampled: /SURVEYED/.test(atlasText), mangrove: true, redwood: true, ecology: true };
     await page.screenshot({ path: resolve(outputDir, "forest-atlas.png"), fullPage: false });
     await ecologyCard.scrollIntoViewIfNeeded();

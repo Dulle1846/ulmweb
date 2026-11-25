@@ -159,6 +159,11 @@ test("diversity, sight, wetness and wind exposure are derived stand properties",
         assert.ok(stand.windExposure >= 0 && stand.windExposure <= 1);
         assert.ok(stand.deadwood >= 0 && stand.deadwood <= 1);
         assert.equal(Number.isFinite(stand.structure.sapling), true);
+        assert.equal(stand.structure.waterUptake, stand.dynamics.soil.waterUptake);
+        assert.equal(stand.structure.decomposition, stand.dynamics.soil.decomposition);
+        assert.equal(stand.structure.gapAge, stand.dynamics.structure.gapAge);
+        assert.equal(stand.structure.medicinalHerbs, stand.dynamics.structure.medicinalHerbs);
+        assert.equal(stand.structure.lightWoodland, stand.dynamics.structure.lightWoodland);
     }
     assert.ok(stands.some(stand => stand.speciesDiversity > 0.55), "mixed stands need visible diversity");
     assert.ok(stands.some(stand => stand.windExposure > 0.35), "exposed high stands need wind exposure");

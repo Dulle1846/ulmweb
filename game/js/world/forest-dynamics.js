@@ -120,8 +120,12 @@ function largestEntry(entries) {
 function systemFor(formationId, uses, canopy, ageClass, speciesDiversity) {
     if (formationId === 'coppice-with-standards') return 'coppice-with-standards';
     if (formationId === 'selection-forest' || uses.has('selection-felling')) return 'selection';
-    if (formationId === 'mixed-open' || (uses.has('grazing') && canopy < 0.55)) return 'wood-pasture';
+    // A young mixed plantation carries coppice as its management use even when
+    // it is also grazed. The explicit coppice use must win over the generic
+    // open-canopy pasture rule, otherwise Niederwald is never reachable on the
+    // map and the stand only ever reports Waldweide.
     if (uses.has('coppice')) return 'coppice';
+    if (formationId === 'mixed-open' || (uses.has('grazing') && canopy < 0.55)) return 'wood-pasture';
     if ((formationId.startsWith('mixed') || formationId === 'alluvial') && speciesDiversity > 0.55
         && (ageClass === 'mature' || ageClass === 'ancient')) return 'continuous-cover';
     return 'high-forest';
@@ -228,6 +232,8 @@ export function forestDynamicsFor(context = {}) {
     const litterQuality = weighted(effective, total, 'litter');
     const diseaseTolerance = weighted(effective, total, 'disease');
     const windFirmness = weighted(effective, total, 'wind');
+    const fireTolerance = weighted(effective, total, 'fire');
+    const coppiceTolerance = weighted(effective, total, 'coppice');
     const grazeTolerance = weighted(effective, total, 'graze');
     const longevity = weighted(effective, total, 'longevity');
     const mycorrhizaAffinity = weighted(effective, total, 'mycorrhiza');
@@ -247,7 +253,8 @@ export function forestDynamicsFor(context = {}) {
         + (['pine', 'aleppo-pine', 'eucalyptus', 'acacia', 'birch', 'poplar', 'willow', 'bamboo'].includes(entry.id)
             ? entry.share : 0), 0);
     const seedBank = clamp01(0.18 + pioneerShare * 0.35 + serotiny * 0.20 + litter * 0.12
-        + (disturbance === 'burned' ? 0.18 : disturbance ? 0.08 : 0) + (1 - canopy) * 0.08);
+        + (disturbance === 'burned' ? 0.18 + fireTolerance * 0.04 : disturbance ? 0.08 : 0)
+        + (1 - canopy) * 0.08);
     const seedQuality = clamp01(motherTrees * 0.45 + geneticDiversity * 0.35 + siteFitness * 0.20);
     const mycorrhiza = clamp01(mycorrhizaAffinity * 0.55 + humus * 0.20 + moss * 0.05
         + (ageClass === 'ancient' ? 0.12 : 0) + geneticDiversity * 0.08 - (disturbance ? 0.08 : 0));
@@ -266,8 +273,13 @@ export function forestDynamicsFor(context = {}) {
     const rotationYears = Math.round(management.rotation * (0.78 + longevity * 0.44));
     const browsePressure = clamp01(grazeTolerance * 0.16 + (system === 'wood-pasture' ? 0.22 : 0)
         + (edge ? 0.03 : 0));
+    // Coppice species sprout from the stool; the trait has to reach the one
+    // number that actually drives the 400-day regrowth slices. Other systems
+    // keep their published regeneration factor unchanged.
+    const coppiceRegeneration = system === 'coppice' || system === 'coppice-with-standards'
+        ? coppiceTolerance * 0.04 : 0;
     const regenerationFactor = clamp(
-        (0.70 + naturalRegeneration * 0.65) * management.regeneration,
+        (0.70 + naturalRegeneration * 0.65) * (management.regeneration + coppiceRegeneration),
         0.64, 1.40,
     );
 
@@ -305,6 +317,7 @@ export function forestDynamicsFor(context = {}) {
     const shrubLayer = clamp01(shrub * 0.55 + bramble * 0.25 + berry * 0.30 + sapling * 0.20);
     const herbLayer = clamp01(herb * 0.50 + grass * 0.30 + flowers * 0.20
         + (edge ? 0.08 : 0) - canopy * 0.10);
+    const medicinalHerbs = clamp01(herbLayer * 0.70 + moss * 0.10 + moisture * 0.10);
     const tropicalLiana = number(tropical?.features?.['1.2.4.13'], 0);
     const tropicalEpiphyte = number(tropical?.features?.['1.2.4.14'], 0);
     const temperateLiana = clamp01((moisture - 0.45) * 0.50 + (ageClass === 'ancient' ? 0.18 : 0)
@@ -315,7 +328,13 @@ export function forestDynamicsFor(context = {}) {
             + (ageClass === 'ancient' ? 0.15 : 0)) * 0.70);
     const canopyGap = clamp01(clearing * 0.80 + (disturbance ? 0.12 : 0)
         + (ageClass === 'ancient' ? 0.05 : 0));
-    const gapAge = Math.max(0, number(succession?.age, 0));
+    // A gap has an age even when the tile has no active disturbance record.
+    // Old woods carry older, larger gaps; a fresh clearing is young. Succession
+    // age, when present, is added in days instead of replacing the stand age.
+    const gapBaseDays = ageClass === 'ancient' ? 140 : ageClass === 'mature' ? 55 : 12;
+    const gapAge = canopyGap > 0.03
+        ? Math.round(gapBaseDays + clearing * 90 + Math.min(240, Math.max(0, number(succession?.age, 0))) * 0.25)
+        : 0;
     const lightWoodland = canopy < 0.52 && herbLayer > 0.35;
     const edgeDiversity = edge
         ? clamp01(0.34 + speciesDiversity * 0.25 + shrubLayer * 0.15 + herbLayer * 0.15 + lianaCover * 0.10)
@@ -329,8 +348,8 @@ export function forestDynamicsFor(context = {}) {
                     : 'Moss and litter floor');
 
     const goodsBoost = {
-        herbs: clamp(0.82 + herbLayer * 0.38, 0.80, 1.25),
-        mushrooms: clamp(0.82 + mycorrhiza * 0.38, 0.80, 1.25),
+        herbs: clamp(0.78 + herbLayer * 0.18 + medicinalHerbs * 0.22, 0.80, 1.25),
+        mushrooms: clamp(0.76 + mycorrhiza * 0.30 + decomposition * 0.08, 0.80, 1.25),
         lichen: clamp(0.85 + epiphyteCover * 0.30, 0.80, 1.20),
         moss: clamp(0.85 + epiphyteCover * 0.30, 0.80, 1.20),
         'willow-withies': clamp(0.85 + lianaCover * 0.30, 0.80, 1.20),
@@ -416,7 +435,7 @@ export function forestDynamicsFor(context = {}) {
             shrubLayer,
             saplingLayer: clamp01(sapling),
             herbLayer,
-            medicinalHerbs: clamp01(herbLayer * 0.70 + moss * 0.10 + moisture * 0.10),
+            medicinalHerbs,
             lianaCover,
             epiphyteCover,
             canopyGap,
@@ -428,7 +447,8 @@ export function forestDynamicsFor(context = {}) {
         },
         soil: {
             rootDepth,
-            waterUptake: clamp01(rootDepth * 0.60 + (1 - droughtTolerance) * 0.15 + moisture * 0.15),
+            waterUptake: clamp01(rootDepth * 0.72 + (1 - droughtTolerance) * 0.22
+                + (moisture - 0.5) * 0.12),
             litterQuality,
             humusForm,
             decomposition,

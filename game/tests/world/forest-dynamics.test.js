@@ -164,7 +164,17 @@ test("seed bank, mother trees and genetic breadth drive natural regeneration", (
     const young = forestDynamicsFor(baseContext({ ageClass: "young", canopy: 0.45 }));
     const ancient = forestDynamicsFor(baseContext({ ageClass: "ancient", canopy: 0.86, deadwood: 0.7 }));
     const pure = forestDynamicsFor(baseContext({ pureIsland: { active: true, species: "oak" } }));
+    const burnedPine = forestDynamicsFor(baseContext({
+        species: [{ id: "pine", weight: 1 }], coniferShare: 1, broadleafShare: 0,
+        moisture: 0.3, disturbance: "burned", ageClass: "young", canopy: 0.25,
+    }));
+    const burnedOak = forestDynamicsFor(baseContext({
+        species: [{ id: "oak", weight: 1 }], coniferShare: 0, broadleafShare: 1,
+        moisture: 0.3, disturbance: "burned", ageClass: "young", canopy: 0.25,
+    }));
     assert.ok(burned.regeneration.seedBank > green.regeneration.seedBank);
+    assert.ok(burnedPine.regeneration.seedBank > burnedOak.regeneration.seedBank,
+        "the fire trait must raise the post-burn seed bank of a fire-adapted pine");
     assert.ok(burned.regeneration.seedBank >= 0 && burned.regeneration.seedBank <= 1);
     assert.ok(ancient.regeneration.motherTrees > young.regeneration.motherTrees);
     assert.ok(ancient.regeneration.motherTreesPerHa > young.regeneration.motherTreesPerHa);
@@ -280,6 +290,8 @@ test("edges, gaps, lianas, epiphytes and the herb layer form real structure", ()
         sapling: 0.5, deadwood: 0.5,
     }));
     const dry = forestDynamicsFor(baseContext({ moisture: 0.2, edge: false, clearing: 0 }));
+    const youngGap = forestDynamicsFor(baseContext({ ageClass: "young", canopy: 0.4, clearing: 0.5 }));
+    const ancientGap = forestDynamicsFor(baseContext({ ageClass: "ancient", canopy: 0.4, clearing: 0.5 }));
     const tropical = forestDynamicsFor(baseContext({
         moisture: 0.85, temperature: 0.8, tropical: { features: { "1.2.4.13": 0.9, "1.2.4.14": 0.8 } },
     }));
@@ -293,6 +305,12 @@ test("edges, gaps, lianas, epiphytes and the herb layer form real structure", ()
     assert.ok(wet.structure.edgeDiversity > 0.5);
     assert.ok(wet.structure.layers >= 4);
     assert.equal(wet.structure.lightWoodland, true);
+    assert.ok(wet.structure.gapAge > 0, "a real canopy gap must have a gap age");
+    assert.ok(ancientGap.structure.gapAge > youngGap.structure.gapAge,
+        "an old wood's gap must be older than a young stand's gap");
+    assert.ok(wet.structure.medicinalHerbs > dry.structure.medicinalHerbs);
+    assert.ok(wet.goods.boost.herbs > dry.goods.boost.herbs,
+        "medicinal herbs must feed the herb gathering yield, not only a label");
     assert.ok(wet.structure.understoryLabel.length > 4);
     assert.ok(wet.structure.lianaCover >= 0 && wet.structure.lianaCover <= 1);
     assert.ok(wet.structure.epiphyteCover >= 0 && wet.structure.epiphyteCover <= 1);
@@ -315,7 +333,12 @@ test("roots, litter, humus and mycorrhiza are species-specific soil processes", 
     const ancient = one("oak", { ageClass: "ancient", deadwood: 0.7, humus: 0.7, moss: 0.5 });
     const disturbed = one("oak", { ageClass: "young", disturbance: "burned", humus: 0.2 });
     assert.ok(pine.soil.rootDepth > birch.soil.rootDepth);
+    assert.ok(birch.soil.waterUptake < pine.soil.waterUptake || birch.soil.waterUptake < oak.soil.waterUptake,
+        "water uptake must vary with species and site, not sit at one value");
     assert.ok(oak.soil.litterQuality > spruce.soil.litterQuality);
+    assert.ok(oak.soil.decomposition > spruce.soil.decomposition);
+    assert.ok(oak.goods.boost.mushrooms > spruce.goods.boost.mushrooms,
+        "decomposition must feed mushroom yield, not only a label");
     assert.equal(spruce.soil.humusForm, "Mor");
     assert.equal(oak.soil.humusForm, "Mull");
     assert.ok(ancient.soil.mycorrhiza > disturbed.soil.mycorrhiza);
@@ -331,9 +354,14 @@ test("roots, litter, humus and mycorrhiza are species-specific soil processes", 
 
 test("stand, node, regrowth and products consume the same dynamics record", () => {
     const data = world();
-    for (const system of ["high-forest", "continuous-cover", "wood-pasture", "selection", "coppice-with-standards"]) {
+    for (const system of ["high-forest", "continuous-cover", "wood-pasture", "selection", "coppice", "coppice-with-standards"]) {
         assert.ok(data.systems.has(system), "the generated realm must expose " + system);
     }
+    const plantation = forestDynamicsFor(baseContext({
+        formationId: "mixed-young", silviculture: ["coppice", "grazing"], ageClass: "young", canopy: 0.5,
+    }));
+    assert.equal(plantation.silviculture.system, "coppice",
+        "a young coppiced plantation must not be swallowed by the wood-pasture branch");
     for (const system of data.systems) assert.ok(FOREST_MANAGEMENT_SYSTEMS[system]);
     const node = data.nodes[0];
     const stand = node.forestStand;
@@ -353,6 +381,14 @@ test("stand, node, regrowth and products consume the same dynamics record", () =
     assert.equal(node.forestLianaCover, stand.dynamics.structure.lianaCover);
     assert.equal(node.forestEpiphyteCover, stand.dynamics.structure.epiphyteCover);
     assert.equal(node.forestHerbLayer, stand.dynamics.structure.herbLayer);
+    assert.equal(node.forestMedicinalHerbs, stand.dynamics.structure.medicinalHerbs);
+    assert.equal(node.forestGapAge, stand.dynamics.structure.gapAge);
+    assert.equal(node.forestLightWoodland, stand.dynamics.structure.lightWoodland);
+    assert.equal(node.forestWaterUptake, stand.dynamics.soil.waterUptake);
+    assert.equal(node.forestDecomposition, stand.dynamics.soil.decomposition);
+    assert.equal(node.forestRegime, stand.dynamics.hazard.regime.label);
+    assert.equal(node.forestRegimeFire, stand.dynamics.hazard.regime.fire);
+    assert.equal(node.forestRegimeWind, stand.dynamics.hazard.regime.wind);
     assert.ok(node.forestFireRisk >= 0 && node.forestFireRisk <= 1);
     assert.ok(node.forestPestRisk >= 0 && node.forestPestRisk <= 1);
     assert.ok(node.forestWindExposure >= 0 && node.forestWindExposure <= 1);

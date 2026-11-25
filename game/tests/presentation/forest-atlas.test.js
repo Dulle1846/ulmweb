@@ -40,6 +40,10 @@ test("the atlas surveys a bounded, deterministic sample of the realm's forest ti
     assert.ok(Number.isInteger(first.transitionSamples) && first.transitionSamples >= 0);
     assert.equal(first.types.reduce((sum, type) => sum + type.transitionCount, 0), first.transitionSamples);
     assert.ok(first.types.some(type => type.dynamics?.composition), "present types must carry a sampled dynamics record");
+    assert.equal(first.systems.length, 6, "the atlas must report every silvicultural system, including unsampled ones");
+    assert.ok(first.systems.every(row => row.label && Number.isInteger(row.count)), "every system needs a visible label and count");
+    assert.equal(first.systems.reduce((sum, row) => sum + row.count, 0), first.sampled,
+        "system counts must come from the same bounded atlas sample");
     assert.equal(forestAtlasSurvey(60), first, "a cached survey is reused inside the same window");
 });
 
@@ -60,6 +64,14 @@ test("the rendered atlas lists all 60 types, their effects and their signature t
     assert.match(markup, /Forage/);
     assert.match(markup, /SIGNATURE/);
     assert.match(markup, /bounty/);
+    assert.equal((markup.match(/data-forest-system="/g) || []).length, 6,
+        "the visible atlas must list all six silvicultural systems");
+    assert.match(markup, /Waldweide/);
+    assert.match(markup, /Niederwald/);
+    assert.match(markup, /Mittelwald/);
+    assert.match(markup, /Hochwald/);
+    assert.match(markup, /Plenterwald/);
+    assert.match(markup, /Dauerwald/);
     assert.match(markup, /TRANSITION EDGES/);
     assert.match(markup, /MIX/);
     assert.match(markup, /PHASE/);
@@ -72,6 +84,13 @@ test("the rendered atlas lists all 60 types, their effects and their signature t
     assert.match(markup, /MYCORRHIZA|mycorrhiza/);
     assert.match(markup, /STRUCTURE/);
     assert.match(markup, /GAPS/);
+    assert.match(markup, /REGIME/);
+    assert.match(markup, /LIGHT/);
+    assert.match(markup, /fire \d+% · wind \d+%/);
+    assert.match(markup, /uptake \d+%/);
+    assert.match(markup, /decomposition \d+%/);
+    assert.match(markup, /gap age \d+d/);
+    assert.match(markup, /medicine \d+%/);
     assert.match(markup, /long snow cover/);
     assert.match(markup, /Moss/);
     assert.match(markup, /Dune Grass/);

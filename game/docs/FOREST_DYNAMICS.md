@@ -1,6 +1,6 @@
 # Baumarten, Mischung, Genetik und Sukzession · 1.2.23.1.061–090
 
-> **Status: implementiert (v3.58.0).** Die 30 Punkte laufen als reine, abgeleitete
+> **Status: implementiert (v3.58.1).** Die 30 Punkte laufen als reine, abgeleitete
 > `forest-dynamics`-Schicht über dem bestehenden `forestStandAt()`-Vertrag. Es
 > gibt keinen zweiten Waldsimulator, keine neue Karte, keinen neuen Save-Typ und
 > keine zusätzliche Pro-Tick-Schleife. Jede Waldkachel berechnet beim Lesen
@@ -73,6 +73,61 @@ Samenquelle und die Holzernte lesen dieselben Gewichte.
 | **089** Streu und Humus | `litterQuality`, `humusForm` (`Mull`/`Moder`/`Mor`), `decomposition` | Laubstreu bildet Mull, Nadelstreu Mor; Zersetzung hängt von Feuchte, Wärme und Koniferenanteil ab. Test: Eiche Mull, Fichte Mor, Laub > Nadel |
 | **090** Mykorrhiza-Netzwerke | `mycorrhiza`, `mycorrhizaLabel`; Alter, Humus, Moos, Genetik und Störung | Pilznetzwerke verbessern Regeneration, Krankheitsresistenz und Sammelertrag; alte Wälder sind besser vernetzt. Test: alt > gestört, Netzwerklabel |
 
+## 2b. Spielerbeobachtung und Wirkung (Live-Beweis)
+
+Der Live-Beweis startet mit `Seed 20261123`, temperate, ohne Save und spielt
+über die sichtbaren Knöpfe: Lumberyard-Inspektor, `THIN NEAREST STAND`,
+`GATHER FOREST PRODUCTS`, Forest-Atlas und die 4×-Geschwindigkeit. Nach drei
+vollen Jahren (Jahr 1 → Jahr 4, Tick 1.269) zeigt der Lauf 4.274 Waldkacheln,
+0 untypisierte Kacheln, alle sechs Bewirtschaftungssysteme, 60 Atlas-Karten und
+14 Karten mit Ökologieblock. Die Stichprobe umfasst 238 Bestände: Niederwald 20,
+Mittelwald 4, Hochwald 164, Plenterwald 1, Dauerwald 45, Waldweide 4. Die Ernte
+senkte den Bestand am Lumberyard von 181 auf 171 und legte 10 Logs ins lokale
+Lager (18 → 28); das Sammeln lieferte 2 Timber, 3 Birch sap, 3 Wild garlic,
+2 Firewood, 3 Maple syrup und 2 Mushrooms. Der Gesamtbestand bewegte sich in
+drei Jahren von 637.348 auf 629.113. Am beobachteten Störungsstand `(87, 38)`
+wuchs das Störungsalter von 60 auf 600 Tage, die Phase wechselte von `fresh`
+zu `recovered` und die Samenbank von 48 % auf 36 %.
+
+| Punkt | Was der Spieler sieht | Was er tun kann | Nachgewiesene Wirkung |
+|---|---|---|---|
+| **061** Regionale Baumarten-Sets | Arten-Chips im Atlas, Arten im Inspektor | Mischbestand ernten | regionale Arten bestimmen Timber, Mischung und Sammelgut |
+| **062** Rein- bis Mischwald | `MIX`-Wert und Reinheitsgrad im Atlas | Durchforsten | Reinheit/Mischung ändern Ertrag und Struktur |
+| **063** Pionierarten auf Störflächen | Pionierphase und Brandbestand im Atlas/Inspektor | Störungsfläche aufsuchen | Brandbestand: 81 % Samenbank, Pionieranteil |
+| **064** Klimaxarten in alten Beständen | `PHASE`, Pionier/Klimax im Atlas | Alten Bestand stehen lassen | Old-growth: 53 % Klimaxanteil, mehr Mutterbäume |
+| **065** Altersklassen und Bestandsphasen | sechs Phasen und Rotation | Warten oder ernten | Rotation 19–158 Jahre, Phase wechselt mit dem Bestand |
+| **066** Totholz | `Deadwood` im Inspektor | Totholz stehen lassen | Feuerlast, Humus, Mykorrhiza und Habitat |
+| **067** Naturverjüngung | `Regeneration` im Inspektor | Durchforsten | 109 % Regenerationsfaktor in den 400-Tage-Slices |
+| **068** Samenbank nach Störungen | `SEED BANK` im Atlas | Brandfläche beobachten | 81 % nach Brand statt niedrigerer ungestörter Bank |
+| **069** Mutterbäume | `mother trees`/ha im Atlas | Alte Bäume stehen lassen | 35 Mutterbäume/ha, höhere Samenqualität |
+| **070** Genetische Vielfalt | `GENETICS` im Atlas | Mischbestand erhalten | 73 % genetische Breite, geringeres Inzuchtrisiko |
+| **071** Regionale Krankheitsresistenz | `SITE FIT`/Resistenz im Atlas | Art und Standort wählen | 61 % Resistenz moduliert das echte Pestrisiko |
+| **072** Standortanpassung | `SITE FIT` im Atlas/Inspektor | Standortgerechte Art wählen | 85 % Fitness speist Produktivität |
+| **073** Sukzession Pionier → Klimax | Phasen und `Succession` im Inspektor | Drei Jahre laufen lassen | 3 Jahre bis Jahr 4 / Tick 1.269; beobachtete Störung 60 → 600 Tage, Phase fresh → recovered |
+| **074** Regionale Störungsregime | `REGIME` mit Feuer-/Windanteil im Atlas | Standort und Bestand wählen | Feuer-, Wind-, Eis- und Wasserregime unterscheidbar |
+| **075** Waldweide | `Waldweide`, `Browse` im Inspektor | Beweideten Bestand aufsuchen | 32 % Verbissdruck, langsamere Regeneration |
+| **076** Niederwald | `Niederwald` im Atlas/Inspektor | Jungbestand durchforsten | 19-Jahres-Rotation und 124 % Regeneration |
+| **077** Mittelwald | `Mittelwald` im Atlas/Inspektor | Ober-/Unterholz ernten | 34-Jahres-Rotation, 117 % Regeneration |
+| **078** Hochwald | `Hochwald` im Atlas/Inspektor | Lange Rotation abwarten | 136-Jahres-Rotation, 104 % Timber-Faktor |
+| **079** Plenterwald | `Plenterwald` im Atlas/Inspektor | Einzelstammweise ernten | 90-Jahres-Rotation, Selection-Flag |
+| **080** Dauerwald | `Dauerwald` im Atlas/Inspektor | Dauerbestand stehen lassen | 125-Jahres-Rotation, 117 % Regeneration |
+| **081** Waldränder und Ökotone | `edge diversity`, Lianen im Atlas | Rand aufsuchen | 73 % Randvielfalt, mehr Licht und Sammelgut |
+| **082** Lichtwald | `LIGHT` = Open woodland | Offene Krone aufsuchen | offener Bestand mit 72 % Krautschicht |
+| **083** Kronendachlücken | `GAPS` und `gap age` im Atlas | Sturm-/Erntelücke beobachten | 86 % Lücke mit 111 Tagen Lückenalter |
+| **084** Lianen | `Lianas/epiphytes` und `liana` | Feuchten/tropischen Bestand aufsuchen | 34 % Lianenbedeckung, Rattan/Weidenruten |
+| **085** Epiphyten | `epiphyte` und Moos/Flechte | Feuchten Bestand aufsuchen | 44 % Epiphytenbedeckung, Moss/Lichen/Orchideen |
+| **086** Unterholz | `STRUCTURE`/Understorey | Durchforsten | Strauch-/Jungbaumschicht speist Habitat und Verbiss |
+| **087** Krautschicht | `herb`, `GAPS`/Medicine | Licht schaffen | 63 % Kraut, 60 % Medizinkraut, höherer Kräuterertrag |
+| **088** Wurzeltiefe | `Roots`, `Water uptake` | Art und Feuchte wählen | 74 % Wurzeln, 70 % Wasseraufnahme senkt Staunässe |
+| **089** Streu und Humus | `SOIL`, `MYCORRHIZA`/Decomposition | Laub-/Nadelbestand wählen | Mull und 70 % Zersetzung erhöhen Pilzertrag |
+| **090** Mykorrhiza-Netzwerke | `MYCORRHIZA`, Netzwerklabel | Alten Bestand stehen lassen | 85 % Netzwerk, bessere Regeneration/Resistenz/Pilze |
+
+Der Live-Beweis liegt als `tests/browser/forest-dynamics-live-proof.mjs` bei und
+schreibt `artifacts/forest-dynamics-live/forest-dynamics-live.json` sowie die
+Screenshots `forest-atlas-ecology.png` und `forest-dynamics-live.png`. Er nutzt
+denselben `forestStandAt()`-Datensatz wie Atlas und Inspektor; es gibt keine
+test-only Waldregel.
+
 ## 3. Echte Wirkungen
 
 - **Regeneration:** `forestRegrowthFactor()` multipliziert den bisherigen
@@ -84,17 +139,29 @@ Samenquelle und die Holzernte lesen dieselben Gewichte.
   Lumber-Cache speichert dafür zusätzlich `timberFactor` und `system`.
 - **Sammeln:** Kräuter, Pilze, Moos/Flechte, Weidenruten/Rattan und Orchideen
   erscheinen nur, wenn die abgeleitete Struktur sie trägt; der Ertrag wird mit
-  dem passenden `goods.boost` (0,75–1,30) multipliziert. Holz nutzt den
-  Bewirtschaftungsfaktor.
+  dem passenden `goods.boost` (0,75–1,30) multipliziert. `medicinalHerbs` speist
+  den Kräuterertrag, `decomposition` den Pilzertrag; Holz nutzt den
+  Bewirtschaftungsfaktor. Der Lumberyard sammelt dieselben Produkte über den
+  sichtbaren Knopf.
+- **Boden und Wasser:** `waterUptake` senkt die abgeleitete Staunässe des
+  Bestands (statt nur angezeigt zu werden); `rootDepth` bleibt der Wurzelwert.
+  `gapAge` hat jetzt auch ohne aktiven Störungsdatensatz ein echtes Alter aus
+  Bestandsalter, Lücke und Sukzessionsalter; alte Wälder tragen ältere Lücken.
+- **Merkmale:** `fire` fließt in die Samenbank nach Brand ein, `coppice` in den
+  Regenerationsfaktor von Nieder- und Mittelwald. Die übrigen 12 Traits waren
+  bereits über Fitness, Risiko, Struktur oder Ertrag verdrahtet.
 - **Gefahren:** Feuerrisiko, Pestrisiko und Windexposition werden mit den
   artspezifischen Abweichungen moduliert; die Werte bleiben auf 0–1 begrenzt.
 - **Produktivität:** Standortfit fließt mit 0,86–1,06 in die bestehende
   Produktivität ein; keine neue Ökonomie.
 - **Darstellung:** Der Atlas zeigt pro anwesendem Typ einen echten
-  Ökologieblock (Mischung, Phase, Pionier/Klimax, Samenbank, Mutterbäume,
-  Genetik, Standortfit, Resistenz, System, Humus/Wurzeln/Mykorrhiza, Struktur,
-  Lücken). Der Inspektor druckt dieselben Werte. Im Nahzoom zeichnet der
-  Renderer Lianen und Epiphyten aus `stand.dynamics.structure`.
+  13-Zellen-Ökologieblock (Mischung, Phase, Pionier/Klimax, Samenbank, Genetik,
+  Standortfit, System, Regime, Humus/Wasseraufnahme, Mykorrhiza/Zersetzung,
+  Struktur, Licht/Lückenalter, Lücken/Medizinkraut). Eine sichtbare
+  Silvikultur-Zusammenfassung nennt alle sechs Systeme mit ihrer Stichproben-
+  zahl; dadurch ist auch ein seltener Bestand wie Niederwald auffindbar. Der
+  Inspektor druckt dieselben Werte. Im Nahzoom zeichnet der Renderer Lianen und
+  Epiphyten aus `stand.dynamics.structure`.
 
 ## 4. Save- und Performance-Vertrag
 
@@ -121,20 +188,30 @@ Samenquelle und die Holzernte lesen dieselben Gewichte.
   Regeneration weiterhin.
 - `tests/systems/forest-gathering.test.js` — echte Standdynamik im
   Sammelergebnis, Saison, Bounty, Durchforstung.
-- `tests/presentation/forest-atlas.test.js` — 60 Karten, Ökologieblock und
-  Inspectortext.
+- `tests/presentation/forest-atlas.test.js` — 60 Karten, 13-Zellen-Ökologieblock,
+  alle sechs Systeme in der sichtbaren Stichprobe und Inspectortext.
+- `tests/browser/regional-forest-reference.mjs` — tropische Atlas-Referenz mit
+  Regime-, Wasseraufnahme-, Zersetzungs-, Lückenalter- und Medizinzeile.
+- `tests/browser/forest-dynamics-live-proof.mjs` — frischer Spieler, Lumberyard,
+  Ernte, Sammeln, 14 Atlas-Ökologiekarten, drei Jahre Fast-Forward und alle 30
+  Beobachtungen.
 - `tests/world/regional-forests.test.js` — 60 Standortfenster, 9-Klima-Scan,
   Übergänge, Save-Roundtrip.
 
 ## 6. Verifikation
 
-Stand 2026-11-25: **1.450/1.450 Tests** grün. Die deterministische
-25-Jahres-Kampagne läuft **10.040 Ticks** in **19.213,8 ms** (**1,175 ms/Tick**),
+Stand 2026-11-25: **1.456/1.456 Tests** grün. Die deterministische
+25-Jahres-Kampagne läuft **10.040 Ticks** in **19.163 ms** (**1,089 ms/Tick**),
 72 Bewohner, alle 13 Ambitionen, alle Anforderungen wahr, **3.507 Waldkacheln**,
 **0 untypisiert**, 23 echte Fuel-Backfill-Aufträge (max. 1 pro Phase), kein Game
 Over. Die tropische Browser-Referenz sieht **9.526 Waldkacheln**, **0 untypisiert**,
 **60 Atlas-Karten**, **18 Timber-Market-Zeilen**, drei verschiedene gerenderte
 Bestände, den Ökologieblock und die Lianen-/Epiphytenzeile, ohne Konsolen- oder
-Seitenfehler. Der Spec-Audit meldet **1.616/1.618 implementiert** in 38
-Abschnitten; offen bleiben nur 4.0.1 und 4.0.6. Beide Live-Hosts wurden nach dem
-Produktionsdeploy geprüft.
+Seitenfehler. Der neue Spieler-Live-Beweis spielt **4.274 Waldkacheln**,
+**238 Bestände**, **60 Atlas-Karten**, **14 Ökologiekarten**, drei Jahre und alle
+30 Punkte ohne Seiten-, Konsolen- oder Netzwerkfehler durch; Ernte, Sammeln,
+Durchforstung, Sukzession und alle sechs Systeme sind darin belegt. Der
+Spec-Audit meldet **1.616/1.618 implementiert** in 38 Abschnitten; offen bleiben
+nur 4.0.1 und 4.0.6. Der Produktionsdeploy wird aus genau diesem getesteten
+Commit gebaut; beide Hosts werden danach auf denselben Commit und den
+Live-Beweis geprüft.
