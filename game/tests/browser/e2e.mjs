@@ -1048,7 +1048,7 @@ try{
     });
     await page.waitForFunction(()=>document.querySelector("#pause-text")?.textContent.trim()==="RESUME",null,{timeout:3000});
     const goldDeliveryBefore=await page.evaluate(async()=>{
-        const [{state},{ensureForestGathering},{renderUI}]=await Promise.all([
+        const [{state},{ensureForestGathering,forestGoodSaleValue},{renderUI}]=await Promise.all([
             import("./js/core/state.js"),import("./js/systems/forest-gathering.js"),
             import("./js/presentation/rendering/ui.js")
         ]);
@@ -1058,7 +1058,8 @@ try{
         state.forestGathering.stock.herbs=4;
         state.forestGathering.stock.lichen=3;
         renderUI();
-        return {gold:Number(state.resources.gold)||0,herbs:state.forestGathering.stock.herbs,lichen:state.forestGathering.stock.lichen};
+        return {gold:Number(state.resources.gold)||0,herbs:state.forestGathering.stock.herbs,lichen:state.forestGathering.stock.lichen,
+            expectedGold:forestGoodSaleValue("herbs",4)+forestGoodSaleValue("lichen",3)};
     });
     const forestDeliverButton=page.locator('#command-panel-content [data-deliver-forest="'+forestFixture.buildingId+'"]');
     assert.equal(await forestDeliverButton.count(),1,"the selected forest building must expose the delivery action");
@@ -1071,7 +1072,7 @@ try{
         const {state}=await import("./js/core/state.js");
         return {gold:Number(state.resources.gold)||0,herbs:Number(state.forestGathering.stock.herbs)||0,lichen:Number(state.forestGathering.stock.lichen)||0,toast:document.querySelector("#action-toast")?.textContent.trim()||""};
     });
-    assert.equal(goldDeliveryAfter.gold-goldDeliveryBefore.gold,4,"4 herbs and 3 lichen must sell for 4 gold through the gold-delivery path");
+    assert.equal(goldDeliveryAfter.gold-goldDeliveryBefore.gold,goldDeliveryBefore.expectedGold,"4 herbs and 3 lichen must pay their individual market quotes through the gold-delivery path");
     assert.equal(goldDeliveryAfter.herbs,0,"delivered herbs must leave the forest ledger");
     assert.equal(goldDeliveryAfter.lichen,0,"delivered lichen must leave the forest ledger");
     console.log("Herb and lichen gold delivery E2E:",JSON.stringify({before:goldDeliveryBefore,after:goldDeliveryAfter}));
@@ -1161,17 +1162,19 @@ try{
             import("./js/core/state.js"),import("./js/systems/city-config.js")
         ]);
         const ledger=state.city.logistics.ledger;
+        const resourceKeys=Object.keys(state.resources||{});
         return {
             length:ledger.length,
             types:ledger.map(entry=>entry.type),
             resourceEntries:ledger.filter(entry=>entry.scope==="resource"&&entry.good==="food").length,
             invalidScopes:ledger.filter(entry=>entry.scope!==undefined&&!["good","resource"].includes(entry.scope)).map(entry=>entry.scope),
-            invalidGoods:ledger.filter(entry=>entry.good!==null&&!GOOD_KEYS.includes(entry.good)&&!(entry.scope==="resource"&&entry.good==="food")).map(entry=>entry.good)
+            invalidGoods:ledger.filter(entry=>entry.good!==null&&!GOOD_KEYS.includes(entry.good)
+                &&!(entry.scope==="resource"&&resourceKeys.includes(entry.good))).map(entry=>entry.good)
         };
     });
     assert.ok(ledgerAudit.types.includes("produced"),"production output must reach the central ledger");
     assert.ok(ledgerAudit.types.some(type=>["reserved","picked","delivered"].includes(type)),"transport movements must share the same ledger");
-    assert.deepEqual(ledgerAudit.invalidGoods,[],"the ledger must never record an unknown good");
+    assert.deepEqual(ledgerAudit.invalidGoods,[],"the ledger must never record an unknown good or resource");
     assert.deepEqual(ledgerAudit.invalidScopes,[],"every ledger entry must use a known stock scope");
     assert.ok(ledgerAudit.resourceEntries>=1,"royal food consumption must be booked in the same ledger with resource scope");
     assert.ok(ledgerAudit.length<=600,"the central movement ledger must stay bounded to 600 entries");

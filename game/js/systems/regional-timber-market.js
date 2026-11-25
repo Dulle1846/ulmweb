@@ -11,7 +11,6 @@ import { state } from "../core/state.js";
 import { addLog } from "./events.js";
 import { addResource } from "./resources.js";
 import { consumeFromWarehouse, getPhysicalStock } from "./logistics.js";
-import { recordResourceMovement } from "./goods-book.js";
 import { REGIONAL_TIMBERS, regionalTimberGood } from "../world/regional-forests.js";
 
 export const TIMBER_MARKET_VERSION = 1;
@@ -94,11 +93,6 @@ export function sellRegionalTimber(good, quantity = TIMBER_SALE_LOT) {
     if (sold <= 0) return { ok: false, reason: "The timber is reserved for a delivery" };
     const gold = Math.max(sold, Math.round(sold * quote.price));
     addResource("gold", gold);
-    recordResourceMovement("gold", gold, "timber-market", {
-        from: { kind: "realm", id: "timber-yards" },
-        to: { kind: "market", id: "regional-timber-exchange" },
-        key: "timber-sale:" + good + ":" + state.tick,
-    });
     state.statistics.totalTrades = Math.max(0, Number(state.statistics.totalTrades) || 0) + 1;
     addLog("TIMBER SOLD · " + sold + " " + def.label.toUpperCase() + " FOR " + gold + " GOLD", "#e3bd71", "market");
     return { ok: true, good, amount: sold, gold, price: quote.price };

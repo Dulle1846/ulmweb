@@ -78,7 +78,7 @@ const TROPICAL_GOLD_HUNT = Object.freeze(new Set(["hides", "feathers"]));
 // Every catalogued forest good must have a market quote. Existing biome trade
 // values are the first source; a few forest-only ids and the category fallback
 // cover the rest. These are unit quotes, not a parallel currency: a sale pays
-// into the same gold treasury and is booked in the goods book.
+// into the same gold treasury and is counted in the existing trade statistics.
 const FOREST_GOOD_PRICE_ALIASES = Object.freeze({
     beeswax: "wax", truffles: "truffle", "juniper-berries": "juniper", reed: "reeds",
 });
@@ -644,11 +644,6 @@ export function sellForestGoods(building) {
     }
     if (!goods.length || gold <= 0) return { ok: false, reason: "No non-timber forest goods to sell" };
     addResource("gold", gold);
-    recordResourceMovement("gold", gold, "forest-market", {
-        from: { kind: "building", id: building.id },
-        to: { kind: "market", id: "forest-goods" },
-        key: "forest-goods:" + building.id + ":" + state.tick,
-    });
     state.statistics.totalTrades = Math.max(0, Number(state.statistics.totalTrades) || 0) + 1;
     return { ok: true, goods, total, gold, buildingId: building.id };
 }
@@ -724,11 +719,6 @@ export function deliverForestGoods(building) {
             const price = forestGoodMarketPrice(id);
             const value = Math.max(1, Math.round(amount * price * (riverTrade ? 1.5 : 1)));
             addResource("gold", value);
-            recordResourceMovement("gold", value, "forest-market", {
-                from: { kind: "building", id: building.id },
-                to: { kind: "market", id: "forest-goods" },
-                key: "forest-goods:" + building.id + ":" + state.tick,
-            });
             ledger.stock[id] -= amount;
             delivered.gold += value;
             goods.push({ id, to: "gold", amount, price, value, ...(riverTrade ? { riverTrade: true } : {}) });

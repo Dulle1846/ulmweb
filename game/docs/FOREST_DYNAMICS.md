@@ -222,8 +222,8 @@ jede ID drei Dinge: einen `forestDeliveryChannel()`, einen positiven
 `BIOME_RESOURCE_BY_ID[].tradeValue`, dann wenige Wald-Overrides und zuletzt
 den Kategoriepreis. Der Preis ist saisonal (0,94–1,12) und bei Nahrung zusätzlich
 an die bestehende Lebensmittelnachfrage gebunden. `SELL FOREST GOODS` verkauft
-das nicht-hölzerne Los zu diesem Quote, bucht Gold in dieselbe Staatskasse und
-protokolliert die Bewegung im Goods Book. `DELIVER FOREST GOODS` nutzt denselben
+das nicht-hölzerne Los zu diesem Quote und bucht Gold in dieselbe Staatskasse;
+das Goods Book bleibt der physischen Ware vorbehalten. `DELIVER FOREST GOODS` nutzt denselben
 Quote für Marktgüter und zeigt statt „X gold“ den tatsächlich gezahlten Betrag.
 Ist der lokale Yard voll, geht der Holzrest in dieselbe gefilterte
 Warehouse-Kette; dadurch wird eine echte Lieferung nicht zu totem Bestand. Holz

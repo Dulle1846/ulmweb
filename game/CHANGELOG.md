@@ -27,8 +27,8 @@ the ten visible in a sample.
   flat `0.5` gold per unit is removed, and the toast reports the actual gold
   paid instead of calling the units "gold".
 - **A player can choose the market.** `SELL FOREST GOODS` sells the held
-  non-timber lot at the visible quote and books the gold into the existing
-  treasury/goods book; `DELIVER FOREST GOODS` still fills food, medicine and the
+  non-timber lot at the visible quote and pays the gold into the existing
+  treasury; `DELIVER FOREST GOODS` still fills food, medicine and the
   local timber store. A full yard store hands the remainder to the existing
   filtered warehouse chain instead of reporting a false "no products". The
   inspector prints each held good's use and approximate value, so the choice is
