@@ -1,6 +1,6 @@
 # Regionale Waldtypen — 1.2.23.1
 
-> **Status: implementiert und verifiziert (v3.56.0).** Alle 60 Punkte aus **1.2.23.1 Weitere regionale Waldtypen** laufen als regionale Overlay-Schicht über dem bestehenden `forestStandAt()`-Vertrag. Jede erzeugte Waldkachel erhält deterministisch genau einen Typ; es gibt keinen untypisierten Default. Mit 3.56.0 sind die 18 regionalen Holzsorten vollständig spielbar: eigenes Sägewerk-Rezept, Lumber-Camp-Signaturholz, Timber-Yard-Lagerkette, saisonaler Markt mit echtem Lagerbestand, Waldtypen-Atlas und regionale Bauformen. Nachweise: `tests/world/regional-forests.test.js` (60/60 Standortproben, 0 untypisierte Kacheln im 9-Klima-Scan, Save-Roundtrip), `tests/systems/regional-timber-economy.test.js`, `tests/world/building-forms.test.js`, `tests/presentation/forest-atlas.test.js`, ein 25-Jahres-Kampagnenlauf mit Typ- und Holzzählung und `tests/browser/regional-forest-reference.mjs` (Inspektor, Atlas, Marktverkauf, gerenderte Typen, keine Konsolenfehler). Die konkreten implementierten Werte stehen in Abschnitt 10; die Holzökonomie in Abschnitt 11.
+> **Status: implementiert und verifiziert (v3.56.1).** Alle 60 Punkte aus **1.2.23.1 Weitere regionale Waldtypen** laufen als regionale Overlay-Schicht über dem bestehenden `forestStandAt()`-Vertrag. Jede erzeugte Waldkachel erhält deterministisch genau einen Typ; es gibt keinen untypisierten Default. Mit 3.56.1 sind die 18 regionalen Holzsorten vollständig spielbar: eigenes Sägewerk-Rezept, Lumber-Camp-Signaturholz, Timber-Yard-Lagerkette, saisonaler Markt mit echtem Lagerbestand, Waldtypen-Atlas und regionale Bauformen. Nachweise: `tests/world/regional-forests.test.js` (60/60 Standortproben, 0 untypisierte Kacheln im 9-Klima-Scan, Save-Roundtrip), `tests/systems/regional-timber-economy.test.js`, `tests/world/building-forms.test.js`, `tests/presentation/forest-atlas.test.js`, ein 25-Jahres-Kampagnenlauf mit Typ- und Holzzählung und `tests/browser/regional-forest-reference.mjs` (Inspektor, Atlas, Marktverkauf, gerenderte Typen, keine Konsolenfehler). Die konkreten implementierten Werte stehen in Abschnitt 10; die Holzökonomie in Abschnitt 11.
 
 ## 1. Warum dieser Abschnitt existiert
 
@@ -1107,7 +1107,7 @@ Ergebnis: **39.900 Waldkacheln, 0 untypisiert, 60/60 Typen erzeugt.** Die tatsä
 
 ### 7.3 25-Jahres-Kampagne
 
-Der deterministische Lauf `npm run test:campaign` (Seed 20261108, common-weal, 25 Jahre) war grün: 10.040 Ticks, 16,31 s, 1,004 ms pro Tick, alle Kampagnenanforderungen erfüllt, kein Game Over. Die Typzählung nach 25 Jahren:
+Der deterministische Lauf `npm run test:campaign` (Seed 20261108, common-weal, 25 Jahre) war grün: 10.040 Ticks, 13,59 s, 0,929 ms pro Tick, alle Kampagnenanforderungen erfüllt, kein Game Over. Die Typzählung nach 25 Jahren:
 
 | Typ | Kacheln |
 |---|---:|
@@ -1131,7 +1131,7 @@ Der deterministische Lauf `npm run test:campaign` (Seed 20261108, common-weal, 2
 
 Eine temperate Kampagne enthält naturgemäß nur die temperate Typen. Der 9-Klima-Scan oben belegt die Erreichbarkeit aller 60; der Kampagnenlauf belegt, dass die Typisierung auch nach 25 Jahren Waldwirtschaft, Sukzession und Ernte lückenlos bleibt.
 
-Derselbe Lauf schreibt `timberEconomy` in den Bericht: **176 regionale Holzsorten produziert**, davon **4 im Lager** über **2 Sorten** (`cork-timber`, `holm-timber`). Die Produktion kommt aus dem Lumber-Camp-Signaturpfad und dem Sägewerksverbrauch; der Vorrat bleibt klein, weil das Sägewerk die Ware sofort verarbeitet und der Markt sie nur gegen echten Lagerbestand verkauft.
+Derselbe Lauf schreibt `timberEconomy` in den Bericht: **176 regionale Holzsorten produziert**, davon **2 im Lager** über **2 Sorten** (`cork-timber`, `holm-timber`). Die Produktion kommt aus dem Lumber-Camp-Signaturpfad und dem Sägewerksverbrauch; der Vorrat bleibt klein, weil das Sägewerk die Ware sofort verarbeitet und der Markt sie nur gegen echten Lagerbestand verkauft.
 
 ### 7.4 Browser-Referenz
 
@@ -1285,7 +1285,7 @@ Die folgenden Tabellen werden aus `REGIONAL_FOREST_TYPES` erzeugt und geben den 
 | 037 | Delta-Mangroven | 76% | 100% | -6% | 128% | 116% | 78% | +115% | mangrove-timber, shellfish, crab, fish, salt, reed, timber, firewood |
 | 038 | Lagunen-Mangroven | 74% | 96% | -5% | 126% | 114% | 76% | +110% | mangrove-timber, shellfish, crab, fish, salt, honey, timber, firewood |
 | 039 | Kalthangwald | 94% | 86% | -3% | 108% | 104% | 86% | +5% | mushrooms, lichen, moss, herbs, game, timber, firewood |
-| 040 | Regenschattenwald | 74% | 82% | +12% | 92% | 100% | 94% | +0% | pine-cones, resin, juniper-berries, herbs, game, timber, firewood |
+| 040 | Regenschattenwald | 84% | 82% | +12% | 92% | 100% | 94% | +0% | pine-cones, resin, juniper-berries, herbs, game, timber, firewood |
 | 041 | Steppenwald | 80% | 96% | +10% | 108% | 114% | 98% | +0% | acorns, hazelnuts, mushrooms, herbs, game, timber, firewood |
 | 042 | Halbwüsten-Waldinsel | 52% | 62% | +8% | 82% | 96% | 88% | +0% | gum-arabic, thorn-branches, game, firewood, timber |
 | 043 | Oasenwald | 68% | 134% | -4% | 124% | 130% | 90% | +35% | dates, figs, palm-fronds, honey, herbs, timber, firewood |

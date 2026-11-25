@@ -718,7 +718,7 @@ export const REGIONAL_FOREST_TYPES = Object.freeze([
         profile: 'Trockener Regenschattenwald leeseits der Berge; lichte Kiefern, Wacholder und Hartlaub mit deutlich geringerem Niederschlag.',
         climates: ['coastal', 'temperate'], formations: ['pinewood', 'oakwood', 'mixed-open', 'chestnut-grove'],
         temp: [0.48, 0.62], moisture: [0.42, 0.56], height: [0.30, 0.74], priority: 7,
-        timber: 0.74, effects: { timber: 0.74, regrowth: 0.82, fire: 0.12, fauna: 0.92, forage: 1, work: 0.94, flood: 0 },
+        timber: 0.84, effects: { timber: 0.84, regrowth: 0.82, fire: 0.12, fauna: 0.92, forage: 1, work: 0.94, flood: 0 },
         species: { pine: 0.34, juniper: 0.2, oak: 0.18, 'holm-oak': 0.12, 'aleppo-pine': 0.1, hazel: 0.06 },
         goods: ['pine-cones', 'resin', 'juniper-berries', 'herbs', 'game', 'timber', 'firewood'],
         fauna: ['hare', 'fox', 'raptor', 'owl', 'songbird', 'beetle', 'lizard'],

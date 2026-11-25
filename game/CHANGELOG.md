@@ -1,6 +1,6 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.56.0`
+**Current production version:** `3.56.1`
 **Next development line:** `3.57.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
@@ -8,6 +8,21 @@
 **Last repository verification:** 2026-11-25 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.56.1 — Rain-shadow forest keeps the Forester harvest whole
+
+The sixty-type overlay moved the ten-year stewardship site from montane mixed
+wood onto rain-shadow forest. At 74% timber the site removed 3,944 stock against
+the unchanged >4,000 gate. The rain-shadow type now yields 84%, still below the
+montane forest it borders, and the exact failing seed clears the gate at 4,167;
+the other seeds remain at 4,722 and 4,919.
+
+- **One value, one cause.** No threshold, tick count or harvest action was
+  weakened. The rain-shadow palettes, window, priority and species mix are
+  unchanged; only its timber yield moved.
+- **Verification.** Full suite passes 1,436 tests; the three-seed ten-year
+  Forester audit is green; the 25-year campaign still reports 3,507 typed forest
+  tiles with 0 untyped and no game over.
 
 ## 3.56.0 — Thirty regional forest subvariants and transitions
 
