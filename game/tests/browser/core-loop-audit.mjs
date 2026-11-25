@@ -407,7 +407,11 @@ try {
     await page.locator("#start-new-game-btn").click();
     for (let attempt = 0; attempt < 40 && !(await hasStarted()); attempt++) await runFor(250);
     assert.equal(await hasStarted(), true, "the visible founding button must start a realm");
-    await runFor(400);
+    // Founding waits for two requestAnimationFrame callbacks before it removes
+    // the overlay. Under the installed fake clock those callbacks land on the
+    // next advanced frames, so wait for the real visible state instead of
+    // assuming one fixed 400 ms slice always covered them.
+    for (let attempt = 0; attempt < 40 && await page.locator("#start-screen").isVisible(); attempt++) await runFor(250);
     assert.equal(await page.locator("#start-screen").isVisible(), false);
     await dismissTransientMessage();
 

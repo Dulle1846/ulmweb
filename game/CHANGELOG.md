@@ -87,6 +87,10 @@ the ten visible in a sample.
   delivering, then asserts the exact gold outcome instead of the old flat-rate
   number. This verifies the player-facing sale shown in the inspector and adds
   no simulation change.
+- **The core-loop proof waits for the real overlay transition.** Founding removes
+  the start screen only after two animation frames; under the deterministic fake
+  clock the audit now advances those frames instead of assuming a fixed slice.
+  The assertion that the overlay is gone is unchanged.
 
 ## 3.60.0 — Every forest profile now has a job
 
