@@ -68,6 +68,11 @@ test("forest products are read from the same real stand as the renderer", () => 
     assert.ok(tile.products.goods.some(good => ["mushrooms", "berries", "acorns", "beechnuts", "chestnuts", "herbs"].includes(good.id)));
     assert.ok(tile.products.stand.ground.compaction >= 0 && tile.products.stand.ground.compaction <= 1);
     assert.ok(tile.products.stand.structure.deadwood >= 0);
+    assert.equal(tile.products.dynamics, tile.products.stand.dynamics);
+    assert.ok(tile.products.dynamics.composition.mixtureClass);
+    assert.ok(tile.products.dynamics.age.phase);
+    assert.ok(tile.products.dynamics.regeneration.seedBank >= 0);
+    assert.ok(tile.products.dynamics.soil.mycorrhiza >= 0);
     assert.ok(tile.products.workFactor >= 0.45 && tile.products.workFactor <= 1);
     const winter = forestProductsAt(tile.x, tile.y, 350);
     assert.ok(winter.workFactor < tile.products.workFactor, "winter snow and low visibility must slow forest work");
@@ -79,6 +84,8 @@ test("gathering is seasonal, bounded and cannot repeat on the same day", () => {
     assert.ok(tile);
     const first = gatherForestProducts(tile.x, tile.y, { dayOfYear: 250, year: 1 });
     assert.equal(first.ok, true);
+    assert.equal(first.dynamics.mixtureClass, tile.products.dynamics.composition.mixtureClass);
+    assert.equal(first.dynamics.phase, tile.products.dynamics.age.phase);
     assert.ok(first.total > 0);
     assert.ok(first.goods.every(good => good.amount > 0));
     assert.ok(first.goods.some(good => good.category === "wood"), "the visit should work real timber");

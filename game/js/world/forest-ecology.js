@@ -15,6 +15,7 @@ import {
     TROPICAL_SEASON_GOODS, TROPICAL_SPECIES, isTropicalClimate, tropicalFormationFor, tropicalProfileFor,
 } from './tropical-ecology.js';
 import { jungleProfileFor } from './jungle-ecology.js';
+import { forestDynamicsFor } from './forest-dynamics.js';
 import { GRASSLAND_GOODS } from './grassland-ecology.js';
 import { STEPPE_GOODS } from './steppe-ecology.js';
 import { DESERT_GOODS } from './desert-ecology.js';
@@ -344,19 +345,64 @@ const type = (id, label, note, species, options = {}) => Object.freeze({
 // base formation + regional id: a 160x160 world must not allocate a new frozen
 // formation for every forest tile.
 const REGIONAL_FORMATION_CACHE = new Map();
+// The regional set owns the canopy, but a small base share keeps a wood
+// connected to the stand that was already there. This is a real composition,
+// not a display-only palette: the renderer, mixture, age phase, seed source and
+// harvest all read the merged species.
+const REGIONAL_SPECIES_BASE_SHARE = 0.40;
+function blendedRegionalSpecies(baseSpecies, regionalSpecies, baseFormation) {
+    if (!regionalSpecies || !Object.keys(regionalSpecies).length) return baseSpecies;
+    const merged = {};
+    let total = 0;
+    const keys = new Set([...Object.keys(baseSpecies || {}), ...Object.keys(regionalSpecies)]);
+    for (const id of keys) {
+        if (!FOREST_SPECIES[id]) continue;
+        const weight = (Number(baseSpecies?.[id]) || 0) * REGIONAL_SPECIES_BASE_SHARE
+            + (Number(regionalSpecies[id]) || 0) * (1 - REGIONAL_SPECIES_BASE_SHARE);
+        if (weight <= 0) continue;
+        merged[id] = weight;
+        total += weight;
+    }
+    if (total <= 0) return baseSpecies;
+    for (const id of Object.keys(merged)) merged[id] /= total;
+    return Object.freeze(balanceRegionalSpecies(merged, baseFormation));
+}
+
+// A regional overlay must not change the formation's basic conifer/broadleaf
+// contract. A broadleaf wood stays broadleaf (at most 38% conifer) and a pure
+// conifer wood stays conifer (at least 94%). Mixed formations are exempt: their
+// whole identity is a mixture.
+function balanceRegionalSpecies(weights, baseFormation) {
+    if (!baseFormation || baseFormation.mixed) return weights;
+    let conifer = 0;
+    for (const [id, weight] of Object.entries(weights)) {
+        if (FOREST_SPECIES[id]?.conifer) conifer += Number(weight) || 0;
+    }
+    const broadleaf = 1 - conifer;
+    if (conifer <= 0 || broadleaf <= 0) return weights;
+    const target = baseFormation.conifer ? 0.94 : 0.38;
+    if (Math.abs(target - conifer) < 0.0001) return weights;
+    const coniferScale = target / conifer;
+    const broadleafScale = (1 - target) / broadleaf;
+    const balanced = {};
+    for (const [id, weight] of Object.entries(weights)) {
+        balanced[id] = (FOREST_SPECIES[id]?.conifer ? coniferScale : broadleafScale) * weight;
+    }
+    return Object.freeze(balanced);
+}
+
 function regionalFormationFor(baseFormation, regionalType) {
     const key = baseFormation.id + '|' + regionalType.id;
     const cached = REGIONAL_FORMATION_CACHE.get(key);
     if (cached) return cached;
     const merged = Object.freeze({
         ...baseFormation,
-        // The regional identity is an overlay, not a replacement. Keeping the
-        // base species mix preserves the existing formation contracts (mixed
-        // woods stay mixed, conifer stands stay coniferous, and old saves keep
-        // their exact composition). Regional timber, fauna and undergrowth are
-        // additive, while the renderer carries the regional palette and crown.
+        // The regional species set owns the canopy, while a 40% base share
+        // keeps the stand tied to its formation and makes range edges read as a
+        // real blend rather than a swap. The base plurality therefore keeps
+        // its label (an oakwood does not silently become a pinewood).
         note: baseFormation.note,
-        species: baseFormation.species,
+        species: blendedRegionalSpecies(baseFormation.species, regionalType.species, baseFormation),
         goods: Object.freeze([...new Set([...baseFormation.goods, ...regionalType.goods])]),
         fauna: Object.freeze([...new Set([...baseFormation.fauna, ...regionalType.fauna])]),
         understory: Object.freeze({ ...baseFormation.understory, ...(regionalType.understory || {}) }),
@@ -402,10 +448,10 @@ export const FOREST_TYPES = Object.freeze({
         { oak: 0.34, linden: 0.22, elm: 0.18, beech: 0.16, maple: 0.1 },
         { density: 0.86, openness: 0.12, understory: { fern: 0.3, bramble: 0.08, shrub: 0.06, moss: 0.44 }, goods: ['acorns', 'truffles', 'mushrooms', 'game'], fauna: ['owl', 'woodpecker', 'beetle', 'deer', 'squirrel', 'raptor'], ageBias: 'ancient' }),
     regenerating: type('regenerating', 'Regenerating Wood', 'Dense saplings and pioneer birches after a gap',
-        { birch: 0.32, maple: 0.24, oak: 0.14, beech: 0.16, linden: 0.14 },
+        { birch: 0.42, rowan: 0.1, maple: 0.2, oak: 0.12, beech: 0.08, linden: 0.08 },
         { density: 0.46, openness: 0.48, understory: { fern: 0.12, bramble: 0.22, shrub: 0.24, moss: 0.14, heather: 0.16 }, goods: ['berries', 'herbs', 'mushrooms'], fauna: ['hare', 'roe-deer', 'butterfly', 'ant', 'songbird'], ageBias: 'young', productivity: 0.72 }),
     burned: type('burned', 'Burn Scar', 'Charred snags, ash and pioneer growth returning in patches',
-        { birch: 0.3, maple: 0.2, oak: 0.14, beech: 0.2, linden: 0.16 },
+        { birch: 0.46, rowan: 0.12, maple: 0.16, oak: 0.12, beech: 0.08, linden: 0.06 },
         { density: 0.32, openness: 0.6, understory: { fern: 0.06, bramble: 0.14, shrub: 0.12, moss: 0.08, heather: 0.18 }, goods: ['charcoal', 'berries', 'mushrooms'], fauna: ['woodpecker', 'beetle', 'fox', 'hare'], ageBias: 'young', disturbance: 'burned', productivity: 0.5 }),
     windthrow: type('windthrow', 'Windthrow', 'Toppled giants, shattered crowns and a tangle of deadwood',
         { beech: 0.3, oak: 0.22, maple: 0.18, birch: 0.16, elm: 0.14 },
@@ -414,7 +460,7 @@ export const FOREST_TYPES = Object.freeze({
         { oak: 0.3, beech: 0.24, elm: 0.22, maple: 0.14, birch: 0.1 },
         { density: 0.58, openness: 0.32, understory: { fern: 0.18, bramble: 0.12, shrub: 0.12, moss: 0.26 }, goods: ['firewood', 'mushrooms', 'herbs'], fauna: ['beetle', 'woodpecker', 'owl', 'fox'], ageBias: 'mature', disturbance: 'diseased', productivity: 0.66 }),
     cutover: type('cutover', 'Cut-over Wood', 'Stumps, brush piles and a bright flush of regrowth',
-        { birch: 0.34, maple: 0.22, oak: 0.14, beech: 0.16, linden: 0.14 },
+        { birch: 0.44, rowan: 0.1, maple: 0.18, oak: 0.12, beech: 0.08, linden: 0.08 },
         { density: 0.24, openness: 0.62, understory: { fern: 0.08, bramble: 0.28, shrub: 0.2, moss: 0.08, heather: 0.2 }, goods: ['berries', 'mushrooms', 'firewood'], fauna: ['hare', 'fox', 'ant', 'butterfly'], ageBias: 'young', disturbance: 'cutover', productivity: 0.4 }),
 
     // Conifer formations are appended so every existing numeric type index in
@@ -619,7 +665,7 @@ function formationMetadata(formation) {
                 return window ? { id: entry.id, label: FOREST_SPECIES[entry.id]?.label || entry.id, ...window } : null;
             })
             .filter(Boolean)
-            .slice(0, 6),
+            .slice(0, 12),
         mastShare: speciesList
             .filter(entry => ['oak', 'beech', 'chestnut', 'hazel', 'hornbeam'].includes(entry.id))
             .reduce((sum, entry) => sum + entry.weight, 0) / speciesWeightTotal,
@@ -1366,20 +1412,20 @@ export function forestStandAt(x, y, context = {}) {
     // Wet stands hold standing water in hollows and show glossy bark after
     // rain. This is derived from site moisture and formation, not a second
     // hydrology grid.
-    const wetness = clamp01((moisture - 0.48) * 1.35 + (formation.id === 'wet-conifer' ? 0.2 : 0)
+    let wetness = clamp01((moisture - 0.48) * 1.35 + (formation.id === 'wet-conifer' ? 0.2 : 0)
         + (formation.id === 'alluvial' ? 0.12 : 0)
         + Math.max(0, Number(regionalType?.effects.flood) || 0) * 0.08
         + (tropical ? tropical.water.pools * 0.24 + tropical.water.temporaryFloods * 0.18 : 0));
-    const windExposure = clamp01(exposure * 0.72 + (height > 0.76 ? 0.16 : 0) + (formation.id === 'subalpine-scrub' ? 0.12 : 0));
+    let windExposure = clamp01(exposure * 0.72 + (height > 0.76 ? 0.16 : 0) + (formation.id === 'subalpine-scrub' ? 0.12 : 0));
     const treeline = formation.id === 'subalpine-scrub' || (height > 0.88 && temperature < 0.48);
     // Fire and pest pressure are likewise diagnostics derived from the same
     // moisture, heat, litter and stocking inputs. They add no per-tick state.
-    const fireRisk = clamp01((1 - moisture) * 0.46 + Math.max(0, temperature - 0.48) * 0.48
+    let fireRisk = clamp01((1 - moisture) * 0.46 + Math.max(0, temperature - 0.48) * 0.48
         + coniferShare * 0.14 + needles * 0.12
         + (regionalType?.effects.fire || 0)
         + (disturbance === 'drought-stressed' ? 0.18 : 0)
         + (disturbance === 'bark-beetle' ? 0.1 : 0));
-    const pestRisk = clamp01(coniferShare * 0.34 + (1 - stockRatio) * 0.2
+    let pestRisk = clamp01(coniferShare * 0.34 + (1 - stockRatio) * 0.2
         + Math.max(0, temperature - 0.58) * 0.38
         + (disturbance === 'bark-beetle' ? 0.38 : 0)
         + (disturbance === 'drought-stressed' ? 0.12 : 0));
@@ -1387,7 +1433,7 @@ export function forestStandAt(x, y, context = {}) {
     // Large herbivores and predators are habitat-derived pressures, not new
     // saved populations. They let browsing slow regrowth and predation shape
     // herd growth without adding a second trophic simulation.
-    const browsingPressure = clamp01(meta.browsingPressure
+    let browsingPressure = clamp01(meta.browsingPressure
         + (ageClass === 'young' ? 0.1 : 0) + (edge ? 0.08 : 0));
     const predatorPressure = meta.predatorPressure;
     const deadwood = clamp01(logs * 0.72 + stumps * 0.32
@@ -1545,6 +1591,60 @@ export function forestStandAt(x, y, context = {}) {
     };
     const derived = formationDerived(formation, meta, ageClass, disturbance);
     const { silviculture, woodQuality } = derived;
+    // Stand dynamics are a pure view of the composition that is actually on
+    // this tile. Nothing here is saved: age, seed source, site fit, hazard and
+    // management are recomputed from the same deterministic inputs.
+    const dynamics = forestDynamicsFor({
+        species: speciesList,
+        speciesWeightTotal,
+        dominantShare,
+        speciesDiversity,
+        evenness,
+        ageClass,
+        canopy,
+        density,
+        clearing,
+        edge,
+        moisture,
+        temperature,
+        height,
+        coniferShare,
+        broadleafShare,
+        deadwood,
+        litter,
+        humus,
+        moss,
+        shrub,
+        bramble,
+        berry,
+        sapling: structure.sapling,
+        herb,
+        grass,
+        flowers,
+        disturbance,
+        succession,
+        regionalType,
+        tropical,
+        pureIsland,
+        silviculture,
+        formationId: formation.id,
+        understoryType,
+        stockRatio,
+    });
+    fireRisk = clamp01(fireRisk + dynamics.hazard.fireRiskDelta);
+    pestRisk = clamp01(pestRisk * dynamics.health.pestFactor);
+    windExposure = clamp01(windExposure * dynamics.hazard.windFactor);
+    wetness = clamp01(wetness - dynamics.soil.rootDepth * 0.02);
+    browsingPressure = clamp01(browsingPressure + dynamics.silviculture.browsePressure);
+    habitat.layers = Math.max(habitat.layers, dynamics.structure.layers);
+    habitat.score = clamp01(habitat.score + (dynamics.soil.mycorrhiza * 0.04 + dynamics.structure.edgeDiversity * 0.04)
+        * (regionalType?.effects.fauna || 1) * (1 + (regionalTransition?.share || 0) * 0.12));
+    structure.herbLayer = dynamics.structure.herbLayer;
+    structure.liana = dynamics.structure.lianaCover;
+    structure.epiphyte = dynamics.structure.epiphyteCover;
+    structure.canopyGap = dynamics.structure.canopyGap;
+    structure.rootDepth = dynamics.soil.rootDepth;
+    structure.mycorrhiza = dynamics.soil.mycorrhiza;
     const { phenology, mastShare } = meta;
     const mastCrop = clamp01(foodPlants.length / 6 * 0.6 + mastShare * 0.4);
     const mixture = {
@@ -1574,6 +1674,12 @@ export function forestStandAt(x, y, context = {}) {
         woodQuality,
         phenology,
         mastCrop,
+        mixtureClass: dynamics.composition.mixtureClass,
+        purity: dynamics.composition.purity,
+        pioneerShare: dynamics.composition.pioneerShare,
+        climaxShare: dynamics.composition.climaxShare,
+        regionalSpecies: dynamics.composition.regionalSpecies,
+        geneticDiversity: dynamics.regeneration.geneticDiversity,
     };
 
     return {
@@ -1647,7 +1753,8 @@ export function forestStandAt(x, y, context = {}) {
         structure,
         browsingPressure,
         predatorPressure,
-        productivity: formation.productivity * (ageClass === 'ancient' ? 1.18 : ageClass === 'young' ? 0.72 : 1) * (0.68 + stockRatio * 0.32),
+        productivity: formation.productivity * (ageClass === 'ancient' ? 1.18 : ageClass === 'young' ? 0.72 : 1)
+            * (0.68 + stockRatio * 0.32) * (0.86 + dynamics.health.siteFitness * 0.2),
         formation: formation.id,
         // First-class mixed-forest view. `mixed` and the flat aliases keep
         // existing consumers cheap; `mixture` carries the full structure for
@@ -1670,6 +1777,9 @@ export function forestStandAt(x, y, context = {}) {
         woodQuality,
         phenology,
         mastCrop,
+        // Species ecology, regeneration, hazard and management view
+        // (1.2.23.1.061–090). Derived, save-neutral and shared by all systems.
+        dynamics,
         // Tropical rainforest view (1.2.4). Null outside the tropical climate;
         // the shared formation/species/resource contracts are still used above.
         tropical,
@@ -1841,13 +1951,14 @@ export function forestRegrowthFactor(stand) {
     // needed; a stand without a browser remains at the old compaction curve.
     const base = Math.max(0.3, (1 - compaction * 0.65) * (1 - browsing * 0.22));
     const regional = Math.max(0.25, Math.min(1.45, Number(stand.regionalEffects?.regrowth) || 1));
+    const regeneration = Math.max(0.64, Math.min(1.40, Number(stand.dynamics?.regeneration?.factor) || 1));
     if (stand.tropical) {
         const tropical = stand.tropical;
-        return Math.max(0.3, Math.min(1.45, base * regional
+        return Math.max(0.28, Math.min(1.58, base * regional * regeneration
             * (0.82 + (Number(tropical.regrowth) || 0) * 0.24
                 - (Number(tropical.clearance) || 0) * 0.18)));
     }
-    return Math.min(1.45, base * regional);
+    return Math.max(0.3, Math.min(1.58, base * regional * regeneration));
 }
 
 function pickWeightedSpecies(entries, roll) {
@@ -1936,8 +2047,23 @@ export function forestGoodsFor(stand, dayOfYear, climate = 'temperate') {
         const base = category === 'wood'
             ? (id === 'timber' ? 0.9 : id === 'firewood' ? 0.82 : id === 'charcoal' ? 0.55 : 0.68)
             : 0.2;
+        const dynamicsBoost = Number(stand.dynamics?.goods?.boost?.[id]) || 1;
+        const managementBoost = category === 'wood'
+            ? (Number(stand.dynamics?.silviculture?.timberFactor) || 1) : 1;
         const abundance = clamp01((seasonal[id] ?? base) * (0.7 + stand.productivity * 0.3)
-            * (Number(stand.regionalEffects?.forage) || 1));
+            * (Number(stand.regionalEffects?.forage) || 1) * dynamicsBoost * managementBoost);
+        if (abundance > 0.08) goods.push({ ...FOREST_GOODS[id], abundance });
+    }
+    // The stand's structure and soil make a few products available that the
+    // formation list alone cannot express: an old-growth mycorrhiza network
+    // yields mushrooms, a wet ancient wood carries moss/lichen, and a liana-rich
+    // or tropical edge offers withies, rattan or orchids. The dynamics layer
+    // decides which are actually present; it never duplicates an existing good.
+    for (const id of stand.dynamics?.goods?.extra || []) {
+        if (!FOREST_GOODS[id] || goods.some(good => good.id === id)) continue;
+        const boost = Number(stand.dynamics?.goods?.boost?.[id]) || 1;
+        const abundance = clamp01((seasonal[id] ?? 0.26) * (0.7 + stand.productivity * 0.3)
+            * (Number(stand.regionalEffects?.forage) || 1) * boost);
         if (abundance > 0.08) goods.push({ ...FOREST_GOODS[id], abundance });
     }
     // Jungle resource pockets are real, but scattered. Add only the goods

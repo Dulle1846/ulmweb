@@ -211,6 +211,7 @@ export function forestProductsAt(x, y, dayOfYear = state.dayOfYear) {
     const spoilageRisk = clamp(number(stand.tropical?.hazard?.spoilage, 0) + floodRisk * 0.12, 0, 0.9);
     return {
         x: Math.floor(x), y: Math.floor(y), node, stand,
+        dynamics: stand.dynamics || null,
         snowDepthCm: snow.cm,
         visibility: Number(stand.visibility) || 0,
         workFactor,
@@ -348,6 +349,9 @@ export function gatherForestProducts(x, y, options = {}) {
     const regionalEffects = products.stand.regionalEffects || {};
     const forageFactor = clamp(number(regionalEffects.forage, 1), 0.75, 1.35);
     const timberFactor = clamp(number(regionalEffects.timber, 1), 0.7, 1.35);
+    const dynamics = products.stand.dynamics || null;
+    const goodsBoost = dynamics?.goods?.boost || {};
+    const managementTimber = clamp(number(dynamics?.silviculture?.timberFactor, 1), 0.75, 1.1);
     const transitionFactor = 1 + clamp(number(products.stand.regionalTransitionShare, 0), 0, 0.5) * 0.12;
     const character = products.stand.regionalCharacter || null;
     const signature = character?.signature || null;
@@ -367,7 +371,9 @@ export function gatherForestProducts(x, y, options = {}) {
         // the gathered plant/food abundance and the distinct hunting factor.
         const densityYield = good.category === "wood" ? 1 : vegetationFactor;
         const regionalYield = good.category === "wood" ? timberFactor : forageFactor * transitionFactor;
-        let amount = Math.max(1, Math.round((1 + good.abundance * 3) * workFactor * ecotoneFactor * densityYield * regionalYield));
+        const dynamicsYield = good.category === "wood" ? managementTimber : clamp(number(goodsBoost[good.id], 1), 0.75, 1.3);
+        let amount = Math.max(1, Math.round((1 + good.abundance * 3) * workFactor * ecotoneFactor
+            * densityYield * regionalYield * dynamicsYield));
         if (bounty && good.id === signature) { amount += 1; bounty.amount += 1; }
         const perishable = good.category === "gather" || good.category === "hunt";
         const spoiled = perishable ? Math.min(amount, Math.floor(amount * spoilage * 0.35)) : 0;
@@ -414,6 +420,22 @@ export function gatherForestProducts(x, y, options = {}) {
             transition: clamp(number(products.stand.regionalTransitionShare, 0), 0, 0.5),
             transitionLabel: products.stand.regionalTransitionLabel || null,
         },
+        dynamics: dynamics ? {
+            mixtureClass: dynamics.composition.mixtureClass,
+            pioneerShare: dynamics.composition.pioneerShare,
+            climaxShare: dynamics.composition.climaxShare,
+            phase: dynamics.age.phase,
+            seedBank: dynamics.regeneration.seedBank,
+            motherTrees: dynamics.regeneration.motherTrees,
+            geneticDiversity: dynamics.regeneration.geneticDiversity,
+            siteFitness: dynamics.health.siteFitness,
+            silviculturalSystem: dynamics.silviculture.system,
+            mycorrhiza: dynamics.soil.mycorrhiza,
+            humusForm: dynamics.soil.humusForm,
+            lianaCover: dynamics.structure.lianaCover,
+            epiphyteCover: dynamics.structure.epiphyteCover,
+            herbLayer: dynamics.structure.herbLayer,
+        } : null,
         bounty: bounty && bounty.amount > 0 ? bounty : null,
         vegetation: {
             density: products.vegetation?.density,
@@ -1214,7 +1236,8 @@ export function thinNearestForest(building, radius = 6) {
     // A high-timber stand gives more usable stems from the same thinning. The
     // regional effect is bounded and the 12-unit ceiling is unchanged.
     const timberFactor = Math.max(0.7, Math.min(1.35, Number(point.forestRegionalEffects?.timber) || 1));
-    const wanted = Math.max(1, Math.min(12, Math.floor(stockBefore * 0.12 * timberFactor), space));
+    const managementFactor = Math.max(0.75, Math.min(1.10, Number(point.forestDynamics?.silviculture?.timberFactor) || 1));
+    const wanted = Math.max(1, Math.min(12, Math.floor(stockBefore * 0.12 * timberFactor * managementFactor), space));
     const taken = harvestForest(node.x, node.y, wanted);
     if (taken <= 0) return { ok: false, reason: "The nearest stand could not be thinned" };
     const accepted = addLocalOutput(building, "logs", taken, { cause: "forest-thinning" });

@@ -1,13 +1,72 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.57.0`
-**Next development line:** `3.58.0-dev`
+**Current production version:** `3.58.0`
+**Next development line:** `3.59.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
 **Last repository verification:** 2026-11-25 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.58.0 — Every wood has a species history, a seed source and a working system
+
+The sixty regional forests named their species, but the canopy still kept the
+generic base mix; age, seed source, genetic breadth, disease resistance and
+silviculture were labels rather than stand properties. This release adds points
+1.2.23.1.061–090 as one pure `forest-dynamics` view over the existing
+`forestStandAt()` contract. No second map, save type or per-tick loop was added.
+
+- **Fifty-six species, fourteen explicit traits.** Every tree in `FOREST_SPECIES`
+  now carries pioneer, shade, drought, wet, disease, fire, wind, root, litter,
+  mycorrhiza, coppice, graze, longevity and cold values. Regional species are
+  blended into the actual stand at 60% regional / 40% local, so an oakwood keeps
+  its oak plurality while the regional set owns most of the canopy. Pure islands
+  remain real monodominant patches.
+- **Composition becomes a contract.** `composition` reports purity, dominant
+  share, evenness, diversity, pioneer/climax shares, pioneer and climax species
+  and four mixture classes from pure to even. `age` reports the six succession
+  phases from pioneer thicket to old-growth/climax, plus a management rotation.
+- **Regeneration has a source.** A seed bank survives disturbance, mother trees
+  produce higher-quality seed, genetic breadth lowers inbreeding risk, and the
+  resulting `regeneration.factor` is multiplied into the existing bounded
+  regrowth slices. Disease resistance, drought/wet/cold stress and site fitness
+  are species- and site-specific; they now modulate fire, pest and wind risk and
+  the stand's productivity within tight caps.
+- **Six working silvicultural systems.** Coppice, coppice-with-standards, high
+  forest, selection forest, continuous cover and wood pasture classify from the
+  existing formation, uses and canopy. Rotation, timber factor, regeneration
+  factor and browse pressure are real: the Lumber Camp and thinning multiply the
+  management timber factor, wood-pasture browsing slows regeneration, and the
+  atlas/inspector display the same record.
+- **Structure and soil are visible and edible.** Edges and clearings raise edge
+  diversity and create light woodland with canopy gaps. Lianas and epiphytes
+  follow moisture, age and tropical profile, add withies/rattan/moss/lichen/
+  orchids to the gathering list, and are drawn as climbers and trunk patches at
+  close zoom. Shrub, sapling and herb layers feed browse, medicine and habitat.
+  Root depth, water uptake, litter quality, mull/moder/mor humus, decomposition
+  and mycorrhiza networks are explicit per-species values; mycorrhiza improves
+  regeneration, disease resistance and mushroom availability.
+- **No new save state, bounded cost.** `dynamics` is derived on read and replayed
+  deterministically. The trait calculation is O(species per tile) with no
+  neighbour scan; the existing 400-day ecological slice and Lumber Camp cache are
+  preserved (the cache now also stores the stable timber factor and system).
+- **Documentation.** The full 30-point mapping, derived contract, real effects,
+  save/performance rules and tests are in
+  [docs/FOREST_DYNAMICS.md](docs/FOREST_DYNAMICS.md).
+
+**Verification (2026-11-25):** focused forest, pressure, regional, mixed,
+conifer, gathering, atlas and new dynamics suites pass 48/48; the full
+`npm test` suite passes **1,450/1,450**. The deterministic 25-year campaign is
+**ok:true** at **10,040 ticks**, **19,213.8 ms**, **1.175 ms/tick**, 72 residents,
+18 houses, all 13 ambitions, every requirement true, 3,507 forest tiles,
+0 untyped, 23 real fuel-backfill orders with max 1 per phase, and no game over.
+The tropical browser reference passes with **9,526 forest tiles**, **0 untyped**,
+**60 atlas cards**, **18 timber-market rows**, three distinct rendered stands,
+the ten-cell ecology block, the liana/epiphyte inspector line, and no console or
+page errors. `npm run spec:audit` reports **1,616/1,618 implemented** across 38
+sections; only 4.0.1 and 4.0.6 remain open. Both live hosts were checked after
+the production deploy.
 
 ## 3.57.0 — Regional forests become places you can feel
 

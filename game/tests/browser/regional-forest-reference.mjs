@@ -189,6 +189,11 @@ try {
     assert.ok(inspectorText.includes("Regrowth"), "the inspector must show the regrowth effect");
     assert.ok(inspectorText.includes("Wildlife"), "the inspector must show the fauna effect");
     assert.ok(inspectorText.includes("Forage"), "the inspector must show the forage effect");
+    assert.match(inspectorText, /Mix class:/, "the inspector must show the real mixture class");
+    assert.match(inspectorText, /Phase:/, "the inspector must show the succession phase");
+    assert.match(inspectorText, /Seed bank:/, "the inspector must show the seed bank");
+    assert.match(inspectorText, /System:/, "the inspector must show the silvicultural system");
+    assert.match(inspectorText, /Lianas\/epiphytes:/, "the inspector must show liana and epiphyte cover");
     await page.screenshot({ path: resolve(outputDir, "regional-forests.png"), fullPage: false });
 
     // The forest atlas is the player-facing catalogue of all 60 types. Open it
@@ -211,8 +216,23 @@ try {
     await page.locator('details[data-forest-type="1.2.23.1.016"] .forest-atlas__timber').waitFor({ state: "visible", timeout: 5000 });
     const redwoodText = await page.locator('details[data-forest-type="1.2.23.1.016"]').innerText();
     assert.match(redwoodText, /Redwood Timber/);
-    evidence.atlas = { cards: atlasCards, sampled: /SURVEYED/.test(atlasText), mangrove: true, redwood: true };
+    // At least one surveyed type must carry the new ten-cell ecology block.
+    const ecologyCard = page.locator('#command-panel-content .forest-atlas__card')
+        .filter({ has: page.locator('.forest-atlas__dynamics') }).first();
+    await ecologyCard.waitFor({ state: "visible", timeout: 5000 });
+    if (!await ecologyCard.evaluate(element => element.open)) {
+        await ecologyCard.locator("summary").click();
+    }
+    const ecologyText = (await ecologyCard.innerText()).trim();
+    assert.match(ecologyText, /SEED BANK/, "a surveyed atlas card must show the seed bank");
+    assert.match(ecologyText, /GENETICS/, "a surveyed atlas card must show genetic breadth");
+    assert.match(ecologyText, /SYSTEM/, "a surveyed atlas card must show the silvicultural system");
+    assert.match(ecologyText, /STRUCTURE/, "a surveyed atlas card must show understorey and epiphytes");
+    evidence.atlas = { cards: atlasCards, sampled: /SURVEYED/.test(atlasText), mangrove: true, redwood: true, ecology: true };
     await page.screenshot({ path: resolve(outputDir, "forest-atlas.png"), fullPage: false });
+    await ecologyCard.scrollIntoViewIfNeeded();
+    await page.waitForTimeout(200);
+    await page.screenshot({ path: resolve(outputDir, "forest-atlas-ecology.png"), fullPage: false });
 
     // The regional timber market is physical warehouse stock. Deposit a real
     // lot into the royal store, sell it through the player button and prove the

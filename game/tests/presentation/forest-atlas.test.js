@@ -39,6 +39,7 @@ test("the atlas surveys a bounded, deterministic sample of the realm's forest ti
     assert.ok(first.present >= 1);
     assert.ok(Number.isInteger(first.transitionSamples) && first.transitionSamples >= 0);
     assert.equal(first.types.reduce((sum, type) => sum + type.transitionCount, 0), first.transitionSamples);
+    assert.ok(first.types.some(type => type.dynamics?.composition), "present types must carry a sampled dynamics record");
     assert.equal(forestAtlasSurvey(60), first, "a cached survey is reused inside the same window");
 });
 
@@ -60,6 +61,17 @@ test("the rendered atlas lists all 60 types, their effects and their signature t
     assert.match(markup, /SIGNATURE/);
     assert.match(markup, /bounty/);
     assert.match(markup, /TRANSITION EDGES/);
+    assert.match(markup, /MIX/);
+    assert.match(markup, /PHASE/);
+    assert.match(markup, /PIONEER \/ CLIMAX/);
+    assert.match(markup, /SEED BANK/);
+    assert.match(markup, /MOTHER TREES|mother trees/);
+    assert.match(markup, /GENETICS/);
+    assert.match(markup, /SITE FIT/);
+    assert.match(markup, /SYSTEM/);
+    assert.match(markup, /MYCORRHIZA|mycorrhiza/);
+    assert.match(markup, /STRUCTURE/);
+    assert.match(markup, /GAPS/);
     assert.match(markup, /long snow cover/);
     assert.match(markup, /Moss/);
     assert.match(markup, /Dune Grass/);

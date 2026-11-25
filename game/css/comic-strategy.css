@@ -394,6 +394,11 @@
 .forest-atlas__signature em{color:var(--ui-paper-muted);font:700 6px/1.3 var(--ui-body-font,sans-serif);font-style:normal;letter-spacing:.04em}
 .forest-atlas__signature.is-active{border-left-color:var(--color-antique-gold);background:rgba(185,154,89,.12)}
 .forest-atlas__signature.is-active em{color:var(--color-antique-gold)}
+.forest-atlas__dynamics{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:4px 9px;margin:0 10px 8px;padding:7px 8px;border:1px solid rgba(120,160,110,.3);background:rgba(38,52,38,.22)}
+.forest-atlas__dynamics span{display:flex;min-width:0;flex-direction:column;gap:1px}
+.forest-atlas__dynamics small{color:var(--ui-paper-muted);font:700 5.5px/1.2 var(--ui-body-font,sans-serif);letter-spacing:.08em;text-transform:uppercase}
+.forest-atlas__dynamics strong{overflow:hidden;color:var(--ui-paper-text);font:700 7px/1.25 var(--ui-title-font,Georgia,serif);text-overflow:ellipsis;white-space:nowrap}
+.forest-atlas__dynamics em{overflow:hidden;color:var(--ui-paper-muted);font:700 5.5px/1.25 var(--ui-body-font,sans-serif);font-style:normal;text-overflow:ellipsis;white-space:nowrap}
 .forest-atlas__stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:5px 12px;padding:0 10px 9px}
 .forest-atlas__meter{display:grid;grid-template-columns:44px minmax(0,1fr) 38px;gap:5px;align-items:center}
 .forest-atlas__meter small{color:var(--ui-paper-muted);font:700 6px/1 var(--ui-body-font,sans-serif);letter-spacing:.08em;text-transform:uppercase}

@@ -2540,9 +2540,62 @@ function drawTree(ctx, px, py, cellPx, tick, s1, s2, s3, zoom, temp, moisture, d
 
     if (species === 'birch') {
         drawBirch(ctx, px, py, s, sway, s2, dayOfYear, climateKey, ageScale, treeForm);
+        drawTemperateStructure(ctx, px, py, s, s2, stand, zoom);
         return;
     }
     drawBroadleaf(ctx, px, py, s, sway, tick, s2, dayOfYear, Math.floor(s3 * 4) % 4, species, climateKey, ageScale, stand, treeForm);
+    drawTemperateStructure(ctx, px, py, s, s2, stand, zoom);
+}
+
+// Lianas and epiphytes are structure, not a separate ground texture. At close
+// range a few rooted climbers and trunk patches make a moist old wood read
+// differently from a dry oakwood. Landscape LOD skips the pass entirely, so
+// the extra strokes never enter the expensive far view.
+function drawTemperateStructure(ctx, px, py, s, seed, stand, zoom) {
+    if (!stand?.forest || zoom < 0.72) return;
+    const structure = stand.dynamics?.structure;
+    if (!structure) return;
+    const liana = Math.max(0, Math.min(1, Number(structure.lianaCover) || 0));
+    const epiphyte = Math.max(0, Math.min(1, Number(structure.epiphyteCover) || 0));
+    if (liana > 0.24) {
+        ctx.save();
+        ctx.strokeStyle = "rgba(76, 96, 55, 0.62)";
+        ctx.lineWidth = Math.max(0.55, 0.52 * s);
+        ctx.lineCap = "round";
+        const vines = 1 + Math.min(2, Math.floor(liana * 3));
+        for (let i = 0; i < vines; i++) {
+            const side = (i % 2 === 0 ? -1 : 1);
+            const x0 = px + side * (1.6 + i * 0.7) * s;
+            const y0 = py + 4.2 * s;
+            ctx.beginPath();
+            ctx.moveTo(x0, y0);
+            ctx.quadraticCurveTo(px + side * (3.2 + seed * 1.8) * s, py - 2.6 * s,
+                px + side * (1.2 + seed * 1.1) * s, py - (7.2 + i * 1.4) * s);
+            ctx.stroke();
+            if (i === 0) {
+                ctx.beginPath();
+                ctx.ellipse(px + side * 2.1 * s, py - 3.3 * s, 1.15 * s, 0.45 * s, side * 0.35, 0, Math.PI * 2);
+                ctx.fillStyle = "rgba(96, 118, 62, 0.68)";
+                ctx.fill();
+            }
+        }
+        ctx.restore();
+    }
+    if (epiphyte > 0.22) {
+        ctx.save();
+        ctx.globalAlpha = 0.38 + epiphyte * 0.38;
+        const patches = 2 + Math.min(2, Math.floor(epiphyte * 3));
+        for (let i = 0; i < patches; i++) {
+            const side = i % 2 === 0 ? -1 : 1;
+            const ox = side * (0.8 + (seed + i * 0.31) % 1.5) * s;
+            const oy = -(2.8 + i * 1.55 + seed * 0.9) * s;
+            ctx.fillStyle = i % 2 === 0 ? "#8b9d62" : "#b6b37d";
+            ctx.beginPath();
+            ctx.ellipse(px + ox, py + oy, (1.15 + i * 0.18) * s, 0.55 * s, 0.25, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.restore();
+    }
 }
 
 // An irregular, closed crown outline. The old code stacked perfect ellipses,

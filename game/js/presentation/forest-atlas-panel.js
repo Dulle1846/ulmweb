@@ -62,7 +62,7 @@ export function forestAtlasSurvey(limit = SURVEY_LIMIT) {
     const indices = [];
     for (let index = 0; index < total; index++) if (geo.forestStock[index] > 0) indices.push(index);
     const stride = Math.max(1, Math.ceil(indices.length / Math.max(1, limit)));
-    const counts = {}, transitions = {};
+    const counts = {}, transitions = {}, samples = {};
     let sampled = 0, transitionSamples = 0;
     const climate = state.worldOptions?.climate || "temperate";
     for (let slot = 0; slot < indices.length; slot += stride) {
@@ -82,6 +82,7 @@ export function forestAtlasSurvey(limit = SURVEY_LIMIT) {
         const id = stand?.regionalTypeId;
         if (!id) continue;
         counts[id] = (counts[id] || 0) + 1;
+        if (!samples[id] && stand.dynamics) samples[id] = stand.dynamics;
         sampled++;
         if (stand.regionalTransitionId) {
             transitionSamples++;
@@ -91,6 +92,7 @@ export function forestAtlasSurvey(limit = SURVEY_LIMIT) {
     const types = REGIONAL_FOREST_TYPES.map(type => ({
         id: type.id, key: type.key, count: counts[type.id] || 0,
         transitionCount: transitions[type.id] || 0,
+        dynamics: samples[type.id] || null,
     }));
     const value = {
         available: true,
@@ -152,7 +154,41 @@ function characterLine(type, currentSeason) {
     return '<div class="forest-atlas__character">' + traits + '</div>' + signature;
 }
 
-function card(type, count, sampled, transitionCount, currentSeason) {
+const MIX_LABELS = {
+    pure: 'Pure stand', dominant: 'Dominant species', mixed: 'Mixed stand', even: 'Even mixture',
+};
+const PHASE_LABELS = {
+    pioneer: 'Pioneer', thicket: 'Thicket', pole: 'Pole stage', mature: 'Mature',
+    'old-growth': 'Old growth', climax: 'Climax',
+};
+
+function dynamicsBlock(dynamics) {
+    if (!dynamics) return '';
+    const composition = dynamics.composition || {};
+    const regeneration = dynamics.regeneration || {};
+    const health = dynamics.health || {};
+    const age = dynamics.age || {};
+    const system = dynamics.silviculture || {};
+    const soil = dynamics.soil || {};
+    const structure = dynamics.structure || {};
+    const facts = [
+        ['MIX', MIX_LABELS[composition.mixtureClass] || composition.mixtureClass || '—', pct(composition.purity) + '% dominant'],
+        ['PHASE', PHASE_LABELS[age.phase] || age.phase || '—', 'rotation ' + number(age.rotationYears) + 'y'],
+        ['PIONEER / CLIMAX', pct(composition.pioneerShare) + '% / ' + pct(composition.climaxShare) + '%', (composition.pioneerSpecies || []).slice(0, 2).join(' · ') || '—'],
+        ['SEED BANK', pct(regeneration.seedBank) + '%', 'mother trees ' + number(regeneration.motherTreesPerHa) + '/ha'],
+        ['GENETICS', pct(regeneration.geneticDiversity) + '%', 'quality ' + pct(regeneration.seedQuality) + '%'],
+        ['SITE FIT', pct(health.siteFitness) + '%', 'disease resistance ' + pct(health.diseaseResistance) + '%'],
+        ['SYSTEM', system.label || '—', number(system.rotationYears) + 'y · timber ' + pct(system.timberFactor) + '%'],
+        ['SOIL', soil.humusForm || '—', 'roots ' + pct(soil.rootDepth) + '% · ' + (soil.mycorrhizaLabel || 'mycorrhiza —')],
+        ['STRUCTURE', structure.understoryLabel || '—', 'herb ' + pct(structure.herbLayer) + '% · liana ' + pct(structure.lianaCover) + '% · epiphyte ' + pct(structure.epiphyteCover) + '%'],
+        ['GAPS', pct(structure.canopyGap) + '%', 'edge diversity ' + pct(structure.edgeDiversity) + '% · ' + number(structure.layers) + ' layers'],
+    ];
+    return '<div class="forest-atlas__dynamics">' + facts.map(([label, value, detail]) =>
+        '<span><small>' + esc(label) + '</small><strong>' + esc(value) + '</strong><em>' + esc(detail) + '</em></span>').join('')
+        + '</div>';
+}
+
+function card(type, count, sampled, transitionCount, currentSeason, dynamics = null) {
     const timber = signatureTimberForRegionalType(type);
     const quote = timber ? timberQuote(timber.id) : null;
     const share = sampled > 0 ? Math.round(count / sampled * 100) : 0;
@@ -171,6 +207,7 @@ function card(type, count, sampled, transitionCount, currentSeason) {
         + '<span class="forest-atlas__presence">' + presence + '</span></summary>'
         + '<p class="forest-atlas__profile">' + esc(type.profile) + '</p>'
         + characterLine(type, currentSeason)
+        + dynamicsBlock(dynamics)
         + '<div class="forest-atlas__stats">'
         + meter("Timber", effects.timber, signed((effects.timber ?? 1) - 1))
         + meter("Regrowth", effects.regrowth, signed((effects.regrowth ?? 1) - 1))
@@ -195,7 +232,7 @@ export function renderForestAtlasPanel() {
     const currentSeason = Math.max(0, Math.min(3, Number(state.seasonIndex) || 0));
     const cards = REGIONAL_FOREST_TYPES.map(type => {
         const row = survey.types.find(entry => entry.id === type.id);
-        return card(type, row?.count || 0, survey.sampled, row?.transitionCount || 0, currentSeason);
+        return card(type, row?.count || 0, survey.sampled, row?.transitionCount || 0, currentSeason, row?.dynamics || null);
     }).join("");
     return intro("THE FOREST ATLAS", "Sixty regional woodlands",
         "Every forest tile belongs to exactly one regional type, and boundary tiles name the woodland they blend into. Open a type to read its field marks, its signature good, its timber, its ecological effects and the named wood its sawmill can produce.")
@@ -207,5 +244,5 @@ export function renderForestAtlasPanel() {
         + '<div><small>SEASON</small><strong>' + esc(survey.season.toUpperCase()) + '</strong></div></div>'
         + '<div class="forest-atlas">' + cards + '</div>'
         + '<p class="command-note">The realm count comes from a bounded deterministic sample of up to ' + number(SURVEY_LIMIT)
-        + ' forest tiles; it is a survey, not a per-frame scan. Timber, regrowth, wildlife, forage and work are live simulation inputs: they price lumber batches, gathering yields, regrowth and habitat. Flood raises the spoilage of a perishable harvest, and a signature good pays a bonus in its own season. Timber prices are the current seasonal base quote of the regional timber market in the Royal Stores.</p>';
+        + ' forest tiles; it is a survey, not a per-frame scan. Timber, regrowth, wildlife, forage and work are live simulation inputs: they price lumber batches, gathering yields, regrowth and habitat. Flood raises the spoilage of a perishable harvest, and a signature good pays a bonus in its own season. The ecology block is taken from the first surveyed tile of each type: it reports the actual mixture class, succession phase, seed bank, mother trees, genetic breadth, site fitness, disease resistance, silvicultural system, roots, humus, mycorrhiza, understorey, lianas, epiphytes and canopy gaps. Timber prices are the current seasonal base quote of the regional timber market in the Royal Stores.</p>';
 }

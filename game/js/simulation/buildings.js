@@ -62,6 +62,8 @@ function regionalForestAt(x, y) {
     const value = stand ? Object.freeze({
         effects: stand.regionalEffects || null,
         type: stand.regionalType || null,
+        timberFactor: Number(stand.dynamics?.silviculture?.timberFactor) || 1,
+        system: stand.dynamics?.silviculture?.system || null,
     }) : null;
     if (REGIONAL_SITE_CACHE.size >= REGIONAL_SITE_CACHE_LIMIT) REGIONAL_SITE_CACHE.clear();
     REGIONAL_SITE_CACHE.set(key, value);
@@ -289,7 +291,8 @@ function produceRecipe(building, workforce, production, knownEfficiency = null, 
             // an unchanged stand; it is the same full node fauna already uses.
             const regionalSite = regionalForestAt(node.x, node.y);
             const regionalTimber = Math.max(0.7, Math.min(1.35, Number(regionalSite?.effects?.timber) || 1));
-            const batch = Math.max(1, Math.round(recipe.batch * extractionFactor * regionalTimber));
+            const managementTimber = Math.max(0.75, Math.min(1.10, Number(regionalSite?.timberFactor) || 1));
+            const batch = Math.max(1, Math.round(recipe.batch * extractionFactor * regionalTimber * managementTimber));
             const taken = harvestForest(node.x, node.y, batch);
             if (taken <= 0) { building.productionReason = "Forest stand is depleted"; return; }
             finishOutput(building, { logs: taken }, production);
