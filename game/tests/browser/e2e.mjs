@@ -515,7 +515,9 @@ try{
     await page.locator("#command-open-btn").click();
     await page.locator("#command-modal").waitFor({state:"visible"});
     assert.ok(await page.locator("#command-modal").isVisible(),"management dialog must open from the top bar");
-    assert.equal(await page.locator("#command-modal .command-deck [data-command-tab]").count(),29,"all twenty-nine management tabs, including the world map, forest atlas, hazard panel, Explore, Biomes, the Atelier, city charter, noble houses, item lexicon and the Whisper Court, must live inside the dialog");
+    const deckContract=await page.evaluate(async()=>(await import("./js/presentation/management-tabs.js")).MANAGEMENT_TABS.map(tab=>tab.id));
+    const deckIds=await page.locator("#command-modal .command-deck [data-command-tab]").evaluateAll(buttons=>buttons.map(button=>button.dataset.commandTab));
+    assert.deepEqual(deckIds,deckContract,"the management dialog must render every exported tab, including the world map, forest atlas, hazard panel, Explore, Biomes, the Atelier, city charter, noble houses, item lexicon and the Whisper Court");
     // The 1.2.20 hazard panel is a real panel. Prove it opens with the
     // real content and that the two movement rows render the same factors the
     // simulation reads, rather than only counting a button in the deck.

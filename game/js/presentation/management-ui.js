@@ -1,5 +1,6 @@
 // Strategy management command deck: government, politics, royal decisions, cards and economy.
 import { state } from "../core/state.js";
+import { MANAGEMENT_TABS } from "./management-tabs.js";
 import { getGovernmentSnapshot, GOVERNMENT_FORMS, GOVERNMENT_POLICIES, SUCCESSION_LAWS, setGovernmentForm, setTaxRate, setSuccessionLaw, enactPolicy } from "../systems/government.js";
 import { getPoliticalSnapshot } from "../systems/politics.js";
 import { getCourtSnapshot, appointMinister, dismissMinister, addressFactionDemand } from "../systems/court.js";
@@ -74,6 +75,7 @@ import { openBuildPanel } from "./build-ui.js";
 import { renderItemLexicon } from "./item-lexicon-panel.js";
 import { renderProgressive, cancelProgressiveRender } from "./progressive-render.js";
 let activePanel="kingdom",panelRevealToken=0,expandedBuildingId=null,expandedBuildingLogistics=false,buildingShowAll=false,courtShowAll=false,dynastyStylesRequested=false,endeavourFunding=1,timelineRefreshFrame=0,timelineHydrationToken=0,chronicleProgressToken=0,chronicleSectionsToken=0,detailRefreshToken=0;
+const MANAGEMENT_TAB_IDS=new Set(MANAGEMENT_TABS.map(tab=>tab.id));
 const FRAME_WORK_BUDGET=7;
 // These ledgers carry the most nested cards per open. Their full innerHTML
 // layout measured 52-75 ms at 4x CPU throttle, so they use the existing
@@ -1505,7 +1507,23 @@ async function runAiCommand(kind){
  }
 }
 
+function renderManagementTabs(){
+ const deck=document.querySelector("#command-modal .command-deck");
+ if(!deck)return;
+ const fragment=document.createDocumentFragment();
+ for(const tab of MANAGEMENT_TABS){
+  const button=document.createElement("button");
+  button.type="button";
+  button.className="ui-button ui-button--tab";
+  button.dataset.commandTab=tab.id;
+  button.innerHTML='<svg aria-hidden="true"><use href="assets/command-emblems.svg#'+esc(tab.icon)+'"></use></svg><span>'+esc(tab.label)+'</span>';
+  fragment.append(button);
+ }
+ deck.replaceChildren(fragment);
+}
+
 export function setupManagementUI(){
+ renderManagementTabs();
  ensureDynastyNetworkStyles();
  window.addEventListener("kac:expedition-change",()=>{
   if(activePanel==="explore"&&!$("command-modal")?.classList.contains("hidden"))render(false);
@@ -1541,7 +1559,7 @@ export function setupManagementUI(){
    return;
   }
   if(target==="market"){$("tab-2")?.click();return;}
-  if(["kingdom","government","politics","nobility","diplomacy","espionage","explore","biome","hazards","decisions","cards","economy","resources","buildings","city","military","health","faith","justice","research","endeavours","population","dynasty","creatures","chronicle","atelier"].includes(target)){
+  if(MANAGEMENT_TAB_IDS.has(target)){
    if(target==="chronicle")resetTimelineView(state.year);
    activePanel=target;render(true);setCommandModalOpen(true);
    if(target==="resources"&&button.dataset.resourceDetail)requestAnimationFrame(()=>document.querySelector('.resource-detail-card[data-resource="'+button.dataset.resourceDetail+'"]')?.scrollIntoView({block:"start",behavior:"smooth"}));

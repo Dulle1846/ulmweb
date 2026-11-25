@@ -1078,9 +1078,9 @@ if (JOURNEY === "warlord") {
 await startEndeavour();
 if (JOURNEY === "merchant") await sellSurplusAtEnd();
 await openPanel("endeavours");
-await page.setViewportSize({ width: 1600, height: 1000 });
+await page.setViewportSize({ width: 1440, height: 900 });
 await page.waitForTimeout(250);
-const desktopFile = resolve(outDir, `${JOURNEY}-1600.png`);
+const desktopFile = resolve(outDir, `${JOURNEY}-1440.png`);
 await page.screenshot({ path: desktopFile });
 const desktopLayout = await page.evaluate(() => ({
     overflow: document.documentElement.scrollWidth > innerWidth + 1,
@@ -1091,9 +1091,9 @@ const desktopLayout = await page.evaluate(() => ({
     legacies: document.querySelectorAll('[data-endeavour-project="living-city"]').length,
     panelScrollTop: document.querySelector("#command-panel-content")?.scrollTop ?? 0
 }));
-await page.setViewportSize({ width: 864, height: 1000 });
+await page.setViewportSize({ width: 820, height: 1180 });
 await page.waitForTimeout(250);
-const narrowFile = resolve(outDir, `${JOURNEY}-864.png`);
+const narrowFile = resolve(outDir, `${JOURNEY}-820.png`);
 await page.screenshot({ path: narrowFile });
 const narrowLayout = await page.evaluate(() => ({
     overflow: document.documentElement.scrollWidth > innerWidth + 1,
@@ -1103,7 +1103,7 @@ const narrowLayout = await page.evaluate(() => ({
     legacies: document.querySelectorAll('[data-endeavour-project="living-city"]').length,
     panelScrollTop: document.querySelector("#command-panel-content")?.scrollTop ?? 0
 }));
-await page.setViewportSize({ width: 1600, height: 1000 });
+await page.setViewportSize({ width: 1440, height: 900 });
 
 let final = await stateSnapshot();
 let preSaveFinal = final;
@@ -1164,7 +1164,7 @@ if (SAVE_LOAD) {
 
     await openPanel("endeavours");
     await page.waitForTimeout(250);
-    loadedFile = resolve(outDir, `${JOURNEY}-save-load-1600.png`);
+    loadedFile = resolve(outDir, `${JOURNEY}-save-load-1440.png`);
     await page.screenshot({ path: loadedFile });
     const loadedLayout = await page.evaluate(({ completedWorks, completedLegacies }) => ({
         overflow: document.documentElement.scrollWidth > innerWidth + 1,

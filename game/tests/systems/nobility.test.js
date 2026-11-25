@@ -6,6 +6,7 @@ import { TYPE } from "../../js/core/types.js";
 import { initStartingKingdom } from "../../js/world/entities.js";
 import { getPoliticalSnapshot } from "../../js/systems/politics.js";
 import { prepareSaveSnapshot } from "../../js/core/save-runtime.js";
+import { MANAGEMENT_TABS } from "../../js/presentation/management-tabs.js";
 import { SAVE_SCHEMA_VERSION } from "../../js/core/save-validation.js";
 import {
     NOBILITY_CHARTER_COST,
@@ -171,7 +172,8 @@ test("the command deck and source contracts expose the noble-house panel", async
     const html = await readFile(new URL("../../index.html", import.meta.url), "utf8");
     const ui = await readFile(new URL("../../js/presentation/management-ui.js", import.meta.url), "utf8");
     const simulation = await readFile(new URL("../../js/simulation/simulation.js", import.meta.url), "utf8");
-    assert.match(html, /data-command-tab="nobility"/);
+    assert.equal((html.match(/data-command-tab=/g) || []).length, 0, "the deck must be rendered from the shared tab contract");
+    assert.ok(MANAGEMENT_TABS.some(tab => tab.id === "nobility"), "the shared contract must expose the noble-house panel");
     assert.match(ui, /nobility:nobilityPanel/);
     assert.match(ui, /data-command="noble-charter"/);
     assert.match(ui, /data-command="noble-levy"/);

@@ -7,6 +7,7 @@ import { readFile } from "node:fs/promises";
 import { TYPE } from "../../js/core/types.js";
 import { resetState, state } from "../../js/core/state.js";
 import { initStartingKingdom } from "../../js/world/entities.js";
+import { MANAGEMENT_TABS } from "../../js/presentation/management-tabs.js";
 import {
     createIdentityState, normalizeIdentity, validateIdentity,
     getCultureModifiers, getIdentitySnapshot, getHeraldryLabel, CULTURES
@@ -228,8 +229,9 @@ test("the save, load, simulation and UI source contracts include the civilizatio
     assert.ok(saveRuntime.includes("state.identity=normalizeIdentity") && saveRuntime.includes("state.research=normalizeResearchState") && saveRuntime.includes("state.legacy=normalizeLegacyState"), "loading must normalize all three blocks");
     assert.ok(migrations.includes("6:snapshot=>") && main.includes("applyIdentityForNewRealm"), "schema 6 saves must migrate and a new realm must record its identity");
     assert.ok(validation.includes("validateIdentity") && validation.includes("validateResearchState") && validation.includes("validateLegacyState"));
-    assert.equal((html.match(/data-command-tab=/g) || []).length, 29, "the command deck must expose twenty-nine tabs, including the world map, biome atlas, forest atlas, hazard panel, Explore survey, Atelier, city charter, item lexicon, noble houses and the Whisper Court");
-    assert.ok(html.includes('data-command-tab="research"') && html.includes('id="realm-culture"'), "the founding form and research tab must exist");
+    assert.equal((html.match(/data-command-tab=/g) || []).length, 0, "the deck must be rendered from the shared tab contract");
+    assert.ok(["research", "worldmap", "biome", "forest", "hazards", "explore", "atelier", "city", "items", "nobility", "espionage"].every(id => MANAGEMENT_TABS.some(tab => tab.id === id)), "the shared contract must expose the civilization, world and court panels");
+    assert.ok(html.includes('id="realm-culture"'), "the founding form must exist");
     assert.ok(ui.includes("research:researchPanel") && ui.includes("research-start") && ui.includes("research-appoint"), "the research panel and its actions must be wired");
     assert.ok(ui.includes("getLegacySnapshot()") && ui.includes("LEGACY ·"), "the chronicle must show the legacy record");
     assert.ok(simulation.includes("updateResearch()"), "research must run from the yearly simulation");

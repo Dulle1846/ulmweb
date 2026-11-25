@@ -8,6 +8,7 @@ import { TYPE } from "../../js/core/types.js";
 import { resetState, state } from "../../js/core/state.js";
 import { initStartingKingdom } from "../../js/world/entities.js";
 import { getPoliticalSnapshot } from "../../js/systems/politics.js";
+import { MANAGEMENT_TABS } from "../../js/presentation/management-tabs.js";
 import {
     createFaithState, normalizeFaithState, validateFaithState,
     getFaithSnapshot, getFaithModifiers, appointClergy, dismissClergy,
@@ -413,7 +414,9 @@ test("the save, load and UI source contracts include both annual systems", async
     assert.ok(saveRuntime.includes("state.justice=normalizeJusticeState"), "loading must normalize justice");
     assert.ok(migrations.includes("4:snapshot=>") && migrations.includes("5:snapshot=>"), "schema 4 and 5 saves must migrate into schema 6");
     assert.ok(validation.includes("validateFaithState") && validation.includes("validateJusticeState"));
-    assert.equal((html.match(/data-command-tab=/g) || []).length, 29, "the command deck must expose twenty-nine tabs, including the world map, biome atlas, forest atlas, hazard panel, Explore survey, Atelier, city charter, item lexicon, noble houses and the Whisper Court");
+    assert.equal((html.match(/data-command-tab=/g) || []).length, 0, "the deck must be rendered from the shared tab contract");
+    const tabIds = new Set(MANAGEMENT_TABS.map(tab => tab.id));
+    assert.ok(["faith", "justice", "chronicle", "worldmap", "biome", "forest", "hazards", "explore", "atelier", "city", "items", "nobility", "espionage"].every(id => tabIds.has(id)), "the shared contract must expose every annual and court panel");
     assert.ok(ui.includes("faith:faithPanel") && ui.includes("justice:justicePanel"));
     assert.ok(ui.includes("faith-festival") && ui.includes("justice-verdict"));
     const faith = await readFile(new URL("../../js/systems/faith.js", import.meta.url), "utf8");

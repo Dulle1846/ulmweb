@@ -1,6 +1,6 @@
 {
   "name": "kings-and-cards",
-  "version": "3.55.1",
+  "version": "3.55.2",
   "private": true,
   "type": "module",
   "scripts": {
@@ -55,6 +55,7 @@
     "test:campaign:players": "node scripts/player-profiles.mjs",
     "test:colossal-growth": "node --expose-gc scripts/colossal-decade-growth.mjs",
     "test:campaign:browser": "node tests/browser/long-campaign.mjs",
+    "test:expeditions": "node tests/browser/expeditions-ui.mjs",
     "test:nobility-ui": "node tests/browser/nobility-ui.mjs",
     "test:royal-crisis-ui": "node tests/browser/royal-crisis-ui.mjs",
     "test:diplomacy-guarantees-ui": "node tests/browser/diplomacy-guarantees-ui.mjs",

@@ -1,6 +1,6 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.55.1`
+**Current production version:** `3.55.2`
 **Next development line:** `3.56.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
@@ -8,6 +8,35 @@
 **Last repository verification:** 2026-11-25 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.55.2 — Management deck has one source of truth
+
+The management deck's 29 tabs were duplicated between `index.html` and every
+browser harness. One exploration audit still expected 23, so it failed after the
+night shift added six panels even though the game itself was healthy. This
+release removes the duplicate and makes the exported contract the thing both the
+UI and the audits read.
+
+- **One exported list.** `js/presentation/management-tabs.js` now owns every tab
+  id, label and emblem. `setupManagementUI()` renders both the tab grid and the
+  narrow selector from it, and `index.html` no longer keeps a second copy.
+- **Audits stop guessing.** The Explore harness imports `MANAGEMENT_TABS`, checks
+  the full id, order and label set plus the narrow selector, and proves every
+  button remains inside an unclipped deck at 820x1180 and 1440x900. The world-map
+  and main browser E2E checks use the same contract instead of a literal count.
+- **Expeditions still play through.** The same run launches a named leader with a
+  grand supply, waits for the outbound party to return, checks one history report
+  and one lore fragment, and confirms the expedition survives the save snapshot.
+- **Mature panel audit follows the live data.** The population check now reads
+  the citizen register (soldiers included) instead of the housing-only villager
+  count, and the justice check waits for every pending case row before reading
+  it. No tolerance, viewport or save/load requirement was reduced.
+- **Long journeys use the required sizes.** The player journey's final layout
+  probes now run at 1440x900 and 820x1180; the 100-year scholar journey completes
+  eight expeditions and seventeen technologies with no mature-panel findings.
+- **Verification.** The full suite passes 1,434 tests with no failures, the
+  Explore deck audit is green at 820x1180 and 1440x900, and the 60 FPS
+  playability audit remains green.
 
 ## 3.55.0 — Night shift: eight new chronicles and living noble succession
 

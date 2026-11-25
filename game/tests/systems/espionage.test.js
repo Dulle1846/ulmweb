@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { Entity, TYPE } from "../../js/core/types.js";
 import { resetState, state } from "../../js/core/state.js";
+import { MANAGEMENT_TABS } from "../../js/presentation/management-tabs.js";
 import {
     AGENT_LIMIT, AGENT_RECRUIT_COST, AGENT_WAGE, SCREEN_COST, WARN_HOUSE_COST, CONCESSION_COST,
     FALSE_TRAIL_COST, FALSE_TRAIL_BONUS, assignAgent, demandConcession, dismissAgent,
@@ -362,7 +363,8 @@ test("the save, simulation and UI contracts include the Whisper Court", async ()
     const simulation = await readFile(new URL("../../js/simulation/simulation.js", import.meta.url), "utf8");
     const combat = await readFile(new URL("../../js/simulation/combat.js", import.meta.url), "utf8");
     const market = await readFile(new URL("../../js/systems/market.js", import.meta.url), "utf8");
-    assert.ok(html.includes('data-command-tab="espionage"'), "the command deck must expose the Whisper Court");
+    assert.equal((html.match(/data-command-tab=/g) || []).length, 0, "the deck must be rendered from the shared tab contract");
+    assert.ok(MANAGEMENT_TABS.some(tab => tab.id === "espionage"), "the shared contract must expose the Whisper Court");
     assert.ok(ui.includes("espionage:espionagePanel") && ui.includes("spy-recruit") && ui.includes("spy-assign"), "the panel and its actions must be wired");
     assert.ok(ui.includes("spy-screen") && ui.includes("COURT SCREENED"), "the counter-intelligence action must be wired");
     assert.ok(ui.includes("spy-warn") && ui.includes("spy-concession") && ui.includes("spy-false-trail"), "all three intelligence plays must be wired");

@@ -13,6 +13,9 @@ import {
     MAX_SITES, MAX_HISTORY, MAX_LORE
 } from "../../js/systems/expeditions.js";
 import { createSaveSnapshot } from "../../js/core/save-runtime.js";
+import { MANAGEMENT_TABS } from "../../js/presentation/management-tabs.js";
+
+const managementTabIds = new Set(MANAGEMENT_TABS.map(tab => tab.id));
 
 const SEED = 20261113;
 
@@ -222,7 +225,8 @@ test("the save, simulation and UI source contracts include the expedition layer"
     assert.ok(saveRuntime.replace(/\s+/g, "").includes("state.expeditions=normalizeExpeditionsState"), "loading must normalize expeditions");
     assert.ok(validation.includes("validateExpeditionsState"), "the save validator must check the expedition block");
     assert.ok(simulation.includes("updateExpeditions()"), "the simulation must advance travel from its normal tick");
-    assert.ok(html.includes('data-command-tab="explore"'), "the command deck must expose the Explore tab");
+    assert.equal((html.match(/data-command-tab=/g) || []).length, 0, "the deck must be rendered from the shared tab contract");
+    assert.ok(managementTabIds.has("explore"), "the shared contract must expose the Explore tab");
     assert.ok(ui.includes("explore:renderExpeditionsPanel") && ui.includes("expedition-start"), "the Explore panel and launch action must be wired");
     assert.ok(ui.includes("kac:expedition-change"), "the open panel must refresh when travel resolves");
     assert.ok(ui.includes("stepTransitionSurvey") && ui.includes("refreshTransitionSurvey"), "the ecotone survey must step its tile cursor and refresh in place");

@@ -48,7 +48,7 @@ async function readAuditSnapshot(page) {
             { state }, { getMilitarySnapshot }, { getDiplomacySnapshot }, { getWorldMapSnapshot },
             { getExpeditionSnapshot }, { getFaithSnapshot }, { getJusticeSnapshot }, { getHealthSnapshot },
             { getResearchSnapshot }, { getHousingSnapshot }, { getLogisticsSnapshot },
-            { getEconomyCycleSnapshot }, { getCrownSupplySnapshot }
+            { getEconomyCycleSnapshot }, { getCrownSupplySnapshot }, { getPopulationSnapshot }
         ] = await Promise.all([
             import("./js/core/state.js"),
             import("./js/systems/military.js"),
@@ -62,7 +62,8 @@ async function readAuditSnapshot(page) {
             import("./js/systems/population.js"),
             import("./js/systems/logistics.js"),
             import("./js/systems/economy-cycle.js"),
-            import("./js/systems/crown-supply.js")
+            import("./js/systems/crown-supply.js"),
+            import("./js/systems/population-register.js")
         ]);
         const military = getMilitarySnapshot();
         const diplomacy = getDiplomacySnapshot();
@@ -73,6 +74,7 @@ async function readAuditSnapshot(page) {
         const health = getHealthSnapshot();
         const research = getResearchSnapshot();
         const housing = getHousingSnapshot();
+        const populationRegister = getPopulationSnapshot();
         const logistics = getLogisticsSnapshot();
         const cycle = getEconomyCycleSnapshot();
         const crownSupply = getCrownSupplySnapshot();
@@ -108,6 +110,7 @@ async function readAuditSnapshot(page) {
             tick: Math.floor(Number(state.tick) || 0),
             morale: Math.round(Number(state.morale) || 0),
             population: housing.population,
+            registeredPopulation: populationRegister.population,
             housing: housing.capacity,
             resources,
             military: {
@@ -282,6 +285,7 @@ async function waitForPanel(page, tab, snapshot) {
         if (tab === "military") return content.querySelectorAll(".military-soldier").length >= expected.soldiers && Boolean(content.querySelector(".military-roster"));
         if (tab === "diplomacy") return content.querySelectorAll(".diplomacy-realm").length >= expected.realms;
         if (tab === "research") return content.querySelectorAll("[data-research-tech]").length >= expected.techs;
+        if (tab === "justice") return content.querySelectorAll("[data-justice-case]").length >= expected.justiceCases;
         if (tab === "cards") return content.querySelectorAll(".command-card").length >= expected.cards && (content.textContent || "").trim().length > 150;
         return (content.textContent || "").trim().length > 400;
     }, {
@@ -293,6 +297,7 @@ async function waitForPanel(page, tab, snapshot) {
             soldiers: snapshot.military.soldiers,
             realms: snapshot.diplomacy.realms.length,
             techs: Object.keys(snapshot.research.states).length,
+            justiceCases: snapshot.justice.pendingCases,
             cards: snapshot.cards.hand
         }
     }, { timeout: 12000 });
@@ -659,7 +664,7 @@ function checkSnapshot(snapshot, dom, tab, width, findings) {
     }
 
     if (tab === "population") {
-        if (!normalize(dom.text).includes(String(snapshot.population))) fail("population-missing", `expected ${snapshot.population}`);
+        if (!normalize(dom.text).includes(String(snapshot.registeredPopulation))) fail("population-missing", `expected ${snapshot.registeredPopulation}`);
     }
 }
 

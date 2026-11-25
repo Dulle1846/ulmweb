@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
+import {MANAGEMENT_TABS} from "../../js/presentation/management-tabs.js";
 
 const root=new URL("../../",import.meta.url);
 const [html,css,cardCss,ui,management,populationPanel,dossier,main,saveRuntime,economy,economyCycle,renderer,hud,gameCss]=await Promise.all([
@@ -19,6 +20,14 @@ const [html,css,cardCss,ui,management,populationPanel,dossier,main,saveRuntime,e
   readFile(new URL("css/hud-v3.css",root),"utf8"),
   readFile(new URL("css/game.css",root),"utf8")
 ]);
+const tabIds=new Set(MANAGEMENT_TABS.map(tab=>tab.id));
+
+test("management deck is rendered from the exported tab contract",()=>{
+  assert.equal(tabIds.size,MANAGEMENT_TABS.length,"management tab ids must be unique");
+  for(const tab of MANAGEMENT_TABS)assert.ok(tab.label&&tab.icon,"every management tab needs a label and an emblem");
+  assert.ok(management.includes("renderManagementTabs"),"the deck must be rendered by management-ui");
+  assert.ok(!html.includes('data-command-tab="'),"index.html must not keep a second copy of the tab deck");
+});
 
 test("master UI stylesheet is loaded after the legacy visual layers",()=>{
   const legacy=html.indexOf('href="css/comic-strategy.css"');
@@ -128,7 +137,7 @@ test("the sovereign banner exposes identity, treasury trend and a live warning i
 
 test("resource details expose real stocks, flows, related buildings and bounded history",()=>{
   assert.ok(html.includes('data-kac-panel="resources"'));
-  assert.ok(html.includes('data-command-tab="resources"'));
+  assert.ok(tabIds.has("resources"));
   assert.ok(html.includes('id="map-layer-select"'));
   assert.ok(management.includes("function resources()"));
   assert.ok(management.includes("function resourceCard("));
@@ -141,7 +150,7 @@ test("resource details expose real stocks, flows, related buildings and bounded 
 });
 
 test("the item lexicon exposes base definitions and player-made records",()=>{
-  assert.ok(html.includes('data-command-tab="items"'));
+  assert.ok(tabIds.has("items"));
   assert.ok(management.includes("renderItemLexicon"));
   assert.ok(management.includes('if(activePanel==="items")renderItemLexicon(panel)'));
   assert.ok(gameCss.includes(".item-lexicon"));
@@ -150,7 +159,7 @@ test("the item lexicon exposes base definitions and player-made records",()=>{
 });
 
 test("diplomacy exposes persistent neighbours, treaties and trade consequences",()=>{
-  assert.ok(html.includes('data-command-tab="diplomacy"'));
+  assert.ok(tabIds.has("diplomacy"));
   assert.ok(html.includes('data-kac-panel="diplomacy"'));
   assert.ok(management.includes("function diplomacy()"));
   assert.ok(management.includes("data-diplomacy-realm"));
@@ -196,7 +205,7 @@ test("settings expose local save slots, import/export and version/credits metada
   assert.ok(html.includes('id="export-save-btn"'));
   assert.ok(html.includes('id="import-save-input"'));
   assert.ok(html.includes('id="save-archive-status"'));
-  assert.ok(html.includes("KINGS &amp; CARDS · <b>v3.55.1</b>"));
+  assert.ok(html.includes("KINGS &amp; CARDS · <b>v3.55.2</b>"));
   assert.ok(management.includes('data-command="crown-grain"'));
   assert.ok(management.includes('data-command="crown-water"'));
   assert.ok(management.includes('data-command="crown-housing"'));
@@ -260,7 +269,7 @@ test("realm issue presentation exposes real participants and the chronicle recor
 
 test("building register uses live entities, staffing, footprint and site data without inventing output",()=>{
   assert.ok(html.includes('data-kac-panel="buildings"'));
-  assert.ok(html.includes('data-command-tab="buildings"'));
+  assert.ok(tabIds.has("buildings"));
   assert.ok(management.includes('state.entities.filter(entity=>!entity.dead&&entity.isBuilding())'));
   assert.ok(management.includes("getBuildingEfficiency(building,workforce)"));
   assert.ok(management.includes("BUILDING_SIZE[building.type]"));
@@ -285,8 +294,8 @@ test("creature dossiers use actual living and memorial records",()=>{
 
 test("chronicle inbox uses stored event log data and opens the existing active issue",()=>{
   assert.ok(html.includes('data-kac-panel="chronicle"'));
-  assert.ok(html.includes('data-command-tab="chronicle"'));
-  assert.ok(html.includes('data-command-tab="atelier"'));
+  assert.ok(tabIds.has("chronicle"));
+  assert.ok(tabIds.has("atelier"));
   assert.ok(management.includes("state.eventLog"));
   assert.ok(management.includes("entry.tick"));
   assert.ok(management.includes("entry.kind"));
