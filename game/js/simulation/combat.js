@@ -62,13 +62,20 @@ export function updateCombat(){
  const espionageWarning=getEspionageWarModifiers().raidDamageFactor;
  const biomeMilitary=getSpecialBiomeInfluence().military;
  const defenders=state.entities.filter(e=>!e.dead&&[TYPE.GUARD,TYPE.KNIGHT,TYPE.ARCHER,TYPE.TOWER].includes(e.type));
- const enemyBuckets=indexEntities(enemies),defenderBuckets=indexEntities(defenders);
+ // Curtain walls are cover, not archers: raiders must breach a nearby wall
+ // before they can reach what stands behind it, and the wall never shoots.
+ // Finished walls only; a site under construction offers no protection.
+ const walls=state.entities.filter(e=>!e.dead&&e.type===TYPE.WALL&&(!e.construction||Number(e.construction.stage)>=3));
+  const enemyBuckets=indexEntities(enemies),defenderBuckets=indexEntities(defenders),wallBuckets=indexEntities(walls);
  const keep=state.entities.find(e=>!e.dead&&e.type===TYPE.KEEP)||null;
  const tick=state.tick;
  for(const enemy of enemies){
   if(enemy.dead)continue;
   const nearby=nearestFromBuckets(enemy.x,enemy.y,defenderBuckets,32);
-  const target=nearby||keep;
+  // A standing levy still draws the first blow. Otherwise a finished wall
+  // within striking distance intercepts the raid before the keep or a villager.
+  const wall=nearestFromBuckets(enemy.x,enemy.y,wallBuckets,3.2);
+  const target=nearby||wall||keep;
   if(!target)continue;
   const dx=target.x-enemy.x,dy=target.y-enemy.y,dist=Math.hypot(dx,dy);
   const jungle=getJungleTacticsAt(enemy.x,enemy.y);
@@ -134,7 +141,8 @@ export function updateCombat(){
   if(enemy.dead)continue;
   if(dist<=1.8&&tick%13===0){
    const baseDamage=enemy.type===TYPE.TROLL?32:13;
-   const armor=getSoldierArmor(target);
+   // Masonry absorbs most of a blow; a wall is cover, not a thin wooden target.
+   const armor=target.type===TYPE.WALL?.62:getSoldierArmor(target);
    // A defender standing in the jungle gets real cover. Local levies know the
    // trails and use the ambush lanes; a foreign raider does not.
    const cover=getJungleTacticsAt(target.x,target.y);
@@ -153,6 +161,7 @@ export function updateCombat(){
    const biomeDefense=Math.max(1,targetBiome.defenderPower+biomeMilitary.defenderPower-1);
    target.hp-=Math.max(1,Math.round(baseDamage*raidDamageMultiplier*espionageWarning/(readiness*nobleDefense)*(1-armor)*coverMultiplier*heightMultiplier*volcanoMultiplier*biomeCover/biomeDefense));
    queueParticle(target.x*TILE_SIZE+rand(-10,10),target.y*TILE_SIZE-10,"#f43f5e",18,rand(-3,3),rand(-4,-1));
+   if(target.type===TYPE.WALL&&tick%39===0)queueFloater(target.x*TILE_SIZE,target.y*TILE_SIZE-14,"WALL HIT","#cbd5e1");
    if(target.hp<=0){
     if(target.type===TYPE.KEEP&&isEndlessEnabled()){
      holdEndlessKeep(target);
@@ -160,6 +169,10 @@ export function updateCombat(){
     }else{
      if(!target.isKing&&!target.isBuilding?.())recordMilitaryCasualty(target,"raid");
      target.dead=true;
+     if(target.type===TYPE.WALL){
+      queueFloater(target.x*TILE_SIZE,target.y*TILE_SIZE-16,"BREACH","#fda4af");
+      queueMessage("WALL BREACHED","RAIDERS ARE THROUGH",3200);
+     }
      if(target.type===TYPE.KEEP){state.gameOver=true;queueMessage("THE REALM FELL","THE KEEP WAS DESTROYED",5000);}
     }
    }else if(!target.isKing&&getSoldierPower(target)>0&&target.hp/target.maxHp<0.55&&rand(0,1)<Math.max(.05,0.22*(1-targetBiome.casualtyReduction-biomeMilitary.casualtyReduction))){

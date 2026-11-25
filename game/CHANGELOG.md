@@ -192,8 +192,21 @@ UI and the audits read.
   core-loop audit's founding window. The warm-up is local again; the explicit
   opening muster still runs once before the overlay lifts, and loaded saves are
   still untouched.
+- **Curtain walls are cover in a real raid.** A finished wall within striking
+  distance now intercepts raiders before the keep or an unguarded resident,
+  takes masonry-hardened damage and reports **WALL HIT** and **BREACH** on the
+  battlefield. A site still under construction gives no cover. The wall never
+  shoots, combat stays on its seeded stream and two focused tests prove that
+  the keep is protected until the breach and then becomes reachable again.
+- **Browser harnesses wait on what the player sees.** The biome-atlas check now
+  polls the zoom/layer state on a timer and asserts the visible **ROOFTOPS** HUD
+  label. The first-session save/load check advances the deferred HUD refresh,
+  waits for the visible **FIRST SESSION COMPLETE** checklist and pauses through
+  the real control before exact tick comparisons. No rendering budget or save
+  requirement was reduced.
+- **Damaged structures can be repaired from the workshop and seen from the front page.** Once raiders, floods and avalanches can breach or hurt a finished building, the player needs a way to find and restore it: the building inspector now shows `HP / MAX HP` and a **REPAIR** button whose material bill scales with the missing fraction of the structure's rebuild cost. A sound or unfinished building offers no repair, an unaffordable bill spends nothing, and the action writes only existing `hp` and resource fields so old saves stay valid. The Kingdom Overview carries a derived **STRUCTURE DAMAGE** survey with the damaged count, defensive count, missing HP and worst structure; it reads live entities only when the panel renders, never per tick. The same overview's **RECENT CHRONICLE** now leads with the newest record instead of the oldest five, matching `addLog()`'s newest-first order. A real-browser check plays the repair flow, verifies the survey count and the chronicle order, and confirms no page or console errors.
 
-## 3.55.0 — Night shift: eight new chronicles and living noble succession
+## 3.55.0 - Night shift: eight new chronicles and living noble succession
 
 The realm already had thirteen authored three-stage story arcs, but a dozen live
 event families could still only produce a single issue and a quick resolution.

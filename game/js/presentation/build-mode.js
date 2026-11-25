@@ -24,6 +24,7 @@ import { constructionSnapshot, isUnderConstruction, pauseConstruction, resumeCon
 import { getInventorySummary, cancelJobsForEntity, evacuateBuildingInventory } from '../systems/logistics.js';
 import { getServiceReason } from '../systems/settlement.js';
 import { addResource } from '../systems/resources.js';
+import { getBuildingRepairSnapshot, repairBuilding } from '../systems/building-repair.js';
 
 const RADIUS_SEARCH = 9;
 
@@ -387,6 +388,21 @@ export function interiorSummary(entity) {
 
 // ── UI ────────────────────────────────────────────────────────
 
+function repairMarkup(entity) {
+    const repair = getBuildingRepairSnapshot(entity);
+    if (repair.reason === 'no-building') return '';
+    if (repair.reason === 'under-construction') {
+        return '<div class="workshop-upkeep"><span>STRUCTURE REPAIR</span><strong>FINISH THE SITE FIRST</strong></div>';
+    }
+    const cost = Object.entries(repair.cost)
+        .map(([resource, amount]) => amount + ' ' + resource.toUpperCase())
+        .join(' + ') || 'NO MATERIALS';
+    const label = repair.reason === 'sound' ? 'SOUND' : repair.reason === 'short-resources' ? 'STORES SHORT' : 'REPAIR · ' + cost;
+    return '<div class="workshop-upkeep"><span>STRUCTURE HP</span><strong>' + Math.round(repair.hp) + ' / ' + Math.round(repair.maxHp) + '</strong></div>' +
+        '<div class="workshop-upkeep"><span>BUILDING REPAIR</span>' +
+        '<button type="button" data-repair-building' + (repair.ok ? '' : ' disabled') + '>' + label + '</button></div>';
+}
+
 export function renderWorkshop() {
     const panel = document.getElementById('workshop-panel');
     if (!panel) return;
@@ -405,7 +421,9 @@ export function renderWorkshop() {
             const stored = !inventory ? 'no local store' : inventory.kind === 'warehouse'
                 ? inventory.used + ' / ' + inventory.capacity + ' warehouse space'
                 : [...Object.entries(inventory.input || {}).map(([good, value]) => value + ' ' + good + ' in'), ...Object.entries(inventory.output || {}).map(([good, value]) => value + ' ' + good + ' out')].join(' · ') || 'local store empty';
-            meta.textContent = `TILE ${entity.x}, ${entity.y} · ${site.status.toUpperCase()}${site.percent < 100 ? ' · ' + site.percent + '%' : ''} · ${stored}`;
+            const hp = getBuildingRepairSnapshot(entity);
+            const hpLabel = hp.entity ? ` · HP ${Math.round(hp.hp)}/${Math.round(hp.maxHp)}` : '';
+            meta.textContent = `TILE ${entity.x}, ${entity.y} · ${site.status.toUpperCase()}${site.percent < 100 ? ' · ' + site.percent + '%' : ''}${hpLabel} · ${stored}`;
         } else {
             meta.textContent = 'Select any structure on the map to inspect and reshape it.';
         }
@@ -418,9 +436,9 @@ export function renderWorkshop() {
             const breakdown = getBuildingRoomBreakdown(entity);
             if (isUnderConstruction(entity)) {
                 const site = constructionSnapshot(entity);
-                items.innerHTML = `<div class="workshop-construction"><strong>${site.status} · ${site.percent}%</strong><p>This is a construction site, not an operating building. It needs builder labour and physical material deliveries before rooms, production or furniture become active.</p><div class="workshop-upkeep"><span>DELIVERED</span><strong>${Object.entries(site.delivered || {}).map(([good, value]) => value + ' ' + good).join(' · ') || 'No materials delivered yet'}</strong></div></div>`;
+                items.innerHTML = `<div class="workshop-construction"><strong>${site.status} · ${site.percent}%</strong><p>This is a construction site, not an operating building. It needs builder labour and physical material deliveries before rooms, production or furniture become active.</p><div class="workshop-upkeep"><span>DELIVERED</span><strong>${Object.entries(site.delivered || {}).map(([good, value]) => value + ' ' + good).join(' · ') || 'No materials delivered yet'}</strong></div></div>${repairMarkup(entity)}`;
             } else if (!breakdown) {
-                items.innerHTML = '<div class="workshop-empty">This structure has no interior.</div>';
+                items.innerHTML = '<div class="workshop-empty">This structure has no interior.</div>' + repairMarkup(entity);
             } else {
                 const room = activeRoom(entity, breakdown);
                 if (room) state.selectedRoom = room.name;
@@ -450,7 +468,7 @@ export function renderWorkshop() {
                 items.innerHTML = `<div class="workshop-rooms" role="tablist" aria-label="Rooms">${tabs}</div>
                     <div class="workshop-room-head"><span>${room ? room.roleIcon + ' ' + room.roleShort : 'NO ROOM'}</span><span>${room ? '+' + percent + '% ROOM BONUS · ' + room.furnitureCount + '/' + MAX_FURNITURE_PER_ROOM : ''}</span></div>
                     ${rows}
-                    <div class="workshop-upkeep"><span>FURNITURE UPKEEP</span><strong>${breakdown.furnitureUpkeep.toFixed(3)} GOLD / 20 DAYS</strong></div>`;
+                    <div class="workshop-upkeep"><span>FURNITURE UPKEEP</span><strong>${breakdown.furnitureUpkeep.toFixed(3)} GOLD / 20 DAYS</strong></div>${repairMarkup(entity)}`;
             }
         }
     }
@@ -506,6 +524,17 @@ export function setupWorkshopUI() {
     });
 
     document.getElementById('workshop-items')?.addEventListener('click', event => {
+        const repairButton = event.target.closest('[data-repair-building]');
+        if (repairButton) {
+            if (!repairButton.disabled) {
+                const result = repairBuilding(selectedBuilding());
+                toast(result.ok
+                    ? 'REPAIRED · ' + Math.round(result.restored) + ' HP RESTORED'
+                    : String(result.reason || 'repair failed').replace(/-/g, ' ').toUpperCase());
+            }
+            renderWorkshop();
+            return;
+        }
         const roomButton = event.target.closest('[data-room]');
         if (roomButton) {
             state.selectedRoom = roomButton.dataset.room;

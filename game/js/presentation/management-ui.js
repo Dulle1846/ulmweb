@@ -67,6 +67,7 @@ import { applyCrownRelief } from "../systems/crown-relief.js";
 import { getRealmCycleSnapshot, resolveRealmCyclePetition } from "../systems/realm-cycle.js";
 import { getLegacySnapshot } from "../systems/legacy.js";
 import { constructionSnapshot, isUnderConstruction } from "../systems/construction.js";
+import { getRealmDamageSnapshot } from "../systems/building-repair.js";
 import { getInventorySummary, getBuildingLogisticsStatus, getBuildingSupplyReason, getCitySummary, getLogisticsSnapshot, setWarehouseProfile } from "../systems/logistics.js";
 import { WAREHOUSE_PROFILES } from "../systems/city-config.js";
 import { getSettlementSnapshot, getServiceReason } from "../systems/settlement.js";
@@ -251,17 +252,21 @@ function kingdom(){
   const firstSeat=seats.slice().sort((a,b)=>(a.foundedYear||0)-(b.foundedYear||0)||String(a.name||"").localeCompare(String(b.name||""))||String(a.buildingId||"").localeCompare(String(b.buildingId||"")))[0];
   const firstSeatLabel=firstSeat?esc(firstSeat.name)+' · '+number(firstSeat.x)+','+number(firstSeat.y)+' · YEAR '+number(firstSeat.foundedYear):"No chartered seat";
   const seatMarkup='<div class="command-summary"><div><small>CHARTERED SEATS</small><strong>'+number(seats.length)+' / '+number(SETTLEMENT_SEAT_LIMIT)+'</strong></div><div><small>TERRITORY RADIUS</small><strong>'+number(SETTLEMENT_TERRITORY_RADIUS)+' TILES</strong></div><div><small>FIRST SEAT</small><strong>'+firstSeatLabel+'</strong></div></div><p class="command-note">No separate capital field is recorded; First Seat means the oldest chartered seat. Each seat guards a bounded radius and keeps its own repair stores and treasury, all read from the running settlement registry.</p>';
+  const damage=getRealmDamageSnapshot();
+  const damageMarkup=damage.damaged
+    ?'<div class="command-summary"><div><small>DAMAGED STRUCTURES</small><strong>'+number(damage.damaged)+'</strong></div><div><small>DEFENSIVE</small><strong>'+number(damage.defensive)+'</strong></div><div><small>MISSING HP</small><strong>'+number(damage.missingHp)+'</strong></div><div><small>WORST</small><strong>'+esc(damage.worst.name)+' · '+Math.round(damage.worst.ratio*100)+'%</strong></div></div><p class="command-note">Raids, floods and avalanches can leave a finished building standing but hurt. Open WORKSHOP, select the structure on the map and press REPAIR to spend the shown materials.</p>'
+    :'<div class="command-note">Every finished structure is sound. Raids, floods and avalanches can damage buildings; the Workshop can restore them.</div>';
   const h=getRoyalHouse(),p=getPoliticalSnapshot(),w=getWorkforceSnapshot(),housing=getHousingSnapshot();
  const sovereign=h.king?.person?.name||"No sovereign recorded";
  const income=state.incomeThisTick||{};
  const resources=Object.entries(state.resources||{}).map(([key,value])=>'<div class="command-resource"><span>'+esc(key)+'</span><strong>'+number(value)+'</strong></div>').join("");
- const recent=(state.eventLog||[]).slice(-5).reverse().map(entry=>'<article class="command-history"><strong>REALM RECORD</strong><p>'+esc(entry.text||entry.title||entry.message||"Recorded event")+'</p></article>').join("");
+ const recent=(state.eventLog||[]).slice(0,5).map(entry=>'<article class="command-history"><strong>REALM RECORD</strong><p>'+esc(entry.text||entry.title||entry.message||"Recorded event")+'</p></article>').join("");
  const active=state.activeEvent?'<div class="command-note"><strong>ACTIVE ISSUE</strong><br>'+esc(state.activeEvent.title||state.activeEvent.name||"A realm issue requires attention")+'</div>':'<div class="command-note">No realm-wide event is currently awaiting a decision.</div>';
  return intro("THE REALM OF "+(state.kingdomName||"ELDRIA"),"Kingdom overview","A live summary of the crown, people, treasury and stability. Figures below are read from the running simulation.")+
  '<div class="command-summary"><div><small>SOVEREIGN</small><strong>'+esc(sovereign)+'</strong></div><div><small>YEAR</small><strong>'+number(state.year)+'</strong></div><div><small>POPULATION</small><strong>'+number(housing.population)+'</strong></div><div><small>MORALE</small><strong>'+Math.round(state.morale||0)+'/100</strong></div></div>'+
  (scenarioMarkup?'<div class="command-section-title">SCENARIO OBJECTIVE</div>'+scenarioMarkup:'')+
  '<div class="command-section-title">THE WORLD BEYOND</div>'+worldMarkup+
- '<div class="command-section-title">SEAT NETWORK</div>'+seatMarkup+
+ '<div class="command-section-title">SEAT NETWORK</div>'+seatMarkup+'<div class="command-section-title">STRUCTURE DAMAGE</div>'+damageMarkup+
   '<div class="command-section-title">THE REALM AT A GLANCE</div><div class="command-summary"><div><small>TREASURY</small><strong>'+number(state.resources?.gold)+'</strong></div><div><small>HOUSING</small><strong>'+number(housing.population)+' / '+number(housing.capacity)+'</strong></div><div><small>EMPLOYED</small><strong>'+number(w.employed)+'</strong></div><div><small>LEGITIMACY</small><strong>'+Math.round(p.legitimacy)+'/100</strong></div></div>'+
  '<div class="command-section-title">LIVING REALM CYCLE</div>'+realmCycleStatus()+
  '<div class="command-section-title">ROYAL STORES</div><div class="command-resource-grid">'+resources+'</div>'+

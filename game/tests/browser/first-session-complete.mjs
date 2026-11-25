@@ -48,7 +48,7 @@ try {
     assert.equal(initial.completeHidden, true);
     assert.equal(initial.steps, 5);
 
-    const completed = await page.evaluate(async () => {
+    await page.evaluate(async () => {
         const [{ state }, { renderUI }] = await Promise.all([
             import("./js/core/state.js"),
             import("./js/presentation/rendering/ui.js")
@@ -75,6 +75,12 @@ try {
             }
         };
         renderUI();
+    });
+    // HUD chunks are deliberately scheduled off the frame to keep rendering
+    // bounded. Advance the installed clock once so the checklist has actually
+    // refreshed before asserting what a player can see.
+    await page.clock.runFor(50);
+    const completed = await page.evaluate(() => {
         return {
             heading: document.querySelector("#first-session-heading")?.textContent?.trim(),
             count: document.querySelector("#first-session-count")?.textContent?.trim(),
@@ -112,7 +118,8 @@ try {
     }, null, { timeout: 15000 });
     const loadStatus = (await page.locator("#status-message").textContent() || "").trim();
     assert.ok(loadStatus.includes("Loaded realm"), "the saved 5/5 realm must load; actual status: " + loadStatus);
-    await page.locator("#first-session-complete").waitFor({ state: "visible", timeout: 5000 });
+    await page.clock.runFor(50);
+    await page.locator("#first-session-complete").waitFor({ state: "visible", timeout: 10000 });
     const afterLoad = await page.evaluate(async () => ({
         heading: document.querySelector("#first-session-heading")?.textContent?.trim(),
         count: document.querySelector("#first-session-count")?.textContent?.trim(),
@@ -171,7 +178,13 @@ try {
     assert.ok(importStatus.includes("Realm imported"), "the exported 5/5 realm must import; actual status: " + importStatus);
     await page.locator("#start-screen").waitFor({ state: "hidden", timeout: 5000 });
     await page.locator("#settings-modal").waitFor({ state: "hidden", timeout: 5000 });
-    await page.locator("#first-session-complete").waitFor({ state: "visible", timeout: 5000 });
+    await page.clock.runFor(50);
+    await page.waitForFunction(() => {
+        const heading = document.querySelector("#first-session-heading")?.textContent?.trim();
+        const count = document.querySelector("#first-session-count")?.textContent?.trim();
+        const complete = document.querySelector("#first-session-complete");
+        return heading === "FIRST SESSION COMPLETE" && count === "5 / 5" && complete && !complete.hidden;
+    }, null, { polling: 100, timeout: 15000 });
     const afterImport = await page.evaluate(async () => ({
         heading: document.querySelector("#first-session-heading")?.textContent?.trim(),
         count: document.querySelector("#first-session-count")?.textContent?.trim(),
@@ -230,13 +243,20 @@ try {
         mimeType: "application/json",
         buffer: Buffer.from(JSON.stringify(runningBackup))
     });
-    await page.waitForFunction(async expected => {
-        const { state } = await import("./js/core/state.js");
-        return state.tick === expected.tick && state.activeProfileId === expected.profileId;
-    }, { tick: runningBackup.snapshot.tick, profileId: runningBackup.profileId }, { timeout: 15000 });
+    await page.waitForFunction(() => {
+        const message = document.querySelector("#status-message")?.textContent || "";
+        return message.includes("Realm imported") || message.includes("Import failed");
+    }, null, { timeout: 15000 });
     const sameProfileStatus = (await page.locator("#status-message").innerText()).trim();
     assert.ok(sameProfileStatus.includes("Realm imported"), "same-profile backup import must succeed; actual status: " + sameProfileStatus);
     await page.locator("#settings-modal").waitFor({ state: "hidden", timeout: 5000 });
+    // loadSnapshotIntoGame resumes the clock. Pause through the visible control
+    // before comparing the exact imported tick, resources and statistics.
+    await page.locator("#pause-btn").click();
+    await page.waitForFunction(async () => {
+        const { state } = await import("./js/core/state.js");
+        return state.isPaused === true;
+    }, null, { timeout: 5000 });
     const afterSameProfileImport = await page.evaluate(async () => {
         const { state } = await import("./js/core/state.js");
         return {
@@ -256,14 +276,6 @@ try {
     assert.equal(afterSameProfileImport.agendaStage, 1);
     assert.equal(afterSameProfileImport.agendaFoodDemandFactor, 0.97);
     assert.equal(afterSameProfileImport.activeProfileId, runningBackup.profileId);
-
-    // loadSnapshotIntoGame resets the pause flag; pause again before comparing
-    // rejected imports against an exact tick.
-    await page.locator("#pause-btn").click();
-    await page.waitForFunction(async () => {
-        const { state } = await import("./js/core/state.js");
-        return state.isPaused === true;
-    }, null, { timeout: 5000 });
 
     // A corrupt file and a valid file from another profile must both fail
     // without changing the active realm or its local save.

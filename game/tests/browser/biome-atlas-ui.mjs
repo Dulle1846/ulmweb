@@ -402,11 +402,15 @@ try {
     await page.screenshot({ path: "artifacts/biome-market-link.png", fullPage: false });
     await page.locator("#map-layer-select").selectOption("biomes");
     await page.locator('[data-zoom-level="3"]').click();
+    // The camera eases towards its preset over several frames, so poll the
+    // player-visible layer/zoom state on a timer instead of once per animation
+    // frame; under load a rAF poll can starve while the atlas canvas redraws.
     await page.waitForFunction(async () => {
         const { state } = await import("./js/core/state.js");
         const { shouldDrawForestPoints } = await import("./js/systems/biome-resource-state.js");
         return state.mapLayer === "biomes" && shouldDrawForestPoints(state.zoomLevel, state.mapLayer);
-    }, null, { timeout: 5000 });
+    }, null, { polling: 100, timeout: 15000 });
+    assert.equal(await page.locator("#zoom-level-name").innerText(), "ROOFTOPS", "the atlas zoom preset must be reflected in the view HUD");
 
     const mapProof = await page.evaluate(async regionId => {
         const { getBiomeOverlayCells } = await import("./js/systems/biome-resource-state.js");

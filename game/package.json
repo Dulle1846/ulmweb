@@ -45,6 +45,7 @@
     "test:core-loop": "node tests/browser/core-loop-audit.mjs",
     "test:first-session-guidance": "node tests/browser/first-session-guidance.mjs",
     "test:road-condition": "node tests/browser/road-condition.mjs",
+    "test:building-repair": "node tests/browser/building-repair-ui.mjs",
     "test:road-owners": "node tests/browser/road-owners.mjs",
     "test:chronicles": "node tests/browser/chronicle-audit.mjs",
     "test:campaign": "node scripts/long-campaign.mjs",
