@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { resetState, state } from "../../js/core/state.js";
 import { TYPE } from "../../js/core/types.js";
-import { AMBITIONS, canChooseCrownEra, chooseCrownEra, getAmbitionSnapshot, getCrownEraSnapshot, normalizeAmbitions, updateAmbitions } from "../../js/systems/ambitions.js";
+import { AMBITIONS, ETERNAL_DEEDS, canChooseCrownEra, chooseCrownEra, getAmbitionSnapshot, getCrownEraSnapshot, normalizeAmbitions, updateAmbitions } from "../../js/systems/ambitions.js";
 
 function foundedFixture() {
     resetState();
@@ -98,6 +98,29 @@ test("eternal deed progress is bounded and reads the issued target", () => {
     assert.match(half.progressLabel, /1,200/);
     state.resources.gold = 2000;
     assert.equal(getAmbitionSnapshot().progress, 1);
+});
+
+test("the consent of the realm deed reads live legitimacy and pays once", () => {
+    const eternal = allAmbitionsFixture();
+    assert.ok(ETERNAL_DEEDS.some(deed => deed.id === "consent-of-the-realm"));
+    state.politics = { legitimacy: 70, factions: {}, settlements: 0 };
+    eternal.active = { deedId: "consent-of-the-realm", baseline: 70, target: 85, startedTick: 60, generation: eternal.serial++ };
+    state.tick = 80;
+    assert.deepEqual(updateAmbitions(), [], "an unfinished deed must not pay");
+    const snapshot = getAmbitionSnapshot();
+    assert.equal(snapshot.id, "eternal:consent-of-the-realm");
+    assert.equal(snapshot.progress, 0);
+    assert.match(snapshot.progressLabel, /70 \/ 85 legitimacy/);
+    state.politics.legitimacy = 85;
+    state.tick = 100;
+    const gold = state.resources.gold;
+    const food = state.resources.food;
+    assert.deepEqual(updateAmbitions(), ["eternal:consent-of-the-realm"]);
+    assert.equal(eternal.count, 1);
+    assert.equal(state.resources.gold, gold + 65);
+    assert.equal(state.resources.food, food + 25);
+    assert.equal(eternal.lastCompleted.deedId, "consent-of-the-realm");
+    assert.notEqual(eternal.active.deedId, "consent-of-the-realm", "a new deed must follow without repeating");
 });
 
 test("an eternal deed pays exactly once and immediately issues the next", () => {

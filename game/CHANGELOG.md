@@ -64,6 +64,11 @@ ledger.
   format; no new field, stream or per-tick work was added. The scenario browser
   reference now waits for the progressively rendered panel to hydrate before
   reading it, so a slow frame cannot produce an empty briefing.
+- **Night batch 6 — The Consent of the Realm.** The endless chronicle gains one
+  more deed: raise crown legitimacy to at least 85, paid once in gold and food and
+  followed by another deed. It reads the existing political state on the same
+  20-tick cadence, saves only its deed id and target, and leaves the royal ladder,
+  save schema and per-tick cost untouched.
 - **Overnight work log.** `docs/NIGHT_SHIFT_2026-11-25.md` records each batch of
   this night shift and its verification.
 

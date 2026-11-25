@@ -30,6 +30,7 @@ Each deed reads authoritative live state. The baseline is captured when the deed
 | The Watch That Never Sleeps | soldiers | +2 | gold, food |
 | Bells Across the Centuries | temples and shrines | +1 | stone, gold |
 | The Long Ledger | completed trades | +8 … +24 | gold |
+| The Consent of the Realm | crown legitimacy | at least 85 | gold, food |
 
 Every completion also pays prestige. The resource bonus grows with the number of deeds already completed, so the loop remains meaningful without outpacing the authored economy.
 

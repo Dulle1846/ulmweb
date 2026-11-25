@@ -782,6 +782,16 @@ export const ETERNAL_DEEDS = Object.freeze([
         target: (current, count) => current + Math.min(24, 8 + Math.floor(count / 3)),
         progressLabel: (value, target) => value + " / " + target + " trades",
         reward: Object.freeze({ gold: 60 })
+    }),
+    Object.freeze({
+        id: "consent-of-the-realm",
+        title: "The Consent of the Realm",
+        description: "Raise the standing of the crown among the factions of the realm.",
+        value: legitimacy,
+        target: current => Math.min(99, Math.max(current + 6, 85)),
+        available: () => legitimacy() < 95,
+        progressLabel: (value, target) => Math.round(value) + " / " + Math.round(target) + " legitimacy",
+        reward: Object.freeze({ gold: 65, food: 25 })
     })
 ]);
 
