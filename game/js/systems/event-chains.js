@@ -182,5 +182,118 @@ export const EVENT_CHAINS = Object.freeze({
             {label:"Renew the common fishery",description:"Spend stone and gold on a lasting compact; the crown secures a river-weir card.",effects:{resources:{stone:-10,gold:-8,food:20},morale:4,hidden:{prosperity:5,tension:-4},politics:{commons:3,guilds:1,legitimacy:2},cardReward:"river-weirs"}},
             {label:"Close the river to common nets",description:"Gain a lease payment, but end the old shared fishery.",effects:{resources:{gold:18},morale:-4,hidden:{tension:5,prosperity:1},politics:{guilds:3,commons:-3,legitimacy:-1}}}
         ]}
+    ]),
+
+    harvest: Object.freeze([
+        {title:"The Harvest Census",description:"Reeves from the outlying farms bring conflicting measures of the year's yield and ask the crown to settle the count.",choices:[
+            {label:"Fund a royal survey",description:"Spend six gold on surveyors; the true count steadies the market and fills a few stores.",effects:{resources:{gold:-6,food:6},morale:1,hidden:{prosperity:3,tension:-1},politics:{commons:1,legitimacy:1}}},
+            {label:"Trust the old tallies",description:"Take the larger reported share now, but leave the disputed measures unresolved.",effects:{resources:{food:10},morale:-1,hidden:{tension:2,prosperity:-1},politics:{commons:-1,legitimacy:-1}}}
+        ]},
+        {title:"The Field Boundaries",description:"A strip of newly ploughed land is claimed by two villages, and the harvest cannot be brought in until the boundary is settled.",choices:[
+            {label:"Set stone boundary marks",description:"Spend eight stone on lasting markers that both villages can see and trust.",effects:{resources:{stone:-8},morale:2,hidden:{prosperity:4,tension:-3},politics:{nobility:1,commons:1}}},
+            {label:"Let the villages decide by custom",description:"Avoid royal expense, but the same dispute will return at the next sowing.",effects:{resources:{wood:4},morale:-1,hidden:{tension:3,prosperity:-1},politics:{commons:-1}}}
+        ]},
+        {title:"The Harvest Feast",description:"The grain is safely stored. The realm must choose between a shared feast and a profitable sale to passing merchants.",choices:[
+            {label:"Sponsor a common harvest feast",description:"Spend twelve food to feed every ward; the crown also secures a warehouse card.",effects:{resources:{food:-12},morale:5,hidden:{prosperity:5,tension:-3},politics:{commons:2,legitimacy:2},cardReward:"warehouses"}},
+            {label:"Sell the surplus to merchants",description:"Gain eighteen gold, but the villages remember who ate first.",effects:{resources:{gold:18},morale:-2,hidden:{prosperity:1,tension:3},politics:{guilds:3,commons:-2}}}
+        ]}
+    ]),
+    discovery: Object.freeze([
+        {title:"The Prospector's Claim",description:"A prospector has found a promising seam beneath the old hill and asks the crown to recognise his claim before rivals arrive.",choices:[
+            {label:"Grant a royal licence",description:"Spend seven gold to record the claim and bring the workings under royal law.",effects:{resources:{gold:-7},hidden:{mystery:3,prosperity:2},politics:{guilds:1,nobility:1}}},
+            {label:"Keep the seam for the crown",description:"Take six gold from the first samples, but leave the prospector resentful.",effects:{resources:{gold:6},morale:-1,hidden:{mystery:2,tension:3},politics:{commons:-1}}}
+        ]},
+        {title:"The Vein Runs Deeper",description:"The first working has uncovered a wider vein. Miners want safer timber supports while the treasury wants a larger share.",choices:[
+            {label:"Timber the workings properly",description:"Spend twelve wood to shore up the tunnels before the next shift.",effects:{resources:{wood:-12},morale:2,hidden:{prosperity:4,tension:-2},politics:{commons:2}}},
+            {label:"Take a larger royal share",description:"Gain fourteen gold now, but the miners will not forget the unsafe shift.",effects:{resources:{gold:14},morale:-3,hidden:{tension:5,prosperity:-1},politics:{commons:-3,nobility:1}}}
+        ]},
+        {title:"The Royal Mine Charter",description:"The seam can now be worked safely for years. The crown must decide who will hold the charter.",choices:[
+            {label:"Charter a crown mine",description:"Spend stone and gold on a royal mine and secure a gold-mine card for the next draw.",effects:{resources:{stone:-10,gold:-8},morale:3,hidden:{prosperity:6,tension:-2},politics:{legitimacy:2,guilds:1},cardReward:"gold-mines"}},
+            {label:"Lease it to the highest bidder",description:"Gain twenty-two gold, but the lease binds the realm to a powerful contractor.",effects:{resources:{gold:22},hidden:{prosperity:3,tension:4},politics:{guilds:3,commons:-2,legitimacy:-1}}}
+        ]}
+    ]),
+    storm: Object.freeze([
+        {title:"The Windmill's Vane",description:"A night storm has torn the vane from the mill and scattered roof tiles across the lower road.",choices:[
+            {label:"Repair the mill and road",description:"Spend wood and gold to restore the mill and reopen the road before market day.",effects:{resources:{wood:-10,gold:-5},morale:2,hidden:{prosperity:3,tension:-2},politics:{commons:1}}},
+            {label:"Leave the repairs to the miller",description:"The miller pays from his own store and the road stays broken for another week.",effects:{resources:{food:-6},morale:-2,hidden:{prosperity:-1,tension:3},politics:{guilds:2,commons:-1}}}
+        ]},
+        {title:"Shelter in the Abbey",description:"Families from the exposed fields have gathered at the abbey while the storm crosses the valley.",choices:[
+            {label:"Open the royal barns",description:"Spend food and wood to shelter the families and keep the abbey's kitchens working.",effects:{resources:{food:-8,wood:-6},morale:3,hidden:{tension:-3,prosperity:1},politics:{commons:2,clergy:1}}},
+            {label:"Send them home with guards",description:"Spend four gold on an escort, but the families return to damaged houses.",effects:{resources:{gold:-4},morale:-2,hidden:{tension:4},politics:{nobility:1,commons:-2,legitimacy:-1}}}
+        ]},
+        {title:"After the Wind",description:"The storm has passed. The crown can rebuild stronger than before or simply clear the roads and move on.",choices:[
+            {label:"Build storm-resistant roofs",description:"Spend wood and stone on better roofs; a blacksmith card offers future steelwork.",effects:{resources:{wood:-14,stone:-8},morale:4,hidden:{prosperity:5,tension:-3},politics:{commons:2,legitimacy:2},cardReward:"blacksmiths"}},
+            {label:"Clear the roads and move on",description:"Save the treasury for other needs, but the next storm will find the same weak roofs.",effects:{morale:-1,hidden:{prosperity:-1,tension:2},politics:{commons:-1}}}
+        ]}
+    ]),
+    taxation: Object.freeze([
+        {title:"The Assessment Roll",description:"The royal assessors have finished their roll, and every household wants to know how the burden will be shared.",choices:[
+            {label:"Publish the full roll",description:"Gain eight gold and let every household see the same figures.",effects:{resources:{gold:8},morale:1,hidden:{tension:-2,prosperity:1},politics:{legitimacy:2,commons:1}}},
+            {label:"Keep the figures at court",description:"Gain twelve gold in silence, though rumours will fill the gap.",effects:{resources:{gold:12},morale:-3,hidden:{tension:4,mystery:2},politics:{commons:-2,nobility:1}}}
+        ]},
+        {title:"The Collector's Ledger",description:"A collector has been accused of taking more than the roll allows. The guilds want an inquiry before the next payment.",choices:[
+            {label:"Hold a public inquiry",description:"Spend six gold on an open hearing that clears the crown's name.",effects:{resources:{gold:-6},morale:2,hidden:{tension:-3},politics:{legitimacy:2,guilds:1,commons:2}}},
+            {label:"Back the collector",description:"Gain ten gold and a loyal servant, but the guilds close their books.",effects:{resources:{gold:10},morale:-4,hidden:{tension:5},politics:{guilds:-3,commons:-2,legitimacy:-2}}}
+        ]},
+        {title:"The King's Share",description:"The levy is settled for another year. The crown must decide what the revenue will be remembered for.",choices:[
+            {label:"Fund a public granary reserve",description:"Spend ten gold on stores and gain twelve food; a warehouse card follows.",effects:{resources:{gold:-10,food:12},morale:3,hidden:{prosperity:4,tension:-3},politics:{commons:3,legitimacy:2},cardReward:"warehouses"}},
+            {label:"Fill the royal treasury",description:"Gain sixteen gold, but the levy is remembered as a hard year.",effects:{resources:{gold:16},morale:-2,hidden:{prosperity:-1,tension:3},politics:{commons:-2,guilds:-1}}}
+        ]}
+    ]),
+    border: Object.freeze([
+        {title:"The Missing Stone",description:"A boundary stone has vanished from the northern road, and both realms claim the old marker was moved.",choices:[
+            {label:"Send surveyors with an escort",description:"Spend gold and stone to remeasure the road under royal protection.",effects:{resources:{gold:-6,stone:-4},hidden:{mystery:2,tension:-2},politics:{nobility:1,legitimacy:1}}},
+            {label:"Let the local lords settle it",description:"Avoid royal expense, but the claim grows louder every market day.",effects:{resources:{wood:4},hidden:{tension:4,mystery:1},politics:{nobility:2,commons:-1}}}
+        ]},
+        {title:"Riders at the Ford",description:"Armed riders from across the border have begun using the ford. Merchants ask for protection and the neighbouring envoy protests.",choices:[
+            {label:"Post border rangers",description:"Spend ten gold on a standing patrol that answers to the crown.",effects:{resources:{gold:-10},morale:2,hidden:{tension:-3,prosperity:2},politics:{nobility:1,commons:1,legitimacy:1}}},
+            {label:"Pay the riders to keep the road open",description:"Spend fourteen gold on a quiet arrangement with the raiders themselves.",effects:{resources:{gold:-14},hidden:{tension:1,prosperity:1,mystery:2},politics:{nobility:-1,guilds:2}}}
+        ]},
+        {title:"The Boundary Oath",description:"The two crowns are ready to swear to the same line. The final terms will shape the frontier for years.",choices:[
+            {label:"Seal a joint border treaty",description:"Spend gold and stone on a marked frontier and secure a border-ranger card.",effects:{resources:{gold:-8,stone:-6},morale:4,hidden:{prosperity:5,tension:-4},politics:{nobility:2,legitimacy:2},cardReward:"border-rangers"}},
+            {label:"Hold the frontier by force",description:"Gain six gold from seized tolls, but the oaths are never sworn.",effects:{resources:{gold:6},morale:-3,hidden:{tension:7,prosperity:-2},politics:{nobility:1,commons:-2,legitimacy:-1}}}
+        ]}
+    ]),
+    faith: Object.freeze([
+        {title:"The Abbey Bell",description:"The abbey bell has not rung at dawn for three days. Pilgrims arrive expecting a blessing and find the clergy divided.",choices:[
+            {label:"Fund the abbey's restoration",description:"Spend gold and stone to restore the bell tower and its bell.",effects:{resources:{gold:-7,stone:-6},morale:3,hidden:{tension:-2,mystery:1},politics:{clergy:3,commons:1}}},
+            {label:"Appoint a royal chaplain",description:"Spend five gold on a loyal chaplain who can speak for the crown.",effects:{resources:{gold:-5},morale:1,hidden:{tension:2,mystery:1},politics:{clergy:1,legitimacy:2,nobility:-1}}}
+        ]},
+        {title:"The Relic's Journey",description:"A relic is being carried through the realm, and every town wants a day of the procession.",choices:[
+            {label:"Host the procession",description:"Spend food and gold on a procession that brings pilgrims into every ward.",effects:{resources:{food:-8,gold:-4},morale:4,hidden:{prosperity:3,tension:-3},politics:{clergy:3,commons:2}}},
+            {label:"Keep the relic at the capital",description:"Gain eight gold from offerings, but the towns feel excluded.",effects:{resources:{gold:8},morale:-2,hidden:{tension:4,mystery:2},politics:{clergy:-2,commons:-1,legitimacy:1}}}
+        ]},
+        {title:"The Pilgrim Road",description:"The pilgrimage has ended, leaving new roads, new debts and a choice about the abbey's future.",choices:[
+            {label:"Endow a lasting shrine",description:"Spend stone and gold on a shrine and secure a reliquary card for the next draw.",effects:{resources:{stone:-12,gold:-8},morale:5,hidden:{prosperity:5,tension:-4},politics:{clergy:3,legitimacy:2},cardReward:"reliquaries"}},
+            {label:"Sell the offerings to fund the crown",description:"Gain twenty gold, but the clergy will remember the empty shrine.",effects:{resources:{gold:20},morale:-4,hidden:{tension:6,prosperity:-1},politics:{clergy:-3,commons:-2}}}
+        ]}
+    ]),
+    invention: Object.freeze([
+        {title:"The Clockwork Bird",description:"A scholar has built a mechanical bird that keeps time and startles the court. The guilds want to see the design.",choices:[
+            {label:"Fund the workshop",description:"Spend gold and wood on a protected workshop for the inventor.",effects:{resources:{gold:-8,wood:-6},hidden:{mystery:4,prosperity:3},politics:{guilds:2,legitimacy:1}}},
+            {label:"Demand a demonstration at court",description:"Summon the bird to the throne room and impress the nobles without paying for the workshop.",effects:{morale:1,hidden:{mystery:2,tension:2},politics:{nobility:2,guilds:-1}}}
+        ]},
+        {title:"The Mill's New Wheel",description:"The invention has been adapted to a mill, but the first wheel broke and neighbouring mills fear the competition.",choices:[
+            {label:"Test it with royal engineers",description:"Spend gold and stone on a proper trial before the wheel is trusted.",effects:{resources:{gold:-10,stone:-8},morale:2,hidden:{prosperity:4,tension:-2},politics:{guilds:1,commons:1}}},
+            {label:"Grant a monopoly to the inventor",description:"Gain twelve gold from the licence, but the old mills close their doors.",effects:{resources:{gold:12},hidden:{tension:5,prosperity:2},politics:{guilds:-3,commons:-2}}}
+        ]},
+        {title:"The Patent Seal",description:"The design is ready for the realm. The crown can share it freely or keep it as a royal secret.",choices:[
+            {label:"Publish the plans",description:"Spend twelve gold on open plans and secure a clockmaker card for the next draw.",effects:{resources:{gold:-12},morale:4,hidden:{prosperity:6,tension:-3},politics:{guilds:3,commons:2,legitimacy:2},cardReward:"clockmakers"}},
+            {label:"Hide the design in the royal archive",description:"Keep the secret at court, but the guilds stop asking for royal work.",effects:{hidden:{mystery:5,prosperity:-1,tension:3},politics:{guilds:-2,nobility:1}}}
+        ]}
+    ]),
+    monster: Object.freeze([
+        {title:"The Beast Beyond the Palisade",description:"Shepherds report a large beast taking livestock from the outer pastures. The watch asks for hunters and the villages ask for walls.",choices:[
+            {label:"Send a royal hunting party",description:"Spend gold and wood on hunters who know the outer pastures.",effects:{resources:{gold:-9,wood:-6},morale:2,hidden:{tension:-3,mystery:1},politics:{nobility:2,commons:1}}},
+            {label:"Offer a bounty to the villages",description:"Spend twelve gold and let the shepherds hunt the beast themselves.",effects:{resources:{gold:-12},hidden:{tension:2,prosperity:1,mystery:2},politics:{commons:2,nobility:-1}}}
+        ]},
+        {title:"The Thing in the Old Mine",description:"The hunters have followed the beast to an abandoned mine. Its tunnels now connect to the old cellars under the town.",choices:[
+            {label:"Seal the mine with stone",description:"Spend stone and gold to close every tunnel before the beast reaches the cellars.",effects:{resources:{stone:-14,gold:-6},morale:3,hidden:{tension:-4,mystery:1},politics:{commons:2,legitimacy:1}}},
+            {label:"Drive it into the open",description:"Spend ten wood on fires and beaters, risking the creature's flight through the town.",effects:{resources:{wood:-10},morale:-2,hidden:{tension:4,mystery:3},politics:{nobility:1,commons:-1}}}
+        ]},
+        {title:"The Beast's Legend",description:"The creature is gone. The realm must decide whether the story becomes a warning or a royal hunt.",choices:[
+            {label:"Found a monster hunt",description:"Spend ten gold on a permanent hunt and secure a griffin card for the next draw.",effects:{resources:{gold:-10},morale:4,hidden:{prosperity:4,tension:-3},politics:{nobility:2,commons:1},cardReward:"griffins"}},
+            {label:"Bury the tale",description:"Let the clergy speak of a quiet winter instead of a monster.",effects:{morale:-1,hidden:{mystery:4,tension:2},politics:{clergy:1,legitimacy:-1}}}
+        ]}
     ])
 });

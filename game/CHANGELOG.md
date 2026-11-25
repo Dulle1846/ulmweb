@@ -1,13 +1,44 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.54.0`
-**Next development line:** `3.55.0-dev`
+**Current production version:** `3.55.0`
+**Next development line:** `3.56.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
-**Last repository verification:** 2026-11-24 (UTC)
+**Last repository verification:** 2026-11-25 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.55.0 — Night shift: eight new chronicles and living noble succession
+
+The realm already had thirteen authored three-stage story arcs, but a dozen live
+event families could still only produce a single issue and a quick resolution.
+This release gives eight of those families their own complete chronicle harvest,
+discovery, storms, taxation, the frontier, faith, invention and monster hunts. Each
+arc has three stages with two meaningful decisions, and the endings feed real
+cards, political factions and hidden realm pressures through the existing event
+ledger.
+
+- **Eight long-form arcs, twenty-four new stages.** Every new chain is anchored
+  to an event family that can actually generate it, so the writing is reachable
+  in play rather than dead data. No new random stream was introduced: the arcs
+  attach to existing families, so runs stay deterministic and saves stay compatible.
+- **Consequences that already matter.** Choices spend or gain the four existing
+  resources, shift commons/nobility/guilds/clergy/legitimacy, and leave prosperity,
+  tension and mystery in the realm memory. Final decisions secure existing card
+  categories: warehouses, gold mines, blacksmiths, border rangers, reliquaries,
+  clockmakers and griffins.
+- **Noble houses keep their line.** The new arcs reshuffle the event stream, and
+  the fixed 25-year sweep exposed a house whose last member simply died while the
+  house record lingered as a permanent dormant entry. An extinguished house now
+  confirms a resident heir through the normal annual audit: dues, levy, head and
+  history all continue without a new save field, a new random stream or any extra
+  per-tick work. The gate still demands four living houses in all eight seeds.
+- **Contracts.** The chronicle suite now checks the new arcs, their endings and
+  their family anchors; the nobility suite checks the heir succession. The full
+  test suite and production deploy remain green.
+- **Overnight work log.** `docs/NIGHT_SHIFT_2026-11-25.md` records each batch of
+  this night shift and its verification.
 
 ## 3.54.0 — Keyboard play, honest controls and faithful realm settings
 

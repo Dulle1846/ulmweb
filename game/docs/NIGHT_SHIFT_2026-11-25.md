@@ -1,0 +1,47 @@
+# Kings & Cards — night shift 2026-11-25
+
+Owner instruction: keep improving the game from a player's perspective while the
+owner sleeps, add new content on top of what already exists and the documented
+plans, commit and deploy, and keep watching what `freebuff` commits.
+
+## Operating rules for every batch
+
+- Branch: `ulmweb-branch` (production). `main` is obsolete.
+- Game root: `game/`. Cloudflare Pages deploys from the pushed branch with no build step.
+- Preserve the static browser architecture, save compatibility and deterministic simulation.
+- Keep per-frame and per-tick work bounded; new ecological change stays on bounded cadences.
+- Extend shared data and existing render/simulation patterns; no parallel systems.
+- Run affected tests while iterating, then one full `npm test` per batch. Never lower a gate,
+  a year count, a tick count or an assertion to save time.
+- Simulation/economy work includes the deterministic 25-year campaign; visual or render work
+  includes the relevant browser reference.
+- Commit with a descriptive message, push, then verify the live production URL serves the
+  exact version and the touched files. Append each batch to the table below.
+- Watch `origin/freebuff/747ba2e7ecbd7eb66d9fab99` and any commit whose author or subject
+  mentions `freebuff`. Report new commits here; integrate only after tests, never by force.
+
+## Planned slices for the night
+
+1. Authored story content for existing event families (first batch, complete).
+2. More long-form chronicles for the remaining families without a chain.
+3. Player-facing readability: clearer event outcome text and card-reward notices where needed.
+4. Small deterministic simulation/content improvements from `ROADMAP_3.3-4.0.md` that do not
+   change save schema or per-tick cost.
+5. Final morning audit: full suite, production E2E, version and deployment receipt.
+
+## Batch log
+
+| Time (UTC) | Batch | Files / content | Verification | Commit |
+| --- | --- | --- | --- | --- |
+| 2026-11-25T01:15Z | Eight new authored chronicles plus noble-house heir continuity | `js/systems/event-chains.js`, `js/systems/nobility.js`, `tests/event-chains.test.js`, `tests/systems/nobility.test.js`, version `3.55.0`, changelog, generated spec audit | Focused suites 15/15; eight-seed 25-year noble sweep green after heir fix (seed 20261106 restored to 4 living houses); full `npm test` 1426/1426 plus syntax check (218 sources, 253 UI ids); `spec:audit` 3/3; `test:chronicles`, `test:nobility-ui` and `test:e2e` green; live deploy verification pending | `f386e7c` |
+
+## Freebuff watch
+
+- Remote branch `origin/freebuff/747ba2e7ecbd7eb66d9fab99` exists; checked again at
+  2026-11-25T01:12Z after `git fetch --all`. Head is still `6ec6f43` ("Save chat files from
+  Freebuff", 2026-11-24); no new commits since batch 1. Other historical matches are `c176d36`
+  (retire the Freebuff Sites origins) and `dd978c3` (old merge). The retired Freebuff Sites
+  origins are intentionally HTTP 404 and are not deploy targets.
+- The first full run flagged the hard 16 ms grassland-overlay frame budget once under parallel
+  load; the test passed 6/6 in isolation and the unchanged gate passed in the clean full rerun.
+  No budget, assertion or gate was altered.

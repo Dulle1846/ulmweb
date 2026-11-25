@@ -59,6 +59,26 @@ function headFor(members, currentHeadId) {
     return (adults.length ? adults : living).sort(compareMembers)[0] || null;
 }
 
+// A house whose last member dies must not linger as a permanent dormant
+// record. The crown confirms a resident heir so the estate, dues and levy
+// continue to exist. Candidates are drawn from the existing resident records
+// in a stable order, so this adds no random stream and no save field: taking
+// the heir into house.members is enough for membersForHouse() to count them.
+function findSuccessorHeir(nobility, house) {
+    const represented = new Set();
+    for (const other of nobility.houses || []) {
+        if (other === house) continue;
+        for (const id of Array.isArray(other.members) ? other.members : []) represented.add(String(id));
+        if (other.familyName) represented.add("name:" + other.familyName);
+    }
+    const adults = residentRecords()
+        .filter(entity => isAdult(entity.person))
+        .sort(compareMembers);
+    const unclaimed = adults.filter(entity =>
+        !represented.has(personIdOf(entity)) && !represented.has("name:" + familyNameOf(entity.person)));
+    return unclaimed[0] || adults.find(entity => !represented.has(personIdOf(entity))) || null;
+}
+
 function heldOffices(memberIds) {
     const offices = state.court && typeof state.court.offices === "object" && !Array.isArray(state.court.offices)
         ? Object.values(state.court.offices) : [];
@@ -558,22 +578,40 @@ export function updateNobility() {
     let loyaltySum = 0;
     let levies = 0;
     for (const house of nobility.houses) {
-        const members = membersForHouse(house);
+        let members = membersForHouse(house);
         const previousHeadId = house.headId;
-        const head = headFor(members, previousHeadId);
+        let head = headFor(members, previousHeadId);
         if (!head) {
-            house.headId = null;
-            house.members = [];
-            house.levy = 0;
-            house.power = 0;
-            house.wealth = clamp(house.wealth - 2);
-            house.loyalty = clamp(house.loyalty - 4);
-            house.duesLastYear = 0;
-            if (house.history[0]?.kind !== "dormant") {
-                recordHouse(house, "dormant", "No living member of House " + house.familyName + " remains.");
+            const heir = findSuccessorHeir(nobility, house);
+            if (!heir) {
+                house.headId = null;
+                house.members = [];
+                house.levy = 0;
+                house.power = 0;
+                house.wealth = clamp(house.wealth - 2);
+                house.loyalty = clamp(house.loyalty - 4);
+                house.duesLastYear = 0;
+                if (house.history[0]?.kind !== "dormant") {
+                    recordHouse(house, "dormant", "No living member of House " + house.familyName + " remains.");
+                }
+                house.lastUpdateYear = year;
+                continue;
             }
-            house.lastUpdateYear = year;
-            continue;
+            // Confirm the heir before the normal annual audit below: from this
+            // moment on the house has a living head, pays dues and fields its
+            // levy again instead of dropping out of the realm permanently.
+            house.headId = personIdOf(heir);
+            house.members = [house.headId];
+            house.wealth = clamp(house.wealth + 6);
+            house.loyalty = clamp(Math.round(house.loyalty * 0.35 + 58 * 0.65));
+            recordHouse(house, "heir", "House " + house.familyName + " confirmed " + heir.person.name + " as its heir after its line failed.");
+            recordState(nobility, "heir", "House " + house.familyName + " was continued by " + heir.person.name + ".");
+            addLog("HOUSE " + house.familyName.toUpperCase() + " CONFIRMS AN HEIR", "#d8c18a", "nobility");
+            head = heir;
+            // membersForHouse() was evaluated before the adoption, so refresh
+            // it now: the heir is recognised through house.members even though
+            // their own family name stays unchanged.
+            members = membersForHouse(house);
         }
         livingHouses++;
         house.headId = personIdOf(head);

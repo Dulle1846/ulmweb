@@ -99,6 +99,30 @@ test("annual noble dues reach the treasury and disloyal houses withhold them", (
     assert.ok(getPoliticalSnapshot().factions.nobility < politicsBefore.factions.nobility);
 });
 
+test("an extinguished noble house continues through a resident heir", () => {
+    startRealm();
+    state.year = 2;
+    getNobilitySnapshot();
+    const house = state.nobility.houses[0];
+    const memberIds = new Set(house.members.map(String));
+    for (const entity of state.entities) {
+        if (entity.type !== TYPE.VILLAGER || entity.dead) continue;
+        if (memberIds.has(String(entity.personId)) || entity.person?.familyName === house.familyName) {
+            entity.dead = true;
+        }
+    }
+    state.year = 3;
+    const result = updateNobility();
+    const continued = result.houses.find(entry => entry.id === house.id);
+    assert.ok(continued, "the house record must survive the loss of its line");
+    assert.equal(continued.status === "dormant", false);
+    assert.ok(continued.memberCount > 0, "a resident heir must continue the house");
+    assert.ok(continued.head, "the continued house must have a living head");
+    assert.ok(continued.history.some(entry => entry.kind === "heir"), "the succession must be recorded");
+    assert.equal(result.lastAudit.houses, NOBILITY_HOUSE_LIMIT);
+    assert.equal(result.lastAudit.withheld, 0);
+});
+
 test("malformed noble state normalizes without inventing houses", () => {
     resetState();
     const normalized = normalizeNobilityState({
