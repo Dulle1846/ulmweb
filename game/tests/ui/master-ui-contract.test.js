@@ -282,6 +282,16 @@ test("building register uses live entities, staffing, footprint and site data wi
 });
 
 
+test("kingdom overview reports the real seat network without inventing a capital",()=>{
+  assert.ok(management.includes("getSettlementSeats()"));
+  assert.ok(management.includes("SETTLEMENT_SEAT_LIMIT"));
+  assert.ok(management.includes("SETTLEMENT_TERRITORY_RADIUS"));
+  assert.ok(management.includes("firstSeat.foundedYear"));
+  assert.ok(management.includes("SEAT NETWORK"));
+  assert.ok(management.includes("No separate capital field is recorded"));
+  assert.ok(!management.includes("Territory and capital are not displayed"));
+});
+
 test("creature dossiers use actual living and memorial records",()=>{
   assert.ok(management.includes("getCreatureSnapshot()"));
   assert.ok(management.includes("d.memories"));

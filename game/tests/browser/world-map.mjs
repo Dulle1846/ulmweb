@@ -189,6 +189,9 @@ try {
     assert.match(kingdomText, /THE WORLD BEYOND/, "the kingdom overview must expose the world section");
     assert.match(kingdomText, /Open WORLD in this deck/, "the kingdom overview must explain where the world map lives");
     assert.match(kingdomText, /raise the diplomacy border levy/, "the kingdom overview must explain the diplomatic consequence");
+    assert.match(kingdomText, /SEAT NETWORK/, "the kingdom overview must expose the real settlement seat network");
+    assert.match(kingdomText, /FIRST SEAT/, "the kingdom overview must name the oldest chartered seat");
+    assert.doesNotMatch(kingdomText, /capital are not displayed/i, "the overview must not deny the seat data it now shows");
     assert.doesNotMatch(kingdomText, /undefined|NaN|Lorem ipsum|placeholder/i, "the kingdom overview must contain complete copy");
     const desktopWorldSummary = await sectionCopy(desktop, "THE WORLD BEYOND");
     assert.match(desktopWorldSummary, /STANDING ROUTES\s+0 \/ 6/, "the kingdom overview must visibly name the standing-route limit");
@@ -338,6 +341,9 @@ try {
     const narrowKingdomText = await narrow.locator("#command-panel-content").textContent();
     assert.match(narrowKingdomText, /THE WORLD BEYOND/, "the narrow kingdom overview must expose the world section");
     assert.match(narrowKingdomText, /Open WORLD in this deck/);
+    assert.match(narrowKingdomText, /SEAT NETWORK/, "the narrow kingdom overview must expose the seat network");
+    assert.match(narrowKingdomText, /FIRST SEAT/, "the narrow kingdom overview must name the oldest chartered seat");
+    assert.doesNotMatch(narrowKingdomText, /capital are not displayed/i, "the narrow overview must not deny the seat data it now shows");
     assert.doesNotMatch(narrowKingdomText, /undefined|NaN|Lorem ipsum|placeholder/i, "the narrow kingdom overview must contain complete copy");
     const narrowWorldSummary = await sectionCopy(narrow, "THE WORLD BEYOND");
     assert.match(narrowWorldSummary, /STANDING ROUTES\s+0 \/ 6/);

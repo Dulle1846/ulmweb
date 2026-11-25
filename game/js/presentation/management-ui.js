@@ -35,6 +35,7 @@ import { timberMarketSummary, sellRegionalTimber, TIMBER_SALE_LOT } from "../sys
 import { renderScenarioPanel } from "./scenario-panel.js";
 import { renderWorldMapPanel } from "./world-map-panel.js";
 import { closeTradeRoute, getWorldMapSnapshot, openTradeRoute, setFrontierWatch } from "../systems/world-map.js";
+import { getSettlementSeats, SETTLEMENT_SEAT_LIMIT, SETTLEMENT_TERRITORY_RADIUS } from "../systems/settlement-owners.js";
 import { renderHazardPanel } from "./hazard-panel.js";
 import { cleanseHazardCorruption, prepareForHazardSeason, treatHazardCasualties } from "../systems/environmental-hazards.js";
 import {
@@ -246,7 +247,11 @@ function kingdom(){
  const world=getWorldMapSnapshot();
  const pressedFrontiers=world.realms.filter(realm=>realm.pressure>=45).length;
  const worldMarkup='<div class="command-summary"><div><small>STANDING ROUTES</small><strong>'+world.routes.length+' / '+world.limits.routes+'</strong></div><div><small>GOODS MOVED</small><strong>'+number(world.totals.delivered)+'</strong></div><div><small>FRONTIER PRESSURE</small><strong>'+pressedFrontiers+' PRESSED</strong></div><div><small>BORDER INCIDENTS</small><strong>'+number(world.totals.incidents)+'</strong></div></div><p class="command-note">Open WORLD in this deck for the compass map, standing caravans and the frozen frontier bands. Caravans move real market stock into settlement depots; a contested frontier can take stores from the nearest seat and raise the diplomacy border levy.</p>';
- const h=getRoyalHouse(),p=getPoliticalSnapshot(),w=getWorkforceSnapshot(),housing=getHousingSnapshot();
+ const seats=getSettlementSeats();
+  const firstSeat=seats.slice().sort((a,b)=>(a.foundedYear||0)-(b.foundedYear||0)||String(a.name||"").localeCompare(String(b.name||""))||String(a.buildingId||"").localeCompare(String(b.buildingId||"")))[0];
+  const firstSeatLabel=firstSeat?esc(firstSeat.name)+' · '+number(firstSeat.x)+','+number(firstSeat.y)+' · YEAR '+number(firstSeat.foundedYear):"No chartered seat";
+  const seatMarkup='<div class="command-summary"><div><small>CHARTERED SEATS</small><strong>'+number(seats.length)+' / '+number(SETTLEMENT_SEAT_LIMIT)+'</strong></div><div><small>TERRITORY RADIUS</small><strong>'+number(SETTLEMENT_TERRITORY_RADIUS)+' TILES</strong></div><div><small>FIRST SEAT</small><strong>'+firstSeatLabel+'</strong></div></div><p class="command-note">No separate capital field is recorded; First Seat means the oldest chartered seat. Each seat guards a bounded radius and keeps its own repair stores and treasury, all read from the running settlement registry.</p>';
+  const h=getRoyalHouse(),p=getPoliticalSnapshot(),w=getWorkforceSnapshot(),housing=getHousingSnapshot();
  const sovereign=h.king?.person?.name||"No sovereign recorded";
  const income=state.incomeThisTick||{};
  const resources=Object.entries(state.resources||{}).map(([key,value])=>'<div class="command-resource"><span>'+esc(key)+'</span><strong>'+number(value)+'</strong></div>').join("");
@@ -256,13 +261,14 @@ function kingdom(){
  '<div class="command-summary"><div><small>SOVEREIGN</small><strong>'+esc(sovereign)+'</strong></div><div><small>YEAR</small><strong>'+number(state.year)+'</strong></div><div><small>POPULATION</small><strong>'+number(housing.population)+'</strong></div><div><small>MORALE</small><strong>'+Math.round(state.morale||0)+'/100</strong></div></div>'+
  (scenarioMarkup?'<div class="command-section-title">SCENARIO OBJECTIVE</div>'+scenarioMarkup:'')+
  '<div class="command-section-title">THE WORLD BEYOND</div>'+worldMarkup+
- '<div class="command-section-title">THE REALM AT A GLANCE</div><div class="command-summary"><div><small>TREASURY</small><strong>'+number(state.resources?.gold)+'</strong></div><div><small>HOUSING</small><strong>'+number(housing.population)+' / '+number(housing.capacity)+'</strong></div><div><small>EMPLOYED</small><strong>'+number(w.employed)+'</strong></div><div><small>LEGITIMACY</small><strong>'+Math.round(p.legitimacy)+'/100</strong></div></div>'+
+ '<div class="command-section-title">SEAT NETWORK</div>'+seatMarkup+
+  '<div class="command-section-title">THE REALM AT A GLANCE</div><div class="command-summary"><div><small>TREASURY</small><strong>'+number(state.resources?.gold)+'</strong></div><div><small>HOUSING</small><strong>'+number(housing.population)+' / '+number(housing.capacity)+'</strong></div><div><small>EMPLOYED</small><strong>'+number(w.employed)+'</strong></div><div><small>LEGITIMACY</small><strong>'+Math.round(p.legitimacy)+'/100</strong></div></div>'+
  '<div class="command-section-title">LIVING REALM CYCLE</div>'+realmCycleStatus()+
  '<div class="command-section-title">ROYAL STORES</div><div class="command-resource-grid">'+resources+'</div>'+
  '<div class="command-section-title">CURRENT PRODUCTION FLOW</div><div class="command-resource-grid">'+Object.entries(income).map(([key,value])=>'<div class="command-resource"><span>'+esc(key)+' · change</span><strong>'+(Number(value)>0?"+":"")+number(value)+'</strong></div>').join("")+'</div>'+
  '<div class="command-section-title">REALM ISSUES</div>'+active+
  '<div class="command-section-title">RECENT CHRONICLE</div><div class="command-history-list">'+(recent||'<p class="command-note">No recent realm records are available.</p>')+'</div>'+
- '<p class="command-note">Territory and capital are not displayed because the current game state does not yet provide authoritative kingdom-level values for them.</p>';
+ '<p class="command-note">The seat network above is read from the settlement registry; no separate capital field is recorded.</p>';
 }
 function advisorSection(){
  const a=getAdvisorSnapshot(),gold=Number(state.resources?.gold)||0;

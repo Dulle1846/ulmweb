@@ -609,15 +609,12 @@ export function settleOpeningMuster() {
 }
 
 // A loaded save must keep the exact treasury, food stores and soldier records it
-// wrote. Prime the memoized reads the muster relies on without settling a year
-// the save never played: a pending muster belongs to the first simulation tick,
-// not to the load itself.
+// wrote. The muster itself is the expensive one-off call and now lives in
+// settleOpeningMuster(); warming must only touch local state. Pulling diplomacy
+// or dread reads in here made the founding overlay outlive its first-frame
+// budget, so those stay with their own systems.
 export function warmMilitaryCaches() {
     ensureMilitary();
-    getFrontierPressure();
-    getCrownDread();
-    getFaithModifiers();
-    getJusticeModifiers();
     return true;
 }
 

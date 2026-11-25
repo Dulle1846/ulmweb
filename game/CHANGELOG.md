@@ -37,6 +37,19 @@ UI and the audits read.
 - **Verification.** The full suite passes 1,434 tests with no failures, the
   Explore deck audit is green at 820x1180 and 1440x900, and the 60 FPS
   playability audit remains green.
+- **The Kingdom Overview tells the truth about territory.** The stale claim that
+  no authoritative territory or capital values exist is replaced with a live
+  `SEAT NETWORK` readout: chartered seats against the cap, bounded territory
+  radius, and the deterministically oldest seat with its coordinates and charter
+  year. The copy states plainly that there is no separate capital field instead
+  of inventing one. Desktop and narrow world-map browser checks now assert the
+  new section.
+- **The founding overlay stays inside its first-frame budget.** Splitting the
+  muster out of `warmMilitaryCaches()` initially added unrelated diplomacy and
+  crown-dread reads to startup, which kept the start screen visible past the
+  core-loop audit's founding window. The warm-up is local again; the explicit
+  opening muster still runs once before the overlay lifts, and loaded saves are
+  still untouched.
 
 ## 3.55.0 — Night shift: eight new chronicles and living noble succession
 
