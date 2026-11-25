@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { resetState, state } from "../../js/core/state.js";
 import { TYPE } from "../../js/core/types.js";
 import { spawnEntity } from "../../js/world/entities.js";
-import { getBuildingRepairSnapshot, getRealmDamageSnapshot, repairBuilding } from "../../js/systems/building-repair.js";
+import { getBuildingRepairSnapshot, getRealmDamageSnapshot, getBulkRepairSnapshot, repairAllDamaged, repairBuilding } from "../../js/systems/building-repair.js";
 
 function setup() {
     resetState();
@@ -82,4 +82,61 @@ test("an unaffordable repair spends nothing and can be retried", () => {
     state.resources.stone = 100;
     assert.equal(repairBuilding(keep).ok, true);
     assert.equal(keep.hp, keep.maxHp);
+});
+
+test("one bulk order restores every damaged structure from the advertised bill", () => {
+    setup();
+    const wall = spawnEntity(50, 50, TYPE.WALL);
+    wall.hp = Math.floor(wall.maxHp * 0.5);
+    const house = spawnEntity(52, 50, TYPE.HOUSE);
+    house.hp = Math.floor(house.maxHp * 0.7);
+    const sound = spawnEntity(54, 50, TYPE.WALL);
+    const site = spawnEntity(56, 50, TYPE.WALL);
+    site.construction = { stage: 2 };
+    site.hp = 10;
+
+    const bill = getBulkRepairSnapshot();
+    assert.equal(bill.count, 2, "only damaged finished structures belong in the bulk bill");
+    assert.ok(bill.ok && bill.cost.stone > 0, "the advertised bill must be affordable");
+    const before = { ...state.resources };
+
+    const result = repairAllDamaged();
+    assert.equal(result.ok, true);
+    assert.equal(result.repaired, 2);
+    assert.equal(wall.hp, wall.maxHp);
+    assert.equal(house.hp, house.maxHp);
+    assert.equal(sound.hp, sound.maxHp, "a sound structure must stay untouched");
+    assert.equal(site.hp, 10, "an unfinished site must stay untouched");
+    for (const [resource, amount] of Object.entries(bill.cost)) {
+        assert.equal(state.resources[resource], before[resource] - amount, "spend must match the shown bill exactly");
+    }
+    assert.equal(getBulkRepairSnapshot().count, 0);
+    assert.deepEqual(repairAllDamaged(), { ok: false, reason: "no-damaged-buildings", cost: {}, repaired: 0, restored: 0 });
+});
+
+test("an unaffordable bulk bill spends nothing and can be retried", () => {
+    setup();
+    state.resources.wood = 0;
+    state.resources.stone = 0;
+    const wall = spawnEntity(60, 60, TYPE.WALL);
+    wall.hp = Math.floor(wall.maxHp * 0.4);
+    const house = spawnEntity(62, 60, TYPE.HOUSE);
+    house.hp = Math.floor(house.maxHp * 0.6);
+
+    const bill = getBulkRepairSnapshot();
+    assert.equal(bill.count, 2);
+    assert.equal(bill.ok, false);
+    assert.equal(bill.reason, "short-resources");
+    const result = repairAllDamaged();
+    assert.equal(result.ok, false);
+    assert.equal(result.repaired, 0);
+    assert.equal(wall.hp, Math.floor(wall.maxHp * 0.4));
+    assert.equal(house.hp, Math.floor(house.maxHp * 0.6));
+    assert.deepEqual(state.resources, { wood: 0, stone: 0, gold: 100, food: 100 });
+
+    state.resources.wood = 100;
+    state.resources.stone = 100;
+    assert.equal(repairAllDamaged().ok, true);
+    assert.equal(wall.hp, wall.maxHp);
+    assert.equal(house.hp, house.maxHp);
 });

@@ -78,6 +78,52 @@ export function getRealmDamageSnapshot() {
     return { damaged, defensive, missingHp: Math.round(missingHp), worst };
 }
 
+// A read-only bill for the Buildings panel. Raid and flood damage often lands
+// on several structures at once, so the player needs one visible total instead
+// of opening every inspector by hand. One bounded pass over live entities.
+export function getBulkRepairSnapshot() {
+    const cost = {};
+    let count = 0;
+    let missingHp = 0;
+    for (const entity of state.entities || []) {
+        const snapshot = getBuildingRepairSnapshot(entity);
+        if (!snapshot.entity || (snapshot.reason !== "ready" && snapshot.reason !== "short-resources")) continue;
+        count += 1;
+        missingHp += snapshot.missing;
+        for (const [resource, amount] of Object.entries(snapshot.cost)) {
+            cost[resource] = (cost[resource] || 0) + amount;
+        }
+    }
+    const affordable = Object.entries(cost).every(([resource, amount]) =>
+        (Number(state.resources?.[resource]) || 0) >= amount);
+    return {
+        count,
+        missingHp: Math.round(missingHp),
+        cost,
+        affordable,
+        ok: count > 0 && affordable,
+        reason: count === 0 ? "no-damaged-buildings" : affordable ? "ready" : "short-resources",
+    };
+}
+
+// Repairs every damaged finished structure only when the whole bill is
+// affordable. No partial spend: the player sees the total before committing and
+// each entity still goes through the same single-building repair path.
+export function repairAllDamaged() {
+    const bill = getBulkRepairSnapshot();
+    if (!bill.count) return { ok: false, reason: bill.reason, cost: {}, repaired: 0, restored: 0 };
+    if (!bill.ok) return { ok: false, reason: bill.reason, cost: bill.cost, repaired: 0, restored: 0 };
+    let repaired = 0;
+    let restored = 0;
+    for (const entity of state.entities || []) {
+        const result = repairBuilding(entity);
+        if (!result.ok) continue;
+        repaired += 1;
+        restored += result.restored;
+    }
+    return { ok: repaired > 0, reason: repaired ? "ready" : "no-damaged-buildings", cost: bill.cost, repaired, restored: Math.round(restored) };
+}
+
 export function repairBuilding(target) {
     const snapshot = getBuildingRepairSnapshot(target);
     if (!snapshot.entity) return { ok: false, reason: snapshot.reason, cost: {} };

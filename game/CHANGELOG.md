@@ -211,6 +211,15 @@ silviculture were labels rather than stand properties. This release adds points
 - **Documentation.** The full 30-point mapping, derived contract, real effects,
   save/performance rules and tests are in
   [docs/FOREST_DYNAMICS.md](docs/FOREST_DYNAMICS.md).
+- **A raid no longer means one repair click per building.** The Buildings register
+  now shows a live `DAMAGED STRUCTURES` count, offers a repair button on each
+  damaged row, and aggregates the exact total material bill behind one
+  **REPAIR ALL DAMAGED STRUCTURES** order. The bulk order refuses to spend
+  anything when stores are short, skips sound buildings and unfinished sites,
+  and routes every structure through the same single-building repair path, so
+  no new save field or per-tick work is added. A real-browser check damages a
+  wall and a house, repairs the house from its row, clears the remainder with
+  the bulk order, and verifies both advertised bills against the live resources.
 
 **Verification (2026-11-25):** focused forest, pressure, regional, mixed,
 conifer, gathering, atlas and new dynamics suites pass 48/48; the full
