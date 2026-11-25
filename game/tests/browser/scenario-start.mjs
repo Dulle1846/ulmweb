@@ -45,7 +45,7 @@ function watch(page, label, errors) {
 async function openStart(page) {
     await page.goto("http://127.0.0.1:" + port + "/", { waitUntil: "domcontentloaded", timeout: 60000 });
     await page.locator("#start-screen").waitFor({ state: "visible", timeout: 15000 });
-    await page.waitForFunction(() => document.querySelectorAll("[data-scenario-card]").length >= 5, null, { timeout: 10000 });
+    await page.waitForFunction(() => document.querySelectorAll("[data-scenario-card]").length >= 6, null, { timeout: 10000 });
 }
 
 async function startRealm(page) {
@@ -62,7 +62,16 @@ async function openKingdom(page) {
         const text = document.querySelector("#command-panel-content")?.textContent || "";
         return text.toLowerCase().includes("kingdom overview") || text.toLowerCase().includes("awaiting its founding");
     }, null, { timeout: 10000 });
-    await page.waitForFunction(() => Boolean(document.querySelector("[data-scenario-panel]")), null, { timeout: 10000 });
+    // The kingdom deck hydrates progressively: wait for the panel's text and
+    // progress bar, not just for the empty section shell to appear.
+    await waitForScenarioPanel(page);
+}
+
+async function waitForScenarioPanel(page) {
+    await page.waitForFunction(() => {
+        const panel = document.querySelector("[data-scenario-panel]");
+        return Boolean(panel && panel.querySelector(".scenario-objective__note") && /SCENARIO ·/.test(panel.textContent || ""));
+    }, null, { timeout: 10000 });
 }
 
 const errors = [];
@@ -72,7 +81,7 @@ try {
     watch(desktop, "desktop", errors);
     await openStart(desktop);
     const presets = await desktop.locator("[data-scenario-card]").count();
-    assert.equal(presets, 5, "the start screen exposes the free realm and four authored openings");
+    assert.equal(presets, 6, "the start screen exposes the free realm and five authored openings");
     assert.equal(await desktop.locator("#scenario-preset-list [data-scenario-card=\"free-realm\"]").getAttribute("aria-pressed"), "true");
 
     await desktop.locator("[data-scenario-card=\"first-winter\"]").click();
@@ -161,7 +170,7 @@ try {
     });
     assert.deepEqual(loaded, { id: started.id, status: started.status, target: 800, name: "Granary Watch" });
     await desktop.locator("#command-open-btn").click();
-    await desktop.waitForFunction(() => Boolean(document.querySelector("[data-scenario-panel]")), null, { timeout: 10000 });
+    await waitForScenarioPanel(desktop);
     assert.match(await desktop.locator("[data-scenario-panel]").innerText(), /Granary Watch/);
 
     const narrowContext = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, reducedMotion: "reduce" });

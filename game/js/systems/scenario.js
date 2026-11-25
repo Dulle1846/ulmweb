@@ -207,6 +207,20 @@ const PRESET_BLUEPRINTS = [
         objective: { type: "regions", target: 6, deadlineYear: 2, deadlineDay: 0 },
         reward: { wood: 60, gold: 20, morale: 3 },
         failure: { morale: -5 }
+    },
+    {
+        id: "hearth-census",
+        name: "The Hearth Census",
+        description: "Travellers are arriving faster than the tally can count them. Raise new roofs, keep the granary answering every table and welcome thirty residents before the spring census in year three.",
+        difficulty: "NORMAL",
+        recommendedClimate: "temperate",
+        startDay: 0,
+        resources: { wood: 165, stone: 105, gold: 85, food: 105 },
+        morale: 64,
+        legitimacy: 56,
+        objective: { type: "population", target: 30, deadlineYear: 3, deadlineDay: 0 },
+        reward: { food: 55, gold: 35, morale: 4, legitimacy: 2 },
+        failure: { morale: -6 }
     }
 ];
 

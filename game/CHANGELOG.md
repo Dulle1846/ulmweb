@@ -57,6 +57,13 @@ ledger.
   Card rewards now say they are queued for the next draw, and a full archive says
   to draw a card to make room. This reuses the shared event log and card queue with
   no new save field, ledger or per-tick work.
+- **Night batch 5 — The Hearth Census scenario.** A sixth authored opening uses
+  the population objective: welcome thirty residents before the spring census in
+  year three, with new roofs and a steady granary as the path to victory. It uses
+  the existing scenario start, live population register, reward path and save
+  format; no new field, stream or per-tick work was added. The scenario browser
+  reference now waits for the progressively rendered panel to hydrate before
+  reading it, so a slow frame cannot produce an empty briefing.
 - **Overnight work log.** `docs/NIGHT_SHIFT_2026-11-25.md` records each batch of
   this night shift and its verification.
 

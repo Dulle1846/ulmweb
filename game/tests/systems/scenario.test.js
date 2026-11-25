@@ -39,13 +39,15 @@ function customDefinition(overrides = {}) {
 }
 
 test("the scenario catalog carries distinct authored start conditions", () => {
-    assert.equal(SCENARIO_PRESET_LIST.length, 5);
+    assert.equal(SCENARIO_PRESET_LIST.length, 6);
     assert.equal(SCENARIO_PRESETS["free-realm"].objective, null);
     assert.equal(SCENARIO_PRESETS["first-winter"].startSeason, 2);
     assert.equal(SCENARIO_PRESETS["first-winter"].objective.type, "food");
     assert.equal(SCENARIO_PRESETS["empty-granary"].objective.deadlineYear, 1);
     assert.equal(SCENARIO_PRESETS["broken-crown"].objective.type, "legitimacy");
     assert.equal(SCENARIO_PRESETS["green-frontier"].objective.type, "regions");
+    assert.equal(SCENARIO_PRESETS["hearth-census"].objective.type, "population");
+    assert.equal(SCENARIO_PRESETS["hearth-census"].objective.deadlineYear, 3);
     assert.ok(SCENARIO_PRESETS["first-winter"].resources.food < SCENARIO_PRESETS["green-frontier"].resources.food);
     assert.equal(new Set(SCENARIO_PRESET_LIST.map(entry => entry.id)).size, SCENARIO_PRESET_LIST.length);
 });
@@ -111,6 +113,37 @@ test("a scenario changes date, stores, morale and legitimacy through the real st
     assert.equal(snapshot.visible, true);
     assert.equal(snapshot.startLabel, "Autumn · Year 1");
     assert.equal(snapshot.progressLabel, "70 / 150 food");
+});
+
+test("the hearth census opening tracks the live population register and pays once", () => {
+    resetState();
+    state.legacy = createLegacyState({ foundedYear: 1 });
+    const scenario = applyScenarioStart(SCENARIO_PRESETS["hearth-census"]);
+    assert.equal(scenario.id, "hearth-census");
+    assert.equal(state.dayOfYear, 0);
+    assert.equal(state.seasonIndex, 0);
+    assert.deepEqual(state.resources, { wood: 165, stone: 105, gold: 85, food: 105 });
+    assert.equal(state.morale, 64);
+    assert.equal(state.politics.legitimacy, 56);
+    assert.equal(scenario.objective.type, "population");
+    assert.equal(scenario.objective.target, 30);
+    assert.equal(scenario.objective.deadlineYear, 3);
+    state.population = { totals: { population: 24 } };
+    refreshScenarioProgress();
+    assert.equal(state.scenario.current, 24);
+    assert.equal(getScenarioSnapshot().progressLabel, "24 / 30 residents");
+    state.population.totals.population = 30;
+    const foodBefore = state.resources.food;
+    const goldBefore = state.resources.gold;
+    assert.equal(updateScenario(), true);
+    assert.equal(state.scenario.status, "won");
+    assert.equal(state.resources.food, foodBefore + 55);
+    assert.equal(state.resources.gold, goldBefore + 35);
+    assert.equal(state.morale, 68);
+    assert.equal(state.politics.legitimacy, 58);
+    assert.equal(updateScenario(), false, "a won scenario must not pay twice");
+    assert.equal(state.resources.food, foodBefore + 55);
+    assert.equal(validateScenarioState(state.scenario), true);
 });
 
 test("an objective is completed once, rewards the live economy and never pays twice", () => {
