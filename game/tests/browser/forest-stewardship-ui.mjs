@@ -103,8 +103,8 @@ try {
             { TYPE },
             { spawnEntity },
             { ensureInventory, getOutputCapacity },
-            { getResourceNodeAt },
-            { ensureForestGathering },
+            { getResourceNodeAt, getResourceSiteAt },
+            { ensureForestGathering, forestGoodMarketPrice },
             { GOOD_KEYS },
         ] = await Promise.all([
             import("./js/core/state.js"),
@@ -155,6 +155,10 @@ try {
         ledger.history = [];
         state.resources.food = Math.max(100, Math.floor(Number(state.resources.food) || 0));
         state.resources.gold = Math.max(100, Math.floor(Number(state.resources.gold) || 0));
+        const marketNode = getResourceNodeAt(chosen.x, chosen.y);
+        const marketSite = getResourceSiteAt(chosen.x, chosen.y);
+        const riverTrade = Boolean(marketNode?.forestLandUse?.riverTrade || marketSite?.water);
+        const furQuote = forestGoodMarketPrice("tanned-fur");
 
         return {
             buildingId: building.id,
@@ -166,6 +170,9 @@ try {
             outputCapacity: getOutputCapacity(TYPE.LUMBER),
             foodBefore: state.resources.food,
             goldBefore: state.resources.gold,
+            furQuote,
+            riverTrade,
+            goldExpected: Math.max(1, Math.round(2 * furQuote * (riverTrade ? 1.5 : 1))),
             outputBefore: { ...inventory.output },
         };
     });
@@ -218,7 +225,9 @@ try {
     assert.ok(afterDelivery.output.logs >= 6, "delivered timber must land as logs in the lumber yard");
     assert.ok(afterDelivery.output.firewood >= 3, "delivered firewood must land in the lumber yard");
     assert.equal(afterDelivery.food - fixture.foodBefore, 4, "delivered food must enter the royal stores");
-    assert.equal(afterDelivery.gold - fixture.goldBefore, 1, "delivered fur must be sold for gold");
+    assert.ok(fixture.furQuote > 0, "the fur must have a real market quote before delivery");
+    assert.equal(afterDelivery.gold - fixture.goldBefore, fixture.goldExpected,
+        "delivered fur must be sold at today's real market quote, including the river premium");
     assert.equal(Object.values(afterDelivery.ledger).reduce((sum, value) => sum + Number(value || 0), 0), 0,
         "delivery must remove only goods accepted by their destination");
     await page.waitForFunction(buildingId => document.querySelector('[data-deliver-forest="' + buildingId + '"]')?.disabled === true,

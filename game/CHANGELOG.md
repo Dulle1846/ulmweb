@@ -82,6 +82,11 @@ the ten visible in a sample.
   needs board driven by empty stores and the last food shortage. It is a pure
   read of existing logistics models: no save field, price, movement or tick
   work was added.
+- **The forest-goods proof uses today's real quote.** The stewardship browser
+  check now reads `forestGoodMarketPrice()` and the river premium before
+  delivering, then asserts the exact gold outcome instead of the old flat-rate
+  number. This verifies the player-facing sale shown in the inspector and adds
+  no simulation change.
 
 ## 3.60.0 — Every forest profile now has a job
 
