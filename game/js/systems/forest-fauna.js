@@ -197,16 +197,37 @@ export function forestInsectHabitat(stand = {}, species) {
     const monoculture = clamp(number(stand?.monoculture, 0), 0, 1);
     const drought = stand?.disturbance === "drought-stressed" ? 1
         : wetness < 0.46 && Number(stand?.fireRisk) > 0.46 ? 0.65 : 0;
+    // Detailed deadwood fractions and soil structure are the actual insect
+    // habitat. Standing deadwood feeds bark beetles, fallen wood and stumps
+    // feed the stag beetle, and a deep mull litter with a working mycorrhiza
+    // network supports ants. The neutral values leave a synthetic stand at the
+    // historical capacity.
+    const structure = stand?.dynamics?.structure || stand?.structure || {};
+    const deadwoodProfile = structure.deadwoodProfile || {};
+    const litterProfile = structure.litterProfile || {};
+    const fallen = clamp(number(deadwoodProfile.fallen, deadwood), 0, 1);
+    const standing = clamp(number(deadwoodProfile.standing, deadwood), 0, 1);
+    const stumps = clamp(number(deadwoodProfile.stumps, 0), 0, 1);
+    const cavity = clamp(number(deadwoodProfile.cavityTreesPerHa, 0) / 20, 0, 1);
+    const litterDepth = clamp(number(litterProfile.depthCm, 0) / 10, 0, 1);
+    const cToN = litterProfile.cToN === undefined ? 18 : number(litterProfile.cToN, 18);
+    const litterAcidity = clamp((cToN - 18) / 30, 0, 1);
+    const mycorrhiza = clamp(number(stand?.dynamics?.soil?.mycorrhiza, 0), 0, 1);
+    const diseaseResistance = clamp(number(stand?.dynamics?.health?.diseaseResistance, 0), 0, 1);
     let capacity;
     if (species === "ant") {
         capacity = spec.capacity * (0.28 + density * 0.52 + litter * 0.5 + wetness * 0.12)
-            * (1 - drought * 0.62) * (1 - monoculture * 0.46);
+            * (1 - drought * 0.62) * (1 - monoculture * 0.46)
+            * (1 + litterDepth * 0.08 + mycorrhiza * 0.05 - litterAcidity * 0.06);
     } else if (species === "bark-beetle") {
         capacity = spec.capacity * (0.16 + conifer * 0.82 + density * 0.24 + deadwood * 0.18)
-            * (1 + drought * 0.5) * (1 + monoculture * 0.34);
+            * (1 + drought * 0.5) * (1 + monoculture * 0.34)
+            * (1 + standing * 0.10 + fallen * 0.05)
+            * (1 - diseaseResistance * 0.20);
     } else {
         capacity = spec.capacity * (0.2 + deadwood * 0.74 + litter * 0.25 + density * 0.2)
-            * (1 - drought * 0.22);
+            * (1 - drought * 0.22)
+            * (1 + fallen * 0.16 + stumps * 0.10 + cavity * 0.06 + mycorrhiza * 0.04);
     }
     return {
         species, capacity: Math.max(0.15, Math.round(capacity * 1000) / 1000),
@@ -300,20 +321,40 @@ function preferenceScore(stand, species, day) {
         + (stand?.canopy || 0.5) * 0.1 + (stand?.ground?.litter || 0.3) * 0.09
         + (stand?.understory?.fern || 0.2) * 0.08;
     if (!stand) return 0.35;
+    // The detailed structure is the habitat the herd actually occupies. These
+    // terms feed the same preference score that decides carrying capacity and
+    // migration, so a deadwood-rich edge is not merely a prettier panel.
+    const dynamics = stand.dynamics || null;
+    const structure = dynamics?.structure || stand.structure || {};
+    const working = dynamics?.working || null;
+    const habitat = working?.habitat || {};
+    const deadwoodProfile = structure.deadwoodProfile || {};
+    const edgeProfile = structure.edgeProfile || {};
+    const gapProfile = structure.gapProfile || {};
+    const understoryProfile = structure.understoryProfile || {};
+    const herbProfile = structure.herbProfile || {};
+    const litterProfile = structure.litterProfile || {};
+    score += (Number(habitat.score) || 0) * 0.10;
 
     if (["deer", "roe-deer", "hare"].includes(species)) {
         score += stand.edge ? 0.18 : 0;
         score += stand.clearing > 0.25 ? 0.14 : 0;
         score += stand.ageClass === "young" ? 0.08 : 0;
+        score += (Number(edgeProfile.mantleCover) || 0) * 0.06
+            + (Number(gapProfile.regenerationShare) || 0) * 0.05
+            + (Number(herbProfile.food) || 0) * 0.06;
     }
     if (species === "boar") {
         score += stand.ground?.mushrooms || 0;
         score += season === "autumn" ? 0.18 : 0;
         score += stand.ground?.litter || 0;
+        score += (Number(working?.forage?.mast) || 0) * 0.12
+            + (Number(deadwoodProfile.fallen) || 0) * 0.06;
     }
     if (species === "fox") {
         score += stand.edge ? 0.22 : 0;
         score += stand.disturbance === "diseased" ? 0.06 : 0;
+        score += (Number(edgeProfile.mantleCover) || 0) * 0.05;
     }
     if (species === "squirrel") {
         score += stand.type === "beechwood" || stand.type === "oakwood" ? 0.16 : 0;
@@ -323,6 +364,8 @@ function preferenceScore(stand, species, day) {
         score += stand.ageClass === "ancient" ? 0.22 : 0;
         score += stand.ground?.logs || 0;
         score += stand.disturbance === "diseased" ? 0.08 : 0;
+        score += Math.min(0.12, (Number(deadwoodProfile.cavityTreesPerHa) || 0) / 100)
+            + (Number(deadwoodProfile.standing) || 0) * 0.05;
     }
     if (species === "wolf" || species === "lynx") {
         score += Math.max(0, stand.coniferShare || 0) * 0.16;
@@ -333,18 +376,25 @@ function preferenceScore(stand, species, day) {
     if (species === "crossbill") {
         score += Math.max(0, stand.coniferShare || 0) * 0.24;
         score += (stand.goods || []).some(id => ["spruce-cones", "fir-cones", "pine-cones"].includes(id)) ? 0.1 : 0;
+        score += (Number(working?.forage?.mast) || 0) * 0.05;
     }
     if (species === "capercaillie") {
         score += stand.ageClass === "ancient" ? 0.2 : 0.04;
         score += (stand.understory?.berry || 0) * 0.18;
+        score += (Number(understoryProfile.shrub) || 0) * 0.05
+            + (Number(herbProfile.food) || 0) * 0.04;
     }
     if (species === "mouse") {
         score += (stand.ground?.litter || 0) * 0.18 + (stand.ground?.logs || 0) * 0.12;
+        score += Math.min(0.06, (Number(litterProfile.depthCm) || 0) / 120)
+            + (Number(deadwoodProfile.fallen) || 0) * 0.05;
     }
     if (["howler-monkey", "spider-monkey", "toucan", "macaw"].includes(species)) {
         score += (stand.tropical?.features?.["1.2.4.12"] || 0) * 0.2;
         score += (stand.tropical?.features?.["1.2.4.7"] || 0) * 0.16;
         score += (stand.understory?.shrub || 0) * 0.08;
+        score += (Number(structure.lianaCover) || 0) * 0.05
+            + (Number(structure.epiphyteCover) || 0) * 0.04;
     }
     if (["tapir", "agouti", "paca"].includes(species)) {
         score += (stand.ground?.litter || 0) * 0.18;
@@ -362,6 +412,12 @@ function preferenceScore(stand, species, day) {
     if (season === "winter") score *= 0.82;
     if (season === "spring") score *= 1.04;
     return clamp(score, 0.08, 1);
+}
+
+// Exposed for the focused habitat test. The production path is
+// carryingCapacity(), which calls the same preference score.
+export function forestFaunaHabitatScore(stand, species, day = state.dayOfYear) {
+    return preferenceScore(stand, species, day);
 }
 
 function carryingCapacity(herd, stand, node, day) {

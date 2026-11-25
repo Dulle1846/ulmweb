@@ -160,3 +160,23 @@ test("bark-beetle population pressure raises the existing disturbance weight", (
         population: 0.4, capacity: 2, reproduction: 0.2, mortality: 0.05,
     }), "the shared growth rule must react to drought and monoculture stress");
 });
+
+test("deadwood fractions and soil profiles feed real insect carrying capacity", () => {
+    const base = { density: 0.7, ground: { litter: 0.6 }, wetness: 0.7, monoculture: 0, coniferShare: 0 };
+    const structure = {
+        deadwoodProfile: { total: 0.7, standing: 0.4, fallen: 0.45, stumps: 0.15, decay: 0.6, habitat: 0.7, cavityTreesPerHa: 8 },
+        litterProfile: { depthCm: 8, cToN: 20, quality: 0.7 },
+    };
+    const dynamics = { soil: { mycorrhiza: 0.8 }, health: { diseaseResistance: 0.85 } };
+    const rich = { ...base, structure, dynamics };
+    assert.ok(forestInsectHabitat(rich, "beetle").capacity
+        > forestInsectHabitat(base, "beetle").capacity,
+    "fallen wood, stumps and cavities must support more stag beetles");
+    assert.ok(forestInsectHabitat(rich, "ant").capacity
+        > forestInsectHabitat(base, "ant").capacity,
+    "a deep mull litter and mycorrhiza network must support more ants");
+    const vulnerable = { ...rich, dynamics: { ...dynamics, health: { diseaseResistance: 0 } } };
+    assert.ok(forestInsectHabitat(rich, "bark-beetle").capacity
+        < forestInsectHabitat(vulnerable, "bark-beetle").capacity,
+    "high disease resistance must suppress the bark-beetle habitat");
+});

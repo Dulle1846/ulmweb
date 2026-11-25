@@ -364,3 +364,30 @@ test("forest survey exposes a complete tile profile and rejects open ground", ()
     assert.ok(deep.cm > shallow.cm, "exposed high ground holds a deeper snow pack");
     assert.equal(forestSurveyAt(4.5, 4.5, { ...standContext(), moisture: 0.1 }), null);
 });
+
+test("the working wood changes the abundance of mast, mushrooms and timber", () => {
+    const makeStand = working => ({
+        forest: true,
+        goods: ["acorns", "mushrooms", "timber"],
+        productivity: 1,
+        regionalEffects: { forage: 1 },
+        dynamics: { goods: { boost: {}, extra: [] }, working },
+    });
+    const low = makeStand({
+        timber: { sawlog: 0.1, firewood: 0.95, specialty: 0.1, logShare: 0.3, volume: 1 },
+        forage: { mushrooms: 0.1, herbs: 0.1, mast: 0.1, game: 0.1, honey: 0.1, berries: 0.1, fibre: 0.1 },
+    });
+    const high = makeStand({
+        timber: { sawlog: 0.95, firewood: 0.1, specialty: 0.9, logShare: 0.8, volume: 1 },
+        forage: { mushrooms: 0.95, herbs: 0.9, mast: 0.95, game: 0.9, honey: 0.9, berries: 0.9, fibre: 0.9 },
+    });
+    const abundance = (stand, id) => forestGoodsFor(stand, 250)
+        .find(good => good.id === id)?.abundance || 0;
+    assert.ok(abundance(high, "acorns") > abundance(low, "acorns"),
+        "mast-rich working wood must offer more acorns");
+    assert.ok(abundance(high, "mushrooms") > abundance(low, "mushrooms"),
+        "mycorrhiza-rich working wood must offer more mushrooms");
+    assert.ok(abundance(high, "timber") > abundance(low, "timber"),
+        "sawlog-rich working wood must offer more timber");
+    assert.ok(abundance(high, "acorns") <= 1 && abundance(low, "acorns") <= 1);
+});

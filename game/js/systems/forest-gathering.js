@@ -212,6 +212,7 @@ export function forestProductsAt(x, y, dayOfYear = state.dayOfYear) {
     return {
         x: Math.floor(x), y: Math.floor(y), node, stand,
         dynamics: stand.dynamics || null,
+        working: stand.dynamics?.working || null,
         snowDepthCm: snow.cm,
         visibility: Number(stand.visibility) || 0,
         workFactor,
@@ -307,6 +308,11 @@ export function gatherForestProducts(x, y, options = {}) {
     const candidates = products.goods
         .filter(good => FOREST_GOODS[good.id])
         .slice(0, 5);
+    // A working visit always brings back some wood when the stand carries it;
+    // the richer honey/berry/mast list must not crowd the timber out of the
+    // five-item selection.
+    const woodGood = products.goods.find(good => good.category === "wood" && FOREST_GOODS[good.id]);
+    if (woodGood && !candidates.some(good => good.id === woodGood.id)) candidates.push(woodGood);
     // Hunting is a distinct action inside the same visit. Keep the seasonal
     // hunt goods even if the generic five-item selection would omit them.
     for (const good of huntGoods) {
@@ -435,6 +441,16 @@ export function gatherForestProducts(x, y, options = {}) {
             lianaCover: dynamics.structure.lianaCover,
             epiphyteCover: dynamics.structure.epiphyteCover,
             herbLayer: dynamics.structure.herbLayer,
+            working: dynamics.working ? {
+                sawlog: dynamics.working.timber.sawlog,
+                firewood: dynamics.working.timber.firewood,
+                volume: dynamics.working.timber.volume,
+                mushrooms: dynamics.working.forage.mushrooms,
+                herbs: dynamics.working.forage.herbs,
+                mast: dynamics.working.forage.mast,
+                game: dynamics.working.forage.game,
+                habitat: dynamics.working.habitat.score,
+            } : null,
         } : null,
         bounty: bounty && bounty.amount > 0 ? bounty : null,
         vegetation: {
@@ -1237,14 +1253,36 @@ export function thinNearestForest(building, radius = 6) {
     // regional effect is bounded and the 12-unit ceiling is unchanged.
     const timberFactor = Math.max(0.7, Math.min(1.35, Number(point.forestRegionalEffects?.timber) || 1));
     const managementFactor = Math.max(0.75, Math.min(1.10, Number(point.forestDynamics?.silviculture?.timberFactor) || 1));
-    const wanted = Math.max(1, Math.min(12, Math.floor(stockBefore * 0.12 * timberFactor * managementFactor), space));
+    const working = point.forestDynamics?.working || null;
+    const timber = working?.timber || {};
+    const volume = Math.max(0.8, Math.min(1.2, Number(timber.volume) || 1));
+    const wanted = Math.max(1, Math.min(12, Math.floor(stockBefore * 0.12 * timberFactor * managementFactor * volume), space));
     const taken = harvestForest(node.x, node.y, wanted);
     if (taken <= 0) return { ok: false, reason: "The nearest stand could not be thinned" };
-    const accepted = addLocalOutput(building, "logs", taken, { cause: "forest-thinning" });
-    if (accepted > 0) requestHaul(building, "logs", accepted);
+    // The silvicultural system decides what the removed stems become. A
+    // coppice cut is mostly smallwood and firewood; a high forest or selection
+    // stand sends most of the cut to the sawlogs pile. The split always sums to
+    // exactly the stock actually removed.
+    const logShare = Math.max(0.24, Math.min(0.92, Number(timber.logShare) || 1));
+    const logWanted = Math.max(1, Math.min(taken, Math.round(taken * logShare)));
+    const firewoodWanted = Math.max(0, taken - logWanted);
+    const acceptedLogs = addLocalOutput(building, "logs", logWanted, { cause: "forest-thinning" });
+    const acceptedFirewood = firewoodWanted > 0
+        ? addLocalOutput(building, "firewood", firewoodWanted, { cause: "forest-thinning" })
+        : 0;
+    if (acceptedLogs > 0) requestHaul(building, "logs", acceptedLogs);
+    if (acceptedFirewood > 0) requestHaul(building, "firewood", acceptedFirewood);
+    const accepted = acceptedLogs + acceptedFirewood;
     return {
         ok: true, taken, accepted, x: node.x, y: node.y,
         stockBefore, stockAfter: Math.max(0, stockBefore - taken),
+        products: { logs: acceptedLogs, firewood: acceptedFirewood },
+        logShare, system: point.forestDynamics?.silviculture?.system || null,
+        systemLabel: point.forestDynamics?.silviculture?.label || null,
+        working: working ? {
+            sawlog: timber.sawlog, firewood: timber.firewood,
+            volume: timber.volume, habitat: working.habitat?.score,
+        } : null,
     };
 }
 

@@ -1,13 +1,49 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.59.0`
-**Next development line:** `3.60.0-dev`
+**Current production version:** `3.60.0`
+**Next development line:** `3.61.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
 **Last repository verification:** 2026-11-25 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.60.0 — Every forest profile now has a job
+
+The 30-point forest record is no longer only a survey. It resolves into one
+bounded, save-neutral `working` profile that the existing harvest, forage,
+game, insect, succession and pannage paths consume. No new map, timer or save
+field was added.
+
+- **Wood is sorted by the stand, not by a generic recipe.** Sawlog, firewood
+  and specialty shares come from the actual species cohorts, age mix, purity,
+  deadwood fractions and silvicultural system. `logShare` and `harvestVolume`
+  drive the thinning/cut action and the lumber camp batch; coppice and
+  wood-pasture add a real firewood by-product.
+- **The worker sees the treatment.** The lumber button now names the operation
+  (CUT COPPICE, CUT UNDERWOOD, SELECT FELLING, SINGLE-TREE CUT, POLLARD AND
+  CLEAR, or THIN NEAREST STAND) from the same system the atlas shows. The toast
+  reports logs and firewood separately.
+- **Forage follows structure.** Mast, mushrooms, herbs, honey, berries, fibre
+  and game are derived from mother trees, deadwood decay, mycorrhiza type,
+  litter depth/C:N, liana/epiphyte cover, flowering, edge mantle, gaps and
+  understorey. `forestGoodsFor()` applies those weights to real abundance, so
+  the gather action, mast/pannage reserve and seasonal bounty all benefit.
+- **Wildlife and insects read the detailed habitat.** Herd preference now uses
+  deadwood habitat, cavity trees, edge mantle, gap regeneration, understorey,
+  herb food and mast; insect carrying capacity uses fallen/standing wood,
+  stumps, cavities, litter depth/acidity, mycorrhiza and disease resistance.
+  Those are the same saved herds and bark-beetle colonies that drive hunting and
+  disturbance.
+- **Regime severity and refugia are live.** Severe regimes raise fire/wind
+  disturbance weights and remove more stock; a real refugium lowers crossing
+  risk. The existing succession cadence and caps are unchanged.
+- **Readable in play.** The atlas SYSTEM line exposes sawlogs/firewood; the
+  lumber/forester inspector prints the full working line (sawlogs, firewood,
+  specialty, volume, mushrooms, herbs, mast, game, habitat).
+- **Verification.** Focused world/system/atlas tests, the full suite, the
+  25-year campaign and the forest live proof all consume the same record.
 
 ## 3.59.0 — The forest profile a player can read in detail
 

@@ -1,6 +1,6 @@
 # Baumarten, Mischung, Genetik und Sukzession · 1.2.23.1.061–090
 
-> **Status: implementiert und vertieft (v3.59.0).** Die 30 Punkte laufen als reine, abgeleitete
+> **Status: implementiert, vertieft und als Spielmechanik verdrahtet (v3.60.0).** Die 30 Punkte laufen als reine, abgeleitete
 > `forest-dynamics`-Schicht über dem bestehenden `forestStandAt()`-Vertrag. Es
 > gibt keinen zweiten Waldsimulator, keine neue Karte, keinen neuen Save-Typ und
 > keine zusätzliche Pro-Tick-Schleife. Jede Waldkachel berechnet beim Lesen
@@ -25,7 +25,8 @@ forestDynamicsFor({
 ```
 
 Sie liefert `composition`, `age`, `regeneration`, `health`, `hazard`,
-`silviculture`, `structure`, `soil` und `goods`. Das Ergebnis wird nicht
+`silviculture`, `structure`, `soil`, `goods` und das daraus abgeleitete
+`working`-Profil. Das Ergebnis wird nicht
 gespeichert; es fällt aus den bereits vorhandenen, save-kompatiblen Standwerten.
 `forestStandAt()` hängt es als `stand.dynamics` an, spiegelt die neuen
 Teilprofile nach `stand.structure` und reicht die wichtigsten Felder an
@@ -43,7 +44,7 @@ Kronenraum mitbestimmen. Die Mischung wird nicht nur angezeigt:
 `forestPickSpecies()` und damit der Renderer, die Mischungsklasse, die
 Samenquelle und die Holzernte lesen dieselben Gewichte.
 
-## 1b. Detailtiefe der 30 Punkte (v3.59.0)
+## 1b. Detailtiefe der 30 Punkte (v3.59.0, Spielrolle v3.60.0)
 
 Die erste Ausbaustufe hatte pro Punkt meist eine Kennzahl. Die vertiefte Stufe
 führt für jeden Punkt ein eigenes, zusammenhängendes Teilprofil. Alle Werte sind
@@ -173,6 +174,33 @@ Screenshots `forest-atlas-ecology.png` und `forest-dynamics-live.png`. Er nutzt
 denselben `forestStandAt()`-Datensatz wie Atlas und Inspektor; es gibt keine
 test-only Waldregel.
 
+## 3a. Spielrolle: was der Spieler mit den 30 Punkten tut (v3.60.0)
+
+`forestDynamicsFor()` liefert zusätzlich ein begrenztes `working`-Profil. Es
+bündelt die 30 Teilprofile in Werte, die vorhandene Spielsysteme bereits lesen:
+`timber {sawlog, firewood, specialty, logShare, volume, quality}`,
+`forage {mushrooms, herbs, mast, game, honey, berries, fibre}`,
+`habitat {score, deadwood, edge, gap, understory, herb, epiphytes, lianas}`,
+`water {uptake, retention}` und `products[]`. Es wird bei jedem `forestStandAt()`
+neu berechnet und niemals gespeichert.
+
+| Punkte | Spielerhandlung | Wirkung im bestehenden System |
+|---|---|---|
+| **061–065** Regionale Sets, Mischung, Pionier/Klimax, Alter | Lumberyard an einen Bestand setzen, durchforsten oder stehen lassen | Cohorten, Reinheit und Altersmix bestimmen `sawlog`, `specialty` und `harvestVolume`; Klimax-/Mutterbäume erhöhen Mast; alte Bestände erhöhen Habitat |
+| **066** Totholzfraktionen | Totholz stehen lassen oder nutzen | Liegendes Holz und Stümpfe erhöhen den Firewood-Anteil, Totholz-Habitat und Höhlenbäume speisen Wild und Insekten, Zersetzung speist Pilze |
+| **067–070** Verjüngung, Samenbank, Mutterbäume, Genetik | Ernten, Störflächen beobachten, alte Bäume stehen lassen | `forestRegrowthFactor()` liest weiter den Regenerationsfaktor; Samenqualität/Mutterbäume erhöhen Mast und Verjüngung, Genetik senkt Pestrisiko |
+| **071–072** Krankheitsresistenz und Standortfit | Art und Standort wählen | Resistenz senkt echtes `pestRisk`, Standortfit erhöht `harvestVolume`, Produktivität und Regeneration |
+| **073–074** Sukzession und Störungsregime | Drei Jahre laufen lassen, Kontrolltrupp schicken | Phasen und Lückenalter bleiben die Zeitachse; Regime-Severity erhöht Feuer-/Windgewicht und Stockverlust, Refugien senken die Ausbreitung |
+| **075–080** Waldweide, Nieder-, Mittel-, Hoch-, Plenter- und Dauerwald | Lumberyard-Knopf nutzen | Der Knopf heißt jetzt CUT COPPICE / CUT UNDERWOOD / SELECT FELLING / SINGLE-TREE CUT / POLLARD AND CLEAR / THIN NEAREST STAND; `logShare` teilt den Hieb in Logs und Firewood, Coppice/Wood-Pasture erzeugen zusätzliches Firewood im Lumber-Camp |
+| **081–083** Waldrand, Lichtwald, Kronenlücken | Rand oder Lücke aufsuchen | Manteldeckung, Lücken-Verjüngung und Krautlicht erhöhen Wild, Beeren, Kräuter und Habitat; Lückenalter bleibt lesbar |
+| **084–085** Lianen und Epiphyten | Feuchten/alten Bestand aufsuchen | Lianen liefern Weidenruten/Rattan und Fasern, Epiphyten Moos/Flechte/Orchideen; beide erhöhen die Habitatnote |
+| **086–087** Unterholz und Krautschicht | Durchforsten, Licht schaffen, sammeln | Strauch-/Jungbaumschicht speist Wild und Beeren, Krautnahrung/Medizin/Blüte speisen Kräuter, Honig und Wild; Verbiss bremst die Regeneration |
+| **088–090** Wurzeln, Streu/Humus, Mykorrhiza | Alten, humusreichen Bestand stehen lassen | Wurzeltiefe senkt Staunässe, Streu/Humus erhöhen Wasserretention und Pilzertrag, Mykorrhiza-Typ/Reichweite speisen Pilze, Regeneration, Resistenz und Insekten |
+
+Die Werte sind keine Parallelökonomie: Holz geht in denselben Lumber-/Sawmill-/
+Timber-Market-Pfad, Mast in dieselbe Pannage-Reserve, Wild in dieselben Herden,
+Insekten in dieselben Kolonien und die Störung in dieselbe Sukzession.
+
 ## 3. Echte Wirkungen
 
 - **Regeneration:** `forestRegrowthFactor()` multipliziert den bisherigen
@@ -180,14 +208,27 @@ test-only Waldregel.
   Gesamtdeckel 1,58). Der 400-Tage-Slice bleibt unverändert; die Ökologie läuft
   auf demselben begrenzten Takt.
 - **Holzernte:** Lumber-Camp-Batch und Durchforstung multiplizieren den
-  regionalen Timber-Wert mit `silviculture.timberFactor` (0,75–1,10). Der
-  Lumber-Cache speichert dafür zusätzlich `timberFactor` und `system`.
+  regionalen Timber-Wert mit `silviculture.timberFactor` (0,75–1,10) und dem
+  abgeleiteten `working.timber.volume` (0,80–1,20). Die Durchforstung teilt den
+  tatsächlich entnommenen Bestand über `logShare` in Logs und Firewood; ein
+  Niederwald/Mittelwald/Waldweide-Camp erzeugt zusätzlich einen begrenzten
+  Firewood-Nebenertrag. Der Lumber-Cache speichert dafür zusätzlich
+  `timberFactor` und `system`.
 - **Sammeln:** Kräuter, Pilze, Moos/Flechte, Weidenruten/Rattan und Orchideen
-  erscheinen nur, wenn die abgeleitete Struktur sie trägt; der Ertrag wird mit
-  dem passenden `goods.boost` (0,75–1,30) multipliziert. `medicinalHerbs` speist
-  den Kräuterertrag, `decomposition` den Pilzertrag; Holz nutzt den
-  Bewirtschaftungsfaktor. Der Lumberyard sammelt dieselben Produkte über den
-  sichtbaren Knopf.
+  erscheinen nur, wenn die abgeleitete Struktur sie trägt; `forestGoodsFor()`
+  multipliziert die Abundanz jetzt zusätzlich mit dem passenden
+  `working`-Faktor (Holz, Mast, Pilze, Kräuter, Honig, Beeren, Fasern, Wild).
+  `medicinalHerbs` speist den Kräuterertrag, `decomposition` den Pilzertrag,
+  Mutterbäume/Alter den Mast. Der Lumberyard sammelt dieselben Produkte über den
+  sichtbaren Knopf; ein Holzprodukt bleibt immer in der Auswahl.
+- **Pannage:** mehr Mast aus alten, masttragenden Beständen füllt dieselbe
+  `FEED STABLE FROM MAST OR HAY`-Reserve; es gibt keine neue Währung.
+- **Wild und Insekten:** `working.habitat` aus Totholz, Höhlen, Rand, Lücke,
+  Unterholz, Kraut und Epiphyten erhöht die Präferenz und damit die echte
+  Herdenkapazität; liegendes/stehendes Totholz, Stümpfe, Höhlen, Streu und
+  Mykorrhiza ändern die Kapazität der gespeicherten Insektenkolonien.
+- **Störung:** Regime-Severity und Refugien ändern Gewicht, Stockverlust und
+  Ausbreitung der bestehenden Feuer-/Wind-/Käfer-Sukzession.
 - **Boden und Wasser:** `waterUptake` senkt die abgeleitete Staunässe des
   Bestands (statt nur angezeigt zu werden); `rootDepth` bleibt der Wurzelwert.
   `gapAge` hat jetzt auch ohne aktiven Störungsdatensatz ein echtes Alter aus
@@ -196,14 +237,19 @@ test-only Waldregel.
   Regenerationsfaktor von Nieder- und Mittelwald. Die übrigen 12 Traits waren
   bereits über Fitness, Risiko, Struktur oder Ertrag verdrahtet.
 - **Gefahren:** Feuerrisiko, Pestrisiko und Windexposition werden mit den
-  artspezifischen Abweichungen moduliert; die Werte bleiben auf 0–1 begrenzt.
+  artspezifischen Abweichungen moduliert; zusätzlich verstärkt eine hohe
+  Regime-Severity die Feuer-/Windgewichte und ein hohes Refugium senkt das
+  Ausbreitungsrisiko. Die Werte bleiben auf 0–1 begrenzt.
 - **Produktivität:** Standortfit fließt mit 0,86–1,06 in die bestehende
   Produktivität ein; keine neue Ökonomie.
 - **Darstellung:** Der Atlas zeigt pro anwesendem Typ einen echten
-  18-Zellen-Ökologieblock (Mischung, Alterscohorten, Phase, Pionier/Klimax,
+  18-Zellen-Ökologieblock; die SYSTEM-Zeile nennt jetzt Sawlog- und
+  Firewood-Anteil. Der Inspektor druckt eine eigene Working-Zeile mit Sawlogs,
+  Firewood, Specialty, Volume, Pilzen, Kräutern, Mast, Wild und Habitat. Der
+  Ökologieblock selbst zeigt Mischung, Alterscohorten, Phase, Pionier/Klimax,
   Samenbank, Regenerationsnische, Genetik, Standortfit, System/Retention,
   Regime/Severity/Return, Totholzfraktionen, Boden/Litter/Humus,
-  Mykorrhiza-Typ/Reichweite, Struktur, Rand, Licht, Lücken, Krautschicht). Die
+  Mykorrhiza-Typ/Reichweite, Struktur, Rand, Licht, Lücken und Krautschicht. Die
   Detailzeilen umbrechen, damit auch lange Werte lesbar bleiben. Eine sichtbare
   Silvikultur-Zusammenfassung nennt alle sechs Systeme mit ihrer Stichproben-
   zahl; dadurch ist auch ein seltener Bestand wie Niederwald auffindbar. Der
@@ -230,13 +276,22 @@ test-only Waldregel.
   Standortfit, Störungsregime, alle sechs Systeme, Struktur, Boden und die
   gemeinsame Nutzung durch Stand/Node/Regeneration/Güter.
 - `tests/world/forest-ecology.test.js` — bestehende Stand-, Arten-, Alters-,
-  Gemisch- und Survey-Gates.
+  Gemisch- und Survey-Gates plus der Nachweis, dass das working-Profil Mast,
+  Pilze und Holzabundanz real verändert.
 - `tests/world/forest-pressure.test.js` — Kompaktion und Verbiss bremsen die
   Regeneration weiterhin.
 - `tests/systems/forest-gathering.test.js` — echte Standdynamik im
-  Sammelergebnis, Saison, Bounty, Durchforstung.
+  Sammelergebnis, Saison, Bounty, Durchforstung und die Aufteilung eines
+  Niederwald-Hiebs in Logs und Firewood.
 - `tests/presentation/forest-atlas.test.js` — 60 Karten, 18-Zellen-Ökologieblock,
-  alle sechs Systeme, Cohorten-, Regen-, Totholz-, Rand- und Krautzeilen.
+  alle sechs Systeme, Cohorten-, Regen-, Totholz-, Rand-, Kraut- und
+  Sawlog/Firewood-Zeilen.
+- `tests/systems/forest-fauna.test.js` und `forest-insects.test.js` —
+  Totholz/Höhlen/Rand/Kraut erhöhen die echte Herdenpräferenz; liegendes Holz,
+  Stümpfe, Streu und Mykorrhiza erhöhen die Insektenkapazität, Resistenz senkt
+  den Käfer-Habitatwert.
+- `tests/systems/forest-succession.test.js` — Regime-Severity und Refugien
+  verändern Störungsgewicht und Ausbreitung.
 - `tests/browser/regional-forest-reference.mjs` — tropische Atlas-Referenz mit
   Regime-, Wasseraufnahme-, Zersetzungs-, Lückenalter- und Medizinzeile.
 - `tests/browser/forest-dynamics-live-proof.mjs` — frischer Spieler, Lumberyard,
@@ -247,8 +302,8 @@ test-only Waldregel.
 
 ## 6. Verifikation
 
-Stand 2026-11-25: **1.457/1.457 Tests** grün. Die deterministische
-25-Jahres-Kampagne läuft **10.040 Ticks** in **19.226 ms** (**1,067 ms/Tick**),
+Stand 2026-11-25: **1.463/1.463 Tests** grün. Die deterministische
+25-Jahres-Kampagne läuft **10.040 Ticks** in **20.682,3 ms** (**1,224 ms/Tick**),
 64 Bewohner, alle 13 Ambitionen, alle Anforderungen wahr, **3.507 Waldkacheln**,
 **0 untypisiert**, 20 echte Fuel-Backfill-Aufträge (max. 1 pro Phase), kein Game
 Over. Die tropische Browser-Referenz sieht **9.526 Waldkacheln**, **0 untypisiert**,
@@ -258,7 +313,11 @@ Konsolen- oder Seitenfehler. Der neue Spieler-Live-Beweis spielt **4.274
 Waldkacheln**, **238 Bestände**, **60 Atlas-Karten**, **14 Ökologiekarten**, drei
 Jahre und alle 30 Punkte ohne Seiten-, Konsolen- oder Netzwerkfehler durch;
 Ernte, Sammeln, Durchforstung, Sukzession und alle sechs Systeme sind darin
-belegt. Der Spec-Audit meldet **1.616/1.618 implementiert** in 38 Abschnitten;
+belegt. Der Durchforstungsklick liefert **7 Logs + 3 Firewood** (Stock 181 →
+171), der Sammelklick **2 Timber, 3 Birch sap, 2 Firewood, 2 Beech timber,
+2 Birch timber und 2 Mushrooms**; der Endbestand liegt bei **629.126** und die
+Working-Zeile zeigt in jedem der 12 Atlas-Samples Sawlog, Firewood, Pilze, Mast,
+Wild und Habitat. Der Spec-Audit meldet **1.616/1.618 implementiert** in 38 Abschnitten;
 offen bleiben nur 4.0.1 und 4.0.6. Der Produktionsdeploy wird aus genau diesem
 getesteten Commit gebaut; beide Hosts werden danach auf denselben Commit und
 den Live-Beweis geprüft.

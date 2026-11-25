@@ -101,6 +101,7 @@ test("the rendered atlas lists all 60 types, their effects and their signature t
     assert.match(markup, /decomposition \d+%/);
     assert.match(markup, /Heart root|Deep taproot|Sinker roots|Shallow plate/);
     assert.match(markup, /retention \d+\/ha/);
+    assert.match(markup, /sawlogs \d+% · firewood \d+%/);
     assert.match(markup, /gap age \d+d/);
     assert.match(markup, /medicine \d+%/);
     assert.match(markup, /long snow cover/);

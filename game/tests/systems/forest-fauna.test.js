@@ -4,7 +4,7 @@ import { resetState, state } from "../../js/core/state.js";
 import { generateResourceGeography, getForestHabitatAt, harvestForest } from "../../js/systems/resource-geography.js";
 import { ensureForestSuccession } from "../../js/systems/forest-succession.js";
 import {
-    ensureForestFauna, forestFaunaAt, forestFaunaSignAt, forestFaunaSummaryAt, resetForestFauna,
+    ensureForestFauna, forestFaunaAt, forestFaunaHabitatScore, forestFaunaSignAt, forestFaunaSummaryAt, resetForestFauna,
     restoreForestFauna, serializeForestFauna, updateForestFauna,
     validateForestFaunaSnapshot, FOREST_FAUNA_LIMITS, SIMULATED_FAUNA_IDS,
 } from "../../js/systems/forest-fauna.js";
@@ -170,4 +170,37 @@ test("forest fauna serializes and restores deterministic herd state", () => {
     assert.throws(() => validateForestFaunaSnapshot({ version: 99, day: 0, herds: [] }), /forest-fauna state/);
     assert.equal(restoreForestFauna(null), 0);
     assert.equal(state.forestFauna, null);
+});
+
+test("detailed stand structure raises the habitat score that drives herd capacity", () => {
+    const poor = {
+        density: 0.45, canopy: 0.4, edge: false, clearing: 0.1, ageClass: "young",
+        ground: { litter: 0.2, logs: 0.05, mushrooms: 0.05 },
+        understory: { fern: 0.1 },
+    };
+    const structure = {
+        deadwoodProfile: { total: 0.65, standing: 0.3, fallen: 0.45, stumps: 0.1, decay: 0.6, habitat: 0.7, cavityTreesPerHa: 9 },
+        edgeProfile: { active: true, mantleCover: 0.8, widthM: 18 },
+        gapProfile: { fraction: 0.3, regenerationShare: 0.7 },
+        understoryProfile: { shrub: 0.8, sapling: 0.6 },
+        herbProfile: { cover: 0.7, food: 0.8, medicine: 0.6, flowering: 0.7 },
+        litterProfile: { depthCm: 8, cToN: 20 },
+        lianaCover: 0.5, epiphyteCover: 0.5,
+    };
+    const rich = {
+        ...poor, density: 0.8, canopy: 0.86, edge: true, clearing: 0.35, ageClass: "ancient",
+        ground: { litter: 0.7, logs: 0.4, mushrooms: 0.4 },
+        understory: { fern: 0.4 },
+        structure,
+        dynamics: {
+            structure,
+            working: { habitat: { score: 0.9 }, forage: { mast: 0.85, game: 0.85 } },
+        },
+    };
+    for (const species of ["deer", "boar", "owl"]) {
+        assert.ok(forestFaunaHabitatScore(rich, species, 150)
+            > forestFaunaHabitatScore(poor, species, 150),
+        species + " must prefer the richer deadwood/edge/understory stand");
+    }
+    assert.equal(forestFaunaHabitatScore(null, "deer", 150), 0.35);
 });

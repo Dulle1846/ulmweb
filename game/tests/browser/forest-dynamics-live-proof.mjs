@@ -382,6 +382,8 @@ try {
         ["rooting type", /Rooting (Deep taproot|Heart root|Sinker roots|Shallow plate)/],
         ["liana and epiphyte groups", /Liana (Ivy|Honeysuckle|Rattan|Liana vines|none)/],
         ["herb profile", /Herb food\/medicine \d+%\/\d+%/],
+        ["working timber", /Working sawlogs \d+% · firewood \d+% · specialty \d+% · volume \d+%/],
+        ["working forage and habitat", /mushrooms \d+% · herbs \d+% · mast \d+% · game \d+% · habitat \d+%/],
         ["treatment detail", /Treatment rotation \d+% · retention \d+\/ha/],
     ]) {
         assert.match(inspector, pattern, "the lumber inspector must expose " + label);
@@ -389,7 +391,12 @@ try {
     assert.ok(scan.samples.some(sample => inspector.includes(sample.phase)) || /Phase:/.test(inspector));
 
     // Thin the nearest stand through the visible button; the forest stock has
-    // to fall while the yard's local log store rises.
+    // to fall while the yard's local log store rises. A background rerender can
+    // close the details element, so reopen it if the player would have to.
+    if (!await record.evaluate(element => element.open)) {
+        await record.locator("summary").click();
+        await page.clock.runFor(250);
+    }
     const thinButton = page.locator('[data-thin-forest="' + scan.lumber.id + '"]');
     await thinButton.waitFor({ state: "visible", timeout: 5000 });
     if (await thinButton.isDisabled()) {
@@ -429,6 +436,7 @@ try {
     report.actions.thin = { before: beforeThin, after: afterThin };
     assert.ok(afterThin.stock < beforeThin.stock, "THIN NEAREST STAND must remove real standing timber");
     assert.ok(afterThin.localLogs > beforeThin.localLogs, "the thinned timber must arrive in the lumber yard's log store");
+    assert.match(afterThin.toast, /THINNED .*LOGS.*FIREWOOD.*·/, "the player must see the log/firewood split and the system used");
 
     // Thin rerenders the building register and closes its details. A player
     // opens the same lumber record again before using the gathering action.
@@ -489,6 +497,7 @@ try {
     assert.match(atlasCorpus, /standing \d+% · fallen \d+% · decay \d+%/);
     assert.match(atlasCorpus, /return \d+y/);
     assert.match(atlasCorpus, /retention \d+\/ha/);
+    assert.match(atlasCorpus, /sawlogs \d+% · firewood \d+%/);
     assert.match(atlasCorpus, /uptake \d+%/);
     assert.match(atlasCorpus, /decomposition \d+%/);
     assert.match(atlasCorpus, /gap age \d+d/);
@@ -515,12 +524,20 @@ try {
             medicinal: type.dynamics.structure.medicinalHerbs, waterUptake: type.dynamics.soil.waterUptake,
             decomposition: type.dynamics.soil.decomposition, liana: type.dynamics.structure.lianaCover,
             epiphyte: type.dynamics.structure.epiphyteCover, deadwood: type.dynamics.structure.deadwood,
+            sawlog: type.dynamics.working.timber.sawlog, firewood: type.dynamics.working.timber.firewood,
+            mushrooms: type.dynamics.working.forage.mushrooms, mast: type.dynamics.working.forage.mast,
+            game: type.dynamics.working.forage.game, habitat: type.dynamics.working.habitat.score,
         }));
     });
     report.atlasBefore.samples = beforeAtlasSamples;
     assert.ok(new Set(beforeAtlasSamples.map(row => row.mixture)).size >= 2, "the atlas must show more than one mixture class");
     assert.ok(new Set(beforeAtlasSamples.map(row => row.phase)).size >= 2, "the atlas must show more than one phase");
     assert.ok(new Set(beforeAtlasSamples.map(row => row.regime)).size >= 2, "the atlas must show more than one regime");
+    assert.ok(beforeAtlasSamples.every(row => row.sawlog >= 0 && row.firewood >= 0
+        && row.mushrooms >= 0 && row.mast >= 0 && row.game >= 0 && row.habitat >= 0),
+    "every sampled stand must expose its working-wood yields");
+    assert.ok(new Set(beforeAtlasSamples.map(row => row.sawlog)).size >= 2,
+        "the atlas must show more than one sawlog profile");
 
     // Close the panel, configure a low render cap through Settings, then use
     // the ordinary 4x speed button for three completed years.

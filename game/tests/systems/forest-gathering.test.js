@@ -212,6 +212,34 @@ test("a lumber yard can thin a real crowded stand", () => {
     assert.ok(result.stockAfter < result.stockBefore);
     assert.equal(getResourceNodeAt(result.x, result.y).forestStock, result.stockAfter);
     assert.ok(building.inventory.output.logs > 0);
+    assert.equal((result.products.logs || 0) + (result.products.firewood || 0), result.accepted);
+});
+
+test("a coppice stand sends part of the cut to the firewood pile", () => {
+    setup();
+    let target = null;
+    for (let y = 2; y < state.worldH - 2 && !target; y++) {
+        for (let x = 2; x < state.worldW - 2 && !target; x++) {
+            const node = getResourceNodeAt(x, y);
+            if (!node?.forestCapacity || !node.forestStock) continue;
+            if (node.forestDynamics?.silviculture.system !== "coppice") continue;
+            if (node.forestStock < node.forestCapacity * 0.55) continue;
+            target = { x, y, node };
+        }
+    }
+    assert.ok(target, "the fixture realm must contain a crowded coppice stand");
+    const building = {
+        id: "lumber-coppice", type: TYPE.LUMBER, x: target.x, y: target.y, dead: false,
+        construction: { stage: 3, progress: 100 }, isBuilding: () => true,
+    };
+    state.entities = [building];
+    const result = thinNearestForest(building, 6);
+    assert.equal(result.ok, true);
+    assert.equal(result.system, "coppice");
+    assert.ok(result.products.firewood > 0, "coppice must yield firewood as well as logs");
+    assert.ok(result.products.logs > 0);
+    assert.equal(result.products.logs + result.products.firewood, result.accepted);
+    assert.ok(result.working.firewood > 0);
 });
 
 test("thinning refuses a full lumber yard without taking forest stock", () => {

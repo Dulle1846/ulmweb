@@ -2056,6 +2056,46 @@ export function forestTreeForm(stand, roll = 0.5) {
     };
 }
 
+// A detailed stand profile becomes actual abundance. The working record is
+// the one place where structure, age, soil and treatment turn into a yield;
+// keeping the mapping here means the atlas, gather action and save-neutral
+// survey all read the same product weights.
+const MUSHROOM_USE_IDS = new Set(['mushrooms', 'chanterelle', 'porcini', 'truffles']);
+const HERB_USE_IDS = new Set(['herbs', 'wild-garlic', 'wood-sorrel', 'woodruff', 'valerian',
+    'linden-flower', 'bog-herb']);
+const HONEY_USE_IDS = new Set(['honey', 'beeswax']);
+const BERRY_USE_IDS = new Set(['berries', 'blueberries', 'lingonberries', 'rowan-berries',
+    'elderberries', 'wild-strawberry', 'sloes', 'crab-apples', 'juniper-berries', 'yew-berries']);
+const FIBRE_USE_IDS = new Set(['willow-withies', 'rattan', 'bark', 'sphagnum', 'reed',
+    'thatching-grass', 'baobab-fibre', 'desert-fibre']);
+
+function workingGoodFactor(working, id, category) {
+    if (!working) return 1;
+    const timber = working.timber || {};
+    const forage = working.forage || {};
+    const factor = (value, base, span) => Math.max(0.72, Math.min(1.38,
+        base + Math.max(0, Math.min(1, Number(value) || 0)) * span));
+    if (category === 'wood') {
+        // Wood is a quality sort, not a yield penalty: the existing timber
+        // economy keeps its historical volume, while a strong sawlog/specialty
+        // or firewood profile adds a bounded bonus. The split between logs and
+        // firewood is applied by the thinning action.
+        if (id === 'firewood' || id === 'charcoal') {
+            return 1 + Math.max(0, Math.min(1, Number(timber.firewood) || 0)) * 0.18;
+        }
+        return 1 + Math.max(0, Math.min(1, Number(timber.sawlog) || 0)) * 0.10
+            + Math.max(0, Math.min(1, Number(timber.specialty) || 0)) * 0.08;
+    }
+    if (category === 'mast') return factor(forage.mast, 0.74, 0.62);
+    if (category === 'hunt') return factor(forage.game, 0.78, 0.38);
+    if (MUSHROOM_USE_IDS.has(id)) return factor(forage.mushrooms, 0.78, 0.50);
+    if (HERB_USE_IDS.has(id)) return factor(forage.herbs, 0.78, 0.44);
+    if (HONEY_USE_IDS.has(id)) return factor(forage.honey, 0.75, 0.55);
+    if (BERRY_USE_IDS.has(id)) return factor(forage.berries, 0.80, 0.36);
+    if (FIBRE_USE_IDS.has(id)) return factor(forage.fibre, 0.78, 0.46);
+    return 1;
+}
+
 export function forestGoodsFor(stand, dayOfYear, climate = 'temperate') {
     if (!stand) return [];
     const seasonal = seasonGoods(dayOfYear, climate);
@@ -2073,8 +2113,10 @@ export function forestGoodsFor(stand, dayOfYear, climate = 'temperate') {
         const dynamicsBoost = Number(stand.dynamics?.goods?.boost?.[id]) || 1;
         const managementBoost = category === 'wood'
             ? (Number(stand.dynamics?.silviculture?.timberFactor) || 1) : 1;
+        const workingBoost = workingGoodFactor(stand.dynamics?.working, id, category);
         const abundance = clamp01((seasonal[id] ?? base) * (0.7 + stand.productivity * 0.3)
-            * (Number(stand.regionalEffects?.forage) || 1) * dynamicsBoost * managementBoost);
+            * (Number(stand.regionalEffects?.forage) || 1) * dynamicsBoost * managementBoost
+            * workingBoost);
         if (abundance > 0.08) goods.push({ ...FOREST_GOODS[id], abundance });
     }
     // The stand's structure and soil make a few products available that the
@@ -2085,8 +2127,10 @@ export function forestGoodsFor(stand, dayOfYear, climate = 'temperate') {
     for (const id of stand.dynamics?.goods?.extra || []) {
         if (!FOREST_GOODS[id] || goods.some(good => good.id === id)) continue;
         const boost = Number(stand.dynamics?.goods?.boost?.[id]) || 1;
+        const category = FOREST_GOODS[id]?.category;
+        const workingBoost = workingGoodFactor(stand.dynamics?.working, id, category);
         const abundance = clamp01((seasonal[id] ?? 0.26) * (0.7 + stand.productivity * 0.3)
-            * (Number(stand.regionalEffects?.forage) || 1) * boost);
+            * (Number(stand.regionalEffects?.forage) || 1) * boost * workingBoost);
         if (abundance > 0.08) goods.push({ ...FOREST_GOODS[id], abundance });
     }
     // Jungle resource pockets are real, but scattered. Add only the goods

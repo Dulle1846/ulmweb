@@ -227,17 +227,25 @@ export function coniferDisturbanceWeights(stand = {}, season = state.seasonIndex
     const weatherPest = wet ? 0.9 : drySpell ? 1.12 : 1;
     const weatherSnow = weatherName === "snow" ? 1.35 : wet ? 1.08 : 1;
     const weatherDrought = wet ? 0.45 : drySpell ? 1.2 : 1;
+    // The regime's severity and refugia are not only labels. A severe regime
+    // raises the fire and wind paths, while a stand with real refugia damps
+    // them. Synthetic stands have no dynamics and keep the historical weights.
+    const regime = stand?.dynamics?.hazard?.regime;
+    const severity = clamp01(number(regime?.severity));
+    const refugia = clamp01(number(regime?.refugia));
+    const fireRegime = 1 + severity * 0.20 - refugia * 0.10;
+    const windRegime = 1 + severity * 0.18 - refugia * 0.06;
     return {
-        burned: (0.02 + fireRisk * 0.98) * CONIFER_SEASON.burned[seasonIndex] * weatherFire,
+        burned: (0.02 + fireRisk * 0.98) * CONIFER_SEASON.burned[seasonIndex] * weatherFire * fireRegime,
         "bark-beetle": (0.03 + pestRisk * 0.72 + monoculture * 0.45 + beetlePressure * 0.55)
-            * CONIFER_SEASON["bark-beetle"][seasonIndex] * weatherPest,
+            * CONIFER_SEASON["bark-beetle"][seasonIndex] * weatherPest * (1 + severity * 0.08),
         snowbreak: (0.03 + snowPotential * 0.97) * CONIFER_SEASON.snowbreak[seasonIndex] * weatherSnow,
-        "drought-stressed": (0.03 + fireRisk * 0.5) * CONIFER_SEASON["drought-stressed"][seasonIndex] * weatherDrought,
+        "drought-stressed": (0.03 + fireRisk * 0.5) * CONIFER_SEASON["drought-stressed"][seasonIndex] * weatherDrought * fireRegime,
         // Conifer windthrow was previously only a seeded base state. Exposure
         // and storms now make it a live event, with root-plate and salvage
         // consequences handled by the shared windthrow succession profile.
         windthrow: (0.012 + windExposure * 0.55 + (stand.disturbance === "windthrow" ? 0.08 : 0))
-            * (storm ? 2.4 : seasonIndex === 3 ? 1.25 : 0.72),
+            * (storm ? 2.4 : seasonIndex === 3 ? 1.25 : 0.72) * windRegime,
     };
 }
 
@@ -265,13 +273,19 @@ export function spreadRiskFactor(kind, stand = {}, insectPressure = 0) {
     const pest = clamp01(number(stand.pestRisk));
     const monoculture = clamp01(number(stand.monoculture));
     const snow = clamp01(number(stand.snowPotential));
-    if (kind === "burned") return clamp(0.55 + fire * 0.9, 0.45, 1.45);
-    if (kind === "bark-beetle") return clamp(0.5 + pest * 0.8 + monoculture * 0.45 + clamp01(number(insectPressure)) * 0.35, 0.4, 1.5);
-    if (kind === "snowbreak") return clamp(0.5 + snow * 0.9, 0.45, 1.5);
-    if (kind === "drought-stressed") return clamp(0.55 + fire * 0.7, 0.45, 1.4);
+    // A target stand with a strong refugium (wet hollow, old-growth core,
+    // sheltered edge) resists a crossing fire, beetle wave or windthrow. The
+    // factor is 1 when the stand has no dynamics record, preserving every
+    // synthetic call and old save path.
+    const refugia = clamp01(number(stand?.dynamics?.hazard?.regime?.refugia));
+    const shelter = 1 - refugia * 0.18;
+    if (kind === "burned") return clamp((0.55 + fire * 0.9) * shelter, 0.45, 1.45);
+    if (kind === "bark-beetle") return clamp((0.5 + pest * 0.8 + monoculture * 0.45 + clamp01(number(insectPressure)) * 0.35) * shelter, 0.4, 1.5);
+    if (kind === "snowbreak") return clamp((0.5 + snow * 0.9) * shelter, 0.45, 1.5);
+    if (kind === "drought-stressed") return clamp((0.55 + fire * 0.7) * shelter, 0.45, 1.4);
     if (kind === "windthrow") {
         if (!stand?.conifer) return 1;
-        return clamp(0.55 + clamp01(number(stand.windExposure ?? stand.exposure)) * 0.9, 0.45, 1.45);
+        return clamp((0.55 + clamp01(number(stand.windExposure ?? stand.exposure)) * 0.9) * shelter, 0.45, 1.45);
     }
     return 1;
 }
@@ -313,7 +327,13 @@ function spawnDisturbance(model) {
         const profile = forestSuccessionProfile(kind);
         if (!profile) continue;
         const before = Math.max(1, Math.floor(number(geo.forestStock[index], 1)));
-        const after = Math.max(1, Math.min(before, Math.floor(before * profile.severity)));
+        // A severe regime removes more of the stand in the same event; refugia
+        // leave a little more standing stock for seed and habitat.
+        const regime = stand?.dynamics?.hazard?.regime;
+        const severity = clamp01(number(regime?.severity));
+        const refugia = clamp01(number(regime?.refugia));
+        const retained = clamp(number(profile.severity) - severity * 0.06 + refugia * 0.03, 0.18, 0.95);
+        const after = Math.max(1, Math.min(before, Math.floor(before * retained)));
         geo.forestStock[index] = after;
         model.tiles[key] = { kind, age: 0, containedUntil: 0 };
         activateKey(model, key);

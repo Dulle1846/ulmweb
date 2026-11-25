@@ -799,6 +799,7 @@ export function getResourceNodeAt(x,y){
         forestSpecies:forestStand?forestStand.species.map(entry=>entry.id)
             :forestDefinition?Object.keys(forestDefinition.species):[],
         forestDynamics:forestStand?.dynamics||null,
+        forestWorking:forestStand?.dynamics?.working||null,
         forestMixtureClass:forestStand?.dynamics?.composition?.mixtureClass||null,
         forestPhase:forestStand?.dynamics?.age?.phase||null,
         forestPioneerShare:forestStand?.dynamics?.composition?.pioneerShare??null,

@@ -92,6 +92,12 @@ export function speciesDynamicsTraits(id) {
 }
 
 export const FOREST_PHASES = Object.freeze(['pioneer', 'thicket', 'pole', 'mature', 'old-growth', 'climax']);
+const MAST_GOOD_BY_SPECIES = Object.freeze({
+    oak: 'acorns', beech: 'beechnuts', chestnut: 'chestnuts', hazel: 'hazelnuts',
+    hornbeam: 'hornbeam-seeds', pine: 'pine-cones', spruce: 'spruce-cones',
+    fir: 'fir-cones', larch: 'larch-cones', 'dwarf-pine': 'dwarf-pine-cones',
+});
+
 export const FOREST_MANAGEMENT_SYSTEMS = Object.freeze({
     coppice: Object.freeze({ label: 'Niederwald', rotation: 18, timber: 0.90, regeneration: 1.12, note: 'short coppice rotation' }),
     'coppice-with-standards': Object.freeze({ label: 'Mittelwald', rotation: 30, timber: 0.96, regeneration: 1.06, note: 'underwood and standards' }),
@@ -258,6 +264,7 @@ export function forestDynamicsFor(context = {}) {
             seedSource,
             diseaseRisk: clamp01(1 - entry.traits.disease),
             timberShare: clamp01(entry.share * (0.65 + entry.traits.longevity * 0.35)),
+            timberQuality: clamp01(0.60 + entry.traits.longevity * 0.30 + entry.traits.wind * 0.10),
         };
     }).sort((a, b) => b.share - a.share).slice(0, 6);
     const pioneerSpecies = effective
@@ -524,6 +531,91 @@ export function forestDynamicsFor(context = {}) {
         label: understoryLabel,
     };
 
+    // The detailed profiles above are not only a survey. They resolve into one
+    // bounded working-wood record that the existing harvest, forage, game,
+    // insect, succession and pannage paths read. It is derived on demand and
+    // never enters the save.
+    const cohortShare = speciesCohorts.reduce((sum, entry) => sum + entry.share, 0);
+    const timberQuality = clamp01(speciesCohorts.reduce((sum, entry) =>
+        sum + entry.share * entry.timberQuality, 0) / Math.max(0.0001, cohortShare));
+    const mastSpeciesShare = effective.reduce((sum, entry) =>
+        sum + (MAST_GOOD_BY_SPECIES[entry.id] ? entry.share : 0), 0);
+    const sawlog = clamp01(0.16 + ageCohorts.mature * 0.18 + ageCohorts.ancient * 0.20
+        + timberQuality * 0.22 + purity * 0.08
+        + (system === 'high-forest' ? 0.10 : system === 'selection' ? 0.07
+            : system === 'coppice-with-standards' ? 0.04 : 0)
+        - deadwoodProfile.decay * 0.04);
+    const firewood = clamp01(0.16 + deadwoodProfile.fallen * 0.34
+        + deadwoodProfile.stumps * 0.26
+        + (system === 'coppice' ? 0.30 : system === 'coppice-with-standards' ? 0.16
+            : system === 'wood-pasture' ? 0.12 : 0)
+        + canopyGap * 0.08 + (1 - sawlog) * 0.12);
+    const specialtyTimber = clamp01(regionalShare * 0.36 + purity * 0.10
+        + evenness * 0.08 + (system === 'selection' ? 0.12 : 0)
+        + (standAgeYears > 90 ? 0.08 : 0));
+    const logShare = clamp(0.48 + sawlog * 0.42 - firewood * 0.24 + specialtyTimber * 0.05,
+        0.24, 0.92);
+    const harvestVolume = clamp(0.80 + sawlog * 0.14 + timberQuality * 0.06
+        + siteFitness * 0.08 + harvestIntensity * 0.06, 0.80, 1.20);
+    const mast = clamp01(ageCohorts.mature * 0.24 + ageCohorts.ancient * 0.30
+        + motherTrees * 0.18 + mastSpeciesShare * 0.20
+        + (system === 'wood-pasture' ? 0.06 : 0) + (1 - canopyGap * 0.5) * 0.04);
+    const mycorrhizaFruit = mycorrhizaType === 'Ectomycorrhizal' ? 0.12
+        : mycorrhizaType === 'Mixed network' ? 0.08 : 0.02;
+    const mushrooms = clamp01(mycorrhiza * 0.36 + decomposition * 0.26
+        + deadwoodProfile.decay * 0.20 + litterProfile.quality * 0.10 + mycorrhizaFruit);
+    const herbs = clamp01(herbProfile.food * 0.44 + herbProfile.medicine * 0.34
+        + edgeProfile.lightBonus * 0.10 + (lightWoodland ? 0.08 : 0)
+        + herbProfile.flowering * 0.04);
+    const game = clamp01(edgeProfile.mantleCover * 0.20 + understoryProfile.shrub * 0.18
+        + understoryProfile.sapling * 0.10 + gapProfile.regenerationShare * 0.14
+        + herbProfile.food * 0.12 + mast * 0.10 + canopy * 0.06);
+    const honey = clamp01(herbProfile.flowering * 0.48 + edgeProfile.mantleCover * 0.18
+        + lianaCover * 0.08 + (speciesCohorts.some(entry => entry.id === 'linden') ? 0.08 : 0)
+        + 0.08);
+    const berries = clamp01(understoryProfile.shrub * 0.26 + berry * 0.24
+        + herbProfile.flowering * 0.18 + edgeProfile.lightBonus * 0.12
+        + gapProfile.light * 0.06);
+    const fibre = clamp01(lianaCover * 0.58 + epiphyteCover * 0.10
+        + (system === 'coppice' ? 0.08 : 0) + (lightWoodland ? 0.06 : 0));
+    const habitatScore = clamp01(deadwoodProfile.habitat * 0.22
+        + clamp01(deadwoodProfile.cavityTreesPerHa / 18) * 0.05
+        + edgeProfile.mantleCover * 0.10 + gapProfile.regenerationShare * 0.10
+        + understoryProfile.shrub * 0.12 + understoryProfile.sapling * 0.05
+        + herbProfile.food * 0.10 + epiphyteCover * 0.04 + lianaCover * 0.04
+        + canopy * 0.08 + ageCohorts.ancient * 0.06
+        + clamp01(layers / 6) * 0.04);
+    const waterRetention = clamp01(humus * 0.30 + litterProfile.depthCm / 12 * 0.18
+        + rootDepth * 0.16 + mycorrhiza * 0.12 + (1 - canopyGap) * 0.10
+        + (1 - compaction) * 0.08);
+    const products = [];
+    if (sawlog > 0.25) products.push('sawlogs');
+    if (firewood > 0.25) products.push('firewood');
+    if (specialtyTimber > 0.30) products.push('specialty timber');
+    if (mushrooms > 0.30) products.push('mushrooms');
+    if (herbs > 0.30) products.push('herbs');
+    if (mast > 0.35) products.push('mast');
+    if (game > 0.30) products.push('game');
+    if (honey > 0.35) products.push('honey');
+    if (berries > 0.30) products.push('berries');
+    if (fibre > 0.30) products.push('fibre');
+    const working = {
+        timber: {
+            sawlog, firewood, specialty: specialtyTimber, logShare,
+            volume: harvestVolume,
+            quality: clamp01(sawlog * 0.55 + specialtyTimber * 0.30 + timberQuality * 0.15),
+        },
+        forage: { mushrooms, herbs, mast, game, honey, berries, fibre },
+        habitat: {
+            score: habitatScore, deadwood: deadwoodProfile.habitat,
+            edge: edgeProfile.mantleCover, gap: gapProfile.regenerationShare,
+            understory: understoryProfile.shrub, herb: herbProfile.food,
+            epiphytes: epiphyteCover, lianas: lianaCover,
+        },
+        water: { uptake: waterUptake, retention: waterRetention },
+        products,
+    };
+
     const goodsBoost = {
         herbs: clamp(0.76 + herbFood * 0.16 + medicinalHerbs * 0.26, 0.80, 1.25),
         mushrooms: clamp(0.72 + mycorrhiza * 0.28 + decomposition * 0.08 + deadwoodProfile.decay * 0.08, 0.80, 1.25),
@@ -541,6 +633,22 @@ export function forestDynamicsFor(context = {}) {
     if (epiphyteGroups.includes('Lichen')) extraGoods.push('lichen');
     if (lianaTypes.length) extraGoods.push(tropical ? 'rattan' : 'willow-withies');
     if (epiphyteGroups.includes('Orchid')) extraGoods.push('orchids');
+    // The working record makes structure and age visible as actual products:
+    // flowering edges can be worked for honey, bramble/berry layers for fruit,
+    // mast-bearing cohorts for pannage, and coppice for firewood. The de-dupe
+    // below keeps the existing formation list authoritative when it already
+    // carries the good.
+    if (working.forage.honey > 0.62) extraGoods.push('honey');
+    if (working.forage.berries > 0.58) extraGoods.push('berries');
+    if (working.forage.game > 0.60) extraGoods.push('game');
+    if ((system === 'coppice' || system === 'coppice-with-standards')
+        && working.timber.firewood > 0.45) extraGoods.push('firewood');
+    if (working.forage.mast > 0.55) {
+        for (const entry of speciesCohorts) {
+            const mastGood = MAST_GOOD_BY_SPECIES[entry.id];
+            if (mastGood && entry.share > 0.08) extraGoods.push(mastGood);
+        }
+    }
 
     return {
         composition: {
@@ -688,6 +796,7 @@ export function forestDynamicsFor(context = {}) {
                     : mycorrhiza >= 0.32 ? 'Patchy' : 'Broken',
         },
         goods: { boost: goodsBoost, extra: [...new Set(extraGoods)] },
+        working,
     };
 }
 

@@ -272,6 +272,27 @@ test("spread and control state survives a save and an older snapshot", () => {
     assert.ok(Array.isArray(state.forestSuccession.spreadHistory));
 });
 
+test("regime severity and refugia change disturbance spread", () => {
+    const base = {
+        coniferShare: 0.7, fireRisk: 0.5, pestRisk: 0.3,
+        monoculture: 0.2, snowPotential: 0.2, windExposure: 0.6,
+    };
+    const severe = coniferDisturbanceWeights({
+        ...base, dynamics: { hazard: { regime: { severity: 1, refugia: 0 } } },
+    }, 1);
+    const calm = coniferDisturbanceWeights({
+        ...base, dynamics: { hazard: { regime: { severity: 0, refugia: 0 } } },
+    }, 1);
+    assert.ok(severe.burned > calm.burned, "a severe fire regime must raise the burn path");
+    assert.ok(severe.windthrow > calm.windthrow, "a severe regime must raise the wind path");
+    const dry = { fireRisk: 0.9, pestRisk: 0.1, monoculture: 0, snowPotential: 0.1 };
+    const sheltered = {
+        ...dry, dynamics: { hazard: { regime: { refugia: 1 } } },
+    };
+    assert.ok(spreadRiskFactor("burned", sheltered) < spreadRiskFactor("burned", dry),
+        "a real refugium must resist a crossing fire");
+});
+
 test("succession saves validate and restore without inventing tiles", () => {
     const model = setup();
     const snapshot = serializeForestSuccession();

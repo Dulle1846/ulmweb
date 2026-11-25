@@ -296,6 +296,15 @@ function produceRecipe(building, workforce, production, knownEfficiency = null, 
             const taken = harvestForest(node.x, node.y, batch);
             if (taken <= 0) { building.productionReason = "Forest stand is depleted"; return; }
             finishOutput(building, { logs: taken }, production);
+            // Coppice and wood-pasture systems send the smallwood, tops and
+            // standards' lower branches to the firewood pile. This is the same
+            // system the player reads in the atlas and the inspector, not a
+            // second production recipe; the output store still caps it.
+            const system = regionalSite?.system;
+            if (system === "coppice" || system === "coppice-with-standards" || system === "wood-pasture") {
+                const byproduct = Math.max(1, Math.round(taken * (system === "coppice" ? 0.28 : 0.16)));
+                finishOutput(building, { firewood: byproduct }, production);
+            }
             // A regional stand yields its signature timber beside the log
             // batch. One unit every few batches keeps the specialty chain fed
             // without displacing the ordinary logs that construction needs.

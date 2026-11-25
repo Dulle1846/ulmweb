@@ -149,7 +149,9 @@ function forestDynamicsDetail(dynamics){
  const structure=dynamics.structure||{},soil=dynamics.soil||{},regime=dynamics.hazard?.regime||{};
  const system=dynamics.silviculture||{},deadwood=structure.deadwoodProfile||{},gap=structure.gapProfile||{};
  const edge=structure.edgeProfile||{},litter=soil.litterProfile||{},herb=structure.herbProfile||{};
+ const working=dynamics.working||{},timber=working.timber||{},forage=working.forage||{},habitat=working.habitat||{};
  const cohorts=age.cohorts||{},bits=[
+  "Working sawlogs "+pct(timber.sawlog)+"% · firewood "+pct(timber.firewood)+"% · specialty "+pct(timber.specialty)+"% · volume "+pct(timber.volume)+"% · mushrooms "+pct(forage.mushrooms)+"% · herbs "+pct(forage.herbs)+"% · mast "+pct(forage.mast)+"% · game "+pct(forage.game)+"% · habitat "+pct(habitat.score)+"%",
   "Cohorts "+pct(cohorts.young)+"/"+pct(cohorts.mature)+"/"+pct(cohorts.ancient)+"% young/mature/ancient ("+(age.uneven?"uneven":"even")+", spread "+Math.round(Number(age.spreadYears)||0)+"y)",
   "Seed source "+esc(regen.seedSource||"stand")+" · rain "+pct(regen.seedRain)+"% · germ "+pct(regen.germination)+"% · seedlings "+pct(regen.seedlingBank)+"% · recruit "+pct(regen.saplingRecruitment)+"%",
   "Deadwood "+pct(deadwood.total)+"% (standing "+pct(deadwood.standing)+"% / fallen "+pct(deadwood.fallen)+"% / stumps "+pct(deadwood.stumps)+"% · decay "+pct(deadwood.decay)+"% · cavities "+Math.round(Number(deadwood.cavityTreesPerHa)||0)+"/ha)",
@@ -619,12 +621,14 @@ function buildings(){
   }catch{}
   const deliveryAvailability=forestDeliveryAvailability(building);
   const thinningAvailability=building.type===TYPE.LUMBER?forestThinningAvailability(building,6):null;
+  const thinSystem=thinningAvailability?.point?.forestDynamics?.silviculture?.system||null;
+  const thinLabel=thinSystem==="coppice"?"CUT COPPICE":thinSystem==="coppice-with-standards"?"CUT UNDERWOOD":thinSystem==="selection"?"SELECT FELLING":thinSystem==="continuous-cover"?"SINGLE-TREE CUT":thinSystem==="wood-pasture"?"POLLARD AND CLEAR":"THIN NEAREST STAND";
   const forestGather=[TYPE.LUMBER,TYPE.FORESTER].includes(building.type)?[
    '<button type="button" class="command-choice" data-gather-forest="'+esc(building.id)+'">GATHER FOREST PRODUCTS</button>',
    '<button type="button" class="command-choice" data-deliver-forest="'+esc(building.id)+'"'+(deliveryAvailability.available>0?'':' disabled title="'+esc(deliveryAvailability.reason)+'"')+'>DELIVER FOREST GOODS</button>',
    '<button type="button" class="command-choice" data-process-hunt="'+esc(building.id)+'">PROCESS FOREST HUNT</button>',
    '<button type="button" class="command-choice" data-suppress-forest="'+esc(building.id)+'">SUPPRESS FOREST DISTURBANCE</button>',
-   ...(building.type===TYPE.LUMBER?['<button type="button" class="command-choice" data-thin-forest="'+esc(building.id)+'"'+(thinningAvailability.ok?'':' disabled title="'+esc(thinningAvailability.reason)+'"')+'>THIN NEAREST STAND</button>']:[]),
+   ...(building.type===TYPE.LUMBER?['<button type="button" class="command-choice" data-thin-forest="'+esc(building.id)+'"'+(thinningAvailability.ok?'':' disabled title="'+esc(thinningAvailability.reason)+'"')+'>'+esc(thinLabel)+'</button>']:[]),
   ].join(""):"";
   const forestPannage=building.type===TYPE.STABLE?'<button type="button" class="command-choice" data-feed-stable="'+esc(building.id)+'">FEED STABLE FROM MAST OR HAY</button>':"";
   const meadowGather=[TYPE.FARM,TYPE.STABLE].includes(building.type)?'<button type="button" class="command-choice" data-gather-meadow="'+esc(building.id)+'">GATHER MEADOW PRODUCTS</button>':"";
@@ -1766,7 +1770,7 @@ export function setupManagementUI(){
   if(thin){
    const entity=state.entities.find(item=>!item.dead&&String(item.id)===String(thin.dataset.thinForest));
    const result=entity?thinNearestForest(entity,6):{ok:false,reason:"Building not found"};
-   if(result.ok){toast("THINNED "+result.taken+" LOGS AT "+result.x+", "+result.y);renderUI();render();}
+   if(result.ok){const products=result.products||{},output=[products.logs?products.logs+" LOGS":"",products.firewood?products.firewood+" FIREWOOD":""].filter(Boolean).join(" + ")||(result.taken+" STEMS");toast("THINNED "+output+" AT "+result.x+", "+result.y+(result.systemLabel?" · "+result.systemLabel:""));renderUI();render();}
    else toast(String(result.reason||"THINNING FAILED").toUpperCase());
    return;
   }

@@ -527,3 +527,54 @@ test("stand, node, regrowth and products consume the same dynamics record", () =
         > forestRegrowthFactor({ ground: { compaction: 0 }, dynamics: { regeneration: { factor: 0.7 } } }));
     assert.ok(FOREST_GOODS[node.forestGoods[0]]);
 });
+
+test("detailed ecology resolves into a working wood with real harvest and habitat value", () => {
+    const ancientOak = forestDynamicsFor(baseContext({
+        species: entries(["oak", 0.6], ["beech", 0.4]),
+        ageClass: "ancient", canopy: 0.86, deadwood: 0.75, litter: 0.7,
+        humus: 0.8, moss: 0.5, shrub: 0.5, herb: 0.55, flowers: 0.5,
+        formationId: "oakwood",
+    }));
+    const youngBirch = forestDynamicsFor(baseContext({
+        species: entries(["birch", 1]), ageClass: "young", canopy: 0.42,
+        deadwood: 0.05, litter: 0.2, herb: 0.15, flowers: 0.1,
+        formationId: "birchwood",
+    }));
+    const coppice = forestDynamicsFor(baseContext({
+        species: entries(["alder", 0.7], ["willow", 0.3]),
+        ageClass: "mature", canopy: 0.7, deadwood: 0.25, litter: 0.5,
+        formationId: "swamp-carr", silviculture: ["coppice", "firewood"],
+    }));
+    const highForest = forestDynamicsFor(baseContext({
+        species: entries(["oak", 0.7], ["beech", 0.3]),
+        ageClass: "mature", canopy: 0.8, deadwood: 0.2, litter: 0.4,
+        formationId: "oakwood", silviculture: ["timber"],
+    }));
+    assert.ok(ancientOak.working.timber.sawlog > youngBirch.working.timber.sawlog,
+        "mature/ancient cohorts and timber quality must raise the sawlog share");
+    assert.ok(highForest.working.timber.sawlog > coppice.working.timber.sawlog,
+        "high forest must send more of the cut to sawlogs than coppice");
+    assert.ok(coppice.working.timber.firewood > highForest.working.timber.firewood,
+        "coppice and its stools must raise the firewood share");
+    assert.ok(ancientOak.working.forage.mast > youngBirch.working.forage.mast,
+        "mast-bearing mature cohorts and mother trees must feed pannage");
+    assert.ok(ancientOak.working.forage.mushrooms > youngBirch.working.forage.mushrooms,
+        "mycorrhiza, litter and deadwood decay must feed the mushroom crop");
+    assert.ok(ancientOak.working.habitat.score > youngBirch.working.habitat.score,
+        "deadwood, cavities and layered structure must raise habitat value");
+    assert.ok(ancientOak.working.water.retention > youngBirch.working.water.retention,
+        "humus, litter depth and rooting must raise water retention");
+    assert.ok(ancientOak.working.products.includes("sawlogs"));
+    assert.ok(coppice.working.products.includes("firewood"));
+    for (const dynamics of [ancientOak, youngBirch, coppice, highForest]) {
+        const working = dynamics.working;
+        for (const value of Object.values(working.timber)) assert.ok(value >= 0 && value <= 1.2);
+        for (const value of Object.values(working.forage)) assert.ok(value >= 0 && value <= 1);
+        assert.ok(working.timber.logShare >= 0.24 && working.timber.logShare <= 0.92);
+        assert.ok(working.habitat.score >= 0 && working.habitat.score <= 1);
+        assert.ok(working.water.retention >= 0 && working.water.retention <= 1);
+    }
+    const node = world().nodes.find(entry => entry.forestDynamics?.working);
+    assert.ok(node, "every real forest node must expose the working wood");
+    assert.equal(node.forestWorking, node.forestDynamics.working);
+});
