@@ -10,7 +10,7 @@
   },
   "renderer": "WebKit WebGL",
   "maxTextureSize": 8192,
-  "generatedAt": "2026-11-11T16:12:02.123Z",
+  "generatedAt": "2026-11-25T23:54:12.168Z",
   "world": {
     "width": 176,
     "height": 176,
@@ -85,7 +85,7 @@
             "species": [
               "Birch",
               "Maple",
-              "Beech"
+              "Oak"
             ]
           },
           "day": 150,
@@ -96,7 +96,7 @@
             "x": 87.2995,
             "y": 42.694199999999995
           },
-          "sha256": "0af05f2942d23bdba9ab84ae267e752238d311513ddf3de2b459b9cb0355d8f6",
+          "sha256": "fefd7c234a296cf0915b57d4d974b2cde9613e8ab7765d5d7d6db644b485d21c",
           "animal": null
         }
       ]
@@ -152,7 +152,7 @@
             "species": [
               "Birch",
               "Maple",
-              "Beech"
+              "Oak"
             ]
           },
           "day": 150,
@@ -163,7 +163,7 @@
             "x": 86.35,
             "y": 44.6528
           },
-          "sha256": "92ac980e94dbb3b31de4fb842760070167295ef2bd39deb44a26617299b8cd14",
+          "sha256": "254180bc65ea70abb43b6b6edf3b906a79d8659cefe5037053924778b91d7afa",
           "animal": null
         }
       ]
@@ -230,7 +230,7 @@
             "x": 114.7495,
             "y": 24.5083
           },
-          "sha256": "43a4b3a659428ab3600dc772ff709ad5ed37b02a0298990268d151ad44945e5e",
+          "sha256": "2da0ac2eddc6a8392b6747ac5624d6983bfbf6d5b89321c52cfe824bcd9eca32",
           "animal": null
         }
       ]
@@ -273,19 +273,19 @@
               "acorns",
               "alder-cones",
               "alder-timber",
+              "ash-keys",
+              "ash-timber",
               "bark",
               "beeswax",
               "birch-sap",
               "birch-timber",
               "chanterelle",
               "charcoal",
-              "crab-apples",
-              "elm-seeds",
-              "elm-timber"
+              "crab-apples"
             ],
             "species": [
+              "Poplar",
               "Alder",
-              "Elm",
               "Birch"
             ]
           },
@@ -297,7 +297,7 @@
             "x": 85.663,
             "y": 122.41114999999999
           },
-          "sha256": "768aa2058ab0be089c123bca878b1549b1e34cd2d13c2b5d3a98386ba188319e",
+          "sha256": "8b3e32dee78408f0e19dfecb061fd778381d987ee0fc1c2a9158596d4cd7c4c3",
           "animal": null
         },
         {
@@ -346,7 +346,7 @@
             "species": [
               "Birch",
               "Maple",
-              "Beech"
+              "Oak"
             ]
           },
           "day": 150,
@@ -357,7 +357,7 @@
             "x": 65.326,
             "y": 109.7158
           },
-          "sha256": "78a0ca432788a8f3a2db20dc80a5aca6503ce49c8048fd4732135acfeabaa4b4",
+          "sha256": "79367cf7cf14734ad7f3f263cdbd85f71225f3ffbe9053cb718c5d8131f5aa2b",
           "animal": null
         }
       ]
@@ -397,18 +397,18 @@
             "logs": 0.14,
             "trail": false,
             "goods": [
+              "beech-timber",
+              "beechnuts",
+              "birch-sap",
+              "birch-timber",
               "blueberries",
+              "chanterelle",
               "charcoal",
               "dwarf-pine-cones",
               "dwarf-pine-timber",
               "fir-cones",
               "fir-timber",
-              "firewood",
-              "fur",
-              "game",
-              "herbs",
-              "hides",
-              "juniper-berries"
+              "firewood"
             ],
             "species": [
               "Spruce",
@@ -424,7 +424,7 @@
             "x": 97.3625,
             "y": 38.70719999999999
           },
-          "sha256": "6765ce28cda7b25d58341d5ca9f3109be46996bdc580019c9839157fcf03ad14",
+          "sha256": "3c14398cdab58759824ec71106fdd752df5fe83816d5860d08d70587bcdfb645",
           "animal": null
         },
         {
@@ -462,18 +462,18 @@
               "beech-timber",
               "beechnuts",
               "beeswax",
+              "birch-sap",
+              "birch-timber",
+              "chanterelle",
               "crab-apples",
               "elm-seeds",
               "elm-timber",
-              "firewood",
-              "fur",
-              "game",
-              "herbs"
+              "fir-cones"
             ],
             "species": [
               "Beech",
-              "Oak",
-              "Maple"
+              "Fir",
+              "Spruce"
             ]
           },
           "day": 150,
@@ -484,7 +484,7 @@
             "x": 91.589,
             "y": 55.466049999999996
           },
-          "sha256": "eb36093001fb07429f8122f7870569f80335d491711031c94a459ff04fedfd28",
+          "sha256": "a4c76fb6be70227ee2561edd9d1de89aa4898b6929c91d739b0b2198b1687323",
           "animal": null
         },
         {
@@ -544,7 +544,7 @@
             "x": 126.609,
             "y": 133.43910000000002
           },
-          "sha256": "8ae4f07f073001f82d11e9b484ffc4070951ded6b6caaa588e7b3679624fd94a",
+          "sha256": "c7bf3462a6789de6a7057d5a974e5941716dfe315f6d376dba08b6ea6405032c",
           "animal": null
         }
       ]
@@ -611,7 +611,7 @@
             "x": 128.738,
             "y": 133.48225000000002
           },
-          "sha256": "14c516e645c9b4534aeb9703d02c706ba7cca546960e3f79a65e8ade8faff945",
+          "sha256": "b54fe9bf49202aef9d75b077a3415d20edaeb01db0b705519d51d2b457b2f89b",
           "animal": null
         },
         {
@@ -652,10 +652,10 @@
               "herbs",
               "juniper-berries",
               "juniper-timber",
+              "larch-cones",
               "larch-timber",
               "lichen",
-              "lingonberries",
-              "mushrooms"
+              "lingonberries"
             ],
             "species": [
               "Larch",
@@ -671,7 +671,7 @@
             "x": 90.686,
             "y": 40.720749999999995
           },
-          "sha256": "7f91e3c4721cfbe32f6d07422cc65f02612961a90d479f2000e5cde1628e9cb8",
+          "sha256": "7081a9683e7421cef1b47466a1e94f271a35f3fc9a1af75c93c8d61c8c7648bf",
           "animal": null
         }
       ]
@@ -727,7 +727,7 @@
             "species": [
               "Birch",
               "Maple",
-              "Beech"
+              "Oak"
             ]
           },
           "day": 60,
@@ -738,7 +738,7 @@
             "x": 88.7795,
             "y": 42.78615
           },
-          "sha256": "64adb9a24c4a9bc469449329424f376418d476219951bed407bb129b9b053da2",
+          "sha256": "9ed621ea4996dc9c377796dd964075c29ebd5601862f812225255196c0e4f1f1",
           "animal": null
         },
         {
@@ -772,22 +772,22 @@
             "trail": true,
             "goods": [
               "acorns",
+              "aleppo-timber",
               "bark",
               "beech-timber",
               "beechnuts",
               "beeswax",
+              "blueberries",
               "charcoal",
               "crab-apples",
               "elm-seeds",
               "elm-timber",
-              "firewood",
-              "fur",
-              "game"
+              "firewood"
             ],
             "species": [
               "Oak",
-              "Beech",
-              "Elm"
+              "Pine",
+              "Juniper"
             ]
           },
           "day": 250,
@@ -798,7 +798,7 @@
             "x": 39.2705,
             "y": 37.45855
           },
-          "sha256": "aa2ec857e704a0529e3dbf3cda67e7c66c9ed02f59c5be476d928c3c500270a4",
+          "sha256": "f0b88faa9deb7ac9be1a664570e012ddc05877cea26394dbf83663a3b90e116f",
           "animal": null
         }
       ]
@@ -811,50 +811,50 @@
         {
           "label": "TILE",
           "tile": {
-            "x": 93,
-            "y": 27,
+            "x": 87,
+            "y": 20,
             "tree": true,
-            "s1": 0.316,
-            "s2": 0.018,
-            "s3": 0.984,
-            "moisture": 0.649,
-            "temperature": 0.418,
-            "height": 0.606,
+            "s1": 0.215,
+            "s2": 0.407,
+            "s3": 0.928,
+            "moisture": 0.531,
+            "temperature": 0.447,
+            "height": 0.404,
             "stockRatio": 1,
-            "type": "birchwood",
-            "label": "Birch Grove",
-            "age": "young",
+            "type": "mixed-oak-beech-spruce",
+            "label": "Oak–Beech–Spruce Wood",
+            "age": "mature",
             "soil": "loam",
             "clearing": 0,
-            "treeChance": 0.397,
-            "light": 0.74,
+            "treeChance": 0.529,
+            "light": 0.551,
             "compaction": 0,
             "huntingPressure": 0,
             "flowers": 0.06,
-            "roots": 0.18,
-            "stones": 0.065,
-            "mushrooms": 0.275,
+            "roots": 0.08,
+            "stones": 0,
+            "mushrooms": 0.239,
             "stumps": 0,
             "logs": 0,
             "trail": false,
             "goods": [
               "acorns",
-              "alder-cones",
-              "alder-timber",
+              "ash-keys",
+              "ash-timber",
               "bark",
               "beech-timber",
               "beechnuts",
+              "beeswax",
               "berries",
               "birch-sap",
               "birch-timber",
               "chanterelle",
-              "crab-apples",
-              "firewood"
+              "crab-apples"
             ],
             "species": [
-              "Birch",
-              "Maple",
-              "Oak"
+              "Oak",
+              "Beech",
+              "Maple"
             ]
           },
           "day": 150,
@@ -862,82 +862,84 @@
           "crop": 700,
           "mark": null,
           "focus": {
-            "x": 93.259,
-            "y": 27.7428
+            "x": 87.4535,
+            "y": 20.7176
           },
-          "sha256": "3cd9098e15fd05f55c08a45e3c228d75b9b81005584174423e767fea2f08074c",
+          "sha256": "073b308c87a70a32d026e94b4be0024ad961ef649d441528163e12867ccf3b42",
           "animal": {
-            "id": "hare",
-            "label": "Hare",
+            "id": "squirrel",
+            "label": "Squirrel",
             "group": "small",
-            "simulatedHerd": true,
-            "population": 5.3
+            "activity": "caching nuts in the canopy",
+            "simulatedHerd": false,
+            "population": null
           }
         },
         {
           "label": "CLOSE-UP",
           "tile": {
-            "x": 93,
-            "y": 27,
+            "x": 87,
+            "y": 20,
             "tree": true,
-            "s1": 0.316,
-            "s2": 0.018,
-            "s3": 0.984,
-            "moisture": 0.649,
-            "temperature": 0.418,
-            "height": 0.606,
+            "s1": 0.215,
+            "s2": 0.407,
+            "s3": 0.928,
+            "moisture": 0.531,
+            "temperature": 0.447,
+            "height": 0.404,
             "stockRatio": 1,
-            "type": "birchwood",
-            "label": "Birch Grove",
-            "age": "young",
+            "type": "mixed-oak-beech-spruce",
+            "label": "Oak–Beech–Spruce Wood",
+            "age": "mature",
             "soil": "loam",
             "clearing": 0,
-            "treeChance": 0.397,
-            "light": 0.74,
+            "treeChance": 0.529,
+            "light": 0.551,
             "compaction": 0,
             "huntingPressure": 0,
             "flowers": 0.06,
-            "roots": 0.18,
-            "stones": 0.065,
-            "mushrooms": 0.275,
+            "roots": 0.08,
+            "stones": 0,
+            "mushrooms": 0.239,
             "stumps": 0,
             "logs": 0,
             "trail": false,
             "goods": [
               "acorns",
-              "alder-cones",
-              "alder-timber",
+              "ash-keys",
+              "ash-timber",
               "bark",
               "beech-timber",
               "beechnuts",
+              "beeswax",
               "berries",
               "birch-sap",
               "birch-timber",
               "chanterelle",
-              "crab-apples",
-              "firewood"
+              "crab-apples"
             ],
             "species": [
-              "Birch",
-              "Maple",
-              "Oak"
+              "Oak",
+              "Beech",
+              "Maple"
             ]
           },
           "day": 150,
           "zoom": 5.2,
           "crop": 320,
-          "mark": "Hare",
+          "mark": "Squirrel",
           "focus": {
-            "x": 93.19014285714286,
-            "y": 27.7428
+            "x": 87.44021428571429,
+            "y": 20.7176
           },
-          "sha256": "3f97ccb61da4e6bc1abb2570974741909b1eb44fe31dd5c5469982650be6ea26",
+          "sha256": "8e03ab15596b8421a5344192d5d34289948540aee752ba2337d2175e661b6199",
           "animal": {
-            "id": "hare",
-            "label": "Hare",
+            "id": "squirrel",
+            "label": "Squirrel",
             "group": "small",
-            "simulatedHerd": true,
-            "population": 5.3
+            "activity": "caching nuts in the canopy",
+            "simulatedHerd": false,
+            "population": null
           }
         }
       ]
@@ -950,29 +952,29 @@
         {
           "label": "TILE",
           "tile": {
-            "x": 71,
-            "y": 104,
-            "tree": true,
-            "s1": 0.267,
-            "s2": 0.978,
-            "s3": 0.812,
-            "moisture": 0.579,
-            "temperature": 0.553,
-            "height": 0.591,
+            "x": 126,
+            "y": 93,
+            "tree": false,
+            "s1": 0.973,
+            "s2": 0.656,
+            "s3": 0.025,
+            "moisture": 0.537,
+            "temperature": 0.585,
+            "height": 0.59,
             "stockRatio": 1,
             "type": "mixed-ancient",
             "label": "Ancient Mixed Wood",
             "age": "ancient",
             "soil": "humus",
             "clearing": 0,
-            "treeChance": 0.605,
-            "light": 0.475,
+            "treeChance": 0.579,
+            "light": 0.501,
             "compaction": 0,
             "huntingPressure": 0,
             "flowers": 0.06,
             "roots": 0.4,
-            "stones": 0.043,
-            "mushrooms": 0.254,
+            "stones": 0.042,
+            "mushrooms": 0.241,
             "stumps": 0,
             "logs": 0.14,
             "trail": false,
@@ -1001,44 +1003,44 @@
           "crop": 700,
           "mark": null,
           "focus": {
-            "x": 71.739,
-            "y": 104.66539999999999
+            "x": 126.578,
+            "y": 93.31125
           },
-          "sha256": "bf002673bfa88ab034faaef9026ad52f500007ec028b37bb0f6c69f619fe6d66",
+          "sha256": "f4ad915961a23e901cf831afd4d83810634ec500eb717b2e33e9e25f1c19bf46",
           "animal": {
-            "id": "owl",
-            "label": "Owl",
+            "id": "woodpecker",
+            "label": "Woodpecker",
             "group": "bird",
             "simulatedHerd": true,
-            "population": 3.6
+            "population": 3.2
           }
         },
         {
           "label": "CLOSE-UP",
           "tile": {
-            "x": 71,
-            "y": 104,
-            "tree": true,
-            "s1": 0.267,
-            "s2": 0.978,
-            "s3": 0.812,
-            "moisture": 0.579,
-            "temperature": 0.553,
-            "height": 0.591,
+            "x": 126,
+            "y": 93,
+            "tree": false,
+            "s1": 0.973,
+            "s2": 0.656,
+            "s3": 0.025,
+            "moisture": 0.537,
+            "temperature": 0.585,
+            "height": 0.59,
             "stockRatio": 1,
             "type": "mixed-ancient",
             "label": "Ancient Mixed Wood",
             "age": "ancient",
             "soil": "humus",
             "clearing": 0,
-            "treeChance": 0.605,
-            "light": 0.475,
+            "treeChance": 0.579,
+            "light": 0.501,
             "compaction": 0,
             "huntingPressure": 0,
             "flowers": 0.06,
             "roots": 0.4,
-            "stones": 0.043,
-            "mushrooms": 0.254,
+            "stones": 0.042,
+            "mushrooms": 0.241,
             "stumps": 0,
             "logs": 0.14,
             "trail": false,
@@ -1065,18 +1067,18 @@
           "day": 150,
           "zoom": 5.2,
           "crop": 320,
-          "mark": "Owl",
+          "mark": "Woodpecker",
           "focus": {
-            "x": 71.80728571428571,
-            "y": 104.66539999999999
+            "x": 126.51014285714287,
+            "y": 93.31125
           },
-          "sha256": "ac676e610bbc8fd5bea22fe669c9ee569d962f389fa4c200e7786101721669a5",
+          "sha256": "eb6c62f5f6680a9ccce6ef9023d8cc03afe57086eab9459989d7377d0f90b633",
           "animal": {
-            "id": "owl",
-            "label": "Owl",
+            "id": "woodpecker",
+            "label": "Woodpecker",
             "group": "bird",
             "simulatedHerd": true,
-            "population": 3.6
+            "population": 3.2
           }
         }
       ]
@@ -1089,36 +1091,37 @@
         {
           "label": "TILE",
           "tile": {
-            "x": 93,
-            "y": 15,
-            "tree": true,
-            "s1": 0.112,
-            "s2": 0.321,
-            "s3": 0.864,
-            "moisture": 0.525,
+            "x": 90,
+            "y": 17,
+            "tree": false,
+            "s1": 0.997,
+            "s2": 0.812,
+            "s3": 0.997,
+            "moisture": 0.513,
             "temperature": 0.463,
-            "height": 0.334,
+            "height": 0.352,
             "stockRatio": 1,
-            "type": "mixed-open",
-            "label": "Open Mixed Wood",
+            "type": "mixed-young",
+            "label": "Young Mixed Plantation",
             "age": "young",
             "soil": "loam",
             "clearing": 0,
-            "treeChance": 0.309,
-            "light": 0.812,
+            "treeChance": 0.362,
+            "light": 0.769,
             "compaction": 0,
             "huntingPressure": 0,
             "flowers": 0.06,
             "roots": 0.08,
             "stones": 0,
-            "mushrooms": 0.238,
+            "mushrooms": 0.234,
             "stumps": 0,
             "logs": 0,
             "trail": false,
             "goods": [
               "acorns",
               "bark",
-              "beeswax",
+              "beech-timber",
+              "beechnuts",
               "berries",
               "birch-sap",
               "birch-timber",
@@ -1126,13 +1129,12 @@
               "chanterelle",
               "crab-apples",
               "firewood",
-              "fur",
-              "game"
+              "herbs"
             ],
             "species": [
-              "Oak",
               "Birch",
-              "Pine"
+              "Larch",
+              "Spruce"
             ]
           },
           "day": 150,
@@ -1140,15 +1142,15 @@
           "crop": 700,
           "mark": null,
           "focus": {
-            "x": 93.4105,
-            "y": 15.6888
+            "x": 90.656,
+            "y": 17.74865
           },
-          "sha256": "8a4525dc4152cc0145f15f0ef245198e12c9420056eb62a54417e4b4f252b530",
+          "sha256": "161a6bb3fe7094aa4ea23868b50352bbe32d40f60f0b389d17488b78ce41d3f2",
           "animal": {
-            "id": "butterfly",
-            "label": "Woodland butterfly",
+            "id": "bee",
+            "label": "Wild bee",
             "group": "insect",
-            "activity": "drifting through the light",
+            "activity": "visiting the flowering edge",
             "simulatedHerd": false,
             "population": null
           }
@@ -1156,36 +1158,37 @@
         {
           "label": "CLOSE-UP",
           "tile": {
-            "x": 93,
-            "y": 15,
-            "tree": true,
-            "s1": 0.112,
-            "s2": 0.321,
-            "s3": 0.864,
-            "moisture": 0.525,
+            "x": 90,
+            "y": 17,
+            "tree": false,
+            "s1": 0.997,
+            "s2": 0.812,
+            "s3": 0.997,
+            "moisture": 0.513,
             "temperature": 0.463,
-            "height": 0.334,
+            "height": 0.352,
             "stockRatio": 1,
-            "type": "mixed-open",
-            "label": "Open Mixed Wood",
+            "type": "mixed-young",
+            "label": "Young Mixed Plantation",
             "age": "young",
             "soil": "loam",
             "clearing": 0,
-            "treeChance": 0.309,
-            "light": 0.812,
+            "treeChance": 0.362,
+            "light": 0.769,
             "compaction": 0,
             "huntingPressure": 0,
             "flowers": 0.06,
             "roots": 0.08,
             "stones": 0,
-            "mushrooms": 0.238,
+            "mushrooms": 0.234,
             "stumps": 0,
             "logs": 0,
             "trail": false,
             "goods": [
               "acorns",
               "bark",
-              "beeswax",
+              "beech-timber",
+              "beechnuts",
               "berries",
               "birch-sap",
               "birch-timber",
@@ -1193,29 +1196,28 @@
               "chanterelle",
               "crab-apples",
               "firewood",
-              "fur",
-              "game"
+              "herbs"
             ],
             "species": [
-              "Oak",
               "Birch",
-              "Pine"
+              "Larch",
+              "Spruce"
             ]
           },
           "day": 150,
           "zoom": 6.4,
           "crop": 320,
-          "mark": "Woodland butterfly",
+          "mark": "Wild bee",
           "focus": {
-            "x": 93.38492857142857,
-            "y": 15.6888
+            "x": 90.727,
+            "y": 17.74865
           },
-          "sha256": "32cbd060da5896be2b8d88af2327e3bd9671cded7d481b34da12263fc2f86420",
+          "sha256": "2e1b74c0c78c0b534d7a5debde2bb4ff8546e51d8c669421d2c04b4c97843daa",
           "animal": {
-            "id": "butterfly",
-            "label": "Woodland butterfly",
+            "id": "bee",
+            "label": "Wild bee",
             "group": "insect",
-            "activity": "drifting through the light",
+            "activity": "visiting the flowering edge",
             "simulatedHerd": false,
             "population": null
           }
@@ -1284,7 +1286,7 @@
             "x": 59.7475,
             "y": 46.3279
           },
-          "sha256": "4b4f248984a267d5e43388c4c183878277b9585b8eaf777a2709d95d22b80695",
+          "sha256": "ef75aff3f3ca06e9408621d7f5b031f4dda3b06b610fd13dc9a9dca3a0e41ed4",
           "animal": null
         },
         {
@@ -1344,7 +1346,7 @@
             "x": 59.7275,
             "y": 45.9979
           },
-          "sha256": "e1cf17b8b8c43585c136765c3062d7bd8a1bd00b656d51263c05c4253e153c06",
+          "sha256": "2180aaf17ffc0bfadadf20de5740e0ad105c042fa9dd813e43a66f32462df7ec",
           "animal": null
         },
         {
@@ -1404,7 +1406,7 @@
             "x": 59.6575,
             "y": 46.237899999999996
           },
-          "sha256": "be837123d6f607dfc00baee0aebb7438acf357b4ce864e0c6885cb740a1a4548",
+          "sha256": "f533066d7c8faa846240829b8002a8f8535bf8027bee8d7fbb708dd2906b1261",
           "animal": null
         }
       ]
@@ -1471,7 +1473,7 @@
             "x": 108.6285,
             "y": 74.41745
           },
-          "sha256": "5369a907fc351554888dd3c912770b0dc339eef4b266a820452387f78ebdf409",
+          "sha256": "f180c5cc7fdd1d959f90378669b65f39b360790230b049f73ae2361c269f87cb",
           "animal": null
         }
       ]
@@ -1511,23 +1513,23 @@
             "logs": 0,
             "trail": true,
             "goods": [
+              "acorns",
+              "bark",
               "birch-sap",
               "birch-timber",
               "blueberries",
               "chanterelle",
+              "crab-apples",
               "dwarf-pine-cones",
               "dwarf-pine-timber",
               "firewood",
               "fur",
-              "game",
-              "herbs",
-              "hides",
-              "juniper-berries"
+              "game"
             ],
             "species": [
               "Pine",
-              "Spruce",
-              "Larch"
+              "Juniper",
+              "Spruce"
             ]
           },
           "day": 150,
@@ -1538,7 +1540,7 @@
             "x": 87.737,
             "y": 40.520799999999994
           },
-          "sha256": "736b6a220b7cbe11d0e4d4f9b9e6d7d96bd644de197b9225409e27194fb32560",
+          "sha256": "c45f74d5adf24d9cd1fdd7fae0982b5f62b7b8fa69f46f7ec358848701957fe6",
           "animal": null
         }
       ]

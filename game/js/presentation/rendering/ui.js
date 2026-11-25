@@ -439,7 +439,7 @@ function renderCardHud(){
     }
 }
 function renderViewHud(){
-    const labels=["","LANDSCAPE","DISTRICTS","ROOFTOPS","INTERIORS"];
+    const labels=["","LANDSCAPE","DISTRICTS","ROOFTOPS","INTERIORS","GROUND"];
     setText("zoom-level-name",labels[state.zoomLevel]||"ROOFTOPS");setText("zoom-value","×"+(state.zoom/(Number(state.renderScale)||1)).toFixed(2));
     const layerSelect=document.getElementById("map-layer-select");
     if(layerSelect&&layerSelect.value!==state.mapLayer)layerSelect.value=state.mapLayer||"terrain";

@@ -57,6 +57,7 @@ uniform float uSea;
 uniform float uTime;
 uniform float uDetail;
 uniform float uCloseDetail;
+uniform float uInspection;
 uniform float uSeed;
 uniform float uHighQuality;
 uniform float uSnowBias;
@@ -347,8 +348,20 @@ vec3 grassMaterial(vec2 world, float moisture, float macro, float meso, float fi
     color = mix(color, mix(uRock * 0.72, vec3(0.20, 0.20, 0.16), 0.38), stone * 0.45);
     vec2 detailMap = groundDetail(world, 0.0, 0.24);
     color *= mix(1.0, 0.86 + 0.28 * detailMap.x, uAtlasStrength * (0.45 + 0.55 * uCloseDetail));
+    // The coarse atlas is deliberately soft at map distance. At ground-study
+    // zoom it is sampled again at a much finer world scale: the same 256 px
+    // authored tile now lands near screen resolution instead of being stretched
+    // four times across one world cell.
+    vec2 closeMap = groundDetail(world, 12.0, 1.85);
+    color *= mix(1.0, 0.88 + 0.24 * closeMap.x, uInspection * 0.58);
+    // Crisp paper tooth independent of the watercolour atlas. The world-scale
+    // hash lands at a few screen pixels at ground-study zoom, so the finely
+    // painted hand layer sits on a textured surface instead of a soft wash.
+    float inspectionGrain = hash21(floor(world * 54.0) + vec2(uSeed * 37.0, uSeed * 19.0));
+    color *= 0.955 + 0.09 * inspectionGrain * uInspection;
     float hatchGate = 0.30 + 0.70 * smoothstep(0.36, 0.62,
         vnoise(world * 0.19 + vec2(uSeed * 5.0, 2.1)));
+    color = penHatch(color, closeMap.y, uLush, 0.11 * uInspection * uAtlasStrength);
     color = penHatch(color, detailMap.y, uLush, (0.22 + 0.26 * uCloseDetail) * uAtlasStrength * hatchGate);
     // Seasonal ground cover changes the surface itself, not just its palette:
     // fallen leaves, spring blossom, scorched summer patches and winter frost.
@@ -391,6 +404,14 @@ vec3 forestMaterial(vec2 world, float macro, float meso, float fine, float micro
     color = mix(color, color * 0.70, smoothstep(0.86, 0.99, fine) * 0.26 * detail);
     vec2 detailMap = groundDetail(world, 4.0, 0.30);
     color *= mix(1.0, 0.86 + 0.24 * detailMap.x, uAtlasStrength * (0.40 + 0.60 * uCloseDetail));
+    // Forest ground gets the same near-field octave, with an additional ink
+    // hatch that follows the fine atlas. This is the shader-level cure for the
+    // enlarged green wash behind the hand-drawn trees at 5x.
+    vec2 closeMap = groundDetail(world, 13.0, 1.95);
+    color *= mix(1.0, 0.86 + 0.28 * closeMap.x, uInspection * 0.66);
+    color = penHatch(color, closeMap.y, uForest, 0.13 * uInspection * uAtlasStrength);
+    float inspectionGrain = hash21(floor(world * 54.0) + vec2(uSeed * 31.0, uSeed * 23.0));
+    color *= 0.945 + 0.10 * inspectionGrain * uInspection;
     float forestGate = 0.18 + 0.82 * smoothstep(0.36, 0.62,
         vnoise(world * 0.22 + vec2(uSeed * 3.0, 7.4)));
     color = penHatch(color, detailMap.y, uForest, (0.22 + 0.20 * uCloseDetail) * uAtlasStrength * forestGate);
@@ -1066,6 +1087,7 @@ function init() {
         time: gl.getUniformLocation(program, "uTime"),
         detail: gl.getUniformLocation(program, "uDetail"),
         closeDetail: gl.getUniformLocation(program, "uCloseDetail"),
+        inspection: gl.getUniformLocation(program, "uInspection"),
         seed: gl.getUniformLocation(program, "uSeed"),
         highQuality: gl.getUniformLocation(program, "uHighQuality"),
         snowBias: gl.getUniformLocation(program, "uSnowBias"),
@@ -1573,6 +1595,7 @@ export function drawTerrainGL() {
     gl.uniform1f(uniforms.time, performance.now() / 1000);
     gl.uniform1f(uniforms.detail, Math.max(0, Math.min(1, (state.zoom - 0.30) / 1.25)));
     gl.uniform1f(uniforms.closeDetail, Math.max(0, Math.min(1, (state.zoom - 1.10) / 1.50)));
+    gl.uniform1f(uniforms.inspection, Math.max(0, Math.min(1, (state.zoom - 2.40) / 2.20)));
     gl.uniform1f(uniforms.seed, (state.worldSeed % 1000) * 0.013);
     gl.uniform1f(uniforms.highQuality, state.zoom >= 0.45 ? 1 : 0);
     gl.uniform2f(uniforms.atlasGrid, TERRAIN_ATLAS_COLUMNS, TERRAIN_ATLAS_ROWS);

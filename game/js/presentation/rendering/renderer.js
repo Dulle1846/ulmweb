@@ -18,6 +18,107 @@ import { drawWeatherOverlay } from './weather-overlay.js';
 import { drawDaylightOverlay } from './daylight.js';
 import { HAZARD_TERRAIN_STYLES, refreshHazardTerrainBake } from '../../systems/hazard-scars.js';
 
+// Forest goods are visible on the atlas as a small drawn mark, not only as a
+// coloured survey square. The glyphs use the same marker category and colour as
+// the discovered resource data, so the map remains a reading of the world and
+// never a second economy state.
+function drawBiomeMarkerGlyph(ctx, marker, x, y, size, color) {
+    const category = String(marker?.category || "");
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.globalAlpha = marker?.rare ? 0.98 : 0.86;
+    ctx.fillStyle = "rgba(18, 25, 17, 0.62)";
+    ctx.strokeStyle = "rgba(241, 232, 205, 0.58)";
+    ctx.lineWidth = Math.max(0.6, size * 0.075);
+    ctx.beginPath();
+    ctx.arc(0, 0, size * 0.56, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = color;
+    ctx.strokeStyle = color;
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+    if (category === "wood") {
+        ctx.beginPath();
+        ctx.moveTo(0, -size * 0.35);
+        ctx.lineTo(size * 0.3, size * 0.15);
+        ctx.lineTo(-size * 0.3, size * 0.15);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillRect(-size * 0.065, size * 0.1, size * 0.13, size * 0.25);
+    } else if (category === "fungus") {
+        ctx.beginPath();
+        ctx.ellipse(0, -size * 0.1, size * 0.34, size * 0.18, 0, Math.PI, Math.PI * 2);
+        ctx.fill();
+        ctx.fillRect(-size * 0.07, -size * 0.02, size * 0.14, size * 0.3);
+    } else if (category === "fruit") {
+        for (let i = 0; i < 3; i++) {
+            ctx.beginPath();
+            ctx.arc((i - 1) * size * 0.2, (i === 1 ? -size * 0.12 : size * 0.08), size * 0.11, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.beginPath();
+        ctx.moveTo(0, -size * 0.18);
+        ctx.lineTo(size * 0.07, -size * 0.4);
+        ctx.stroke();
+    } else if (category === "herb" || category === "fiber" || category === "dye" || category === "poison") {
+        ctx.lineWidth = Math.max(0.65, size * 0.08);
+        ctx.beginPath();
+        ctx.moveTo(0, size * 0.32);
+        ctx.quadraticCurveTo(size * 0.06, 0, 0, -size * 0.34);
+        ctx.stroke();
+        ctx.fillStyle = color;
+        for (let i = 0; i < 3; i++) {
+            ctx.beginPath();
+            ctx.ellipse((i % 2 ? 1 : -1) * size * 0.18, -size * 0.09 + i * size * 0.13,
+                size * 0.16, size * 0.07, (i % 2 ? -0.45 : 0.45), 0, Math.PI * 2);
+            ctx.fill();
+        }
+    } else if (category === "animal") {
+        ctx.lineWidth = Math.max(0.6, size * 0.075);
+        ctx.beginPath();
+        ctx.moveTo(-size * 0.28, size * 0.3);
+        ctx.lineTo(-size * 0.28, -size * 0.05);
+        ctx.lineTo(-size * 0.5, -size * 0.4);
+        ctx.moveTo(-size * 0.28, -size * 0.05);
+        ctx.lineTo(0, -size * 0.35);
+        ctx.moveTo(-size * 0.28, -size * 0.05);
+        ctx.lineTo(size * 0.28, -size * 0.28);
+        ctx.stroke();
+    } else if (category === "fish") {
+        ctx.beginPath();
+        ctx.ellipse(-size * 0.08, 0, size * 0.34, size * 0.17, 0.1, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(size * 0.23, 0);
+        ctx.lineTo(size * 0.48, -size * 0.22);
+        ctx.lineTo(size * 0.48, size * 0.22);
+        ctx.closePath();
+        ctx.fill();
+    } else if (["ore", "stone", "gem", "salt"].includes(category)) {
+        ctx.beginPath();
+        ctx.moveTo(0, -size * 0.35);
+        ctx.lineTo(size * 0.33, 0);
+        ctx.lineTo(0, size * 0.35);
+        ctx.lineTo(-size * 0.33, 0);
+        ctx.closePath();
+        ctx.fill();
+    } else if (category === "grain" || category === "spice") {
+        ctx.lineWidth = Math.max(0.6, size * 0.075);
+        for (let i = 0; i < 3; i++) {
+            ctx.beginPath();
+            ctx.moveTo((i - 1) * size * 0.16, size * 0.3);
+            ctx.lineTo((i - 1) * size * 0.22, -size * 0.3);
+            ctx.stroke();
+        }
+    } else {
+        ctx.beginPath();
+        ctx.arc(0, 0, size * 0.18, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+}
+
 let visibleEntitiesCache=[];
 let visibleEntitiesUntil=0;
 let visibleEntitiesKey="";
@@ -371,10 +472,9 @@ function drawMapLayer(ctx,zoom,camera,canvas){
             }
             for(const marker of cell.markers||[]){
                 const mx=marker.x*tileSize-camera.x,my=marker.y*tileSize-camera.y;
-                if(mx<-markerSize||my<-markerSize||mx>canvas.width+markerSize||my>canvas.height+markerSize)continue;
-                ctx.globalAlpha=marker.rare?.95:.66;
-                ctx.fillStyle=markerColors[marker.category]||"#e4bd72";
-                ctx.fillRect(mx-markerSize*.5,my-markerSize*.5,markerSize,markerSize);
+                const glyphSize=Math.max(3.2,Math.min(9,tileSize*.19));
+                if(mx<-glyphSize||my<-glyphSize||mx>canvas.width+glyphSize||my>canvas.height+glyphSize)continue;
+                drawBiomeMarkerGlyph(ctx,marker,mx,my,glyphSize,markerColors[marker.category]||"#e4bd72");
             }
             for(const refuge of cell.refuges||[]){
                 const mx=refuge.x*tileSize-camera.x,my=refuge.y*tileSize-camera.y;

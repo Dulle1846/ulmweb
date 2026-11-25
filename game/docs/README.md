@@ -17,8 +17,8 @@ For the current development stage, these documents focus on making the existing 
 - [F0 Baseline Checklist](F0_BASELINE_CHECKLIST.md) — repeatable manual browser smoke-test procedure.
 - [Baseline Fix Review](BASELINE_FIX_REVIEW.md) — source repairs, known gaps and verification still required.
 - [Source Structure](../game-structure) — current directory tree and module responsibilities.
-- [Zoom and Building Placement](ZOOM_AND_BUILDING_PLACEMENT.md) — four detail levels, camera behaviour and drag-and-drop validation.
-- [Terrain Visual Reference](TERRAIN_VISUAL_REFERENCE.md) — committed four-season, four-zoom contact sheet and reproduction script.
+- [Zoom and Building Placement](ZOOM_AND_BUILDING_PLACEMENT.md) — five detail levels including ground study, camera behaviour and drag-and-drop validation.
+- [Terrain Visual Reference](TERRAIN_VISUAL_REFERENCE.md) — committed four-season contact sheet for the four broad terrain bands, plus the ground-study reference and reproduction scripts.
 - [Laubwälder 1.2.1](FOREST_ECOLOGY.md) — shared forest ecology, all eight broadleaf species, fifteen formations, the 60-point audit and the forest visual references.
 - [Nadelwälder 1.2.2](CONIFER_FORESTS.md) — five conifer species, twelve conifer formations, seasonal larch needles, needle-floor ecology, conifer products and disturbance succession.
 - [Mischwälder 1.2.3](MIXED_FORESTS.md)

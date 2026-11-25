@@ -10,7 +10,7 @@ import { drawTerrainGL } from './terrain-webgl.js';
 import { flowerBloom, foliageState } from './seasonal-foliage.js';
 import { seasonalState } from '../../world/season.js';
 import {
-    FOREST_SPECIES, forestCanopyShade, forestFaunaFor, forestLineOfSightBlocked, forestMicrofaunaAt,
+    FOREST_SPECIES, forestCanopyShade, forestFaunaFor, forestLineOfSightBlocked, forestGoodsFor, forestMicrofaunaAt,
     forestClearingAt, forestPotentialAt, forestSightProfile, forestStandAt, forestTreeCopies, forestTreeForm,
     pickAgeClass, pickSpecies,
 } from '../../world/forest-ecology.js';
@@ -1805,15 +1805,20 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas, cursor = null, deadline 
                 if (detail && zoom >= 0.55) {
                     drawForestGround(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, climateKey);
                     drawForestFloor(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, climateKey, tick, zoom);
+                    if (zoom >= 2.8) {
+                        drawCloseForestFloor(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, climateKey, zoom);
+                    }
                     // The canopy shade belongs on the floor, below trunks and
                     // understorey. One cached soft sprite per tile is far cheaper
                     // than a per-pixel screen pass and follows the same world
                     // lattice as the floor it darkens.
-                    drawCanopyShade(ctx, px, py, cellPx, stand, sun, climate.snowCover);
+                    drawCanopyShade(ctx, px, py, cellPx, stand, sun, climate.snowCover,
+                        zoom >= 3 ? 0.46 : 1);
                     if (zoom >= 0.8) drawMast(ctx, px, py, cellPx, stand, dayOfYear, climateKey);
                     const mist = forestMistFactor(Number.isFinite(hour) ? hour : 12, m, seasonName, state.weather)
                         * (Number(stand.regionalRender?.mist) || 1);
-                    if (zoom >= 0.85 && mist > 0.04) drawForestMist(ctx, px, py, cellPx, stand, s2, tick, mist);
+                    if (zoom >= 0.85 && mist > 0.04) drawForestMist(ctx, px, py, cellPx, stand, s2, tick,
+                        mist * (zoom >= 3 ? 0.45 : 1));
                 }
                 // Close LOD samples a half-tile crown lattice; far LOD draws
                 // one canopy grove per world-anchored 2x2 (or coarser) cell.
@@ -1880,6 +1885,12 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas, cursor = null, deadline 
                 }
                 if (clearingMeadow && grass && zoom >= 0.34) {
                     drawGrassland(ctx, px, py, cellPx, grass, s1, s2, s3, tick, zoom, sun, dayOfYear, climateKey);
+                }
+                if (zoom >= 2.8) {
+                    drawForestGoods(ctx, px, py, cellPx, stand, dayOfYear, climateKey, s1, s2, s3, zoom);
+                }
+                if (zoom >= 3.0 && s1 > 0.18) {
+                    drawCloseInsects(ctx, px, py, cellPx, stand, dayOfYear, climateKey, s2, zoom, x, y);
                 }
                 if (zoom >= 0.75 && s1 > 0.95) drawForestFaunaScene(ctx, px, py, cellPx, stand, dayOfYear, climateKey, s3, zoom, x, y, tick);
                 if (zoom >= 0.9 && s1 > 0.972) drawFallenLog(ctx, px, py, cellPx, stand, s2, s3, dayOfYear, climateKey);
@@ -2678,6 +2689,7 @@ function drawBroadleaf(ctx, px, py, s, sway, tick, seed, dayOfYear, variant = 0,
     const barkInk = mixHex(definition.bark, "#2d2117", 0.4);
     const barkBase = mixHex(definition.bark, "#33271d", 0.18);
     const bend = (seed - 0.5) * trunkW * 1.1;
+    const study = s >= 3;
 
     // Exposed roots anchor old trees to the humus instead of leaving a stick on
     // top of the ground.
@@ -2757,6 +2769,29 @@ function drawBroadleaf(ctx, px, py, s, sway, tick, seed, dayOfYear, variant = 0,
         ctx.ellipse(px + trunkW * 0.08 + lean * 0.45, py - trunkH * 0.38,
             Math.max(0.7, 0.75 * s), Math.max(0.5, 0.55 * s), 0.2, 0, Math.PI * 2);
         ctx.fill();
+    }
+    // Close study of the bole: short fissures, a pale wound and lichen spots.
+    if (study) {
+        ctx.globalAlpha = 0.3;
+        ctx.strokeStyle = mixHex(barkInk, "#120c08", 0.3);
+        ctx.lineWidth = Math.max(0.4, 0.24 * s);
+        for (let i = 0; i < 6; i++) {
+            const fx = px + trunkW * (-0.32 + i * 0.13) + lean * 0.6;
+            const fy = py - trunkH * (0.08 + (i % 3) * 0.08);
+            ctx.beginPath();
+            ctx.moveTo(fx, fy);
+            ctx.quadraticCurveTo(fx + trunkW * 0.04, fy - trunkH * 0.1, fx + trunkW * 0.02, fy - trunkH * 0.2);
+            ctx.stroke();
+        }
+        ctx.globalAlpha = 0.22;
+        ctx.fillStyle = mixHex(definition.barkLight, "#dfe7cf", 0.3);
+        for (let i = 0; i < 3; i++) {
+            ctx.beginPath();
+            ctx.ellipse(px - trunkW * (0.2 - i * 0.18) + lean * 0.4,
+                py - trunkH * (0.2 + i * 0.06), Math.max(0.5, 0.3 * s), Math.max(0.3, 0.18 * s),
+                i * 0.7, 0, Math.PI * 2);
+            ctx.fill();
+        }
     }
     ctx.restore();
 
@@ -2952,6 +2987,57 @@ function drawBroadleaf(ctx, px, py, s, sway, tick, seed, dayOfYear, variant = 0,
         ctx.fill();
     }
 
+    // At ground-study distance a crown is no longer a wash: it is a colony of
+    // individual leaves. The same authored silhouette supplies the volume, and
+    // this bounded layer adds leaf blades, midribs and a few twig-like veins so
+    // the enlarged canopy still reads as a drawing rather than a green blob.
+    if (study) {
+        ctx.save();
+        ctx.lineCap = "round";
+        for (let i = 0; i < 64; i++) {
+            const angle = i * 2.399 + seed * 9 + variant * 0.37;
+            const edge = 0.10 + ((i * 17) % 100) / 100 * 0.86;
+            const x = crownX + Math.cos(angle) * radius * edge;
+            const y = crownY + Math.sin(angle) * radius * aspect * edge * 0.88;
+            const leaf = radius * (0.026 + (i % 5) * 0.006);
+            const width = leaf * (0.38 + (i % 3) * 0.07);
+            const rotation = angle + 1.15 + (i % 5) * 0.19;
+            ctx.globalAlpha = 0.25 + (i % 4) * 0.045 + cover * 0.07;
+            ctx.fillStyle = i % 3 === 0 ? light : i % 3 === 1 ? crown : darkCrown;
+            ctx.beginPath();
+            ctx.ellipse(x, y, leaf, width, rotation, 0, Math.PI * 2);
+            ctx.fill();
+            if (i % 3 === 0) {
+                ctx.globalAlpha = 0.2;
+                ctx.strokeStyle = mixHex(light, "#f3e8bb", 0.18);
+                ctx.lineWidth = Math.max(0.3, 0.09 * s);
+                ctx.beginPath();
+                ctx.moveTo(x - Math.cos(rotation) * leaf * 0.7, y - Math.sin(rotation) * leaf * 0.7);
+                ctx.lineTo(x + Math.cos(rotation) * leaf * 0.7, y + Math.sin(rotation) * leaf * 0.7);
+                ctx.stroke();
+            }
+        }
+        // A few short branchlets sit on top of the wash as visible structure.
+        ctx.globalAlpha = 0.34;
+        ctx.strokeStyle = mixHex(barkInk, "#20160e", 0.2);
+        for (let i = 0; i < 7; i++) {
+            const angle = i * 2.399 + seed * 5.2 + 0.3;
+            const inner = radius * (0.16 + (i % 3) * 0.08);
+            const outer = radius * (0.52 + (i % 4) * 0.09);
+            ctx.lineWidth = Math.max(0.4, 0.25 * s);
+            ctx.beginPath();
+            ctx.moveTo(crownX + Math.cos(angle) * inner, crownY + Math.sin(angle) * inner * aspect);
+            ctx.quadraticCurveTo(
+                crownX + Math.cos(angle + 0.25) * (inner + outer) * 0.52,
+                crownY + Math.sin(angle + 0.25) * (inner + outer) * 0.52 * aspect,
+                crownX + Math.cos(angle + 0.08) * outer,
+                crownY + Math.sin(angle + 0.08) * outer * aspect
+            );
+            ctx.stroke();
+        }
+        ctx.restore();
+    }
+
     // Leaf tips outside the main wash break the balloon edge into foliage.
     for (let i = 0; i < 12; i++) {
         const angle = i * 2.399 + seed * 4 + variant * 0.5;
@@ -2969,10 +3055,10 @@ function drawBroadleaf(ctx, px, py, s, sway, tick, seed, dayOfYear, variant = 0,
     // Short curved hatching inside the wash makes the crown read as pen work
     // even when several trees overlap; without it the layered fills still
     // average into a flat green disc at gameplay distance.
-    const hatchCount = lowZoom ? 15 : 10;
-    ctx.globalAlpha = (lowZoom ? 0.46 : 0.18) + 0.06 * cover;
+    const hatchCount = study ? 18 : lowZoom ? 15 : 10;
+    ctx.globalAlpha = (study ? 0.25 : lowZoom ? 0.46 : 0.18) + 0.06 * cover;
     ctx.strokeStyle = lowZoom ? mixHex(crown, "#0b120a", 0.84) : mixHex(crown, "#10180f", 0.72);
-    ctx.lineWidth = Math.max(lowZoom ? 0.8 : 0.45, 0.58 * s);
+    ctx.lineWidth = Math.max(lowZoom ? 0.8 : 0.45, (study ? 0.32 : 0.58) * s);
     ctx.lineCap = "round";
     for (let i = 0; i < hatchCount; i++) {
         const angle = i * 2.399 + seed * 6.1 + variant * 0.6;
@@ -2993,10 +3079,11 @@ function drawBroadleaf(ctx, px, py, s, sway, tick, seed, dayOfYear, variant = 0,
     // The rim is a sequence of short pen strokes with deliberate gaps. This is
     // the hand-drawn break between the wash and the ground that a vector circle
     // can never give.
-    ctx.globalAlpha = (lowZoom ? 0.72 : 0.55) + 0.12 * cover;
+    ctx.globalAlpha = (study ? 0.5 : lowZoom ? 0.72 : 0.55) + 0.12 * cover;
     strokeCrownContour(ctx, crownX, crownY, crownPoints,
         mixHex(crown, lowZoom ? "#080d07" : "#0f160f", lowZoom ? 0.9 : 0.78),
-        Math.max(lowZoom ? 1.05 : 0.7, (lowZoom ? 1.05 : 0.9) * s), seed, lowZoom ? 0.16 : 0.24);
+        Math.max(study ? 0.7 : lowZoom ? 1.05 : 0.7,
+            (study ? 0.42 : lowZoom ? 1.05 : 0.9) * s), seed, study ? 0.3 : lowZoom ? 0.16 : 0.24);
 
     ctx.restore();
 
@@ -3470,6 +3557,521 @@ function drawMast(ctx, px, py, cellPx, stand, dayOfYear, climateKey) {
     ctx.restore();
 }
 
+// Close forest floor: a second, deliberately dense pass over the same cached
+// raster. The stand query already knows the soil, litter, moss, flowers and
+// deadwood, so this adds the small things a player can inspect at ground study
+// zoom without touching the simulation or drawing an unbounded per-frame pass.
+function drawCloseForestFloor(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, climateKey, zoom) {
+    if (!stand?.forest || zoom < 2.8) return;
+    const season = seasonalState(dayOfYear, climateKey);
+    if (season.snowCover >= 0.58) return;
+    const s = cellPx / 48;
+    const turn = season.foliageTurn;
+    const floorSpecies = FOREST_SPECIES[stand.dominantSpecies];
+    const regional = Array.isArray(stand.regionalRender?.palette) ? stand.regionalRender.palette : null;
+    const palette = regional && regional.length >= 4
+        ? regional
+        : turn > 0.52
+            ? ["#6b482b", "#955e32", "#b07a3c", "#5b432a", "#8d6b3e"]
+            : ["#4b6236", "#6d713b", "#5b472d", "#7b5d36", "#456b3e"];
+    const leafShape = floorSpecies?.leafShape || "lance";
+    const vein = turn > 0.52 ? "rgba(50, 34, 19, 0.42)" : "rgba(34, 50, 28, 0.42)";
+    ctx.save();
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+
+    // Overlapping leaf litter. Species-shaped leaves are mixed with simple
+    // oval flecks so the floor reads as a real drift rather than one repeated
+    // leaf stamp. The pass is bounded to 14 marks per tile.
+    for (let i = 0; i < 14; i++) {
+        const angle = i * 2.399963 + s1 * 6.283 + (i % 3) * 0.51;
+        const reach = cellPx * (0.12 + ((i * 37 + Math.floor(s2 * 97)) % 13) * 0.026);
+        const x = px + Math.cos(angle) * reach;
+        const y = py + 3.2 * s + Math.sin(angle) * reach * 0.48;
+        const size = (1.7 + (i % 4) * 0.52) * s;
+        ctx.globalAlpha = 0.58 + (i % 3) * 0.12;
+        if (i % 5 === 0) {
+            drawSpeciesLeaf(ctx, x, y, size, angle * 0.78, leafShape,
+                palette[(i + Math.floor(s3 * 5)) % palette.length]);
+        } else {
+            ctx.fillStyle = palette[(i + Math.floor(s1 * 4)) % palette.length];
+            ctx.beginPath();
+            ctx.ellipse(x, y, size, size * 0.45, angle, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = vein;
+            ctx.lineWidth = Math.max(0.35, 0.34 * s);
+            ctx.beginPath();
+            ctx.moveTo(x - Math.cos(angle) * size * 0.7, y - Math.sin(angle) * size * 0.7);
+            ctx.lineTo(x + Math.cos(angle) * size * 0.7, y + Math.sin(angle) * size * 0.7);
+            ctx.stroke();
+        }
+    }
+
+    // Exposed twigs, root hairs and fine mycelium. These are the highest-
+    // frequency strokes in the pass, which is what makes the ground stop
+    // looking like an enlarged texture at 5x.
+    ctx.strokeStyle = turn > 0.52 ? "#4d3520" : "#2f4326";
+    ctx.globalAlpha = 0.56;
+    ctx.lineWidth = Math.max(0.55, 0.62 * s);
+    for (let i = 0; i < 5; i++) {
+        const angle = i * 2.8 + s2 * 4.6;
+        const x = px + Math.cos(angle) * cellPx * (0.12 + i * 0.045);
+        const y = py + 2.4 * s + Math.sin(angle) * cellPx * 0.1;
+        const length = (3.8 + (i % 3) * 2.1) * s;
+        ctx.beginPath();
+        ctx.moveTo(x - length * 0.5, y + length * 0.18);
+        ctx.quadraticCurveTo(x, y - length * 0.28, x + length * 0.5, y - length * 0.05);
+        ctx.stroke();
+        if (i % 2 === 0) {
+            ctx.beginPath();
+            ctx.moveTo(x, y - length * 0.04);
+            ctx.lineTo(x + length * 0.16, y - length * 0.34);
+            ctx.stroke();
+        }
+    }
+    ctx.globalAlpha = 0.22;
+    ctx.strokeStyle = "#d7c9a1";
+    ctx.lineWidth = Math.max(0.35, 0.32 * s);
+    for (let i = 0; i < 3; i++) {
+        const x = px + (i - 1) * cellPx * 0.23 + (s3 - 0.5) * 8 * s;
+        const y = py + 3.8 * s + (i % 2) * 2.2 * s;
+        ctx.beginPath();
+        ctx.moveTo(x - 3.5 * s, y + 1.2 * s);
+        ctx.quadraticCurveTo(x - 1.2 * s, y - 1.4 * s, x + 2.6 * s, y - 0.4 * s);
+        ctx.quadraticCurveTo(x + 4.2 * s, y + 0.5 * s, x + 5.2 * s, y - 1.2 * s);
+        ctx.stroke();
+    }
+
+    // Short blades and a few sedge stems break up the leaf carpet. They are
+    // separate from the existing tuft pass so a flower-rich or fern-rich tile
+    // still has ground cover under the larger motif.
+    ctx.globalAlpha = 0.5;
+    ctx.strokeStyle = turn > 0.55 ? "#8a743a" : "#466c38";
+    ctx.lineWidth = Math.max(0.55, 0.58 * s);
+    for (let i = 0; i < 9; i++) {
+        const angle = i * 2.1 + s1 * 5.4;
+        const x = px + Math.cos(angle) * cellPx * (0.14 + (i % 4) * 0.055);
+        const y = py + 3.4 * s + Math.sin(angle) * cellPx * 0.16;
+        const height = (2.6 + (i % 4) * 1.2) * s;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.quadraticCurveTo(x + Math.cos(angle) * 1.3 * s, y - height * 0.6,
+            x + Math.sin(angle) * 1.8 * s, y - height);
+        ctx.stroke();
+    }
+
+    // Small stones with a lit top face and a dark under-edge. Three is enough
+    // to read as mineral soil without turning every tile into a scree field.
+    for (let i = 0; i < 3; i++) {
+        const x = px + ((i * 31 + Math.floor(s2 * 71)) % 37 - 18) * s * 0.42;
+        const y = py + ((i * 19 + Math.floor(s3 * 53)) % 21 - 10) * s * 0.36 + 3.4 * s;
+        const size = (0.8 + (i % 2) * 0.35) * s;
+        ctx.globalAlpha = 0.66;
+        ctx.fillStyle = i === 1 ? "#a99b81" : "#887c68";
+        ctx.beginPath();
+        ctx.ellipse(x, y, size, size * 0.54, i * 0.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "rgba(222, 211, 181, 0.5)";
+        ctx.beginPath();
+        ctx.ellipse(x - size * 0.2, y - size * 0.16, size * 0.52, size * 0.22, i * 0.5, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    // Fine tooth: tiny leaf fragments, grit and dry-brush fibres fill the gaps
+    // between the larger motifs. This is the layer that gives the close ground
+    // a drawn surface instead of leaving the enlarged shader wash visible.
+    if (zoom >= 3.4) {
+        for (let i = 0; i < 64; i++) {
+            const angle = i * 2.17 + s1 * 4.3;
+            const x = px + Math.cos(angle) * cellPx * (0.08 + ((i * 13) % 41) / 100);
+            const y = py + 3.4 * s + Math.sin(angle) * cellPx * (0.06 + ((i * 7) % 29) / 100);
+            const size = (0.18 + (i % 4) * 0.16) * s;
+            ctx.globalAlpha = 0.24 + (i % 3) * 0.1;
+            ctx.fillStyle = i % 5 === 0 ? "#bba77a" : i % 5 === 1 ? "#4c3d28" : palette[i % palette.length];
+            ctx.beginPath();
+            ctx.ellipse(x, y, size * 1.8, size * 0.7, angle, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.globalAlpha = 0.28;
+        ctx.strokeStyle = turn > 0.52 ? "#6b4e2d" : "#49643a";
+        ctx.lineWidth = Math.max(0.45, 0.38 * s);
+        for (let i = 0; i < 20; i++) {
+            const angle = i * 2.63 + s2 * 5.1;
+            const x = px + Math.cos(angle) * cellPx * (0.1 + (i % 5) * 0.055);
+            const y = py + 4.1 * s + Math.sin(angle) * cellPx * 0.2;
+            ctx.beginPath();
+            ctx.moveTo(x - Math.cos(angle) * 2.2 * s, y);
+            ctx.lineTo(x + Math.cos(angle) * (1.2 + (i % 4) * 0.5) * s, y + Math.sin(angle) * 0.8 * s);
+            ctx.stroke();
+        }
+    }
+
+    // Moss rosettes, lichen crust and a rare close mushroom cluster.
+    if ((stand.ground?.moss || 0) > 0.12) {
+        drawMossPatch(ctx, px + (s1 - 0.5) * cellPx * 0.28, py + 4.2 * s,
+            cellPx * 0.46, stand, s3, climateKey, dayOfYear);
+    }
+    if ((stand.ground?.mushrooms || 0) > 0.1 && s2 > 0.24) {
+        drawMushroomCluster(ctx, px + (s2 - 0.5) * cellPx * 0.36, py + 4.3 * s,
+            s * 0.95, s3, season.snowCover);
+    }
+    if (flowerBloom(dayOfYear, climateKey) > 0.15 && (stand.ground?.flowers || 0) > 0.1) {
+        for (let i = 0; i < 2; i++) {
+            drawFlower(ctx, px + (s3 - 0.5) * cellPx * 0.3 + (i - 0.5) * 5 * s,
+                py + 4.5 * s + i * 2.4 * s, cellPx * 0.62, s1 + i * 0.19, dayOfYear, climateKey);
+        }
+    }
+    ctx.restore();
+}
+
+// The map's forest economy is a visual layer, not a second data source: the
+// same FOREST_GOODS records that the inspector and gather action read become
+// small hand-drawn ground marks. Wood is already the tree itself, so the icons
+// focus on the gathered, mast, medicine and specialty goods.
+function forestGoodKind(good) {
+    const id = String(good?.id || "");
+    const category = String(good?.category || "");
+    if (category === "wood" || /timber|logs?$|firewood|charcoal/.test(id)) return "log";
+    if (/mushroom|truffle|porcini|chanterelle|fungus/.test(id)) return "mushroom";
+    if (id === "lichen" || /lichen/.test(id)) return "lichen";
+    if (category === "mast" || /^(acorns|beechnuts|chestnuts|hazelnuts|hornbeam-seeds|.*-cones)$/.test(id)) return "mast";
+    if (/berr|sloe|rosehip|cherry|apple|pear|plum|hip$/.test(id)) return "berry";
+    if (/honey|beeswax|wax$/.test(id)) return "honey";
+    if (/resin|amber|pitch|tar$/.test(id)) return "resin";
+    if (category === "hunt" || /game|venison|meat|hide|pelt/.test(id)) return "game";
+    if (/fish|shell|mussel|oyster|crab|lobster/.test(id)) return "fish";
+    if (category === "medicine" || /herb|flower|blossom|garlic|sorrel|medicinal|orchid|tea$/.test(id)) return "herb";
+    if (category === "fibre" || /fibre|fiber|withy|rattan|reed|straw|grass/.test(id)) return "fibre";
+    return "leaf";
+}
+
+function drawGoodIcon(ctx, kind, x, y, size, seed, good) {
+    ctx.save();
+    ctx.translate(x, y);
+    const tilt = (seed - 0.5) * 0.5;
+    ctx.rotate(tilt);
+    ctx.fillStyle = "rgba(24, 20, 12, 0.22)";
+    ctx.beginPath();
+    ctx.ellipse(0, size * 0.48, size * 0.5, size * 0.14, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+    if (kind === "log") {
+        ctx.fillStyle = "#6b4a2c";
+        ctx.fillRect(-size * 0.56, -size * 0.2, size * 1.12, size * 0.4);
+        ctx.fillStyle = "#9a7448";
+        ctx.beginPath();
+        ctx.ellipse(-size * 0.54, 0, size * 0.16, size * 0.2, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "#5a3d24";
+        ctx.lineWidth = Math.max(0.5, size * 0.055);
+        ctx.beginPath();
+        ctx.ellipse(-size * 0.54, 0, size * 0.09, size * 0.12, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.fillStyle = "#7f5c37";
+        ctx.fillRect(-size * 0.28, size * 0.2, size * 1.02, size * 0.32);
+        ctx.fillStyle = "#a57c4d";
+        ctx.beginPath();
+        ctx.ellipse(-size * 0.29, size * 0.36, size * 0.12, size * 0.15, 0, 0, Math.PI * 2);
+        ctx.fill();
+    } else if (kind === "mushroom") {
+        ctx.fillStyle = "#d8c7a6";
+        ctx.fillRect(-size * 0.2, -size * 0.04, size * 0.4, size * 0.5);
+        ctx.fillStyle = seed > 0.5 ? "#a34f38" : "#8c5b3d";
+        ctx.beginPath();
+        ctx.ellipse(0, -size * 0.08, size * 0.58, size * 0.3, 0, Math.PI, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "#e1cba8";
+        ctx.lineWidth = Math.max(0.45, size * 0.045);
+        ctx.beginPath();
+        ctx.moveTo(-size * 0.4, -size * 0.07);
+        ctx.lineTo(size * 0.4, -size * 0.07);
+        ctx.stroke();
+        ctx.fillStyle = "rgba(243, 231, 207, 0.82)";
+        for (let i = 0; i < 3; i++) {
+            ctx.beginPath();
+            ctx.arc((i - 1) * size * 0.22, -size * 0.2, size * 0.045, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    } else if (kind === "mast") {
+        if (/cone/.test(String(good?.id || ""))) {
+            ctx.fillStyle = "#765235";
+            ctx.beginPath();
+            ctx.moveTo(0, -size * 0.6);
+            ctx.lineTo(size * 0.38, size * 0.45);
+            ctx.lineTo(-size * 0.38, size * 0.45);
+            ctx.closePath();
+            ctx.fill();
+            ctx.strokeStyle = "#4f3622";
+            ctx.lineWidth = Math.max(0.4, size * 0.04);
+            for (let i = 0; i < 3; i++) {
+                ctx.beginPath();
+                ctx.moveTo(-size * 0.27, -size * 0.18 + i * size * 0.2);
+                ctx.lineTo(size * 0.27, -size * 0.15 + i * size * 0.2);
+                ctx.stroke();
+            }
+        } else {
+            ctx.fillStyle = "#9a6a35";
+            ctx.beginPath();
+            ctx.ellipse(0, size * 0.1, size * 0.3, size * 0.4, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = "#684326";
+            ctx.beginPath();
+            ctx.ellipse(0, -size * 0.22, size * 0.4, size * 0.18, 0, Math.PI, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = "#4e321d";
+            ctx.lineWidth = Math.max(0.4, size * 0.045);
+            ctx.beginPath();
+            ctx.moveTo(0, -size * 0.35);
+            ctx.lineTo(0, -size * 0.52);
+            ctx.stroke();
+        }
+    } else if (kind === "berry") {
+        ctx.fillStyle = seed > 0.5 ? "#8f3f4a" : "#5a4c78";
+        for (let i = 0; i < 4; i++) {
+            ctx.beginPath();
+            ctx.arc((i % 2 ? 0.22 : -0.16) * size, (i < 2 ? -0.08 : 0.28) * size, size * 0.21, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.strokeStyle = "#536b3e";
+        ctx.lineWidth = Math.max(0.45, size * 0.05);
+        ctx.beginPath();
+        ctx.moveTo(0, -size * 0.1);
+        ctx.lineTo(size * 0.1, -size * 0.5);
+        ctx.stroke();
+        ctx.fillStyle = "#6f8c4e";
+        ctx.beginPath();
+        ctx.ellipse(size * 0.22, -size * 0.4, size * 0.2, size * 0.09, -0.4, 0, Math.PI * 2);
+        ctx.fill();
+    } else if (kind === "honey") {
+        ctx.fillStyle = "#c79035";
+        ctx.beginPath();
+        for (let i = 0; i < 6; i++) {
+            const a = Math.PI / 6 + i * Math.PI / 3;
+            const px = Math.cos(a) * size * 0.52;
+            const py = Math.sin(a) * size * 0.52;
+            if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = "#f1d391";
+        ctx.lineWidth = Math.max(0.45, size * 0.05);
+        ctx.beginPath();
+        ctx.moveTo(-size * 0.25, -size * 0.2);
+        ctx.lineTo(-size * 0.25, size * 0.25);
+        ctx.moveTo(size * 0.25, -size * 0.2);
+        ctx.lineTo(size * 0.25, size * 0.25);
+        ctx.stroke();
+    } else if (kind === "resin") {
+        ctx.fillStyle = "#c48b2e";
+        ctx.beginPath();
+        ctx.moveTo(0, -size * 0.52);
+        ctx.bezierCurveTo(size * 0.38, -size * 0.1, size * 0.42, size * 0.3, 0, size * 0.48);
+        ctx.bezierCurveTo(-size * 0.42, size * 0.3, -size * 0.38, -size * 0.1, 0, -size * 0.52);
+        ctx.fill();
+        ctx.fillStyle = "rgba(255, 235, 172, 0.72)";
+        ctx.beginPath();
+        ctx.ellipse(-size * 0.13, -size * 0.1, size * 0.08, size * 0.18, -0.35, 0, Math.PI * 2);
+        ctx.fill();
+    } else if (kind === "game") {
+        ctx.strokeStyle = "#755336";
+        ctx.lineWidth = Math.max(0.6, size * 0.075);
+        ctx.beginPath();
+        ctx.moveTo(-size * 0.3, size * 0.4);
+        ctx.lineTo(-size * 0.3, -size * 0.1);
+        ctx.lineTo(-size * 0.55, -size * 0.5);
+        ctx.moveTo(-size * 0.3, -size * 0.1);
+        ctx.lineTo(0, -size * 0.55);
+        ctx.moveTo(-size * 0.3, -size * 0.1);
+        ctx.lineTo(size * 0.3, -size * 0.42);
+        ctx.stroke();
+        ctx.fillStyle = "#8e6a45";
+        ctx.beginPath();
+        ctx.ellipse(0, size * 0.18, size * 0.34, size * 0.2, 0, 0, Math.PI * 2);
+        ctx.fill();
+    } else if (kind === "fish") {
+        ctx.fillStyle = "#78949a";
+        ctx.beginPath();
+        ctx.ellipse(-size * 0.05, 0, size * 0.44, size * 0.2, 0.1, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(size * 0.3, 0);
+        ctx.lineTo(size * 0.58, -size * 0.22);
+        ctx.lineTo(size * 0.58, size * 0.22);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = "#202c2c";
+        ctx.beginPath();
+        ctx.arc(-size * 0.3, -size * 0.04, size * 0.035, 0, Math.PI * 2);
+        ctx.fill();
+    } else if (kind === "fibre" || kind === "lichen") {
+        ctx.strokeStyle = kind === "lichen" ? "#a9b18d" : "#b29b62";
+        ctx.lineWidth = Math.max(0.5, size * 0.055);
+        for (let i = 0; i < 4; i++) {
+            ctx.beginPath();
+            ctx.moveTo((i - 1.5) * size * 0.13, size * 0.44);
+            ctx.quadraticCurveTo((i - 1.5) * size * 0.18, 0, (i - 1.5) * size * 0.3, -size * 0.48);
+            ctx.stroke();
+        }
+        ctx.fillStyle = "#74552f";
+        ctx.fillRect(-size * 0.3, size * 0.1, size * 0.6, size * 0.12);
+    } else if (kind === "herb") {
+        ctx.strokeStyle = "#506d3d";
+        ctx.lineWidth = Math.max(0.5, size * 0.055);
+        ctx.beginPath();
+        ctx.moveTo(0, size * 0.45);
+        ctx.quadraticCurveTo(size * 0.08, 0, size * 0.02, -size * 0.46);
+        ctx.stroke();
+        ctx.fillStyle = "#6e8d4e";
+        for (let i = 0; i < 3; i++) {
+            ctx.beginPath();
+            ctx.ellipse((i % 2 ? 1 : -1) * size * 0.18, -size * 0.08 + i * size * 0.18,
+                size * 0.2, size * 0.08, (i % 2 ? -0.5 : 0.5), 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.fillStyle = seed > 0.5 ? "#d6b95e" : "#d9d6b3";
+        for (let i = 0; i < 4; i++) {
+            ctx.beginPath();
+            ctx.arc(Math.cos(i * Math.PI / 2) * size * 0.1, -size * 0.48 + Math.sin(i * Math.PI / 2) * size * 0.1,
+                size * 0.075, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    } else {
+        ctx.fillStyle = seed > 0.5 ? "#738a4e" : "#8b7544";
+        ctx.beginPath();
+        ctx.ellipse(0, 0, size * 0.28, size * 0.5, 0.3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "rgba(40, 45, 25, 0.55)";
+        ctx.lineWidth = Math.max(0.4, size * 0.04);
+        ctx.beginPath();
+        ctx.moveTo(0, -size * 0.38);
+        ctx.lineTo(0, size * 0.48);
+        ctx.stroke();
+    }
+    ctx.restore();
+}
+
+function drawGoodLabel(ctx, text, x, y, maxWidth, size) {
+    const label = String(text || "").toUpperCase();
+    if (!label) return;
+    const fontSize = Math.max(8, Math.min(12, size * 0.72));
+    ctx.save();
+    ctx.font = `700 ${fontSize}px Georgia, "Times New Roman", serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    const width = Math.min(maxWidth, ctx.measureText(label).width + fontSize * 0.8);
+    const height = fontSize + 5;
+    ctx.globalAlpha = 0.92;
+    ctx.fillStyle = "#f2e7c9";
+    ctx.strokeStyle = "#8f7446";
+    ctx.lineWidth = 1;
+    ctx.fillRect(x - width / 2, y, width, height);
+    ctx.strokeRect(x - width / 2, y, width, height);
+    ctx.fillStyle = "#3c3325";
+    ctx.fillText(label, x, y + height / 2 + 0.2);
+    ctx.restore();
+}
+
+function drawForestGoods(ctx, px, py, cellPx, stand, dayOfYear, climateKey, s1, s2, s3, zoom) {
+    if (!stand?.forest || zoom < 2.8) return;
+    const goods = forestGoodsFor(stand, dayOfYear, climateKey)
+        .filter(good => good.category !== "wood" && good.abundance > 0.2)
+        .slice(0, zoom >= 4.7 ? 4 : 3);
+    if (!goods.length) return;
+    const iconSize = Math.max(3, Math.min(18, cellPx * 0.075));
+    // Positions stay in the lower half of the tile, away from the trunk and
+    // crown, and are stable because they are derived from the stand's own
+    // deterministic rolls rather than from the current frame.
+    const spots = [
+        { x: -0.28, y: 0.18, r: -0.22 },
+        { x: 0.25, y: 0.28, r: 0.28 },
+        { x: -0.12, y: -0.24, r: 0.16 },
+        { x: 0.31, y: -0.12, r: -0.34 },
+    ];
+    for (let i = 0; i < goods.length; i++) {
+        const good = goods[i];
+        const spot = spots[i % spots.length];
+        const jitterX = Math.sin(i * 7.1 + s2 * 5.3) * 0.04;
+        const jitterY = Math.cos(i * 5.7 + s3 * 4.9) * 0.03;
+        const x = px + (spot.x + jitterX) * cellPx;
+        const y = py + (spot.y + jitterY) * cellPx;
+        drawGoodIcon(ctx, forestGoodKind(good), x, y, iconSize, (s2 + i * 0.23) % 1, good);
+        if (i === 0 && zoom >= 4.7 && s1 > 0.28) {
+            drawGoodLabel(ctx, good.label, x, y + iconSize * 0.72, cellPx * 0.48, iconSize);
+        }
+    }
+}
+
+function drawAntTrail(ctx, px, py, cellPx, seed) {
+    const s = cellPx / 48;
+    const x0 = px - cellPx * 0.34;
+    const y0 = py + cellPx * 0.24;
+    const x1 = px + cellPx * 0.33;
+    const y1 = py + cellPx * 0.13;
+    ctx.save();
+    ctx.strokeStyle = "rgba(91, 56, 33, 0.42)";
+    ctx.lineWidth = Math.max(0.6, 0.55 * s);
+    ctx.setLineDash([Math.max(1.2, 0.8 * s), Math.max(1.8, 1.2 * s)]);
+    ctx.beginPath();
+    ctx.moveTo(x0, y0);
+    ctx.quadraticCurveTo(px - cellPx * 0.06, py + cellPx * 0.32, x1, y1);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // A small excavated mound at the trail head gives the ants a reason to be
+    // on this tile and makes the colony legible without a UI marker.
+    ctx.fillStyle = "#6b4a2e";
+    ctx.globalAlpha = 0.72;
+    ctx.beginPath();
+    ctx.ellipse(x0 - cellPx * 0.06, y0 + cellPx * 0.025, 2.6 * s, 1.25 * s, 0.1, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#2f2115";
+    for (let i = 0; i < 3; i++) {
+        ctx.beginPath();
+        ctx.arc(x0 - cellPx * 0.06 + (i - 1) * 1.5 * s, y0 + cellPx * 0.018 + (i % 2) * 0.7 * s,
+            Math.max(0.5, 0.28 * s), 0, Math.PI * 2);
+        ctx.fill();
+    }
+    for (let i = 0; i < 5; i++) {
+        const t = (i + 0.5) / 5;
+        const x = x0 + (x1 - x0) * t + Math.sin(t * Math.PI + seed * 4) * cellPx * 0.035;
+        const y = y0 + (y1 - y0) * t + Math.cos(t * Math.PI) * cellPx * 0.025;
+        drawMicroFauna(ctx, { id: "ant", count: 1 }, x, y, s * 0.9, 4.8);
+    }
+    ctx.restore();
+}
+
+function drawCloseInsects(ctx, px, py, cellPx, stand, dayOfYear, climateKey, seed, zoom, tileX, tileY) {
+    if (!stand?.forest || zoom < 3.0) return;
+    const saved = forestInsectAt(tileX, tileY);
+    const simulatedIds = new Set(saved.map(entry => entry.id));
+    const fallback = forestMicrofaunaAt(stand, dayOfYear, climateKey, seed)
+        .filter(entry => !simulatedIds.has(entry.id));
+    // Butterflies and bees are habitat marks rather than saved colonies. A
+    // close study still needs to show them when the stand's flowering edge
+    // selects one, even if the deadwood/insect population table has no row.
+    const habitat = forestFaunaFor(stand, dayOfYear, climateKey, seed)
+        .filter(entry => entry.group === "insect" && !simulatedIds.has(entry.id)
+            && !fallback.some(other => other.id === entry.id))
+        .map(entry => ({ ...entry, count: 1 }));
+    const entries = [...saved.slice(0, 3), ...fallback.slice(0, 2), ...habitat.slice(0, 2)];
+    if (!entries.length) return;
+    if (saved.some(entry => entry.id === "ant")) {
+        drawAntTrail(ctx, px, py, cellPx, seed);
+    }
+    const s = cellPx / 56;
+    for (let entryIndex = 0; entryIndex < entries.length; entryIndex++) {
+        const entry = entries[entryIndex];
+        const count = Math.max(1, Math.min(3,
+            Math.round(Number(entry.count ?? (Number(entry.population) || 0.6) * 2) || 1)));
+        for (let i = 0; i < count; i++) {
+            const phase = seed * 7 + entryIndex * 9 + i * 2.7;
+            const x = px + Math.sin(phase * 3.1) * cellPx * 0.28 + (i - (count - 1) / 2) * cellPx * 0.1;
+            const y = py + 4.1 * s + Math.cos(phase * 2.3) * cellPx * 0.16 + (i % 2) * 1.3 * s;
+            drawMicroFauna(ctx, entry, x, y, s, zoom);
+        }
+    }
+}
+
 function drawMushroomCluster(ctx, px, py, s, seed, snow) {
     if (snow > 0.6) return;
     ctx.save();
@@ -3850,13 +4452,13 @@ function canopyShadeSpriteFor(color) {
 // profile follows crown cover, stem density, sun elevation and snow cover; the
 // art is a single cached sprite so a dense forest does not turn into a
 // per-pixel full-screen shader on low-end devices.
-function drawCanopyShade(ctx, px, py, cellPx, stand, sun, snowCover) {
+function drawCanopyShade(ctx, px, py, cellPx, stand, sun, snowCover, opacityScale = 1) {
     const shade = forestCanopyShade(stand, { sun, snowCover });
     if (shade.alpha <= 0.004) return;
     const sprite = canopyShadeSpriteFor(shade.color);
     const size = cellPx * (1.7 + shade.reach * 1.25);
     ctx.save();
-    ctx.globalAlpha = shade.alpha;
+    ctx.globalAlpha = shade.alpha * Math.max(0, Math.min(1, opacityScale));
     ctx.drawImage(sprite,
         px + shade.offsetX * cellPx - size * 0.5,
         py + shade.offsetY * cellPx - size * 0.5,
@@ -4556,6 +5158,10 @@ function drawForestFaunaScene(ctx, px, py, cellPx, stand, dayOfYear, climateKey,
     if (signs?.nest) drawFaunaNest(ctx, px, py, cellPx, signs.nest, s);
 
     const animals = herds.length ? herds : forestFaunaFor(stand, dayOfYear, climateKey, seed).slice(0, 2);
+    // A close study is about seeing the animal, not proving it exists. Grow the
+    // same authored silhouette at ground-study distance; signs and tracks keep
+    // their own world scale.
+    const animalScale = zoom >= 3 ? 1.35 : 1;
     for (let herdIndex = 0; herdIndex < animals.length; herdIndex++) {
         const animal = animals[herdIndex];
         const population = Math.max(1, Number(animal.population) || 4);
@@ -4568,7 +5174,7 @@ function drawForestFaunaScene(ctx, px, py, cellPx, stand, dayOfYear, climateKey,
             const spread = cellPx * (animal.group === 'large' ? 0.19 : 0.14);
             const ox = (i - (count - 1) / 2) * spread + Math.sin(tick * 0.018 + phase) * 1.7 * s + jitter(herdIndex + 1, i + 1) * 2 * s;
             const oy = ((i % 2) - 0.5) * cellPx * 0.08 + Math.cos(tick * 0.014 + phase) * 1.1 * s + jitter(i + 2, herdIndex + 1) * 1.5 * s;
-            drawFaunaShape(ctx, animal, px + ox, py + 1.5 * s + oy, s, Math.sin(tick * 0.012 + phase) * 0.08, season, zoom);
+            drawFaunaShape(ctx, animal, px + ox, py + 1.5 * s + oy, s * animalScale, Math.sin(tick * 0.012 + phase) * 0.08, season, zoom);
         }
     }
 
@@ -4581,7 +5187,7 @@ function drawForestFaunaScene(ctx, px, py, cellPx, stand, dayOfYear, climateKey,
             const phase = seed * 7 + entryIndex * 9 + i * 3.1;
             const ox = jitter(entryIndex + 3, i + 5) * cellPx * 0.6 + Math.sin(tick * 0.018 + phase) * s;
             const oy = 3.2 * s + jitter(i + 4, entryIndex + 2) * cellPx * 0.32 + Math.cos(tick * 0.015 + phase) * 0.7 * s;
-            drawMicroFauna(ctx, entry, px + ox, py + oy, s);
+            drawMicroFauna(ctx, entry, px + ox, py + oy, s, zoom);
         }
     }
 }
@@ -4685,40 +5291,199 @@ function drawFaunaShape(ctx, animal, x, y, s, rotation, season, zoom) {
     }
 }
 
-function drawMicroFauna(ctx, entry, x, y, s) {
+function drawMicroFauna(ctx, entry, x, y, s, zoom = 1) {
+    const id = String(entry?.id || "");
+    // At ground-study distance the same insect becomes a small authored study,
+    // not a three-pixel dot. The scale is capped so the mark never turns into
+    // a creature larger than the leaf it sits on.
+    const studyScale = zoom >= 2.4 ? Math.min(2.25, 1 + (zoom - 2.4) * 0.4) : 1;
+    const u = s * studyScale;
+    const ant = /ant/.test(id);
+    const beetle = /beetle/.test(id);
+    const butterfly = /butterfly/.test(id);
+    const bee = /bee|wasp|hornet/.test(id);
+    const mosquito = /mosquito|midge|fly$/.test(id);
     ctx.save();
-    ctx.globalAlpha = 0.62;
-    if (entry.id === 'butterfly') {
-        ctx.fillStyle = "#d9b24d";
-        ctx.beginPath();
-        ctx.ellipse(x - 0.9 * s, y - 1.2 * s, 1 * s, 0.65 * s, -0.6, 0, Math.PI * 2);
-        ctx.ellipse(x + 0.9 * s, y - 1.2 * s, 1 * s, 0.65 * s, 0.6, 0, Math.PI * 2);
-        ctx.fill();
-    } else if (entry.id === 'bee') {
-        ctx.fillStyle = "#c9a33e";
-        ctx.beginPath();
-        ctx.arc(x, y - 1.5 * s, 0.7 * s, 0, Math.PI * 2);
-        ctx.fill();
-    } else if (entry.id === 'ant') {
-        ctx.fillStyle = "#4b3b2c";
+    ctx.translate(x, y);
+    ctx.globalAlpha = zoom >= 3 ? 0.94 : 0.7;
+    ctx.fillStyle = "rgba(24, 20, 12, 0.18)";
+    ctx.beginPath();
+    ctx.ellipse(0, u * 0.45, u * 0.85, u * 0.2, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.lineCap = "round";
+    if (ant) {
+        const body = /bullet/.test(id) ? "#6b2e1f" : "#4b3020";
+        ctx.strokeStyle = body;
+        ctx.lineWidth = Math.max(0.55, u * 0.09);
+        // Six articulated legs and two antennae; the old mark had none, which
+        // is why it read as a dot instead of an insect.
+        for (let side = -1; side <= 1; side += 2) {
+            for (let leg = 0; leg < 3; leg++) {
+                const baseX = (leg - 1) * u * 0.45;
+                const baseY = u * 0.05;
+                ctx.beginPath();
+                ctx.moveTo(baseX, baseY);
+                ctx.quadraticCurveTo(baseX + side * u * 0.4, baseY - u * 0.3,
+                    baseX + side * (u * 0.65 + leg * u * 0.08), baseY + u * 0.25);
+                ctx.stroke();
+            }
+            ctx.beginPath();
+            ctx.moveTo(side * u * 0.7, -u * 0.2);
+            ctx.quadraticCurveTo(side * u * 0.95, -u * 0.55, side * u * 1.1, -u * 0.72);
+            ctx.stroke();
+        }
+        ctx.fillStyle = body;
         for (let i = 0; i < 3; i++) {
             ctx.beginPath();
-            ctx.arc(x + (i - 1) * 0.65 * s, y + (i % 2) * 0.25 * s, 0.3 * s, 0, Math.PI * 2);
+            ctx.ellipse((i - 1) * u * 0.55, i === 0 ? -u * 0.2 : (i === 1 ? 0 : u * 0.06),
+                i === 0 ? u * 0.28 : (i === 1 ? u * 0.24 : u * 0.36),
+                i === 0 ? u * 0.22 : (i === 1 ? u * 0.2 : u * 0.28),
+                i === 0 ? -0.35 : 0.1, 0, Math.PI * 2);
             ctx.fill();
         }
-    } else if (entry.id === 'mouse') {
+        ctx.fillStyle = "rgba(233, 196, 138, 0.7)";
+        ctx.beginPath();
+        ctx.arc(-u * 0.55, -u * 0.16, u * 0.045, 0, Math.PI * 2);
+        ctx.fill();
+    } else if (beetle) {
+        const bark = /bark/.test(id);
+        const elytra = bark ? "#5e4028" : (entry?.id === "beetle" ? "#4c3b2a" : "#486047");
+        ctx.strokeStyle = "#3b2b1c";
+        ctx.lineWidth = Math.max(0.5, u * 0.075);
+        for (let side = -1; side <= 1; side += 2) {
+            for (let leg = 0; leg < 3; leg++) {
+                const baseX = (leg - 1) * u * 0.44;
+                ctx.beginPath();
+                ctx.moveTo(baseX, u * 0.06);
+                ctx.quadraticCurveTo(baseX + side * u * 0.35, u * 0.22,
+                    baseX + side * (u * 0.6 + leg * u * 0.06), u * 0.5);
+                ctx.stroke();
+            }
+        }
+        ctx.fillStyle = elytra;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, u * (bark ? 0.34 : 0.58), u * (bark ? 0.72 : 0.5), 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = /bark/.test(id) ? "#7c5837" : "#8a7144";
+        ctx.beginPath();
+        ctx.ellipse(-u * (bark ? 0.12 : 0.3), -u * (bark ? 0.32 : 0.18), u * 0.16, u * 0.12, -0.4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "rgba(30, 25, 16, 0.68)";
+        ctx.lineWidth = Math.max(0.35, u * 0.045);
+        ctx.beginPath();
+        ctx.moveTo(0, -u * (bark ? 0.45 : 0.3));
+        ctx.lineTo(0, u * (bark ? 0.45 : 0.3));
+        ctx.stroke();
+        ctx.fillStyle = "#2c2116";
+        ctx.beginPath();
+        ctx.ellipse(0, -u * (bark ? 0.48 : 0.34), u * 0.18, u * 0.14, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "#2c2116";
+        ctx.beginPath();
+        ctx.moveTo(-u * 0.12, -u * 0.55);
+        ctx.lineTo(-u * 0.32, -u * 0.78);
+        ctx.moveTo(u * 0.12, -u * 0.55);
+        ctx.lineTo(u * 0.32, -u * 0.78);
+        ctx.stroke();
+    } else if (butterfly) {
+        const wing = /morpho/.test(id) ? "#5f8fd5" : (entry?.id === "butterfly" ? "#d9b24d" : "#c47a4b");
+        ctx.globalAlpha = 0.9;
+        ctx.fillStyle = wing;
+        ctx.beginPath();
+        ctx.ellipse(-u * 0.62, -u * 0.24, u * 0.62, u * 0.4, -0.55, 0, Math.PI * 2);
+        ctx.ellipse(u * 0.62, -u * 0.24, u * 0.62, u * 0.4, 0.55, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = /morpho/.test(id) ? "#bcd6f1" : "#e8d39a";
+        ctx.globalAlpha = 0.52;
+        ctx.beginPath();
+        ctx.ellipse(-u * 0.45, -u * 0.2, u * 0.3, u * 0.2, -0.55, 0, Math.PI * 2);
+        ctx.ellipse(u * 0.45, -u * 0.2, u * 0.3, u * 0.2, 0.55, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 0.92;
+        ctx.fillStyle = "#3f3020";
+        ctx.beginPath();
+        ctx.ellipse(0, -u * 0.02, u * 0.09, u * 0.46, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "#3f3020";
+        ctx.lineWidth = Math.max(0.4, u * 0.045);
+        ctx.beginPath();
+        ctx.moveTo(-u * 0.05, -u * 0.4);
+        ctx.quadraticCurveTo(-u * 0.25, -u * 0.75, -u * 0.42, -u * 0.82);
+        ctx.moveTo(u * 0.05, -u * 0.4);
+        ctx.quadraticCurveTo(u * 0.25, -u * 0.75, u * 0.42, -u * 0.82);
+        ctx.stroke();
+    } else if (bee) {
+        ctx.fillStyle = "rgba(230, 218, 175, 0.48)";
+        ctx.beginPath();
+        ctx.ellipse(-u * 0.35, -u * 0.48, u * 0.42, u * 0.23, -0.75, 0, Math.PI * 2);
+        ctx.ellipse(u * 0.35, -u * 0.48, u * 0.42, u * 0.23, 0.75, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#c39b36";
+        ctx.beginPath();
+        ctx.ellipse(0, -u * 0.12, u * 0.32, u * 0.56, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "#3f3019";
+        ctx.lineWidth = Math.max(0.5, u * 0.08);
+        for (let i = 0; i < 3; i++) {
+            ctx.beginPath();
+            ctx.moveTo(-u * 0.27, -u * 0.28 + i * u * 0.24);
+            ctx.quadraticCurveTo(0, -u * 0.2 + i * u * 0.24, u * 0.27, -u * 0.28 + i * u * 0.24);
+            ctx.stroke();
+        }
+        ctx.fillStyle = "#2f2416";
+        ctx.beginPath();
+        ctx.arc(0, -u * 0.62, u * 0.14, 0, Math.PI * 2);
+        ctx.fill();
+    } else if (mosquito) {
+        ctx.strokeStyle = "#4e4130";
+        ctx.lineWidth = Math.max(0.55, u * 0.08);
+        ctx.beginPath();
+        ctx.moveTo(-u * 0.7, -u * 0.2);
+        ctx.quadraticCurveTo(0, u * 0.1, u * 0.65, -u * 0.45);
+        ctx.stroke();
+        ctx.fillStyle = "#3e3327";
+        ctx.beginPath();
+        ctx.ellipse(-u * 0.1, -u * 0.16, u * 0.36, u * 0.12, 0.12, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "rgba(220, 221, 193, 0.52)";
+        ctx.beginPath();
+        ctx.ellipse(u * 0.18, -u * 0.36, u * 0.3, u * 0.1, -0.55, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(-u * 0.4, -u * 0.15);
+        ctx.lineTo(-u * 0.85, -u * 0.02);
+        ctx.stroke();
+    } else if (/mouse|vole|shrew/.test(id)) {
         ctx.fillStyle = "#76604d";
         ctx.beginPath();
-        ctx.ellipse(x, y - 0.8 * s, 1.2 * s, 0.65 * s, 0.1, 0, Math.PI * 2);
+        ctx.ellipse(0, -u * 0.15, u * 0.9, u * 0.48, 0.08, 0, Math.PI * 2);
         ctx.fill();
         ctx.beginPath();
-        ctx.arc(x + 1 * s, y - 1.2 * s, 0.45 * s, 0, Math.PI * 2);
+        ctx.arc(u * 0.85, -u * 0.3, u * 0.32, 0, Math.PI * 2);
         ctx.fill();
+        ctx.fillStyle = "#a99174";
+        ctx.beginPath();
+        ctx.arc(u * 0.7, -u * 0.68, u * 0.2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "#5d4938";
+        ctx.lineWidth = Math.max(0.4, u * 0.04);
+        ctx.beginPath();
+        ctx.moveTo(-u * 0.85, -u * 0.1);
+        ctx.quadraticCurveTo(-u * 1.3, u * 0.05, -u * 1.45, u * 0.3);
+        ctx.stroke();
     } else {
         ctx.fillStyle = "#554637";
         ctx.beginPath();
-        ctx.ellipse(x, y - 0.5 * s, 0.8 * s, 0.45 * s, 0.25, 0, Math.PI * 2);
+        ctx.ellipse(0, -u * 0.12, u * 0.55, u * 0.28, 0.25, 0, Math.PI * 2);
         ctx.fill();
+        ctx.strokeStyle = "#46382a";
+        ctx.lineWidth = Math.max(0.4, u * 0.05);
+        for (let i = 0; i < 3; i++) {
+            ctx.beginPath();
+            ctx.moveTo((i - 1) * u * 0.28, 0);
+            ctx.lineTo((i - 1) * u * 0.4, u * 0.3);
+            ctx.stroke();
+        }
     }
     ctx.restore();
 }

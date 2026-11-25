@@ -28,6 +28,7 @@ export function mapKeyboardIntent(key) {
         case "2": return { zoomLevel: 2 };
         case "3": return { zoomLevel: 3 };
         case "4": return { zoomLevel: 4 };
+        case "5": return { zoomLevel: 5 };
         case "+":
         case "=": return { zoomDelta: -KEYBOARD_ZOOM_DELTA };
         case "-":

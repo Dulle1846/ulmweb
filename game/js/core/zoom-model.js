@@ -1,6 +1,6 @@
 // Pure zoom-level and interpolation rules, independent of browser state.
 
-export const ZOOM_PRESETS = Object.freeze([0.09, 0.3, 0.95, 2.4]);
+export const ZOOM_PRESETS = Object.freeze([0.09, 0.3, 0.95, 2.4, 5.4]);
 
 export function clampZoom(value, min, max) {
     if (![value, min, max].every(Number.isFinite) || min <= 0 || max < min) {
@@ -14,16 +14,18 @@ export function resolveZoomLevel(zoom, thresholds) {
         throw new RangeError("Zoom must be a positive finite number.");
     }
 
-    const { district, rooftops, interiors } = thresholds;
+    const { district, rooftops, interiors, ground = Infinity } = thresholds;
     if (![district, rooftops, interiors].every(Number.isFinite) ||
-        !(district < rooftops && rooftops < interiors)) {
+        !(district < rooftops && rooftops < interiors) ||
+        (ground !== Infinity && (!Number.isFinite(ground) || ground <= interiors))) {
         throw new RangeError("Zoom thresholds must be finite and strictly increasing.");
     }
 
     if (zoom < district) return 1;
     if (zoom < rooftops) return 2;
     if (zoom < interiors) return 3;
-    return 4;
+    if (zoom < ground) return 4;
+    return 5;
 }
 
 export function interpolateZoom(current, target, deltaSeconds, smoothing = 0.12) {

@@ -114,6 +114,7 @@ test("the duplicate canvas zoom indicator is gone while HTML zoom controls remai
   assert.ok(!renderer.includes("drawZoomIndicator"));
   assert.ok(!renderer.includes("zoom.toFixed(2)"));
   assert.ok(html.includes('data-zoom-level="1"'));
+  assert.ok(html.includes('data-zoom-level="5"'));
   assert.ok(html.includes('id="zoom-level-name"'));
   assert.ok(html.includes('id="zoom-value"'));
 });

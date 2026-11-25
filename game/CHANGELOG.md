@@ -1,13 +1,87 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.61.0`
-**Next development line:** `3.62.0-dev`
+**Current production version:** `3.62.0`
+**Next development line:** `3.63.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
 **Last repository verification:** 2026-11-25 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.62.0 — The forest floor is a place you can kneel down in
+
+3.61.0 made the forest economy real; this release makes the same woodland
+readable at player distance. It extends the cached terrain pass rather than
+adding a second renderer, a new simulation or a save field.
+
+- **A fifth, player-accessible ground-study band.** The presets are now
+  `0.09×`, `0.30×`, `0.95×`, `2.40×` and `5.40×`, with `GROUND` beginning at
+  `4.40×` and a hard camera maximum of `7.40×`. Preset key `5`, the HUD button,
+  the wheel and touch all reach it; the HUD reports the band and the effective
+  zoom. Existing level names and the first four presets are unchanged.
+- **Forest goods are drawn, not just stored.** At close range the cached floor
+  pass draws authored wood, fungus, fruit, herb, honey, animal, fish and ore
+  glyphs from the stand's actual goods, with short labels and a count for the
+  selected yield. The biome map replaces flat resource squares with the same
+  family of hand-drawn glyphs, so timber, mushrooms, fruit, fish and ore remain
+  distinguishable when the map layer is open.
+- **The small fauna is visible.** Saved ant and beetle colonies are drawn as
+  individuals, and the stand's habitat list supplies butterflies and bees even
+  when no colony row exists. At study distance the same insects become legible
+  studies with wings, elytra, antennae and legs; the resident herd silhouettes
+  grow by a bounded factor so a squirrel or songbird is not lost under a crown.
+  The pass remains capped and runs only at close zoom.
+- **Less blur, more tooth.** The WebGL ground adds a fine `uInspection` octave
+  and a world-scale paper-grain term at ground-study range, while the cached
+  Canvas2D floor adds leaf fragments, dry-brush fibres and small grit between
+  the larger motifs. Canopy shade and mist are reduced at study distance so the
+  newly drawn floor is not washed back into a soft gradient.
+- **Crowns become drawings.** At the same study distance each broadleaf crown
+  carries a bounded layer of small leaf blades, midribs and visible branchlets,
+  and the trunk adds fine fissures and lichen. The silhouette, species colours,
+  seasonal turn, snow and ink rim still come from the existing tree pass; the
+  extra detail exists only where the player can actually see it.
+- **No new ledger.** Goods, colours, counts, insect names and animal choices
+  come from the existing `FOREST_GOODS`, `forestGoodsFor`, `forestInsectAt`,
+  `forestMicrofaunaAt` and `forestFaunaFor` data. The renderer reads them; it
+  does not create parallel economy or ecology state, and saves are unchanged.
+- **Verification.** The focused zoom units, HUD contract, syntax gate, the
+  full `npm test` suite, the 25-year campaign and the forest-detail browser
+  reference are the release gate. The reference rerun at 5.2×/6.4× and the
+  player-perspective capture exercise the real HUD button, the GROUND label
+  and the close draws; they do not prove a particular GPU's frame time.
+
+### A clearer, sturdier first hour
+
+- **A founded realm saves itself.** After the opening world, caches and first
+  sixty deterministic ticks are ready, `startNewRealm()` writes the normal
+  versioned local save for the active profile and reports `FOUNDING REALM SAVED`.
+  A player who reloads before discovering Save can now press Continue and get
+  the same seed, ruler, year, hand and first-session checklist. The old save is
+  kept as the existing recovery backup; storage errors never block play.
+- **The first hour tells the truth about its two most misread states.** An open
+  cottage site no longer counts as beds in NEXT MOVE: the counsel now says the
+  site is not operational, names its stage, reason and outstanding materials,
+  and opens the Buildings register. FIRST SESSION also shows the latest real
+  20-day settlement as one plain line - food in, eaten and spoiled, gold net
+  after wages and upkeep. Both are presentation-only reads; no statistic,
+  completion rule or save field changed.
+- **Every physical good is now inspectable.** STORES shows the named goods in
+  warehouses, building inventories and carrier loads beside the four royal
+  resources, with real produced/consumed audit lines and a bounded top-three
+  needs board driven by empty stores and the last food shortage. It is a pure
+  read of existing logistics models: no save field, price, movement or tick
+  work was added.
+- **The forest-goods proof uses today's real quote.** The stewardship browser
+  check now reads `forestGoodMarketPrice()` and the river premium before
+  delivering, then asserts the exact gold outcome instead of the old flat-rate
+  number. This verifies the player-facing sale shown in the inspector and adds
+  no simulation change.
+- **The core-loop proof waits for the real overlay transition.** Founding removes
+  the start screen only after two animation frames; under the deterministic fake
+  clock the audit now advances those frames instead of assuming a fixed slice.
+  The assertion that the overlay is gone is unchanged.
 
 ## 3.61.0 — Every forest good now has a buyer or a use
 
@@ -60,37 +134,6 @@ the ten visible in a sample.
   physical good. Loading such a save now drops those retired currency rows
   during normalization, before validation, and preserves the rest of the realm;
   no schema or save field was added.
-
-## 3.62.0-dev - A clearer, sturdier first hour
-
-- **A founded realm saves itself.** After the opening world, caches and first
-  sixty deterministic ticks are ready, `startNewRealm()` writes the normal
-  versioned local save for the active profile and reports `FOUNDING REALM SAVED`.
-  A player who reloads before discovering Save can now press Continue and get
-  the same seed, ruler, year, hand and first-session checklist. The old save is
-  kept as the existing recovery backup; storage errors never block play.
-- **The first hour tells the truth about its two most misread states.** An open
-  cottage site no longer counts as beds in NEXT MOVE: the counsel now says the
-  site is not operational, names its stage, reason and outstanding materials,
-  and opens the Buildings register. FIRST SESSION also shows the latest real
-  20-day settlement as one plain line - food in, eaten and spoiled, gold net
-  after wages and upkeep. Both are presentation-only reads; no statistic,
-  completion rule or save field changed.
-- **Every physical good is now inspectable.** STORES shows the named goods in
-  warehouses, building inventories and carrier loads beside the four royal
-  resources, with real produced/consumed audit lines and a bounded top-three
-  needs board driven by empty stores and the last food shortage. It is a pure
-  read of existing logistics models: no save field, price, movement or tick
-  work was added.
-- **The forest-goods proof uses today's real quote.** The stewardship browser
-  check now reads `forestGoodMarketPrice()` and the river premium before
-  delivering, then asserts the exact gold outcome instead of the old flat-rate
-  number. This verifies the player-facing sale shown in the inspector and adds
-  no simulation change.
-- **The core-loop proof waits for the real overlay transition.** Founding removes
-  the start screen only after two animation frames; under the deterministic fake
-  clock the audit now advances those frames instead of assuming a fixed slice.
-  The assertion that the overlay is gone is unchanged.
 
 ## 3.60.0 — Every forest profile now has a job
 

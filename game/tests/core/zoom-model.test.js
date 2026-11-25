@@ -8,24 +8,26 @@ import {
     cameraOffsetForAnchor
 } from "../../js/core/zoom-model.js";
 
-const thresholds = { district: 0.14, rooftops: 0.55, interiors: 1.55 };
+const thresholds = { district: 0.14, rooftops: 0.55, interiors: 1.55, ground: 4.4 };
 
-test("four zoom bands map to landscape, districts, rooftops and interiors", () => {
+test("five zoom bands map to landscape, districts, rooftops, interiors and ground study", () => {
     assert.equal(resolveZoomLevel(0.08, thresholds), 1);
     assert.equal(resolveZoomLevel(0.3, thresholds), 2);
     assert.equal(resolveZoomLevel(1, thresholds), 3);
     assert.equal(resolveZoomLevel(2.4, thresholds), 4);
+    assert.equal(resolveZoomLevel(5.4, thresholds), 5);
 });
 
 test("zoom band boundaries are stable and deterministic", () => {
     assert.equal(resolveZoomLevel(0.14, thresholds), 2);
     assert.equal(resolveZoomLevel(0.55, thresholds), 3);
     assert.equal(resolveZoomLevel(1.55, thresholds), 4);
+    assert.equal(resolveZoomLevel(4.4, thresholds), 5);
 });
 
-test("zoom presets address all four visual scales", () => {
-    assert.equal(ZOOM_PRESETS.length, 4);
-    assert.deepEqual(ZOOM_PRESETS.map(value => resolveZoomLevel(value, thresholds)), [1, 2, 3, 4]);
+test("zoom presets address all five visual scales", () => {
+    assert.equal(ZOOM_PRESETS.length, 5);
+    assert.deepEqual(ZOOM_PRESETS.map(value => resolveZoomLevel(value, thresholds)), [1, 2, 3, 4, 5]);
 });
 
 test("zoom is clamped to configured minimum and maximum", () => {
@@ -58,5 +60,6 @@ test("invalid zoom inputs are rejected", () => {
     assert.throws(() => clampZoom(1, 0, 4), RangeError);
     assert.throws(() => resolveZoomLevel(Number.NaN, thresholds), RangeError);
     assert.throws(() => resolveZoomLevel(1, { district: 1, rooftops: 0.5, interiors: 2 }), RangeError);
+    assert.throws(() => resolveZoomLevel(5, { ...thresholds, ground: 1.5 }), RangeError);
     assert.throws(() => interpolateZoom(1, 2, -1), RangeError);
 });

@@ -27,6 +27,7 @@ test("card placement, pause, zoom and help match the advertised shortcuts", () =
     assert.deepEqual(mapKeyboardIntent("P"), { togglePause: true });
     assert.deepEqual(mapKeyboardIntent("1"), { zoomLevel: 1 });
     assert.deepEqual(mapKeyboardIntent("4"), { zoomLevel: 4 });
+    assert.deepEqual(mapKeyboardIntent("5"), { zoomLevel: 5 });
     assert.deepEqual(mapKeyboardIntent("+"), { zoomDelta: -KEYBOARD_ZOOM_DELTA });
     assert.deepEqual(mapKeyboardIntent("-"), { zoomDelta: KEYBOARD_ZOOM_DELTA });
     assert.deepEqual(mapKeyboardIntent("?"), { help: true });

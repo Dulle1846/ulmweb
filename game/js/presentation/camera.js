@@ -3,7 +3,8 @@
 import {
     WORLD_W, WORLD_H, CELL,
     ZOOM_MIN, ZOOM_MAX, ZOOM_SPEED, ZOOM_LERP,
-    ZOOM_THRESHOLD_DISTRICTS, ZOOM_THRESHOLD_ROOFTOPS, ZOOM_THRESHOLD_INTERIORS
+    ZOOM_THRESHOLD_DISTRICTS, ZOOM_THRESHOLD_ROOFTOPS, ZOOM_THRESHOLD_INTERIORS,
+    ZOOM_THRESHOLD_GROUND
 } from '../core/config.js';
 import { state } from '../core/state.js';
 import {
@@ -17,7 +18,8 @@ import {
 const ZOOM_THRESHOLDS = {
     district: ZOOM_THRESHOLD_DISTRICTS,
     rooftops: ZOOM_THRESHOLD_ROOFTOPS,
-    interiors: ZOOM_THRESHOLD_INTERIORS
+    interiors: ZOOM_THRESHOLD_INTERIORS,
+    ground: ZOOM_THRESHOLD_GROUND
 };
 
 function activeRenderScale() {
@@ -79,7 +81,7 @@ export function applyZoomDelta(delta, mouseScreenX, mouseScreenY) {
 export function setZoomLevel(level) {
     const index = Number(level) - 1;
     if (!Number.isInteger(index) || index < 0 || index >= ZOOM_PRESETS.length) {
-        throw new RangeError("Zoom level must be between 1 and 4.");
+        throw new RangeError("Zoom level must be between 1 and 5.");
     }
     setZoomTarget(ZOOM_PRESETS[index]);
 }

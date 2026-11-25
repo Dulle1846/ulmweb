@@ -16,14 +16,18 @@ export const SEASONS = ["SPRING", "SUMMER", "AUTUMN", "WINTER"];
 // ═══════════════════════════════════════════════════════════════
 
 export const ZOOM_MIN          = 0.055;
-export const ZOOM_MAX          = 4.2;
+export const ZOOM_MAX          = 7.4;
 export const ZOOM_SPEED        = 0.00135;      // Faktor pro wheel-delta-Pixel
 export const ZOOM_LERP         = 0.12;        // Frame-rate-independent smoothing at a 60 Hz reference rate
 
-// Vier visuelle Zoom-Ebenen: Landschaft, Bezirke, Dächer, Innenräume.
+// Fünf visuelle Zoom-Ebenen: Landschaft, Bezirke, Dächer, Innenräume und
+// Bodenkunde. Die fünfte Ebene öffnet die vorhandenen Nahdetail-Pässe für
+// Blätter, Wurzeln, Pilze, Insekten und Waldgüter; sie ist kein neues
+// Simulations- oder Speichersystem.
 export const ZOOM_THRESHOLD_DISTRICTS = 0.14;
 export const ZOOM_THRESHOLD_ROOFTOPS = 0.55;
 export const ZOOM_THRESHOLD_INTERIORS = 1.55;
+export const ZOOM_THRESHOLD_GROUND = 4.4;
 
 // ═══════════════════════════════════════════════════════════════
 //  PERLIN NOISE — Terrain
