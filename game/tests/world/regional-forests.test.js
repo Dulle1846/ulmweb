@@ -33,14 +33,14 @@ const CLIMATES = Object.freeze([
 ]);
 const SEED = 20261123;
 
-test("the catalogue declares all thirty ids exactly once", () => {
-    assert.equal(REGIONAL_FOREST_TYPES.length, 30);
-    assert.equal(new Set(REGIONAL_FOREST_TYPE_IDS).size, 30);
-    for (const id of REGIONAL_FOREST_TYPE_IDS) assert.match(id, /^1\.2\.23\.1\.0(0[1-9]|[12][0-9]|30)$/);
+test("the catalogue declares all sixty ids exactly once", () => {
+    assert.equal(REGIONAL_FOREST_TYPES.length, 60);
+    assert.equal(new Set(REGIONAL_FOREST_TYPE_IDS).size, 60);
+    for (const id of REGIONAL_FOREST_TYPE_IDS) assert.match(id, /^1\.2\.23\.1\.0(0[1-9]|[1-5][0-9]|60)$/);
 });
 
 test("every regional type is produced by its documented site window", () => {
-    assert.equal(REGIONAL_FORESTS_TEST_SITES.length, 30);
+    assert.equal(REGIONAL_FORESTS_TEST_SITES.length, 60);
     for (const site of REGIONAL_FORESTS_TEST_SITES) {
         const selected = regionalForestTypeFor({ x: 11, y: 13, seed: SEED, ...site });
         assert.equal(selected?.id, site.id, site.key);
@@ -53,14 +53,14 @@ test("every regional type is produced by its documented site window", () => {
     }
 });
 
-test("the thirty types do not collapse into one multiplier or one palette", () => {
+test("the sixty types do not collapse into one multiplier or one palette", () => {
     const effects = new Set(REGIONAL_FOREST_TYPES.map(type => [
         type.effects.timber, type.effects.regrowth, type.effects.fire,
         type.effects.fauna, type.effects.forage, type.effects.work,
     ].join("|")));
     const palettes = new Set(REGIONAL_FOREST_TYPES.map(type => type.render.palette.join("|")));
-    assert.ok(effects.size >= 25, "types must have differentiated effects");
-    assert.ok(palettes.size >= 25, "types must have differentiated ground palettes");
+    assert.ok(effects.size >= 55, "types must have differentiated effects");
+    assert.ok(palettes.size >= 55, "types must have differentiated ground palettes");
 });
 
 test("a generated world leaves no harvestable forest tile untyped", () => {
@@ -79,7 +79,7 @@ test("a generated world leaves no harvestable forest tile untyped", () => {
     assert.ok(forestTiles > 100);
 });
 
-test("a nine-climate sweep reaches all thirty regional types", () => {
+test("a nine-climate sweep reaches all sixty regional types", () => {
     const observed = new Set();
     for (const climate of CLIMATES) {
         initWorld(SEED, { ...WORLD_OPTIONS, climate });
@@ -90,7 +90,7 @@ test("a nine-climate sweep reaches all thirty regional types", () => {
             }
         }
     }
-    assert.equal(observed.size, 30, "missing: " + REGIONAL_FOREST_TYPE_IDS.filter(id => !observed.has(id)).join(", "));
+    assert.equal(observed.size, 60, "missing: " + REGIONAL_FOREST_TYPE_IDS.filter(id => !observed.has(id)).join(", "));
 });
 
 test("the regional assignment and its effects survive a resource save/load round trip", () => {

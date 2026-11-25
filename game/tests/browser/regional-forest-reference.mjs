@@ -1,4 +1,4 @@
-// Player-facing browser proof for the thirty regional forest types.
+// Player-facing browser proof for the sixty regional forest types.
 //
 // Starts a real tropical realm, confirms that every harvestable woodland tile
 // resolves a regional type and a profile, opens a real lumber yard inspector,
@@ -191,14 +191,14 @@ try {
     assert.ok(inspectorText.includes("Forage"), "the inspector must show the forage effect");
     await page.screenshot({ path: resolve(outputDir, "regional-forests.png"), fullPage: false });
 
-    // The forest atlas is the player-facing catalogue of all 30 types. Open it
+    // The forest atlas is the player-facing catalogue of all 60 types. Open it
     // through the real tab and assert the complete catalogue is mounted.
     await page.locator('[data-command-tab="forest"]').click();
     await page.locator("#command-panel-content .forest-atlas__card").first().waitFor({ state: "visible", timeout: 5000 });
     const atlasCards = await page.locator("#command-panel-content .forest-atlas__card").count();
     const atlasText = (await page.locator("#command-panel-content").innerText()).trim();
-    assert.equal(atlasCards, 30, "the atlas must list all 30 regional forest types");
-    assert.match(atlasText, /Thirty regional woodlands/);
+    assert.equal(atlasCards, 60, "the atlas must list all 60 regional forest types");
+    assert.match(atlasText, /Sixty regional woodlands/);
     assert.match(atlasText, /SURVEYED/);
     // Cards are collapsed by default, so open the two tropical/conifer profiles
     // a player would inspect and read the named timber line inside them.
@@ -231,7 +231,7 @@ try {
     await page.locator('[data-command-tab="resources"]').click();
     const marketRows = page.locator("#command-panel-content .timber-market__row");
     await marketRows.first().waitFor({ state: "visible", timeout: 5000 });
-    assert.equal(await marketRows.count(), 16, "the timber market must list all 16 regional timbers");
+    assert.equal(await marketRows.count(), 18, "the timber market must list all 18 regional timbers");
     const mangroveRow = page.locator('#command-panel-content .timber-market__row[data-timber-good="mangrove-timber"]');
     await mangroveRow.waitFor({ state: "visible", timeout: 5000 });
     const rowText = (await mangroveRow.innerText()).trim();
@@ -249,7 +249,7 @@ try {
     assert.equal(sale.stock, deposit.stock - 5, "the sale removes five real units from the store");
     const toastText = (await page.locator("#action-toast").innerText()).trim();
     assert.match(toastText, /TIMBER SOLD/);
-    evidence.market = { rows: 16, deposited: deposit.amount, sold: 5, goldGained: sale.gold - deposit.gold, stockLeft: sale.stock };
+    evidence.market = { rows: 18, deposited: deposit.amount, sold: 5, goldGained: sale.gold - deposit.gold, stockLeft: sale.stock };
     await page.screenshot({ path: resolve(outputDir, "timber-market.png"), fullPage: false });
     await page.locator("#command-close").click();
     await page.waitForFunction(() => document.getElementById("command-modal")?.classList.contains("hidden"), null, { timeout: 5000 });

@@ -60,8 +60,8 @@ function employ(building, count, offset = 4) {
 }
 
 test("every regional timber is a real good with a label, a price and a sawmill batch", () => {
-    assert.equal(REGIONAL_TIMBERS.length, 16);
-    assert.equal(REGIONAL_TIMBER_KEYS.length, 16);
+    assert.equal(REGIONAL_TIMBERS.length, 18);
+    assert.equal(REGIONAL_TIMBER_KEYS.length, 18);
     for (const timber of REGIONAL_TIMBERS) {
         assert.ok(GOOD_KEYS.includes(timber.id), timber.id + " must be a physical good");
         assert.equal(GOODS[timber.id].label, REGIONAL_GOODS[timber.id].label);

@@ -35,17 +35,17 @@ test("the atlas surveys a bounded, deterministic sample of the realm's forest ti
     assert.ok(first.sampled <= 60, "the survey must respect its sample budget");
     const counted = Object.values(first.counts).reduce((sum, value) => sum + value, 0);
     assert.equal(counted, first.sampled);
-    assert.equal(first.types.length, 30);
+    assert.equal(first.types.length, 60);
     assert.ok(first.present >= 1);
     assert.equal(forestAtlasSurvey(60), first, "a cached survey is reused inside the same window");
 });
 
-test("the rendered atlas lists all 30 types, their effects and their signature timber", () => {
+test("the rendered atlas lists all 60 types, their effects and their signature timber", () => {
     setup();
     const markup = renderForestAtlasPanel();
     const cards = markup.match(/data-forest-type="/g) || [];
     assert.equal(cards.length, REGIONAL_FOREST_TYPES.length);
-    assert.match(markup, /Thirty regional woodlands/);
+    assert.match(markup, /Sixty regional woodlands/);
     assert.match(markup, /CATALOGUED/);
     assert.match(markup, /SURVEYED/);
     assert.match(markup, /Redwood Timber/);

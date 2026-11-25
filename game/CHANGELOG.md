@@ -1,13 +1,43 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.55.2`
-**Next development line:** `3.56.0-dev`
+**Current production version:** `3.56.0`
+**Next development line:** `3.57.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
 **Last repository verification:** 2026-11-25 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.56.0 — Thirty regional forest subvariants and transitions
+
+The regional forest layer covered broad belts; it did not yet distinguish the
+places where one belt turns into another. This release adds points 031–060 from
+1.2.23.1: coastal and mountain fog, two floodplain water chemistries, delta and
+lagoon mangroves, cold slopes and rain shadows, steppe, semi-desert islands,
+oases, volcanic ash, serpentine and karst, dunes and salt soils, gravel bars,
+loess and clay, bog birch and alder carr, willow, ash-elm and poplar floodplains,
+hazel scrub, juniper heath, dwarf-pine krummholz and the treeline pioneer wood.
+
+- **One catalogue, sixty types.** `REGIONAL_FOREST_TYPES` now holds all 60 with
+  distinct site windows, priorities, species mixes, goods, fauna, palettes and
+  silhouettes. The selector, inspector, forest atlas, resource ledger, sawmill,
+  timber yard and market read the same records; there is no parallel forest
+  model. The 30 new types are reachable in a generated world, not just on paper.
+- **Two named timbers complete the riparian frontier.** Poplar and tamarisk are
+  appended species with their own `poplar-timber` and `tamarisk-timber` goods,
+  sawmill batches and market rows. The 18 regional timbers remain appended after
+  the ten original goods, so old saves and goods indices are untouched.
+- **Tighter ecological layering.** Delta mangroves at the lowest heights, lagoon
+  mangroves above them, then blackwater and whitewater floodplains; cold-slope,
+  karst and serpentine forests split the montane belt; loess, clay, hazel and
+  steppe split the temperate lowlands. Each window keeps 001–030 reachable.
+- **Atlas and proof.** The FORESTS tab now lists sixty cards, and the browser
+  reference checks all sixty plus eighteen market rows. The unit suite checks
+  every documented probe, differentiated effects/palettes, an untyped-tile-free
+  world, a nine-climate sweep that observes all sixty types, and a save/load
+  round trip. The deterministic 25-year campaign and browser reference are part
+  of this release's verification.
 
 ## 3.55.2 — Management deck has one source of truth
 

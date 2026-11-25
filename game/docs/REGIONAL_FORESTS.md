@@ -1,10 +1,10 @@
 # Regionale Waldtypen — 1.2.23.1
 
-> **Status: implementiert und verifiziert (v3.52.0).** Alle 30 Punkte aus **1.2.23.1 Weitere regionale Waldtypen** laufen als regionale Overlay-Schicht über dem bestehenden `forestStandAt()`-Vertrag. Jede erzeugte Waldkachel erhält deterministisch genau einen Typ; es gibt keinen untypisierten Default. Mit 3.52.0 sind die 16 regionalen Holzsorten vollständig spielbar: eigenes Sägewerk-Rezept, Lumber-Camp-Signaturholz, Timber-Yard-Lagerkette, saisonaler Markt mit echtem Lagerbestand, Waldtypen-Atlas und regionale Bauformen. Nachweise: `tests/world/regional-forests.test.js` (30/30 Standortproben, 0 untypisierte Kacheln im 9-Klima-Scan, Save-Roundtrip), `tests/systems/regional-timber-economy.test.js`, `tests/world/building-forms.test.js`, `tests/presentation/forest-atlas.test.js`, ein 25-Jahres-Kampagnenlauf mit Typ- und Holzzählung und `tests/browser/regional-forest-reference.mjs` (Inspektor, Atlas, Marktverkauf, gerenderte Typen, keine Konsolenfehler). Die konkreten implementierten Werte stehen in Abschnitt 10; die Holzökonomie in Abschnitt 11.
+> **Status: implementiert und verifiziert (v3.56.0).** Alle 60 Punkte aus **1.2.23.1 Weitere regionale Waldtypen** laufen als regionale Overlay-Schicht über dem bestehenden `forestStandAt()`-Vertrag. Jede erzeugte Waldkachel erhält deterministisch genau einen Typ; es gibt keinen untypisierten Default. Mit 3.56.0 sind die 18 regionalen Holzsorten vollständig spielbar: eigenes Sägewerk-Rezept, Lumber-Camp-Signaturholz, Timber-Yard-Lagerkette, saisonaler Markt mit echtem Lagerbestand, Waldtypen-Atlas und regionale Bauformen. Nachweise: `tests/world/regional-forests.test.js` (60/60 Standortproben, 0 untypisierte Kacheln im 9-Klima-Scan, Save-Roundtrip), `tests/systems/regional-timber-economy.test.js`, `tests/world/building-forms.test.js`, `tests/presentation/forest-atlas.test.js`, ein 25-Jahres-Kampagnenlauf mit Typ- und Holzzählung und `tests/browser/regional-forest-reference.mjs` (Inspektor, Atlas, Marktverkauf, gerenderte Typen, keine Konsolenfehler). Die konkreten implementierten Werte stehen in Abschnitt 10; die Holzökonomie in Abschnitt 11.
 
 ## 1. Warum dieser Abschnitt existiert
 
-Die vorhandenen Biome 1.2.1–1.2.22 decken Laub-, Nadel-, Misch-, Tropen-, Savannen-, Taiga-, Tundra-, Steppen-, Wüsten-, Berg-, Küsten-, Sumpf- und Sonderwälder bereits als ein gemeinsames deterministisches Standmodell ab. 1.2.23.1 erfindet deshalb **keinen zweiten Wald-Simulator**. Die 30 regionalen Typen sind eine feinere geografische und ökologische Schicht über demselben `forestStandAt()`-Vertrag:
+Die vorhandenen Biome 1.2.1–1.2.22 decken Laub-, Nadel-, Misch-, Tropen-, Savannen-, Taiga-, Tundra-, Steppen-, Wüsten-, Berg-, Küsten-, Sumpf- und Sonderwälder bereits als ein gemeinsames deterministisches Standmodell ab. 1.2.23.1 erfindet deshalb **keinen zweiten Wald-Simulator**. Die 60 regionalen Typen sind eine feinere geografische und ökologische Schicht über demselben `forestStandAt()`-Vertrag:
 
 - dieselbe Kachel, derselbe Seed und derselbe Kontext ergeben weiterhin genau einen Stand;
 - der Typ beeinflusst Artenmischung, Struktur, Boden, Güter, Fauna, Gefahren und Wiederbewaldung;
@@ -21,7 +21,7 @@ Jeder Typ beschreibt mindestens:
 
 | Feld | Bedeutung |
 |---|---|
-| `id` | Stabile Nummer `1.2.23.1.001`–`1.2.23.1.030`. |
+| `id` | Stabile Nummer `1.2.23.1.001`–`1.2.23.1.060`. |
 | `label` / `shortLabel` | Deutscher Spielname und kurze Kartenbezeichnung. |
 | `baseFormation` | Bestehende Formation, auf der der Typ aufsetzt; verhindert doppelte Ökologie. |
 | `climate` | Zulässige Klimafamilien und Ausschlüsse. |
@@ -50,7 +50,7 @@ Der regionale Patch darf **nie** pro Kachel zufällig zwischen zehn ähnlichen T
 ### 2.3 Ressourcen- und Wirtschaftsregeln
 
 - Jeder Typ liefert mindestens ein benanntes Holz und ein saisonales Gut.
-- Die 16 regionalen Holzsorten sind echte Waren im bestehenden `GOODS`-Katalog, hinten angehängt; es gibt keine typ-lokale Schattenwirtschaft und keine Verschiebung alter Warenindizes.
+- Die 18 regionalen Holzsorten sind echte Waren im bestehenden `GOODS`-Katalog, hinten angehängt; es gibt keine typ-lokale Schattenwirtschaft und keine Verschiebung alter Warenindizes.
 - Jede Holzsorte hat ein echtes Sägewerk-Rezept (2 Holz → 1–3 Planks + Firewood), einen saisonalen Marktpreis und dieselbe Warenhaus-/Logistik-Kette wie die alten Güter. Das alte Logs-Rezept bleibt unverändert.
 - Der Typ darf die vorhandene Holzmenge nicht vervielfachen. Seine Produktivität liegt in einem expliziten Band und wird durch Stock-Ratio, Alter und Bewirtschaftung moduliert.
 - Jede Ernte läuft über den bestehenden Sammel-/Holz-Ledger und reduziert den echten Bestand.
@@ -74,7 +74,7 @@ Jeder Typ braucht auf einen Blick unterscheidbare Merkmale:
 - Ein Save/Load-Zyklus muss denselben Typ, dieselben Güter und dieselbe Fauna ergeben.
 - Die 25-Jahres-Kampagne und der 60-Jahres-Soak müssen ohne neue Ausreißer laufen; der Typ darf die bestehenden Wildtier-, Holz- und Disturbance-Budgets nicht sprengen.
 
-## 3. Übersicht aller 30 Typen
+## 3. Übersicht aller 60 Typen
 
 | ID | Typ | Klima / Standort | Wasser | Erkennungsmerkmal | Bestehende Basis |
 |---|---|---|---|---|---|
@@ -108,8 +108,38 @@ Jeder Typ braucht auf einen Blick unterscheidbare Merkmale:
 | 028 | Dipterocarpaceenwald | tropisch, Tiefland | sehr feucht | hohe Emergenten, Mastjahre | Tropenwald 1.2.4 |
 | 029 | Lorbeerwald | mild, feucht, montan | Nebel und Regen | ledrige Lorbeerblätter | keine; neue Formation |
 | 030 | Monsunwald | tropisch, ausgeprägte Trockenzeit | saisonal | Laubabwurf, Teak, Bambus | keine; neue Formation |
+| 031 | Küstennebelwald | kühl, küstennah, salzhaltige Luft | Nebel und Sprühregen | windgescherte Kronen, Moose, Salzrand | `beechwood`, `oakwood`, `mixed`, `pinewood`, `hillside` |
+| 032 | Bergnebelwald | montan, Wolkenwald-Gürtel | ganzjährig nebelfeucht | kurze moosige Stämme, Baumfarne | `mixed-montane`, `mixed-conifer`, `mountain-conifer` |
+| 033 | Tiefland-Dipterocarpenwald | tropisch, immerfeucht, Tiefland | sehr hoch | riesige Emergenten, Brettwurzeln | `tropical-emergent`, `tropical-canopy`, `tropical-ancient` |
+| 034 | Torfwald | kalt-gemäßigt, Torf | Staunässe, saures Wasser | extrem langsame Zersetzung | `wet-conifer`, `taiga-mixed`, `taiga-birch`, `taiga-spruce`, `pine-heath`, `swamp-carr` |
+| 035 | Schwarzwasser-Überschwemmungswald | tropisch, Schwarzwasser | nährstoffarm, periodisch | teebraunes Wasser, spezialisierte Auenarten | `tropical-floodplain`, `tropical-swamp`, `tropical-riverbank` |
+| 036 | Weißwasser-Auenwald | tropisch, Weißwasser | nährstoffreich, periodisch | junge Sedimente, schnelles Wachstum | `tropical-floodplain`, `tropical-riverbank` |
+| 037 | Delta-Mangroven | tropisches Delta | Brackwasser, Gezeiten | verzweigte Wasserwege, Schlickbänke | `tropical-swamp`, `tropical-floodplain`, `tropical-riverbank` |
+| 038 | Lagunen-Mangroven | tropische Küstenlagune | tideabhängig | ruhige Lagune, Salzpfannen | `tropical-swamp`, `tropical-floodplain` |
+| 039 | Kalthangwald | montan, kühler Nordhang | feucht, schneereich | Nordhang, Moos, langsame Nadelbäume | `mixed-montane`, `mixed-conifer` |
+| 040 | Regenschattenwald | küstennah oder gemäßigt, Leeseite | deutlich geringer | lichte Kiefern, Hartlaub, Wacholder | `pinewood`, `oakwood`, `mixed-open`, `chestnut-grove` |
+| 041 | Steppenwald | gemäßigt, Wald-Grasland-Grenze | mäßig trocken | lichte Eichen, Kiefern, Grasschicht | `pine-heath`, `oakwood`, `mixed-open`, `pinewood`, `mixed-ecotone` |
+| 042 | Halbwüsten-Waldinsel | halbtrockene Savanne | isolierter Feuchtigkeitsstandort | Bauminsel in Dornbusch | `savanna-woodland` |
+| 043 | Oasenwald | heiße Savanne | Grundwasseranschluss | Palmen, Feigen, Tamarisken | `savanna-woodland` |
+| 044 | Vulkanaschewald | tropisch-montan, Vulkanböden | feucht | sehr fruchtbare junge Böden | `tropical-montane` |
+| 045 | Serpentinwald | montan, Serpentin | wechselnd | giftige Bodenmetalle, Endemiten | `mixed-conifer`, `mixed-montane`, `pinewood` |
+| 046 | Kalksteinwald | küstennah oder montan, Kalk | Karstwasser | Karst, Höhlen, flachgründige Böden | `mixed-montane`, `hillside`, `oakwood`, `beechwood` |
+| 047 | Dünen-Kiefernwald | Küstendünen | trocken, salzhaltig | beweglicher Sand, tiefe Wurzeln | `pinewood`, `pine-heath`, `oakwood`, `mixed-open` |
+| 048 | Salzbodenwald | Küste, Salzstandort | salzhaltig | halophile Bäume, schütterer Unterwuchs | `oakwood`, `chestnut-grove`, `pinewood`, `mixed-open` |
+| 049 | Schotterauenwald | Gebirgsflusstal | wechselnd, Hochwasser | Kiesbänke, schmaler Uferwald | `mixed-alluvial` |
+| 050 | Lösswald | gemäßigt, Löss | frisch | windabgelagerte, tiefgründige Böden | `linden-elm`, `maplewood`, `mixed` |
+| 051 | Tonboden-Eichenwald | gemäßigt, Ton | Staunässe | breite Eichen, Hainbuchen, schwerer Boden | `maplewood`, `oakwood`, `linden-elm`, `mixed` |
+| 052 | Moorbirkenwald | kalt, Moorrand | hoher Grundwasserstand | krumme Birken, offenes Moor | `taiga-birch`, `taiga-mixed`, `wet-conifer`, `pine-heath`, `swamp-carr` |
+| 053 | Erlenbruch | gemäßigt, Niedermoor | sehr nass | Erlen, Schlamm, Bulten, Wasserlöcher | `swamp-carr` |
+| 054 | Weidenhain | gemäßigt, Ufer | Überflutung | niedrige Weiden, biegsame Zweige | `alluvial`, `mixed-alluvial` |
+| 055 | Eschen-Ulmen-Auenwald | gemäßigt, große Flussniederung | Überflutung | hohe Eschen und Ulmen | `alluvial`, `mixed-alluvial`, `linden-elm` |
+| 056 | Pappelwald | gemäßigt, frische Aue | frisch | schnelles Jugendwachstum, schlanke Stämme | `alluvial`, `mixed-alluvial` |
+| 057 | Haselgebüschwald | gemäßigt, Übergangsstandort | frisch | mehrstämmige Haseln, lichtes Dach | `coppice-with-standards`, `mixed-open`, `mixed`, `maplewood` |
+| 058 | Wacholderheide | montan, windexponiert | mager, trocken | Wacholder, Bauminseln, Beweidung | `subalpine-scrub`, `mixed-conifer`, `mixed-montane` |
+| 059 | Zwergkiefern-Krummholz | hochmontan, windig | wechselnd | niedrige, verwachsene Kronen | `subalpine-scrub`, `mountain-conifer` |
+| 060 | Baumgrenzen-Pionierwald | Baumgrenze, rau | wechselnd | zähe, langsam wachsende Pioniere | `subalpine-scrub`, `mixed-conifer`, `larchwood` |
 
-## 4. Die 30 Typen im Detail
+## 4. Die 60 Typen im Detail
 
 ### 4.1 Kaltboreale und kühl-ozeanische Wälder
 
@@ -903,6 +933,43 @@ Jeder Typ braucht auf einen Blick unterscheidbare Merkmale:
 
 **Abnahme:** Der Wald verliert in der Trockenzeit sein Laub und treibt im Monsun aus; Teak, Sal und Bambus sind gemeinsam nachweisbar; Ernte vor dem Monsun ist wirtschaftlich entscheidend; Feuer und Beweidung verändern den Unterwuchs; die Arten unterscheiden sich klar von 026/027/028.
 
+### 4.7 Regionale Untervarianten und Übergänge (031–060)
+
+Die zweite Gruppe sind keine neuen Biome, sondern feinere regionale Untervarianten und Übergänge innerhalb der bereits vorhandenen Klima- und Formationsfamilien. Sie werden über engere Standortfenster, eigene Arten-/Güterlisten und eine höhere ökologische Priorität ausgewählt; die Basisformation, der Ressourcenknoten, der Inspektor und der Renderer bleiben dieselben. Jeder Typ hat einen dokumentierten Standorttest und muss im 9-Klima-Scan tatsächlich erzeugt werden.
+
+| ID / Typ | Kurzprofil | Standort, Struktur und Nutzung | Zentrale Entscheidung |
+|---|---|---|---|
+| 031 Küstennebelwald | Salzhaltige Küstenluft, Nebel und windgescherte Kronen; Moose und Flechten über salztoleranten Randbäumen. | Küste, Temperatur 0,42–0,56, Feuchte 0,60–0,70; Buche, Eiche, Kiefer, Vogelbeere, Hasel; Holz, Pilze, Honig, Moos. | Windschutz und Küstenwald erhalten oder Holz nutzen; falsche Drainage zerstört den Nebelstandort. |
+| 032 Bergnebelwald | Hochgelegener Wolkenwald mit kurzen, moosigen Stämmen, Baumfarnen und ganzjährigem Nebelniederschlag. | Montan, 0,26–0,50 Temperatur, 0,70–0,94 Feuchte; Bergmischwald, Nebelfeuchte, Baumfarn; Moos, Holz, Pilze. | Selektive Entnahme vs. Schutz der Nebelwälder; Erosion ist das Hauptrisiko. |
+| 033 Tiefland-Dipterocarpenwald | Artenreicher, immerfeuchter Tieflandswald mit riesigen Emergenten, Brettwurzeln und geschlossenem Hauptdach. | Tropen, 0,72–0,90 Temperatur, 0,82–0,94 Feuchte, niedrige Höhen; Dipterocarp, Eisenholz, Rosewood; Edelholz, Harz, Rattan. | Selektiver Einschlag vs. Fläche; Mastjahre und Altbäume tragen die Verjüngung. |
+| 034 Torfwald | Kiefern, Birken und Fichten auf tiefem Torf; sehr langsame Zersetzung und hoher, schwankender Wasserstand. | Taiga/Schnee/Montan, 0,10–0,26 Temperatur, 0,78–0,86 Feuchte; Torf, Beeren, Kiefernholz. | Torfabbau vs. Kohlenstoffspeicher und Wasserhaushalt; Regeneration ist extrem langsam. |
+| 035 Schwarzwasser-Überschwemmungswald | Nährstoffarmes, teebraunes Wasser, langsame Zersetzung und spezialisierte Überflutungsarten. | Tropen, 0,90–1,00 Feuchte, mittlere Auenhöhe; Palmen, Feigen, Mangroven; Fisch, Fasern, etwas Holz. | Fisch und Wasserqualität vs. Holznutzung; die Arten reagieren empfindlich auf Nährstoffeintrag. |
+| 036 Weißwasser-Auenwald | Nährstoffreiche junge Sedimente, regelmäßige Überflutung und sehr schnelle Regeneration. | Tropen, 0,78–0,90 Feuchte, mittlere Auenhöhe; Kapok, Feige, Balsa, Kakao; Fisch, Kakao, Holz. | Ernte vs. Sedimentdynamik; nach jeder Flut entsteht ein neuer Standort. |
+| 037 Delta-Mangroven | Verzweigte Wasserwege, wechselnde Salzgehalte und ständiger Gezeitenstrom im Delta. | Tropisches Delta, 0,80–1,00 Feuchte, sehr niedrige Höhen; Rhizophora, Palme, Feige; Küstenschutz, Fisch, Holz. | Holz und Aquakultur vs. Delta-Schutz; Rodung öffnet die Küste für Sturmfluten. |
+| 038 Lagunen-Mangroven | Ruhige Küstenlagune mit tideabhängiger Überflutung, Salzpfannen im Rücken und dichter Kinderstube. | Tropische Lagune, 0,76–0,98 Feuchte, niedrige Höhen; Mangrove, Palme, Feige; Muscheln, Fisch, Holz. | Lagune und Fischerei vs. kurzfristige Holzernte. |
+| 039 Kalthangwald | Kühler, feuchter Nordhang mit langsam wachsenden Nadelbäumen, tiefem Moos und Schneelast. | Montan, 0,12–0,23 Temperatur, 0,52–0,70 Feuchte; Buche, Tanne, Fichte, Ahorn; Holz, Pilze, Moos. | Erosionsschutz vs. Nutzung; der Nordhang regeneriert langsamer als der Süden. |
+| 040 Regenschattenwald | Trockener Leeseitenwald mit deutlich geringerem Niederschlag, lichten Kiefern und Hartlaub. | Küste/gemäßigt, 0,42–0,56 Feuchte, 0,48–0,62 Temperatur; Kiefer, Wacholder, Eiche, Steineiche; Holz, Harz, Wild. | Feuerpause und Beweidung vs. Holznutzung; der Wald bleibt nur bei geringer Störung geschlossen. |
+| 041 Steppenwald | Übergang von geschlossenem Wald zu Grasland: lichte Eichen, Kiefern und Birken über dichter Grasschicht. | Gemäßigt/küstennah, 0,38–0,46 Feuchte; Eiche, Kiefer, Birke, Hasel; Mast, Wild, Holz. | Wald vs. Weide; Feuer und Verbiss halten den Übergang offen. |
+| 042 Halbwüsten-Waldinsel | Isolierte Bauminsel in semiarider Umgebung, nur an einem verlässlichen Feuchtigkeitsstandort. | Savanne, 0,42–0,47 Feuchte, 0,68–0,84 Temperatur; Akazie, Wacholder, Dorngehölz; Gummi, Wild, wenig Holz. | Schutz der Insel vs. Holznutzung; die Population ist klein und isoliert. |
+| 043 Oasenwald | Grüne Oaseninsel mit Grundwasseranschluss: Palmen, Feigen und Tamarisken in trockener Savanne. | Savanne, 0,60–0,72 Feuchte, 0,30–0,48 Höhe; Palme, Feige, Akazie; Datteln, Feigen, Schatten. | Wasser und Schatten vs. Holz; die Oase ist der einzige verlässliche Feuchtpunkt. |
+| 044 Vulkanaschewald | Junger, sehr fruchtbarer Wald auf Vulkanasche mit schnellem Jugendwachstum und Baumfarnen. | Tropisch-montan, 0,72–0,90 Feuchte, hohe Lagen; Baumfarn, Feige, Lorbeer, Kakao; Holz, Kakao, Pilze. | Fruchtbarkeit nutzen vs. Erosion und Hangschutz; nach Aschefällen beginnt die Sukzession neu. |
+| 045 Serpentinwald | Lichter Wald auf giftigen Bodenmetallen mit zähen Endemiten, nacktem Gestein und langsamer Regeneration. | Montan, 0,39–0,46 Feuchte, 0,18–0,32 Temperatur; Kiefer, Wacholder, Eiche, Lorbeer; wenig Holz, Heilpflanzen. | Schutz der Endemiten vs. Ertrag; Düngung und Kalkung verändern den Standort dauerhaft. |
+| 046 Kalksteinwald | Kalksteinwald über Karst und Höhlen mit flachgründigen Böden und verstecktem Wasserregime. | Küste/montan, 0,56–0,66 Feuchte, 0,24–0,34 Temperatur; Lorbeer, Eiche, Hainbuche, Feige; Holz, Kalk, Höhlen. | Höhlenwasser und Wald vs. Steinbruch; Karstwasser ist schwer zu ersetzen. |
+| 047 Dünen-Kiefernwald | Lichter Kiefernwald auf beweglichem Küstensand mit tiefen Wurzeln und empfindlicher Grasschicht. | Küste, 0,43–0,49 Feuchte, niedrige bis mittlere Höhen; Kiefer, Wacholder, Birke, Tamariske; Holz, Harz, Dünengras. | Dünenfixierung vs. Holz; jede flächige Rodung setzt den Sand in Bewegung. |
+| 048 Salzbodenwald | Salzbodenwald mit halophilen Baumarten, salzigen Böden und schütterer Krautschicht. | Küste, 0,53–0,64 Feuchte, 0,54–0,68 Temperatur; Tamariske, Eiche, Esche, Weide; Tamariskenholz, Salz, Honig. | Salzgewinnung vs. Wald; Salzstandorte erholen sich nur langsam. |
+| 049 Schotterauenwald | Schmaler Uferwald in Gebirgsflusstälern mit Kiesbänken und rasch wechselnder Wasserführung. | Montan, 0,64–0,80 Feuchte, 0,22–0,34 Temperatur; Erle, Weide, Esche, Pappel; Holz, Fisch, Uferschutz. | Uferschutz und Hochwasserraum vs. Holz; nach jedem Hochwasser verschiebt sich der Standort. |
+| 050 Lösswald | Lösswald auf windabgelagerten, tiefgründigen Böden mit hoher Fruchtbarkeit und schnellem Jugendwachstum. | Gemäßigt, 0,45–0,50 Feuchte; Eiche, Linde, Hainbuche, Esche; Edellaubholz, Mast, Honig. | Ackerland vs. Wald; ohne Vegetationsdecke ist Löss stark erosionsgefährdet. |
+| 051 Tonboden-Eichenwald | Tonboden-Eichenwald mit Staunässe im Winter, Sommertrockenheit und schwerem, dichtem Boden. | Gemäßigt, 0,57–0,64 Feuchte; Eiche, Hainbuche, Esche, Ahorn; Eichenholz, Mast, Wild. | Drainage vs. natürliche Staunässe; Eingriffe verändern die ganze Krautschicht. |
+| 052 Moorbirkenwald | Lichter Moorbirkenwald an der Grenze zum offenen Moor mit krummen Birken und Torfmoos. | Taiga/Schnee, 0,70–0,80 Feuchte, 0,10–0,21 Temperatur; Birke, Kiefer, Erle, Zwergkiefer; Birkensaft, Torf, Beeren. | Moorrand schützen vs. Torf und Brennholz; der Wasserstand ist die entscheidende Größe. |
+| 053 Erlenbruch | Erlenbruch mit hohem Grundwasserstand, schwarzem Schlamm, Bulten und offenen Wasserlöchern. | Sumpf/gemäßigt, 0,84–0,96 Feuchte; Erle, Weide, Birke, Esche; Erlenholz, Fisch, Torfmoos. | Entwässern vs. erhalten; Drainage setzt Torf frei und zerstört den Bruch. |
+| 054 Weidenhain | Niedrige Uferwaldform aus Weiden und Pappeln mit biegsamen Zweigen und schneller Regeneration. | Gemäßigt/küstennah, 0,62–0,72 Feuchte; Weide, Erle, Pappel, Esche; Weidenruten, Fisch, Holz. | Kurze Umtriebe vs. Uferschutz; Weiden treiben nach der Ernte schnell wieder aus. |
+| 055 Eschen-Ulmen-Auenwald | Hohe Eschen und Ulmen der großen Flussniederungen auf nährstoffreichen Sedimenten. | Gemäßigt/küstennah, 0,72–0,82 Feuchte; Esche, Ulme, Eiche, Erle, Pappel; Edellaubholz, Pilze, Wild. | Hartholz vs. Hochwasserraum; die Aue braucht regelmäßige Überflutung. |
+| 056 Pappelwald | Pappelwald mit schnellem Jugendwachstum, schlanken Stämmen und kurzen Umtriebszeiten. | Gemäßigt/küstennah, 0,72–0,76 Feuchte; Pappel, Weide, Erle, Esche; Pappelholz, Biomasse, Ruten. | Schnelle Ernte vs. Stabilität; reine Pappelbestände sind anfällig für Wind und Trockenheit. |
+| 057 Haselgebüschwald | Übergangsform zwischen Wald und Gebüsch mit mehrstämmigen Haseln, lichtem Dach und reicher Nussernte. | Gemäßigt, 0,51–0,56 Feuchte; Hasel, Eiche, Hainbuche, Vogelbeere; Haselnüsse, Mast, Wild. | Niederwald vs. Hochwald; Hasel belohnt kurze Umtriebe, verliert aber an Holzmasse. |
+| 058 Wacholderheide | Offene Wacholderheide mit vereinzelten Bauminseln, windexponiert und durch Beweidung offen gehalten. | Montan, 0,39–0,47 Feuchte, 0,76–0,92 Höhe; Wacholder, Kiefer, Eiche, Birke; Wacholderbeeren, Weide, wenig Holz. | Beweidung vs. Verbuschung; ohne Nutzung schließt sich die Heide. |
+| 059 Zwergkiefern-Krummholz | Windgeformtes Zwergkiefern-Krummholz der Hochlagen mit niedrigen, verwachsenen Kronen. | Montan/Schnee, 0,45–0,62 Feuchte, 0,82–0,94 Höhe; Zwergkiefer, Kiefer, Wacholder, Birke; Brennholz, Wacholderbeeren. | Schutz der Hochlagen vs. Brennholz; die Bestände wachsen extrem langsam. |
+| 060 Baumgrenzen-Pionierwald | Zäher, langsam wachsender Pionierwald an der Baumgrenze aus Vogelbeere, Birke und Zwergkiefer. | Montan/Schnee/Tundra, 0,55–0,72 Feuchte, 0,78–0,94 Höhe; Vogelbeere, Birke, Zwergkiefer, Weide; Beeren, Brennholz, Schutz. | Baumgrenze schützen vs. Nutzung; der Wald ist die empfindlichste Waldform des Spiels. |
+
 ## 5. Querschnittsmatrix
 
 Die Matrix ist die schnelle Designprüfung. Sie ersetzt nicht die Einzelabschnitte, sondern macht sichtbar, ob ein Typ eine eigene Nische besitzt oder nur eine Farbvariante wäre.
@@ -939,14 +1006,44 @@ Die Matrix ist die schnelle Designprüfung. Sie ersetzt nicht die Einzelabschnit
 | 028 | immerfeucht | selten | nein | nein | Dipterocarp | Nüsse, Wild | Harz, Rattan | Mastjahre, Rodung | Selektion vs. Fläche |
 | 029 | Nebel, hoch | selten | gering | nein | Lorbeer | Früchte, Honig | Lorbeeröl | Rodung, Invasoren | Schutz vs. Holz |
 | 030 | Monsun | hoch | nein | nein | Teak/Sal/Bambus | Honig, Früchte | Lack, Bambus | Monsun, Feuer | Jahresrhythmus vs. Maximalertrag |
+| 031 | Nebel, salzhaltig | selten | mäßig | ja | Laub-/Mischholz | Pilze, Honig | Moos, Flechten | Sturm, Salz, Drainage | Windschutz vs. Holzernte |
+| 032 | Nebel, sehr hoch | selten | mäßig | nein | Bergmischholz | Pilze, Beeren | Baumfarn, Moos | Windwurf, Erosion | Schutz vs. selektive Entnahme |
+| 033 | immerfeucht | selten | nein | nein | Dipterocarp | Nüsse, Wild | Harz, Rattan | Mastjahre, Rodung | Selektion vs. Fläche |
+| 034 | Torf, sauer | gering | hoch | nein | Moorholz | Beeren, Wild | Torf, Medizin | Torfabbau, Brand | Torf vs. Kohlenstoff |
+| 035 | Schwarzwasser | sehr gering | nein | nein | Weichholz | Fisch, Wild | Fasern, Fisch | Nährstoffarmut, Rodung | Wasserqualität vs. Holz |
+| 036 | Weißwasser | gering | nein | nein | Weich-/Edelholz | Fisch, Kakao | Kapok, Kakao | Überflutung, Erosion | Ernte vs. Sedimentdynamik |
+| 037 | Brackwasser, Gezeiten | selten | nein | sehr hoch | Mangrovenholz | Fisch, Krebse | Küstenschutz, Gerbstoff | Rodung, Sturmflut | Delta-Schutz vs. Holz |
+| 038 | Lagune, Gezeiten | selten | nein | sehr hoch | Mangrovenholz | Muscheln, Fisch | Kinderstube, Salz | Rodung, Sturmflut | Lagune vs. Holzernte |
+| 039 | feucht, kühl | selten | hoch | nein | Nadel-/Mischholz | Pilze, Wild | Moos, Schutzholz | Erosion, Schneebruch | Schutz vs. Nutzung |
+| 040 | Regenschatten | hoch | mäßig | möglich | Kiefer/Hartlaub | Mast, Wild | Harz, Wacholder | Feuer, Beweidung | Feuerpause vs. Weide |
+| 041 | mäßig trocken | hoch | mäßig | nein | Eiche/Kiefer | Mast, Wild | Futter, Haseln | Feuer, Verbiss | Wald vs. Weide |
+| 042 | isoliert feucht | mittel | nein | möglich | Dornholz | Wild, Gummi | Gummi, Heilpflanzen | Dürre, Isolation | Insel schützen vs. nutzen |
+| 043 | Grundwasser | gering | nein | möglich | Palmenholz | Datteln, Feigen | Schatten, Früchte | Wasserentnahme, Übernutzung | Wasser vs. Holz |
+| 044 | feucht, fruchtbar | gering | nein | nein | Mischholz | Kakao, Pilze | Kakao, Baumfarn | Erosion, Aschefall | Fruchtbarkeit vs. Hangschutz |
+| 045 | wechselnd | gering | mäßig | nein | zähes Nadelholz | Beeren, Wild | Endemiten, Heilpflanzen | giftige Böden, Erosion | Schutz vs. Ertrag |
+| 046 | Karstwasser | sehr gering | mäßig | nein | Laubholz | Pilze, Honig | Kalk, Höhlen | Wasserabfluss, Steinbruch | Höhle vs. Steinbruch |
+| 047 | trocken, salzhaltig | mittel | mäßig | ja | Kiefernholz | Pilze, Wild | Dünengras, Harz | Dünenwanderung, Feuer | Dünenfixierung vs. Holz |
+| 048 | salzhaltig | gering | mäßig | sehr hoch | Tamariskenholz | Honig, Wild | Salz, Gerbstoff | Salz, Erosion | Salz vs. Wald |
+| 049 | Hochwasser | sehr gering | hoch | nein | Weichholz | Fisch, Wild | Kies, Uferschutz | Hochwasser, Erosion | Uferschutz vs. Holz |
+| 050 | frisch | gering | mäßig | nein | Edellaubholz | Mast, Honig | Furnier, Obst | Erosion, Ackerbau | Acker vs. Wald |
+| 051 | Staunässe | gering | mäßig | nein | Eichenholz | Mast, Wild | Ton, Furnier | Staunässe, Trockenheit | Drainage vs. Naturstandort |
+| 052 | Moorrand | gering | hoch | nein | Birkenholz | Beeren, Saft | Torf, Moorbeeren | Entwässerung, Torfabbau | Moor schützen vs. nutzen |
+| 053 | sehr nass | sehr gering | mäßig | nein | Erlenholz | Fisch, Wild | Torfmoos, Schilf | Drainage, Windwurf | Entwässern vs. erhalten |
+| 054 | Ufer, Überflutung | sehr gering | mäßig | nein | Weidenholz | Fisch, Wild | Weidenruten, Flechtwerk | Hochwasser, Rodung | kurze Umtriebe vs. Uferschutz |
+| 055 | große Aue | gering | mäßig | nein | Eschen-/Ulmenholz | Pilze, Wild | Furnier, Hochwasserraum | Überflutung, Abholzung | Hartholz vs. Retentionsraum |
+| 056 | frische Aue | gering | mäßig | nein | Pappelholz | Wild, Honig | Biomasse, Zellstoff | Windwurf, Trockenheit | schnelle Ernte vs. Stabilität |
+| 057 | frisch | gering | mäßig | nein | Haselholz | Nüsse, Mast | Niederwald, Flechtwerk | Verbiss, Nutzungsaufgabe | Niederwald vs. Hochwald |
+| 058 | mager, windig | mittel | hoch | nein | Wacholderholz | Beeren, Wild | Weide, Medizin | Verbuschung, Feuer | Beweidung vs. Offenheit |
+| 059 | windig, hoch | selten | sehr hoch | nein | Zwergkiefernholz | Beeren, Wild | Brennholz, Schutz | Wind, Frost, Rodung | Schutz vs. Brennholz |
+| 060 | Baumgrenze | selten | sehr hoch | nein | Pionierholz | Beeren, Wild | Schutz, Genressource | Frost, Wind, Erosion | Baumgrenze schützen vs. nutzen |
 
 ## 6. Implementierung
 
-Die 30 Typen sind kein zweiter Wald-Simulator. Sie sind eine regionale Overlay-Schicht über dem vorhandenen Stand, dem vorhandenen Ressourcenknoten, dem vorhandenen Inspektor und dem vorhandenen Renderer.
+Die 60 Typen sind kein zweiter Wald-Simulator. Sie sind eine regionale Overlay-Schicht über dem vorhandenen Stand, dem vorhandenen Ressourcenknoten, dem vorhandenen Inspektor und dem vorhandenen Renderer.
 
 ### 6.1 Daten und Auswahl
 
-- `game/js/world/regional-forests.js` enthält `REGIONAL_FOREST_TYPES` (30 Typen), `REGIONAL_SPECIES` (16 angehängte Arten), `REGIONAL_TIMBERS` (16 benannte Holzsorten mit `basePrice`, `planks` und `firewoodYield`), `regionalTimberGood()`/`signatureTimberForRegionalType()` und `REGIONAL_FORESTS_TEST_SITES`.
+- `game/js/world/regional-forests.js` enthält `REGIONAL_FOREST_TYPES` (60 Typen), `REGIONAL_SPECIES` (18 angehängte Arten), `REGIONAL_TIMBERS` (18 benannte Holzsorten mit `basePrice`, `planks` und `firewoodYield`), `regionalTimberGood()`/`signatureTimberForRegionalType()` und `REGIONAL_FORESTS_TEST_SITES`.
 - `regionalForestTypeFor()` prüft Klima, Basisformation, Temperatur, Feuchte und Höhe. Innerhalb der passenden Kandidaten entscheidet die ökologische Priorität; ein 7×7-Cell-Hash bricht Gleichstände und macht den Typ als Region lesbar. Es gibt keinen Nachbarscan und keinen untypisierten Rückgabewert für eine echte Waldkachel.
 - `forestStandAt()` ruft den Regionaltyp vor Störung, Alter und Sukzession auf. `stand.type` bleibt die bestehende Formation, `stand.regionalTypeId` und die abgeleiteten Felder tragen den Regionaltyp.
 - `regionalFormationFor()` cached die Kombination aus Basisformation und Regionaltyp. Die Basiszusammensetzung bleibt erhalten, damit alte Saves und die bestehenden Misch-/Nadelwald-Verträge unverändert bleiben. Regionale Güter und Fauna werden additiv ergänzt; die regionale Palette, Kronenhöhe, Stammform und der Nebel kommen aus `regionalType.render`.
@@ -973,7 +1070,7 @@ Jede Wirkung wird bei Bedarf gelesen und bleibt an den bestehenden Tick bzw. den
 - Der Typ wird nicht als neues Pflichtfeld gespeichert. Er wird beim Laden aus Seed, Kachel und Standortfaktoren erneut abgeleitet.
 - `serializeResourceGeography()` und `restoreResourceGeography()` reproduzieren Bestand, Kapazität und daraus abgeleiteten Typ; der Test in `tests/world/regional-forests.test.js` prüft den Roundtrip.
 - Alte Saves ohne Regionaldaten laden unverändert; beim ersten Zugriff entsteht derselbe Typ wie in einer frisch generierten Welt.
-- Alte Timber Yards mit den drei bisherigen Filtern werden beim Laden auf das vollständige 16-Sorten-Profil migriert; echte Custom-Filter bleiben erhalten. Die Bauform ist abgeleitet und braucht kein Save-Feld. Bestehende Lagerbestände werden beim Laden um leere Regionalholz-Slots ergänzt, nicht neu geschrieben.
+- Alte Timber Yards mit den drei bisherigen Filtern werden beim Laden auf das vollständige 18-Sorten-Profil migriert; echte Custom-Filter bleiben erhalten. Die Bauform ist abgeleitet und braucht kein Save-Feld. Bestehende Lagerbestände werden beim Laden um leere Regionalholz-Slots ergänzt, nicht neu geschrieben.
 
 ## 7. Verifikation
 
@@ -981,10 +1078,10 @@ Jede Wirkung wird bei Bedarf gelesen und bleibt an den bestehenden Tick bzw. den
 
 `game/tests/world/regional-forests.test.js` prüft:
 
-- 30 eindeutige IDs und 30 dokumentierte Standortproben, jede liefert exakt ihren Typ;
-- differenzierte Effekt-Tupel und mindestens 25 verschiedene Paletten;
+- 60 eindeutige IDs und 60 dokumentierte Standortproben, jede liefert exakt ihren Typ;
+- differenzierte Effekt-Tupel und mindestens 55 verschiedene Paletten;
 - eine generierte temperate Welt ohne eine einzige untypisierte Waldkachel;
-- einen 9-Klima-Scan, der alle 30 Typen tatsächlich erzeugt;
+- einen 9-Klima-Scan, der alle 60 Typen tatsächlich erzeugt;
 - Determinismus und einen Ressourcen-Save/Load-Roundtrip für Typ, Effekte und Bestand.
 
 Die bestehenden Wald-, Nadelwald-, Mischwald-, Tropen-, Savannen-, Taiga-, Tundra- und Ressourcentests bleiben grün. Die neuen Arten wurden ausschließlich hinten an `FOREST_SPECIES` angehängt; die bestehenden 38 Indizes bleiben unverändert.
@@ -1006,66 +1103,74 @@ Seed `20261123`, `small`, `continent`, Wasser 46, Landmasse 58, Fruchtbarkeit 55
 | tundra | 693 |
 | **Summe** | **39.900** |
 
-Ergebnis: **39.900 Waldkacheln, 0 untypisiert, 30/30 Typen erzeugt.** Die tatsächlichen Kachelzahlen pro Typ: 001 8.305 · 002 57 · 003 3.494 · 004 372 · 005 2.773 · 006 516 · 007 81 · 008 911 · 009 3.693 · 010 194 · 011 142 · 012 2.030 · 013 928 · 014 1.888 · 015 3.141 · 016 169 · 017 313 · 018 7 · 019 298 · 020 769 · 021 95 · 022 1 · 023 162 · 024 1.770 · 025 634 · 026 102 · 027 6 · 028 3.678 · 029 587 · 030 2.784.
+Ergebnis: **39.900 Waldkacheln, 0 untypisiert, 60/60 Typen erzeugt.** Die tatsächlichen Kachelzahlen pro Typ: 001 8.248 · 002 71 · 003 2.714 · 004 220 · 005 1.867 · 006 445 · 007 81 · 008 512 · 009 3.625 · 010 177 · 011 49 · 012 1.587 · 013 782 · 014 1.257 · 015 2.883 · 016 169 · 017 101 · 018 7 · 019 273 · 020 747 · 021 46 · 022 1 · 023 120 · 024 1.206 · 025 634 · 026 102 · 027 6 · 028 2.494 · 029 404 · 030 2.476 · 031 519 · 032 125 · 033 43 · 034 11 · 035 216 · 036 440 · 037 194 · 038 200 · 039 528 · 040 140 · 041 118 · 042 74 · 043 64 · 044 1.030 · 045 182 · 046 268 · 047 6 · 048 176 · 049 117 · 050 183 · 051 347 · 052 63 · 053 120 · 054 248 · 055 436 · 056 283 · 057 207 · 058 47 · 059 72 · 060 139.
 
 ### 7.3 25-Jahres-Kampagne
 
-Der deterministische Lauf `npm run test:campaign` (Seed 20261108, common-weal, 25 Jahre) war grün: 10.040 Ticks, 19,46 s, 1,237 ms pro Tick, alle Kampagnenanforderungen erfüllt, kein Game Over. Die Typzählung nach 25 Jahren:
+Der deterministische Lauf `npm run test:campaign` (Seed 20261108, common-weal, 25 Jahre) war grün: 10.040 Ticks, 16,31 s, 1,004 ms pro Tick, alle Kampagnenanforderungen erfüllt, kein Game Over. Die Typzählung nach 25 Jahren:
 
 | Typ | Kacheln |
 |---|---:|
-| 1.2.23.1.002 Gemäßigter Regenwald | 18 |
-| 1.2.23.1.004 Mediterraner Hartlaubwald | 14 |
-| 1.2.23.1.005 Sommergrüner Laubmischwald | 2.667 |
-| 1.2.23.1.006 Reiner Buchenwald | 231 |
-| 1.2.23.1.011 Kiefern-Birkenwald | 162 |
+| 1.2.23.1.002 Gemäßigter Regenwald | 77 |
+| 1.2.23.1.004 Mediterraner Hartlaubwald | 12 |
+| 1.2.23.1.005 Sommergrüner Laubmischwald | 1.694 |
+| 1.2.23.1.006 Reiner Buchenwald | 161 |
+| 1.2.23.1.011 Kiefern-Birkenwald | 83 |
 | 1.2.23.1.012 Fichten-Tannenwald | 56 |
 | 1.2.23.1.013 Lärchenwald | 40 |
 | 1.2.23.1.014 Bergmischwald | 319 |
+| 1.2.23.1.040 Regenschattenwald | 209 |
+| 1.2.23.1.041 Steppenwald | 59 |
+| 1.2.23.1.050 Lösswald | 173 |
+| 1.2.23.1.051 Tonboden-Eichenwald | 350 |
+| 1.2.23.1.054 Weidenhain | 39 |
+| 1.2.23.1.055 Eschen-Ulmen-Auenwald | 10 |
+| 1.2.23.1.056 Pappelwald | 7 |
+| 1.2.23.1.057 Haselgebüschwald | 218 |
 | **Summe** | **3.507, davon 0 untypisiert** |
 
-Eine temperate Kampagne enthält naturgemäß nur die temperate Typen. Der 9-Klima-Scan oben belegt die Erreichbarkeit aller 30; der Kampagnenlauf belegt, dass die Typisierung auch nach 25 Jahren Waldwirtschaft, Sukzession und Ernte lückenlos bleibt.
+Eine temperate Kampagne enthält naturgemäß nur die temperate Typen. Der 9-Klima-Scan oben belegt die Erreichbarkeit aller 60; der Kampagnenlauf belegt, dass die Typisierung auch nach 25 Jahren Waldwirtschaft, Sukzession und Ernte lückenlos bleibt.
 
-Derselbe Lauf schreibt `timberEconomy` in den Bericht: **66 regionale Holzsorten produziert**, davon **2 im Lager** (`cork-timber`), **1 Sorte** mit Bestand. Die Produktion kommt aus dem Lumber-Camp-Signaturpfad und dem Sägewerksverbrauch; der Vorrat bleibt klein, weil das Sägewerk die Ware sofort verarbeitet und der Markt sie nur gegen echten Lagerbestand verkauft.
+Derselbe Lauf schreibt `timberEconomy` in den Bericht: **176 regionale Holzsorten produziert**, davon **4 im Lager** über **2 Sorten** (`cork-timber`, `holm-timber`). Die Produktion kommt aus dem Lumber-Camp-Signaturpfad und dem Sägewerksverbrauch; der Vorrat bleibt klein, weil das Sägewerk die Ware sofort verarbeitet und der Markt sie nur gegen echten Lagerbestand verkauft.
 
 ### 7.4 Browser-Referenz
 
 `node tests/browser/regional-forest-reference.mjs` startet ein echtes tropisches Reich (Seed 20261104), pausiert die Simulation, scannt alle 9.526 Waldkacheln und öffnet einen echten Lumberyard-Inspektor. Ergebnis:
 
-- **9.526 Waldkacheln, 0 untypisiert**, sechs tatsächlich vorkommende Regionaltypen im tropischen Reich;
+- **9.526 Waldkacheln, 0 untypisiert**, drei geprüfte Regionaltypen im tropischen Reich (Mangrove, Bambus, Dipterocarpen);
 - Inspektorzeile: `Forest type: Mangrovenwald — … · Timber yield 78% · Regrowth 94% · Fire -6% · Wildlife 124% · Forage 120%`;
 - drei gerenderte Stände (024 Mangrove, 028 Dipterocarpaceenwald, 025 Bambuswald) mit drei unterschiedlichen SHA-256-Bildhashes;
-- **FORESTS-Tab mit 30 Atlas-Karten**, aufgeklappte Karten für Mangrove und Küstenmammutbaum mit namentlicher Holzzeile, Sägewerksausbeute und Basispreis;
-- **STORES-Tab mit 16 Marktzeilen**: 6 Mangrove Timber in den echten Keep gelegt, 5 über den SELL-Button verkauft, **+22 Gold**, 1 Einheit blieb im Lager, Toast `TIMBER SOLD`;
+- **FORESTS-Tab mit 60 Atlas-Karten**, aufgeklappte Karten für Mangrove und Küstenmammutbaum mit namentlicher Holzzeile, Sägewerksausbeute und Basispreis;
+- **STORES-Tab mit 18 Marktzeilen**: 6 Mangrove Timber in den echten Keep gelegt, 5 über den SELL-Button verkauft, **+22 Gold**, 1 Einheit blieb im Lager, Toast `TIMBER SOLD`;
 - keine Konsolenfehler und keine Page-Errors.
 
 Artefakte: `artifacts/regional-forests/regional-forests.json`, `regional-forests.png`, `forest-atlas.png`, `timber-market.png`, `stand-024.png`, `stand-028.png`, `stand-025.png`.
 
 ### 7.5 Performance
 
-Die Auswahl ist O(1) pro Kachel und läuft nur beim Aufbau des Standes. Die 30 Regionalformationen werden pro Basisformation/Typ einmal gecacht; Ressourcenknoten behalten den bereits gebauten Stand. Der Kampagnen-Tick blieb mit 1,237 ms im normalen Bereich. Es gibt keinen neuen Per-Frame-Pfad; der Renderer liest nur die vorhandenen Standfelder. Bauformen werden pro Gebäude/Standort einmal in `building-forms.js` gecacht und nur über eine Palette/Form-Zeile in den bestehenden Sprite-Cache geschlüsselt. Der Atlas-Survey läuft nur beim Öffnen des Tabs und sampelt höchstens 240 Waldkacheln; die Marktzeilen lesen den vorhandenen Lagerbestand, ohne einen Scan über alle Entitäten zu starten.
+Die Auswahl ist O(1) pro Kachel und läuft nur beim Aufbau des Standes. Die 60 Regionalformationen werden pro Basisformation/Typ einmal gecacht; Ressourcenknoten behalten den bereits gebauten Stand. Der Kampagnen-Tick blieb mit 1,237 ms im normalen Bereich. Es gibt keinen neuen Per-Frame-Pfad; der Renderer liest nur die vorhandenen Standfelder. Bauformen werden pro Gebäude/Standort einmal in `building-forms.js` gecacht und nur über eine Palette/Form-Zeile in den bestehenden Sprite-Cache geschlüsselt. Der Atlas-Survey läuft nur beim Öffnen des Tabs und sampelt höchstens 240 Waldkacheln; die Marktzeilen lesen den vorhandenen Lagerbestand, ohne einen Scan über alle Entitäten zu starten.
 
 ## 8. Implementierte Entscheidungen
 
 1. **Overlay statt Parallelmodell:** `stand.type` bleibt die bestehende Formation. Der Regionaltyp reitet auf `forestStandAt()`, damit Ressourcen, Fauna, Sammeln, Inspektor und Renderer dieselbe Quelle behalten.
 2. **Save-Kompatibilität:** Keine neuen Pflichtfelder. Der Typ wird deterministisch neu abgeleitet; alte Saves bleiben lesbar.
-3. **Arten-Indizes:** Die 16 neuen Arten und die neuen Holzsorten wurden hinten angehängt. Bestehende Indizes und Formationen bleiben unverändert.
+3. **Arten-Indizes:** Die 18 neuen Arten und die neuen Holzsorten wurden hinten angehängt. Bestehende Indizes und Formationen bleiben unverändert.
 4. **Basisformation bleibt Basis:** Misch- und Nadelwald behalten ihre bestehende Artenmischung; regionale Güter/Fauna sind additiv. Das verhindert, dass ein Mischwald durch ein Overlay seine ökologische Identität verliert.
 5. **Sichtbarkeit:** Regionale Bodenpalette, Kronenhöhe, Stammform, Nebel und Silhouette kommen aus dem Typ; der Inspektor zeigt Label, Kurzprofil und die konkreten Effektwerte.
 6. **Kein Default:** Für eine echte Waldkachel liefert der Selektor immer einen Typ. Der Fallback greift nur für synthetische Aufrufe ohne Basisformation und ist ebenfalls klimatisch bestimmt.
-7. **Holz ist eine echte Ware, kein Zähler:** Die 16 Sorten liegen im bestehenden `GOODS`-Katalog und laufen durch dieselben Lager-, Rezept- und Marktpfade. Das Sägewerk bevorzugt regionale Ware, kann aber immer auf Logs zurückfallen; die alte Kette bleibt damit vollständig intakt.
+7. **Holz ist eine echte Ware, kein Zähler:** Die 18 Sorten liegen im bestehenden `GOODS`-Katalog und laufen durch dieselben Lager-, Rezept- und Marktpfade. Das Sägewerk bevorzugt regionale Ware, kann aber immer auf Logs zurückfallen; die alte Kette bleibt damit vollständig intakt.
 8. **Signatur statt Zufallsdropped:** Das Lumber Camp legt nur die Sorte seines Standorts ab, und nur wenn Ausgaberaum und Lagergrenze frei sind. Das verhindert eine unbegrenzte Holzflut und macht die regionale Herkunft im Lager lesbar.
 9. **Markt verkauft Bestand:** Die `regional-timber-market.js` erzeugt keinen Vorrat. Ein Verkauf entfernt die Ware aus einem echten Warenhaus und bucht Gold über `addResource`; ohne Bestand gibt es nur eine Begründung.
 10. **Formen sind abgeleitet:** Klima, Terrain und ein stabiler Hash wählen eine von sieben Bauformen. Sie ändern Silhouette, Palette und Hearth-Isolationsfaktor, aber keine Kachelgröße, kein Rezept und kein Save-Feld.
 
 ## 9. Bewusste Grenzen
 
-- Die regionale Schicht fügt 16 Arten und eigene Holzsorten hinzu, aber die vorhandenen Formationen zeichnen weiterhin ihre Basiszusammensetzung. Die regionale Identität ist primär Palette, Kronen-/Stammform, Nebel, Güter, Fauna, Bauform und Wirkung; ein eigener Baum-Zeichenpfad pro Typ ist nicht Teil dieses Durchgangs.
+- Die regionale Schicht fügt 18 Arten und eigene Holzsorten hinzu, aber die vorhandenen Formationen zeichnen weiterhin ihre Basiszusammensetzung. Die regionale Identität ist primär Palette, Kronen-/Stammform, Nebel, Güter, Fauna, Bauform und Wirkung; ein eigener Baum-Zeichenpfad pro Typ ist nicht Teil dieses Durchgangs.
 - Regionale Ware entsteht über das Lumber Camp und benannte Forester-Lieferungen; nicht jede beliebige Holzfälleraktion erzeugt automatisch eine regionale Sorte. Das hält die Erntemenge im bestehenden Budget.
 - Der Markt verkauft nur physisch vorhandenen Bestand und nur in 5er-Lots. Ein leeres Lager lässt sich nicht über die Marktzeile „auffüllen“.
 - Der Atlas-Survey ist eine begrenzte Stichprobe (maximal 240 Waldkacheln), keine vollständige Karte; die Kachelzahl pro Typ ist eine Orientierung, keine exakte Volkszählung.
 - Bauformen sind ein visueller und Wärme-Faktor. Sie ändern keine Grundfläche, keine Baukosten und keine Rezepte.
-- Ein einzelnes Reich enthält nur die Typen seiner Klimazone. Alle 30 sind über den 9-Klima-Scan und die 30 Standortproben belegt, nicht alle gleichzeitig in einem einzelnen Seed.
+- Ein einzelnes Reich enthält nur die Typen seiner Klimazone. Alle 60 sind über den 9-Klima-Scan und die 60 Standortproben belegt, nicht alle gleichzeitig in einem einzelnen Seed.
 - Der 60-Jahres-Soak wurde für diesen Batch nicht erneut gefahren; die 25-Jahres-Kampagne und der 9-Klima-Scan sind die verlangten Nachweise. Der Nightly-Soak bleibt das Release-Gate.
 
 ## 10. Implementierte Werte
@@ -1106,6 +1211,36 @@ Die folgenden Tabellen werden aus `REGIONAL_FOREST_TYPES` erzeugt und geben den 
 | 028 | Dipterocarpaceenwald | tropical | tropical-emergent, tropical-canopy, tropical-ancient, tropical-montane | 0.64–0.92 | 0.76–1.00 | 0.00–0.72 | 9 | dipterocarp, ironwood, rosewood, fig, bamboo, palm | emergent |
 | 029 | Lorbeerwald | coastal, mountain, tropical | beechwood, mixed-montane, tropical-montane, hillside, mixed-fir-beech-maple | 0.46–0.68 | 0.64–0.88 | 0.55–0.88 | 6 | laurel, nothofagus, beech, oak, podocarpus, treefern | dome |
 | 030 | Monsunwald | tropical | tropical-monsoon, tropical-secondary, tropical-canopy | 0.60–0.90 | 0.64–0.78 | 0.05–0.72 | 5 | teak, sal, bamboo, fig, ironwood, dipterocarp | layered |
+| 031 | Küstennebelwald | coastal | beechwood, oakwood, mixed, pinewood, hillside | 0.42–0.56 | 0.60–0.70 | 0.00–0.72 | 6 | beech, oak, pine, birch, rowan, hazel | fog-column |
+| 032 | Bergnebelwald | mountain | mixed-montane, mixed-conifer, mountain-conifer | 0.26–0.50 | 0.70–0.94 | 0.50–0.90 | 7 | nothofagus, podocarpus, treefern, beech, laurel, maple | cloud-layered |
+| 033 | Tiefland-Dipterocarpenwald | tropical | tropical-emergent, tropical-canopy, tropical-ancient | 0.72–0.90 | 0.82–0.94 | 0.32–0.46 | 10 | dipterocarp, ironwood, fig, rosewood, palm | emergent-giant |
+| 034 | Torfwald | taiga, snow, mountain | wet-conifer, taiga-mixed, taiga-birch, taiga-spruce, pine-heath, swamp-carr | 0.10–0.26 | 0.78–0.86 | 0.30–0.86 | 10 | pine, birch, spruce, dwarf-pine, juniper | stunted-bog |
+| 035 | Schwarzwasser-Überschwemmungswald | tropical | tropical-floodplain, tropical-swamp, tropical-riverbank | 0.72–0.90 | 0.90–1.00 | 0.40–0.54 | 11 | palm, fig, mangrove, balsa, bamboo | blackwater |
+| 036 | Weißwasser-Auenwald | tropical | tropical-floodplain, tropical-riverbank | 0.72–0.90 | 0.78–0.90 | 0.40–0.54 | 11.5 | kapok, fig, balsa, palm, bamboo, cacao | sediment-fan |
+| 037 | Delta-Mangroven | tropical | tropical-swamp, tropical-floodplain, tropical-riverbank | 0.70–0.92 | 0.80–1.00 | 0.30–0.36 | 13 | mangrove, palm, fig, bamboo | delta-stilt |
+| 038 | Lagunen-Mangroven | tropical | tropical-swamp, tropical-floodplain | 0.70–0.92 | 0.76–0.98 | 0.36–0.40 | 12 | mangrove, palm, fig, balsa | lagoon-stilt |
+| 039 | Kalthangwald | mountain | mixed-montane, mixed-conifer | 0.12–0.23 | 0.52–0.70 | 0.48–0.74 | 7 | beech, fir, spruce, maple, rowan, birch | north-slope |
+| 040 | Regenschattenwald | coastal, temperate | pinewood, oakwood, mixed-open, chestnut-grove | 0.48–0.62 | 0.42–0.56 | 0.30–0.74 | 7 | pine, juniper, oak, holm-oak, aleppo-pine, hazel | rain-shadow |
+| 041 | Steppenwald | temperate, coastal | pine-heath, oakwood, mixed-open, pinewood, mixed-ecotone | 0.46–0.60 | 0.38–0.46 | 0.52–0.78 | 6 | oak, pine, birch, hazel, juniper, rowan | parkland |
+| 042 | Halbwüsten-Waldinsel | savanna | savanna-woodland | 0.68–0.84 | 0.42–0.47 | 0.32–0.72 | 8 | acacia, juniper, camelthorn, baobab, marula | island |
+| 043 | Oasenwald | savanna | savanna-woodland | 0.68–0.84 | 0.60–0.72 | 0.30–0.48 | 10 | palm, fig, acacia, tamarisk, willow | oasis-fan |
+| 044 | Vulkanaschewald | tropical | tropical-montane | 0.66–0.82 | 0.72–0.90 | 0.72–0.92 | 7 | treefern, fig, laurel, cacao, balsa, bamboo | ash-cone |
+| 045 | Serpentinwald | mountain | mixed-conifer, mixed-montane, pinewood | 0.18–0.32 | 0.39–0.46 | 0.48–0.74 | 7 | pine, juniper, oak, laurel, ironwood, rowan | serpentine |
+| 046 | Kalksteinwald | coastal, mountain | mixed-montane, hillside, oakwood, beechwood | 0.24–0.34 | 0.56–0.66 | 0.48–0.72 | 7 | laurel, oak, hornbeam, fig, ash, hazel | karst |
+| 047 | Dünen-Kiefernwald | coastal | pinewood, pine-heath, oakwood, mixed-open | 0.49–0.64 | 0.43–0.49 | 0.30–0.58 | 8 | pine, juniper, birch, oak, tamarisk | dune-pine |
+| 048 | Salzbodenwald | coastal | oakwood, chestnut-grove, pinewood, mixed-open | 0.54–0.68 | 0.53–0.64 | 0.30–0.62 | 7 | tamarisk, oak, ash, willow, juniper | salt-flat |
+| 049 | Schotterauenwald | mountain | mixed-alluvial | 0.22–0.34 | 0.64–0.80 | 0.32–0.54 | 9 | alder, willow, ash, poplar, elm, birch | gravel-bar |
+| 050 | Lösswald | temperate | linden-elm, maplewood, mixed | 0.46–0.60 | 0.45–0.50 | 0.52–0.76 | 6 | oak, linden, hornbeam, ash, maple, hazel | loess-dome |
+| 051 | Tonboden-Eichenwald | temperate | maplewood, oakwood, linden-elm, mixed | 0.48–0.60 | 0.57–0.64 | 0.52–0.76 | 6 | oak, hornbeam, ash, maple, elm, hazel | clay-oak |
+| 052 | Moorbirkenwald | taiga, snow | taiga-birch, taiga-mixed, wet-conifer, pine-heath, swamp-carr | 0.10–0.21 | 0.70–0.80 | 0.30–0.78 | 10 | birch, pine, alder, willow, dwarf-pine | bog-birch |
+| 053 | Erlenbruch | swamp, temperate | swamp-carr | 0.38–0.58 | 0.84–0.96 | 0.30–0.56 | 11 | alder, willow, birch, ash, oak | alder-carr |
+| 054 | Weidenhain | coastal, temperate | alluvial, mixed-alluvial | 0.48–0.62 | 0.62–0.72 | 0.30–0.66 | 10 | willow, alder, poplar, ash, birch | willow-grove |
+| 055 | Eschen-Ulmen-Auenwald | coastal, temperate | alluvial, mixed-alluvial, linden-elm | 0.50–0.62 | 0.72–0.82 | 0.30–0.66 | 10 | ash, elm, oak, alder, poplar, maple | ash-elm |
+| 056 | Pappelwald | coastal, temperate | alluvial, mixed-alluvial | 0.48–0.62 | 0.72–0.76 | 0.30–0.66 | 10 | poplar, willow, alder, ash, birch | poplar-column |
+| 057 | Haselgebüschwald | temperate | coppice-with-standards, mixed-open, mixed, maplewood | 0.46–0.60 | 0.51–0.56 | 0.52–0.72 | 6 | hazel, oak, hornbeam, rowan, birch, maple | hazel-scrub |
+| 058 | Wacholderheide | mountain | subalpine-scrub, mixed-conifer, mixed-montane | 0.24–0.36 | 0.39–0.47 | 0.76–0.92 | 9 | juniper, pine, oak, birch, rowan, hazel | juniper-heath |
+| 059 | Zwergkiefern-Krummholz | mountain, snow | subalpine-scrub, mountain-conifer | 0.08–0.16 | 0.45–0.62 | 0.82–0.94 | 9 | dwarf-pine, pine, juniper, birch, rowan, larch | krummholz-dwarf |
+| 060 | Baumgrenzen-Pionierwald | mountain, snow, tundra | subalpine-scrub, mixed-conifer, larchwood | 0.16–0.24 | 0.55–0.72 | 0.78–0.94 | 9.5 | rowan, birch, dwarf-pine, willow, juniper, larch | treeline-pioneer |
 
 ### 10.2 Wirkung pro Typ
 
@@ -1141,6 +1276,36 @@ Die folgenden Tabellen werden aus `REGIONAL_FOREST_TYPES` erzeugt und geben den 
 | 028 | Dipterocarpaceenwald | 116% | 104% | -4% | 126% | 114% | 84% | +10% | resin, rattan, mushrooms, herbs, timber, firewood |
 | 029 | Lorbeerwald | 90% | 102% | -2% | 114% | 112% | 92% | +10% | herbs, honey, mushrooms, lichen, timber, firewood |
 | 030 | Monsunwald | 104% | 112% | +6% | 108% | 108% | 96% | +0% | bamboo, bamboo-shoots, honey, mushrooms, herbs, timber, firewood |
+| 031 | Küstennebelwald | 90% | 98% | -3% | 112% | 110% | 88% | +15% | mushrooms, lichen, moss, herbs, honey, timber, firewood |
+| 032 | Bergnebelwald | 102% | 106% | -5% | 118% | 112% | 84% | +18% | mushrooms, moss, lichen, herbs, treefern-timber, timber, firewood |
+| 033 | Tiefland-Dipterocarpenwald | 122% | 108% | -4% | 130% | 112% | 82% | +8% | dipterocarp-timber, resin, rattan, mushrooms, herbs, timber, firewood |
+| 034 | Torfwald | 58% | 40% | +4% | 114% | 102% | 70% | +95% | peat, pine-cones, cloudberry, sphagnum, cranberries, timber, firewood |
+| 035 | Schwarzwasser-Überschwemmungswald | 72% | 88% | -6% | 126% | 92% | 74% | +120% | river-fish, fibre, herbs, mushrooms, timber, firewood |
+| 036 | Weißwasser-Auenwald | 92% | 126% | -5% | 122% | 118% | 94% | +110% | kapok-fibre, cacao, river-fish, herbs, game, timber, firewood |
+| 037 | Delta-Mangroven | 76% | 100% | -6% | 128% | 116% | 78% | +115% | mangrove-timber, shellfish, crab, fish, salt, reed, timber, firewood |
+| 038 | Lagunen-Mangroven | 74% | 96% | -5% | 126% | 114% | 76% | +110% | mangrove-timber, shellfish, crab, fish, salt, honey, timber, firewood |
+| 039 | Kalthangwald | 94% | 86% | -3% | 108% | 104% | 86% | +5% | mushrooms, lichen, moss, herbs, game, timber, firewood |
+| 040 | Regenschattenwald | 74% | 82% | +12% | 92% | 100% | 94% | +0% | pine-cones, resin, juniper-berries, herbs, game, timber, firewood |
+| 041 | Steppenwald | 80% | 96% | +10% | 108% | 114% | 98% | +0% | acorns, hazelnuts, mushrooms, herbs, game, timber, firewood |
+| 042 | Halbwüsten-Waldinsel | 52% | 62% | +8% | 82% | 96% | 88% | +0% | gum-arabic, thorn-branches, game, firewood, timber |
+| 043 | Oasenwald | 68% | 134% | -4% | 124% | 130% | 90% | +35% | dates, figs, palm-fronds, honey, herbs, timber, firewood |
+| 044 | Vulkanaschewald | 112% | 122% | +2% | 116% | 120% | 96% | +5% | treefern-timber, cacao, mushrooms, herbs, game, timber, firewood |
+| 045 | Serpentinwald | 62% | 70% | +4% | 88% | 104% | 80% | +0% | pine-cones, serpentine-stone, herbs, lichen, timber, firewood |
+| 046 | Kalksteinwald | 88% | 82% | -4% | 112% | 108% | 86% | +20% | limestone, mushrooms, herbs, honey, game, timber, firewood |
+| 047 | Dünen-Kiefernwald | 78% | 106% | +8% | 94% | 100% | 92% | +25% | pine-cones, resin, dune-grass, herbs, timber, firewood |
+| 048 | Salzbodenwald | 66% | 76% | +2% | 90% | 98% | 84% | +30% | tamarisk-timber, salt, herbs, honey, firewood, timber |
+| 049 | Schotterauenwald | 90% | 118% | -5% | 114% | 110% | 90% | +80% | alder-timber, willow-withies, river-fish, herbs, game, timber, firewood |
+| 050 | Lösswald | 104% | 100% | -1% | 106% | 112% | 100% | +0% | acorns, hazelnuts, mushrooms, honey, herbs, game, timber, firewood |
+| 051 | Tonboden-Eichenwald | 98% | 90% | -2% | 104% | 100% | 92% | +40% | acorns, mushrooms, herbs, clay, game, timber, firewood |
+| 052 | Moorbirkenwald | 60% | 50% | +3% | 116% | 108% | 74% | +90% | birch-sap, peat, cloudberry, mushrooms, firewood, timber |
+| 053 | Erlenbruch | 78% | 80% | -6% | 120% | 100% | 78% | +105% | alder-timber, willow-withies, sphagnum, bog-herb, fish, firewood, timber |
+| 054 | Weidenhain | 70% | 116% | -5% | 118% | 112% | 86% | +90% | willow-withies, herbs, honey, river-fish, game, timber, firewood |
+| 055 | Eschen-Ulmen-Auenwald | 100% | 110% | -4% | 120% | 108% | 92% | +85% | ash-timber, elm-timber, mushrooms, herbs, game, timber, firewood |
+| 056 | Pappelwald | 86% | 138% | -3% | 110% | 106% | 94% | +75% | poplar-timber, willow-withies, herbs, honey, timber, firewood |
+| 057 | Haselgebüschwald | 56% | 120% | +2% | 110% | 122% | 88% | +0% | hazelnuts, acorns, mushrooms, herbs, game, timber, firewood |
+| 058 | Wacholderheide | 52% | 68% | +10% | 96% | 102% | 82% | +0% | juniper-berries, mushrooms, herbs, game, firewood, timber |
+| 059 | Zwergkiefern-Krummholz | 54% | 54% | +2% | 94% | 96% | 76% | +0% | juniper-berries, pine-cones, lichen, herbs, firewood, timber |
+| 060 | Baumgrenzen-Pionierwald | 52% | 46% | +0% | 90% | 94% | 72% | +0% | rowan-berries, birch-sap, lichen, herbs, game, timber, firewood |
 
 ### 10.3 Bodenpalette pro Typ
 
@@ -1176,16 +1341,46 @@ Die folgenden Tabellen werden aus `REGIONAL_FOREST_TYPES` erzeugt und geben den 
 | 028 | Dipterocarpaceenwald | #2f4f30 #42653b #557546 #263f28 #687f55 |
 | 029 | Lorbeerwald | #3b5335 #506b3e #647a49 #2e452d #778c5b |
 | 030 | Monsunwald | #3f6136 #557844 #6b824d #304b2e #7d905b |
+| 031 | Küstennebelwald | #3d4f47 #51655a #667768 #2f403a #7d8a78 |
+| 032 | Bergnebelwald | #355147 #48685a #5d7a67 #2a423a #73907a |
+| 033 | Tiefland-Dipterocarpenwald | #244f2e #37683c #4d7b48 #1c4026 #638c58 |
+| 034 | Torfwald | #3b3c2c #50513a #666446 #2e3024 #797653 |
+| 035 | Schwarzwasser-Überschwemmungswald | #2e4638 #405b48 #556b55 #24382e #6a7d64 |
+| 036 | Weißwasser-Auenwald | #33583a #4a7148 #628857 #28472f #7a9b68 |
+| 037 | Delta-Mangroven | #2e4d38 #406746 #547d55 #253e2e #688f63 |
+| 038 | Lagunen-Mangroven | #31513b #446c49 #587f57 #274231 #6c9165 |
+| 039 | Kalthangwald | #3d4b3a #52634b #67765a #303d2f #7c8a6d |
+| 040 | Regenschattenwald | #6b5d3f #82724d #99875c #574b34 #ac9a6d |
+| 041 | Steppenwald | #5f6238 #777a49 #8d8c58 #4b4d2d #a19f6c |
+| 042 | Halbwüsten-Waldinsel | #8a7648 #a28c56 #b7a064 #73613c #c6b078 |
+| 043 | Oasenwald | #4c6b38 #657f45 #7d9454 #3c562d #91a568 |
+| 044 | Vulkanaschewald | #3f5a36 #557347 #6b8957 #31472c #809c68 |
+| 045 | Serpentinwald | #55604a #6c7660 #838c74 #434d3a #98a187 |
+| 046 | Kalksteinwald | #5b5b48 #72715c #89876f #484838 #9d9b83 |
+| 047 | Dünen-Kiefernwald | #7a6844 #927d53 #a89265 #625238 #bba676 |
+| 048 | Salzbodenwald | #666246 #7e7958 #948d69 #514e38 #a8a07b |
+| 049 | Schotterauenwald | #4a5642 #5f6d51 #747f60 #3b4535 #899275 |
+| 050 | Lösswald | #5a5636 #716c44 #888153 #48452c #9d9565 |
+| 051 | Tonboden-Eichenwald | #46583a #5b7048 #718557 #37472e #859967 |
+| 052 | Moorbirkenwald | #4a4d35 #5f6343 #757752 #3b3e2b #898b61 |
+| 053 | Erlenbruch | #354631 #495c3e #5d704b #293828 #71835a |
+| 054 | Weidenhain | #4c6238 #627947 #788d55 #3c4f2d #8da168 |
+| 055 | Eschen-Ulmen-Auenwald | #3e5634 #536d41 #687f4e #31452b #7d9260 |
+| 056 | Pappelwald | #4f6f39 #668647 #7d9b56 #3f5b2d #92ae68 |
+| 057 | Haselgebüschwald | #59663a #707c48 #868f56 #47522e #9ba367 |
+| 058 | Wacholderheide | #5d5d42 #747352 #8a8862 #4a4a36 #9f9c74 |
+| 059 | Zwergkiefern-Krummholz | #4f5841 #646d50 #798160 #3f4734 #8d9572 |
+| 060 | Baumgrenzen-Pionierwald | #555c45 #6a7054 #7f8465 #444a38 #939776 |
 
-## 11. Regionale Holzökonomie (3.52.0)
+## 11. Regionale Holzökonomie (3.56.0)
 
-Die 16 Holzsorten sind keine Anzeige-Trophäen. Sie laufen durch dieselben vier Stufen wie die alten Holzketten: Ernte → Lager → Rezept → Markt.
+Die 18 Holzsorten sind keine Anzeige-Trophäen. Sie laufen durch dieselben vier Stufen wie die alten Holzketten: Ernte → Lager → Rezept → Markt.
 
 ### 11.1 Ernte und Lagerkette
 
 - **Lumber Camp:** alle 5 Produktionsbatches legt das Camp 1 Einheit der Signatur-Holzart seines Standorts ab, sofern `outputSpace` und Lagergrenze frei sind. Der Standort wird über `getResourceNodeAt()` gelesen; `findNearestResourceNode()` bleibt unverändert, damit der Pfad keine zusätzlichen Regionalfelder tragen muss.
 - **Forester:** liefert weiterhin benannte Waldgüter. Eine benannte Holzsorte bleibt ihre eigene Ware; das generische `timber` wird wie bisher zu `logs`. `delivered.timber` zählt beide Pfade.
-- **Timber Yard:** akzeptiert alle 16 neuen Sorten und hält ein Ziel von 18 pro Sorte. Alte Yards mit den drei bisherigen Filtern werden beim Laden auf das vollständige Profil migriert; echte Custom-Filter bleiben unangetastet.
+- **Timber Yard:** akzeptiert alle 18 neuen Sorten und hält ein Ziel von 18 pro Sorte. Alte Yards mit den drei bisherigen Filtern werden beim Laden auf das vollständige Profil migriert; echte Custom-Filter bleiben unangetastet.
 - **Sägewerk:** Das alte Rezept bleibt exakt `2 Logs → 2 Planks + 1 Firewood`. Zusätzlich verarbeitet das Sägewerk regionale Ware: `2 regionale Einheiten → planks` (1–3 je nach Dichte) `+ firewoodYield` (1). Regionale Ware wird bevorzugt, wenn sie am Sägewerk liegt; Logs bleiben der Fallback. Jede fünfte Lieferung fordert regionale Ware an, damit die Kette nicht an einem leeren regionalen Lager hängen bleibt.
 - **Bestand:** Der Sägewerksbatch verbraucht die Ware über `consumeFromWarehouse` und schreibt `regionalTimberProduced`; es entsteht kein Holz aus dem Nichts.
 
@@ -1198,7 +1393,7 @@ Die 16 Holzsorten sind keine Anzeige-Trophäen. Sie laufen durch dieselben vier 
 - Lagerfaktor `1.12 − min(1, Bestand/60) × 0.18`, begrenzt auf `0.94–1.12`;
 - `price = basePrice × Saison × Markt × Lager`, auf zwei Stellen gerundet.
 
-Der STORES-Tab zeigt alle 16 Zeilen mit Bestand, Quote und SELL-Button. Ein Verkauf entfernt bis zu 5 Einheiten aus echten Warenhäusern (nur unreservierten Bestand), bucht die Bewegung im Goods Book und schreibt das Gold über `addResource`. Ohne Bestand gibt es keine Auszahlung, nur eine Begründung. Die Marktzeilen selbst erzeugen keinen Vorrat und laufen nicht pro Tick.
+Der STORES-Tab zeigt alle 18 Zeilen mit Bestand, Quote und SELL-Button. Ein Verkauf entfernt bis zu 5 Einheiten aus echten Warenhäusern (nur unreservierten Bestand), bucht die Bewegung im Goods Book und schreibt das Gold über `addResource`. Ohne Bestand gibt es keine Auszahlung, nur eine Begründung. Die Marktzeilen selbst erzeugen keinen Vorrat und laufen nicht pro Tick.
 
 | Sorte | Art | Basispreis | Planks aus 2 | Firewood |
 |---|---|---:|---:|---:|
@@ -1218,6 +1413,8 @@ Der STORES-Tab zeigt alle 16 Zeilen mit Bestand, Quote und SELL-Button. Ein Verk
 | Dipterocarp Timber | Dipterocarp | 5,1 G | 2 | 1 |
 | Mangrove Timber | Mangrove | 4,3 G | 1 | 1 |
 | Laurel Timber | Laurel | 3,7 G | 2 | 1 |
+| Poplar Timber | Poplar | 3,6 G | 1 | 1 |
+| Tamarisk Timber | Tamarisk | 3,2 G | 1 | 1 |
 
 ### 11.3 Save und Kompatibilität
 
@@ -1225,14 +1422,14 @@ Die Waren liegen hinten im `GOODS`-Katalog; alte Warenindizes und Rezepte bleibe
 
 ## 12. Waldtypen-Atlas
 
-Der FORESTS-Tab ist der Spieler-Katalog aller 30 Typen. Jede Karte zeigt:
+Der FORESTS-Tab ist der Spieler-Katalog aller 60 Typen. Jede Karte zeigt:
 
 - ID, Kurzname, Klima und Priorität;
 - die Bodenpalette als Farbstreifen;
 - eine begrenzte Präsenzangabe (`N SAMPLED · X%` oder `NOT SURVEYED`);
 - aufgeklappt: Profil, Timber-/Regrowth-/Fire-/Wildlife-/Forage-/Work-Balken, Signaturholz mit Sägewerksausbeute und aktueller saisonaler Quote sowie Arten- und Güterchips.
 
-Der Survey ist bewusst eine Stichprobe: maximal 240 Waldkacheln, deterministisch aus dem Realm gezogen, gecacht pro Seed/Jahr/Tick und 30 Typen. Er läuft nur beim Öffnen/Rendern des Tabs, nicht pro Frame. Die angezeigte Kachelzahl ist eine Orientierung; die exakte Typzählung liefert weiterhin der Kampagnenbericht. Fehlt ein Survey (kein laufendes Reich), erklärt der Tab das statt eine leere Karte zu zeigen.
+Der Survey ist bewusst eine Stichprobe: maximal 240 Waldkacheln, deterministisch aus dem Realm gezogen, gecacht pro Seed/Jahr/Tick und 60 Typen. Er läuft nur beim Öffnen/Rendern des Tabs, nicht pro Frame. Die angezeigte Kachelzahl ist eine Orientierung; die exakte Typzählung liefert weiterhin der Kampagnenbericht. Fehlt ein Survey (kein laufendes Reich), erklärt der Tab das statt eine leere Karte zu zeigen.
 
 ## 13. Regionale Bauformen
 

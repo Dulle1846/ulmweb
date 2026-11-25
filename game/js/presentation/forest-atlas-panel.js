@@ -1,4 +1,4 @@
-// Forest type atlas: the player-facing catalogue of the 30 regional forest
+// Forest type atlas: the player-facing catalogue of the 60 regional forest
 // formations. It is a pure reader over the frozen catalogue plus one bounded
 // sample of the realm's own forest tiles; it never runs a per-tile survey at
 // render time and adds no per-tick simulation.
@@ -162,7 +162,7 @@ export function renderForestAtlasPanel() {
     }
     const present = survey.types.filter(type => type.count > 0).length;
     const cards = REGIONAL_FOREST_TYPES.map(type => card(type, survey.counts[type.id] || 0, survey.sampled)).join("");
-    return intro("THE FOREST ATLAS", "Thirty regional woodlands",
+            return intro("THE FOREST ATLAS", "Sixty regional woodlands",
         "Every forest tile belongs to exactly one regional type. Open a type to read its profile, its timber, its ecological effects and the named wood its sawmill can produce.")
         + '<div class="command-summary"><div><small>CATALOGUED</small><strong>' + number(REGIONAL_FOREST_TYPES.length) + ' TYPES</strong></div>'
         + '<div><small>IN THIS REALM</small><strong>' + number(present) + ' TYPES</strong></div>'

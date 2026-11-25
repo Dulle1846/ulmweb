@@ -62,10 +62,10 @@ test("tropical climate is a full climate, not a palette alias", () => {
     assert.ok(hot > cool);
 });
 
-test("fifty-four species and fifty-seven shared formations preserve every existing index", () => {
-    // The sixteen regional species are appended after the original 38, so
+test("fifty-six species and fifty-seven shared formations preserve every existing index", () => {
+    // The eighteen regional species are appended after the original 38, so
     // every save-stored species and formation index keeps its meaning.
-    assert.equal(Object.keys(FOREST_SPECIES).length, 54);
+    assert.equal(Object.keys(FOREST_SPECIES).length, 56);
     assert.equal(FOREST_SPECIES_IDS[38], "nothofagus");
     assert.equal(FOREST_TYPE_IDS.length, 58);
     assert.equal(FOREST_TYPE_IDS[38], "selection-forest");
