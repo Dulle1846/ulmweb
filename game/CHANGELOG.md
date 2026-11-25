@@ -52,6 +52,10 @@ the ten visible in a sample.
   hosts cover the new sale/delivery loop. The audit is executable at
   `tests/systems/forest-goods-economy.test.js`; all 260 goods are asserted to
   have a channel, a positive quote and a player-facing use.
+- **Save compatibility.** The brief interim 3.61.0 build booked market gold as a
+  physical good. Loading such a save now drops those retired currency rows
+  during normalization, before validation, and preserves the rest of the realm;
+  no schema or save field was added.
 
 ## 3.60.0 — Every forest profile now has a job
 

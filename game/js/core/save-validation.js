@@ -117,9 +117,10 @@ function validateResourceMap(resources, label, options = {}) {
     normalizeResourceMap(resources, label, options);
 }
 
-// Returns a new snapshot object. Only the resource maps are copied because
-// those are the only fields normalization changes. The input snapshot and the
-// live game state are never used as normalization targets.
+// Returns a new snapshot object. The resource maps are copied because those
+// need normalization; the city ledger is copied only when retired currency rows
+// are removed. The input snapshot and the live game state are never used as
+// normalization targets.
 export function normalizeSaveSnapshot(snapshot) {
     if (!snapshot || typeof snapshot !== "object" || Array.isArray(snapshot)) return snapshot;
     const normalized = { ...snapshot };
@@ -128,6 +129,18 @@ export function normalizeSaveSnapshot(snapshot) {
     }
     if (Object.prototype.hasOwnProperty.call(snapshot, "incomeThisTick")) {
         normalized.incomeThisTick = normalizeResourceMap(snapshot.incomeThisTick, "incomeThisTick", { allowNegative: true });
+    }
+    // 3.61.0 briefly booked market gold as a physical good. Gold is currency,
+    // not a GOOD_KEY, so a save from that window must drop those rows before
+    // validation instead of becoming unloadable. Keep the original snapshot
+    // untouched; restoreCity receives the filtered copy.
+    const city = snapshot.city;
+    const logistics = city && typeof city === "object" && !Array.isArray(city) ? city.logistics : null;
+    if (logistics && typeof logistics === "object" && !Array.isArray(logistics) && Array.isArray(logistics.ledger)) {
+        const ledger = logistics.ledger.filter(entry => !(entry && typeof entry === "object" && entry.good === "gold"));
+        if (ledger.length !== logistics.ledger.length) {
+            normalized.city = { ...city, logistics: { ...logistics, ledger } };
+        }
     }
     return normalized;
 }

@@ -50,6 +50,25 @@ test("validation is side-effect free and normalization returns a new snapshot", 
     assert.equal(snapshot.resources.wood, "15", "normalization must not touch the source map");
 });
 
+test("normalization drops the retired 3.61.0 gold ledger rows without touching the source", () => {
+    const snapshot = validSnapshot({
+        city: {
+            logistics: {
+                ledger: [
+                    { id: "l1", good: "gold", scope: "good", quantity: 6, cause: "forest-market" },
+                    { id: "l2", good: "food", scope: "resource", quantity: 4, cause: "royal-food" }
+                ]
+            }
+        }
+    });
+    const normalized = normalizeSaveSnapshot(snapshot);
+    assert.equal(normalized.city.logistics.ledger.length, 1, "currency rows must not survive normalization");
+    assert.equal(normalized.city.logistics.ledger[0].good, "food", "physical resource rows must survive");
+    assert.equal(snapshot.city.logistics.ledger.length, 2, "normalization must not mutate the source ledger");
+    assert.notEqual(normalized.city, snapshot.city);
+    assert.notEqual(normalized.city.logistics, snapshot.city.logistics);
+});
+
 test("time of day is optional for legacy saves but bounded when present", () => {
     assert.equal(validateSaveSnapshot(validSnapshot()), true);
     assert.equal(validateSaveSnapshot(validSnapshot({ timeOfDay: 0 })), true);
