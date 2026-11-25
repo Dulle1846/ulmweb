@@ -295,5 +295,61 @@ export const EVENT_CHAINS = Object.freeze({
             {label:"Found a monster hunt",description:"Spend ten gold on a permanent hunt and secure a griffin card for the next draw.",effects:{resources:{gold:-10},morale:4,hidden:{prosperity:4,tension:-3},politics:{nobility:2,commons:1},cardReward:"griffins"}},
             {label:"Bury the tale",description:"Let the clergy speak of a quiet winter instead of a monster.",effects:{morale:-1,hidden:{mystery:4,tension:2},politics:{clergy:1,legitimacy:-1}}}
         ]}
+    ]),
+    caravan: Object.freeze([
+        {title:"The Caravan at the Gate",description:"A long caravan asks for safe passage and a place to trade before the spring fair opens.",choices:[
+            {label:"Grant a royal safe-conduct",description:"Spend six gold on guards; the merchants bring coin and welcome news.",effects:{resources:{gold:-6,food:6},morale:2,hidden:{prosperity:3,tension:-1,mystery:1},politics:{guilds:2,legitimacy:1}}},
+            {label:"Turn the caravan away",description:"Keep the treasury intact, but the road falls silent and the guilds complain.",effects:{morale:-2,hidden:{tension:3,prosperity:-1,mystery:0},politics:{guilds:-2,commons:-1}}}
+        ]},
+        {title:"The Weighing Bridge",description:"Merchants and townspeople dispute the weights at the market, and trade stalls while the argument continues.",choices:[
+            {label:"Install royal scales",description:"Spend wood and stone on public scales that every trader can see and trust.",effects:{resources:{wood:-8,stone:-4},morale:2,hidden:{prosperity:4,tension:-2,mystery:0},politics:{guilds:1,commons:2,legitimacy:1}}},
+            {label:"Let the merchants keep their scales",description:"Gain ten gold from market fees, but ordinary buyers grow suspicious.",effects:{resources:{gold:10},morale:-2,hidden:{prosperity:1,tension:4,mystery:1},politics:{guilds:3,commons:-2}}}
+        ]},
+        {title:"The Road Charter",description:"The caravan is ready to leave. Its charter will decide whether the road remains a royal route or a private privilege.",choices:[
+            {label:"Charter the trade road",description:"Spend ten gold on a chartered road and secure a merchant-stall card for the next draw.",effects:{resources:{gold:-10,food:8},morale:4,hidden:{prosperity:6,tension:-3,mystery:0},politics:{guilds:3,legitimacy:2},cardReward:"merchant-stalls"}},
+            {label:"Take a single heavy toll",description:"Gain eighteen gold now, but the merchants remember the hard bargain.",effects:{resources:{gold:18},morale:-3,hidden:{prosperity:-1,tension:5,mystery:0},politics:{guilds:-3,commons:-1,legitimacy:-1}}}
+        ]}
+    ]),
+    illness: Object.freeze([
+        {title:"The First Coughs",description:"Healers report a cough in the riverside households and ask for food and clean linen before it spreads.",choices:[
+            {label:"Send the healers with supplies",description:"Spend food and gold on early treatment and careful containment.",effects:{resources:{food:-10,gold:-6},morale:2,hidden:{tension:-2,mystery:1,prosperity:0},health:{outbreak:true,severity:1,containment:2,treatment:1,disease:"common-fever"},politics:{clergy:2,commons:1,legitimacy:1}}},
+            {label:"Wait for the sickness to pass",description:"Save the stores, but the fever finds another household before the week is out.",effects:{morale:-3,hidden:{tension:4,mystery:2,prosperity:-1},health:{outbreak:true,severity:2,containment:0,disease:"common-fever"},politics:{clergy:-1,commons:-2,legitimacy:-1}}}
+        ]},
+        {title:"The Healers' Roll",description:"The sick list grows longer each morning, and the workshops want their workers returned without delay.",choices:[
+            {label:"Open a house of recovery",description:"Spend wood and food to isolate the worst cases and treat the rest.",effects:{resources:{wood:-12,food:-8},morale:2,hidden:{tension:-3,mystery:0,prosperity:1},health:{containment:2,treatment:1},politics:{clergy:3,commons:2,legitimacy:1}}},
+            {label:"Keep the workshops working",description:"Gain twelve gold from full production, but the healers lose ground against the fever.",effects:{resources:{gold:12},morale:-3,hidden:{tension:5,mystery:1,prosperity:2},health:{containment:-1,severity:1,disease:"common-fever"},politics:{guilds:3,clergy:-2,commons:-2}}}
+        ]},
+        {title:"The Healers' Charter",description:"The cough has passed. The crown must decide whether the realm keeps what the healers learned.",choices:[
+            {label:"Found a house of healing",description:"Spend stone and gold on a permanent infirmary and secure a healer card for the next draw.",effects:{resources:{stone:-10,gold:-8},morale:4,hidden:{prosperity:5,tension:-4,mystery:-1},health:{treatment:2,containment:1},politics:{clergy:3,commons:2,legitimacy:2},cardReward:"infirmaries"}},
+            {label:"Return to the old remedies",description:"Gain six gold from avoided expense, but the next fever will meet the same prepared few.",effects:{resources:{gold:6},morale:-1,hidden:{tension:3,mystery:2,prosperity:-1},health:{containment:0},politics:{clergy:-1,commons:-1,legitimacy:-1}}}
+        ]}
+    ]),
+    bandits: Object.freeze([
+        {title:"The Missing Toll Cart",description:"Riders have taken a toll cart on the eastern road and left the driver bound but unharmed.",choices:[
+            {label:"Ride out with the guard",description:"Spend gold and food on a patrol that makes the road safe again.",effects:{resources:{gold:-8,food:-6},morale:2,hidden:{tension:-3,prosperity:1,mystery:0},politics:{nobility:2,commons:1,legitimacy:1}}},
+            {label:"Pay the road tax they demand",description:"Spend ten gold on a quiet arrangement, but the riders learn the crown can be bought.",effects:{resources:{gold:-10},morale:-2,hidden:{tension:2,prosperity:2,mystery:1},politics:{guilds:2,nobility:-1,commons:-1}}}
+        ]},
+        {title:"The Red Sashes",description:"The bandits have raised a red banner at the old quarry and are stopping merchants on the king's road.",choices:[
+            {label:"Cut the road and starve them out",description:"Spend wood and stone to block the quarry tracks and deny the raiders their supplies.",effects:{resources:{wood:-10,stone:-6},morale:1,hidden:{tension:-2,mystery:0,prosperity:-1},politics:{commons:2,guilds:-1,legitimacy:1}}},
+            {label:"Take the quarry by storm",description:"Spend gold and food on an assault, risking lives and a harder winter for the villages.",effects:{resources:{gold:-12,food:-8},morale:-3,hidden:{tension:4,prosperity:1,mystery:1},politics:{nobility:2,commons:-1,legitimacy:-1}}}
+        ]},
+        {title:"The King's Road Again",description:"The road is open once more. The final settlement will decide how long it stays that way.",choices:[
+            {label:"Build a chain of watchtowers",description:"Spend wood and stone on standing watch posts and secure a watchtower card for the next draw.",effects:{resources:{wood:-14,stone:-8},morale:4,hidden:{prosperity:5,tension:-4,mystery:0},politics:{nobility:2,commons:1,legitimacy:2},cardReward:"watchtowers"}},
+            {label:"Grant the quarry to a local lord",description:"Gain fourteen gold from the sale, but the roads beyond his land remain unsafe.",effects:{resources:{gold:14},morale:-2,hidden:{tension:4,prosperity:2,mystery:1},politics:{nobility:3,commons:-2,legitimacy:-1}}}
+        ]}
+    ]),
+    festival: Object.freeze([
+        {title:"The Lantern Petition",description:"The wards ask the crown to fund the lantern festival and invite the neighbouring villages to share it.",choices:[
+            {label:"Sponsor the common festival",description:"Spend food and gold on lanterns, music and a meal for every ward.",effects:{resources:{food:-10,gold:-6},morale:4,hidden:{prosperity:3,tension:-2,mystery:0},politics:{commons:2,clergy:1,legitimacy:1}}},
+            {label:"Keep the festival at court",description:"Spend four gold on a private evening, leaving the wards to celebrate without their king.",effects:{resources:{gold:-4},morale:-1,hidden:{tension:3,prosperity:-1,mystery:0},politics:{nobility:2,commons:-2}}}
+        ]},
+        {title:"The Mummers' Dispute",description:"Two travelling troupes claim the best square, and each has powerful friends at court.",choices:[
+            {label:"Fund a public stage",description:"Spend wood and stone on a stage both troupes can share.",effects:{resources:{wood:-8,stone:-6},morale:3,hidden:{prosperity:4,tension:-3,mystery:0},politics:{commons:2,guilds:1,legitimacy:1}}},
+            {label:"Choose the court's favourite",description:"Gain eight gold from the favoured troupe, but the other players leave angry.",effects:{resources:{gold:8},morale:-2,hidden:{tension:4,prosperity:1,mystery:0},politics:{nobility:2,commons:-2,guilds:-1}}}
+        ]},
+        {title:"The Festival Charter",description:"The festival has drawn travellers from every road. The crown can make it a lasting custom or a single sale.",choices:[
+            {label:"Endow annual feast days",description:"Spend food and gold on a yearly festival and secure a feast-day card for the next draw.",effects:{resources:{food:-12,gold:-10},morale:5,hidden:{prosperity:6,tension:-4,mystery:0},politics:{commons:3,guilds:1,legitimacy:2},cardReward:"feast-days"}},
+            {label:"Sell the festival to merchants",description:"Gain twenty gold from private stalls, but the old shared celebration is lost.",effects:{resources:{gold:20},morale:-2,hidden:{prosperity:2,tension:4,mystery:0},politics:{guilds:3,commons:-2,clergy:-1}}}
+        ]}
     ])
 });

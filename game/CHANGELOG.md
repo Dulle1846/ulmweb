@@ -37,6 +37,12 @@ ledger.
 - **Contracts.** The chronicle suite now checks the new arcs, their endings and
   their family anchors; the nobility suite checks the heir succession. The full
   test suite and production deploy remain green.
+- **Night batch 2 — four more everyday chronicles.** Caravans, common fevers, road
+  bandits and the lantern festival now continue for three stages instead of ending
+  with one issue. Their decisions use the existing resource, health, political and
+  hidden ledgers; the final choices secure merchant stalls, healers' rounds,
+  watchtowers or festival weeks. All four ids are anchored to live generator
+  families, so the arcs are reachable without a new save field or random stream.
 - **Overnight work log.** `docs/NIGHT_SHIFT_2026-11-25.md` records each batch of
   this night shift and its verification.
 
