@@ -69,6 +69,10 @@ ledger.
   followed by another deed. It reads the existing political state on the same
   20-tick cadence, saves only its deed id and target, and leaves the royal ladder,
   save schema and per-tick cost untouched.
+- **Night batch 7 — The Atlas of the Realm.** The endless chronicle gains one more
+  deed: survey two to six additional biome regions, paid once in gold and stone and
+  followed by another deed. It reads the existing world atlas on the same bounded
+  20-tick cadence and leaves the save format, royal ladder and per-tick cost untouched.
 - **Overnight work log.** `docs/NIGHT_SHIFT_2026-11-25.md` records each batch of
   this night shift and its verification.
 

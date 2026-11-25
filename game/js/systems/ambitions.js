@@ -80,6 +80,10 @@ function prestige() {
 function legitimacy() {
     return number(state.politics?.legitimacy);
 }
+function discoveredRegions() {
+    const regions = state.biomeAtlas?.regions;
+    return Array.isArray(regions) ? regions.filter(region => region?.discovered).length : 0;
+}
 function faction(name) {
     return number(state.politics?.factions?.[name]);
 }
@@ -792,6 +796,16 @@ export const ETERNAL_DEEDS = Object.freeze([
         available: () => legitimacy() < 95,
         progressLabel: (value, target) => Math.round(value) + " / " + Math.round(target) + " legitimacy",
         reward: Object.freeze({ gold: 65, food: 25 })
+    }),
+    Object.freeze({
+        id: "atlas-of-the-realm",
+        title: "The Atlas of the Realm",
+        description: "Survey more biome regions of the known world.",
+        value: discoveredRegions,
+        target: (current, count) => Math.min(36, current + Math.min(6, 2 + Math.floor(count / 3))),
+        available: () => discoveredRegions() < 33,
+        progressLabel: (value, target) => Math.round(value) + " / " + Math.round(target) + " regions",
+        reward: Object.freeze({ gold: 55, stone: 35 })
     })
 ]);
 

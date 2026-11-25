@@ -123,6 +123,32 @@ test("the consent of the realm deed reads live legitimacy and pays once", () => 
     assert.notEqual(eternal.active.deedId, "consent-of-the-realm", "a new deed must follow without repeating");
 });
 
+test("the atlas of the realm deed reads surveyed regions and pays once", () => {
+    const eternal = allAmbitionsFixture();
+    assert.ok(ETERNAL_DEEDS.some(deed => deed.id === "atlas-of-the-realm"));
+    state.biomeAtlas = { regions: [
+        { id: "a", discovered: true }, { id: "b", discovered: true },
+        { id: "c", discovered: false }, { id: "d", discovered: false }
+    ] };
+    eternal.active = { deedId: "atlas-of-the-realm", baseline: 2, target: 4, startedTick: 60, generation: eternal.serial++ };
+    state.tick = 80;
+    assert.deepEqual(updateAmbitions(), [], "an unfinished deed must not pay");
+    const snapshot = getAmbitionSnapshot();
+    assert.equal(snapshot.id, "eternal:atlas-of-the-realm");
+    assert.match(snapshot.progressLabel, /2 \/ 4 regions/);
+    state.biomeAtlas.regions[2].discovered = true;
+    state.biomeAtlas.regions[3].discovered = true;
+    state.tick = 100;
+    const gold = state.resources.gold;
+    const stone = state.resources.stone;
+    assert.deepEqual(updateAmbitions(), ["eternal:atlas-of-the-realm"]);
+    assert.equal(eternal.count, 1);
+    assert.equal(state.resources.gold, gold + 55);
+    assert.equal(state.resources.stone, stone + 35);
+    assert.equal(eternal.lastCompleted.deedId, "atlas-of-the-realm");
+    assert.notEqual(eternal.active.deedId, "atlas-of-the-realm", "a new deed must follow without repeating");
+});
+
 test("an eternal deed pays exactly once and immediately issues the next", () => {
     const eternal = allAmbitionsFixture();
     const gold = state.resources.gold;
