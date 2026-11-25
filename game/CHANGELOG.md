@@ -1,13 +1,50 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.58.1`
-**Next development line:** `3.59.0-dev`
+**Current production version:** `3.59.0`
+**Next development line:** `3.60.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
 **Last repository verification:** 2026-11-25 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.59.0 — The forest profile a player can read in detail
+
+The 30 forest-dynamics points already existed as one derived record. This
+release deepens that same record instead of adding another simulator: every
+point now carries its own bounded sub-profile, and every sub-profile reaches a
+real consumer (regrowth, yields, fire/wind risk, habitat, atlas or inspector).
+No save field, map or per-tick loop was added.
+
+- **Cohorts and provenance.** `speciesCohorts[]` names each species' role, age
+  cohort, seed source, disease risk and timber share. `age.cohorts`,
+  `standAgeYears`, `spreadYears`, `dominantCohort` and `uneven` describe the
+  young/mature/ancient mix. Atlas gains COHORTS; inspector gains the full line.
+- **Regeneration niche.** Seed rain, germination, seedling bank, sapling
+  recruitment, browse/compaction brakes, viable seed bank and buried-seed years
+  now separate the steps that used to collapse into one seed-bank number. The
+  existing 400-day regrowth factor consumes them.
+- **Deadwood is a profile.** Standing, fallen and stump fractions plus decay,
+  habitat and cavity trees per hectare. The fractions sum exactly to the stand
+  deadwood. Habitat score and mushroom yield consume the profile.
+- **Regimes and treatment detail.** Each regime carries severity, patch size,
+  refugia and return interval. Each silvicultural system carries retention,
+  standards or stools per hectare, harvest intensity, canopy target and rotation
+  progress. Fire/wind risk and the actual timber factor consume them.
+- **Edges, gaps, lianas and layers are readable.** Edge width/mantle/species and
+  light bonus; gap size class/origin/light/regeneration share; liana types and
+  goods; epiphyte groups and richness; understory browse; herb food, medicine and
+  flowering.
+- **Soil depth.** Rooting type, topsoil/subsoil uptake, litter depth/quality/C:N,
+  humus depth, mycorrhiza type and network reach. These feed moisture, decay,
+  mushroom yield and resistance.
+- **Atlas and inspector.** The ecology block grows from 13 to 18 cells; long
+  details wrap instead of being clipped. The lumber/forester inspector appends a
+  compact cohort/regeneration/deadwood/edge/litter/rooting/treatment line.
+- **Verification.** Focused world/atlas tests pass, the 30-point live proof passes
+  on a fresh seed, and the full suite/campaign/reference gates are recorded in
+  `docs/FOREST_DYNAMICS.md`.
 
 ## 3.58.1 — The forest values a player can actually see and use
 

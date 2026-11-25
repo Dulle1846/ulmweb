@@ -352,6 +352,116 @@ test("roots, litter, humus and mycorrhiza are species-specific soil processes", 
     }
 });
 
+test("cohorts, deadwood classes, regeneration niche and treatment depth are real", () => {
+    const young = forestDynamicsFor(baseContext({
+        ageClass: "young", canopy: 0.5, ageStructure: { young: 0.68, mature: 0.30, ancient: 0.02, uneven: true },
+    }));
+    const ancient = forestDynamicsFor(baseContext({
+        ageClass: "ancient", canopy: 0.86, deadwood: 0.72, logs: 0.7, stumps: 0.4,
+        ageStructure: { young: 0.05, mature: 0.32, ancient: 0.63, uneven: true },
+    }));
+    const compacted = forestDynamicsFor(baseContext({ compaction: 0.85 }));
+    const browsed = forestDynamicsFor(baseContext({ browsingPressure: 0.85, formationId: "mixed-open", canopy: 0.45 }));
+    const coppice = forestDynamicsFor(baseContext({
+        formationId: "mixed-young", silviculture: ["coppice"], ageClass: "young", canopy: 0.55,
+    }));
+    const high = forestDynamicsFor(baseContext());
+    const standards = forestDynamicsFor(baseContext({
+        formationId: "coppice-with-standards", silviculture: ["coppice", "mast"], canopy: 0.55,
+    }));
+    const selection = forestDynamicsFor(baseContext({
+        formationId: "selection-forest", silviculture: ["selection-felling"], ageClass: "ancient", canopy: 0.8,
+    }));
+    const pine = forestDynamicsFor(baseContext({
+        species: [{ id: "pine", weight: 1 }], speciesDiversity: 0, evenness: 0, dominantShare: 1,
+        coniferShare: 1, broadleafShare: 0, moisture: 0.3,
+    }));
+    const spruce = forestDynamicsFor(baseContext({
+        species: [{ id: "spruce", weight: 1 }], speciesDiversity: 0, evenness: 0, dominantShare: 1,
+        coniferShare: 1, broadleafShare: 0, moisture: 0.5,
+    }));
+    const oak = forestDynamicsFor(baseContext({
+        species: [{ id: "oak", weight: 1 }], speciesDiversity: 0, evenness: 0, dominantShare: 1,
+    }));
+    const birch = forestDynamicsFor(baseContext({
+        species: [{ id: "birch", weight: 1 }], speciesDiversity: 0, evenness: 0, dominantShare: 1,
+        broadleafShare: 1, coniferShare: 0,
+    }));
+    const wetEdge = forestDynamicsFor(baseContext({
+        moisture: 0.86, ageClass: "ancient", canopy: 0.42, edge: true, clearing: 0.55,
+        herb: 0.8, grass: 0.6, flowers: 0.7, moss: 0.7, shrub: 0.7, bramble: 0.4, berry: 0.4,
+        sapling: 0.6, deadwood: 0.5, logs: 0.5, stumps: 0.3,
+    }));
+
+    const cohortSum = ancient.age.cohorts.young + ancient.age.cohorts.mature + ancient.age.cohorts.ancient;
+    assert.ok(Math.abs(cohortSum - 1) < 1e-9, "age cohorts must normalise to one stand");
+    assert.ok(ancient.age.cohorts.ancient > young.age.cohorts.ancient);
+    assert.ok(young.age.cohorts.young > ancient.age.cohorts.young);
+    assert.equal(ancient.age.uneven, true);
+    assert.ok(ancient.age.spreadYears > young.age.spreadYears);
+    assert.equal(ancient.age.dominantCohort, "ancient");
+
+    assert.ok(ancient.composition.cohorts.length >= 3);
+    assert.ok(ancient.composition.cohorts.every(cohort =>
+        cohort.share > 0 && ["pioneer", "matrix", "climax"].includes(cohort.role)
+        && ["young", "mature", "ancient"].includes(cohort.age)
+        && cohort.seedSource.length > 3));
+    assert.ok(ancient.composition.cohorts.some(cohort => cohort.role === "climax"));
+    assert.ok(ancient.composition.provenance.regional + ancient.composition.provenance.local > 0.99);
+
+    const deadwood = ancient.structure.deadwoodProfile;
+    assert.ok(Math.abs(deadwood.total - ancient.structure.deadwood) < 1e-9);
+    assert.ok(Math.abs(deadwood.standing + deadwood.fallen + deadwood.stumps - deadwood.total) < 1e-9,
+        "standing, fallen and stump deadwood must add up to the stand deadwood");
+    assert.ok(ancient.structure.deadwoodProfile.habitat > high.structure.deadwoodProfile.habitat);
+    assert.ok(deadwood.cavityTreesPerHa > 0);
+    assert.ok(ancient.goods.boost.mushrooms >= high.goods.boost.mushrooms);
+
+    assert.ok(compacted.regeneration.germination < high.regeneration.germination,
+        "compaction must brake germination, not only the old regrowth label");
+    assert.ok(compacted.regeneration.seedlingBank < high.regeneration.seedlingBank);
+    assert.ok(browsed.regeneration.browseBrake > high.regeneration.browseBrake);
+    assert.ok(browsed.regeneration.saplingRecruitment <= high.regeneration.saplingRecruitment);
+    assert.ok(ancient.regeneration.seedRain > 0 && ancient.regeneration.germination > 0);
+    assert.ok(ancient.regeneration.buriedSeedYears > 0);
+    assert.ok(ancient.regeneration.motherTreesBySpecies.length >= 1);
+    assert.ok(ancient.regeneration.seedBankViability >= 0 && ancient.regeneration.seedBankViability <= 1);
+
+    assert.ok(ancient.hazard.regime.severity >= 0 && ancient.hazard.regime.severity <= 1);
+    assert.ok(ancient.hazard.regime.patchSizeHa > 0);
+    assert.ok(ancient.hazard.regime.refugia >= 0 && ancient.hazard.regime.refugia <= 1);
+    assert.equal(ancient.hazard.regime.returnIntervalYears, ancient.hazard.regime.rotationYears);
+
+    assert.ok(coppice.silviculture.stoolsPerHa > high.silviculture.stoolsPerHa);
+    assert.ok(standards.silviculture.standardsPerHa > coppice.silviculture.standardsPerHa);
+    assert.ok(selection.silviculture.retentionTreesPerHa > high.silviculture.retentionTreesPerHa);
+    for (const treatment of [coppice, high, standards, selection]) {
+        assert.ok(treatment.silviculture.rotationProgress >= 0 && treatment.silviculture.rotationProgress <= 1);
+        assert.ok(treatment.silviculture.harvestIntensity >= 0 && treatment.silviculture.harvestIntensity <= 1);
+        assert.ok(treatment.silviculture.canopyTarget > 0 && treatment.silviculture.canopyTarget <= 1);
+        assert.ok(treatment.silviculture.ageToRotationYears >= 0);
+        assert.ok(treatment.silviculture.timberFactor > 0.7 && treatment.silviculture.timberFactor <= 1.1);
+    }
+
+    assert.notEqual(pine.soil.rootingType, birch.soil.rootingType);
+    assert.equal(spruce.soil.mycorrhizaType, "Ectomycorrhizal");
+    assert.ok(oak.soil.litterProfile.broadleaf > 0.9);
+    assert.ok(spruce.soil.litterProfile.needle > 0.9);
+    assert.ok(Math.abs(oak.soil.litterProfile.broadleaf + oak.soil.litterProfile.needle - 1) < 1e-9);
+    assert.ok(oak.soil.humusDepthCm > 0 && oak.soil.litterProfile.depthCm >= 0);
+    assert.ok(oak.soil.networkReachM > 0);
+
+    assert.ok(wetEdge.structure.edgeProfile.active);
+    assert.ok(wetEdge.structure.edgeProfile.widthM > 0);
+    assert.ok(wetEdge.structure.edgeProfile.mantleCover > 0.5);
+    assert.equal(wetEdge.structure.gapProfile.origin, "cutting");
+    assert.ok(["small", "medium", "large"].includes(wetEdge.structure.gapProfile.sizeClass));
+    assert.ok(wetEdge.structure.lianaProfile.types.includes("Ivy") || wetEdge.structure.lianaProfile.types.includes("Honeysuckle"));
+    assert.ok(wetEdge.structure.epiphyteProfile.groups.includes("Moss"));
+    assert.ok(wetEdge.structure.herbProfile.food > 0 && wetEdge.structure.herbProfile.medicine > 0);
+    assert.ok(wetEdge.structure.understoryProfile.label.length > 4);
+});
+
 test("stand, node, regrowth and products consume the same dynamics record", () => {
     const data = world();
     for (const system of ["high-forest", "continuous-cover", "wood-pasture", "selection", "coppice", "coppice-with-standards"]) {
@@ -389,6 +499,15 @@ test("stand, node, regrowth and products consume the same dynamics record", () =
     assert.equal(node.forestRegime, stand.dynamics.hazard.regime.label);
     assert.equal(node.forestRegimeFire, stand.dynamics.hazard.regime.fire);
     assert.equal(node.forestRegimeWind, stand.dynamics.hazard.regime.wind);
+    assert.equal(stand.structure.deadwoodProfile, stand.dynamics.structure.deadwoodProfile);
+    assert.equal(stand.structure.gapProfile, stand.dynamics.structure.gapProfile);
+    assert.equal(stand.structure.edgeProfile, stand.dynamics.structure.edgeProfile);
+    assert.equal(stand.structure.lianaProfile, stand.dynamics.structure.lianaProfile);
+    assert.equal(stand.structure.epiphyteProfile, stand.dynamics.structure.epiphyteProfile);
+    assert.equal(stand.structure.understoryProfile, stand.dynamics.structure.understoryProfile);
+    assert.equal(stand.structure.herbProfile, stand.dynamics.structure.herbProfile);
+    assert.equal(stand.structure.rootingType, stand.dynamics.soil.rootingType);
+    assert.equal(stand.structure.mycorrhizaType, stand.dynamics.soil.mycorrhizaType);
     assert.ok(node.forestFireRisk >= 0 && node.forestFireRisk <= 1);
     assert.ok(node.forestPestRisk >= 0 && node.forestPestRisk <= 1);
     assert.ok(node.forestWindExposure >= 0 && node.forestWindExposure <= 1);

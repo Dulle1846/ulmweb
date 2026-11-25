@@ -231,22 +231,39 @@ try {
                     phase: d.age.phase, mixture: d.composition.mixtureClass,
                     purity: d.composition.purity, pioneer: d.composition.pioneerShare, climax: d.composition.climaxShare,
                     seedBank: d.regeneration.seedBank, motherTrees: d.regeneration.motherTrees,
-                    motherTreesPerHa: d.regeneration.motherTreesPerHa, seedQuality: d.regeneration.seedQuality,
+                    motherTreesPerHa: d.regeneration.motherTreesPerHa, motherTreesBySpecies: d.regeneration.motherTreesBySpecies,
+                    seedQuality: d.regeneration.seedQuality,
+                    seedBankViability: d.regeneration.seedBankViability, buriedSeedYears: d.regeneration.buriedSeedYears,
+                    seedRain: d.regeneration.seedRain, germination: d.regeneration.germination,
+                    seedlingBank: d.regeneration.seedlingBank, saplingRecruitment: d.regeneration.saplingRecruitment,
+                    seedSource: d.regeneration.seedSource,
                     geneticDiversity: d.regeneration.geneticDiversity, regeneration: d.regeneration.factor,
                     diseaseResistance: d.health.diseaseResistance, siteFitness: d.health.siteFitness,
                     rotationYears: d.age.rotationYears, systemRotation: d.silviculture.rotationYears,
+                    cohorts: d.age.cohorts, standAge: d.age.standAgeYears, spread: d.age.spreadYears,
                     timberFactor: d.silviculture.timberFactor, browsePressure: d.silviculture.browsePressure,
+                    retention: d.silviculture.retentionTreesPerHa, standards: d.silviculture.standardsPerHa,
+                    stools: d.silviculture.stoolsPerHa, harvestIntensity: d.silviculture.harvestIntensity,
+                    canopyTarget: d.silviculture.canopyTarget, rotationProgress: d.silviculture.rotationProgress,
                     regime: d.hazard.regime.label, regimeFire: d.hazard.regime.fire,
                     regimeWind: d.hazard.regime.wind, regimeIce: d.hazard.regime.ice,
-                    regimeWater: d.hazard.regime.water,
-                    deadwood: d.structure.deadwood ?? node.forestDeadwood,
+                    regimeWater: d.hazard.regime.water, regimeSeverity: d.hazard.regime.severity,
+                    regimePatch: d.hazard.regime.patchSizeHa, regimeReturn: d.hazard.regime.returnIntervalYears,
+                    deadwood: d.structure.deadwood ?? node.forestDeadwood, deadwoodProfile: d.structure.deadwoodProfile,
                     gap: d.structure.canopyGap, gapAge: d.structure.gapAge,
+                    gapOrigin: d.structure.gapProfile?.origin, gapSize: d.structure.gapProfile?.sizeClass,
                     lightWoodland: d.structure.lightWoodland, edgeDiversity: d.structure.edgeDiversity,
+                    edgeWidth: d.structure.edgeProfile?.widthM, mantle: d.structure.edgeProfile?.mantleCover,
                     liana: d.structure.lianaCover, epiphyte: d.structure.epiphyteCover,
+                    lianaTypes: d.structure.lianaProfile?.types, epiphyteGroups: d.structure.epiphyteProfile?.groups,
                     herb: d.structure.herbLayer, medicinal: d.structure.medicinalHerbs,
-                    roots: d.soil.rootDepth, waterUptake: d.soil.waterUptake,
+                    herbFood: d.structure.herbProfile?.food, herbFlowering: d.structure.herbProfile?.flowering,
+                    understoryBrowse: d.structure.understoryProfile?.browse,
+                    roots: d.soil.rootDepth, waterUptake: d.soil.waterUptake, rootingType: d.soil.rootingType,
                     litter: d.soil.litterQuality, humus: d.soil.humusForm,
+                    humusDepth: d.soil.humusDepthCm, litterDepth: d.soil.litterProfile?.depthCm,
                     decomposition: d.soil.decomposition, mycorrhiza: d.soil.mycorrhiza,
+                    mycorrhizaType: d.soil.mycorrhizaType, networkReach: d.soil.networkReachM,
                     goods: d.goods.boost, disturbance: node.forestDisturbance || null,
                     succession: node.forestSuccession,
                 };
@@ -355,6 +372,17 @@ try {
         ["light woodland", /Light woodland: (yes|no)/],
         ["deadwood", /Deadwood: \d+%/],
         ["browse pressure", /Browse: \d+%/],
+        ["age cohorts", /Cohorts \d+\/\d+\/\d+%/],
+        ["seed source", /Seed source (mother trees|stand seed bank|soil seed bank|edge seed drift)/],
+        ["regeneration niche", /rain \d+% · germ \d+% · seedlings \d+% · recruit \d+%/],
+        ["deadwood classes", /standing \d+% \/ fallen \d+% \/ stumps \d+%/],
+        ["gap origin", /Gap \d+% (large|medium|small|none) (storm|fire|cutting|age|none)/],
+        ["edge mantle", /Edge (\d+m mantle|interior)/],
+        ["litter depth", /Litter \d+\/\d+ leaf\/needle · \d+cm litter/],
+        ["rooting type", /Rooting (Deep taproot|Heart root|Sinker roots|Shallow plate)/],
+        ["liana and epiphyte groups", /Liana (Ivy|Honeysuckle|Rattan|Liana vines|none)/],
+        ["herb profile", /Herb food\/medicine \d+%\/\d+%/],
+        ["treatment detail", /Treatment rotation \d+% · retention \d+\/ha/],
     ]) {
         assert.match(inspector, pattern, "the lumber inspector must expose " + label);
     }
@@ -452,10 +480,15 @@ try {
     report.atlasBefore = { text: atlasText.slice(0, 4000), missingSystems };
     if (missingSystems.length) console.error("ATLAS DEBUG", JSON.stringify({ missingSystems, atlasText: atlasText.slice(0, 3000) }));
     assert.deepEqual(missingSystems, [], "the player atlas must expose every silvicultural system");
-    for (const label of ["MIX", "PHASE", "PIONEER / CLIMAX", "SEED BANK", "GENETICS", "SITE FIT", "SYSTEM", "REGIME", "SOIL", "MYCORRHIZA", "STRUCTURE", "LIGHT", "GAPS"]) {
+    for (const label of ["MIX", "COHORTS", "PHASE", "PIONEER / CLIMAX", "SEED BANK", "REGEN", "GENETICS", "SITE FIT", "SYSTEM", "REGIME", "DEADWOOD", "SOIL", "MYCORRHIZA", "STRUCTURE", "EDGE", "LIGHT", "GAPS", "HERB"]) {
         assert.ok(atlasCorpus.includes(label), "the atlas must expose " + label);
     }
     assert.match(atlasCorpus, /fire \d+% · wind \d+%/);
+    assert.match(atlasCorpus, /young\/mature\/ancient · spread \d+y/);
+    assert.match(atlasCorpus, /rain \d+% · germ \d+% · recruit \d+%/);
+    assert.match(atlasCorpus, /standing \d+% · fallen \d+% · decay \d+%/);
+    assert.match(atlasCorpus, /return \d+y/);
+    assert.match(atlasCorpus, /retention \d+\/ha/);
     assert.match(atlasCorpus, /uptake \d+%/);
     assert.match(atlasCorpus, /decomposition \d+%/);
     assert.match(atlasCorpus, /gap age \d+d/);
@@ -587,38 +620,39 @@ try {
     const selection = scan.samples.find(row => row.system === "selection");
     const continuous = scan.samples.find(row => row.system === "continuous-cover");
     const pasture = scan.samples.find(row => row.system === "wood-pasture");
-    assert.ok(burned && ancient && coppice && standards && high && selection && continuous && pasture);
+    const edge = scan.samples.find(row => row.edgeWidth > 0) || scan.highLiana;
+    assert.ok(burned && ancient && coppice && standards && high && selection && continuous && pasture && edge);
     const points = {
         "061": { observed: scan.samples.map(row => row.type).join(" / "), effect: "regional species chips, mixture, timber and goods" },
         "062": { observed: scan.mixtures.join(" / "), effect: "atlas MIX and inspector mix class" },
         "063": { observed: burned?.phase + " / " + burned?.type, effect: "burned pioneer stand, seed bank " + Math.round(burned.seedBank * 100) + "%" },
         "064": { observed: ancient?.phase + " / " + ancient?.type, effect: "old-growth stand, climax share " + Math.round(ancient.climax * 100) + "%" },
         "065": { observed: scan.phases.join(" / "), effect: "phase and rotation in atlas and inspector" },
-        "066": { observed: "deadwood " + Math.round(ancient.deadwood * 100) + "%", effect: "fire load, humus and habitat" },
-        "067": { observed: "regeneration " + Math.round(ancient.regeneration * 100) + "%", effect: "400-day regrowth factor" },
-        "068": { observed: "burned seed bank " + Math.round(burned.seedBank * 100) + "%", effect: "post-disturbance seed source" },
-        "069": { observed: "mother trees " + ancient.motherTreesPerHa + "/ha", effect: "seed quality and natural regeneration" },
-        "070": { observed: "genetic diversity " + Math.round(ancient.geneticDiversity * 100) + "%", effect: "inbreeding risk and resistance" },
+        "066": { observed: "deadwood " + Math.round(ancient.deadwood * 100) + "% (standing " + Math.round(ancient.deadwoodProfile.standing * 100) + "% / fallen " + Math.round(ancient.deadwoodProfile.fallen * 100) + "% / stumps " + Math.round(ancient.deadwoodProfile.stumps * 100) + "%)", effect: "fire load, humus, habitat and cavity trees" },
+        "067": { observed: "seed rain " + Math.round(ancient.seedRain * 100) + "% · germ " + Math.round(ancient.germination * 100) + "% · seedlings " + Math.round(ancient.seedlingBank * 100) + "% · recruit " + Math.round(ancient.saplingRecruitment * 100) + "%", effect: "natural regeneration from the existing stand" },
+        "068": { observed: "burned seed bank " + Math.round(burned.seedBank * 100) + "% · viable " + Math.round(burned.seedBankViability * 100) + "% · buried " + burned.buriedSeedYears + "y", effect: "post-disturbance seed source" },
+        "069": { observed: "mother trees " + ancient.motherTreesPerHa + "/ha across " + ancient.motherTreesBySpecies.length + " species", effect: "seed quality and natural regeneration" },
+        "070": { observed: "genetic diversity " + Math.round(ancient.geneticDiversity * 100) + "% · " + (ancient.geneticDiversity >= 0.5 ? "regional provenance" : "local provenance"), effect: "inbreeding risk and resistance" },
         "071": { observed: "disease resistance " + Math.round(ancient.diseaseResistance * 100) + "%", effect: "real pest risk" },
         "072": { observed: "site fit " + Math.round(ancient.siteFitness * 100) + "%", effect: "stand productivity" },
         "073": { observed: "succession " + scan.successionWatch.succession.age + "d → " + after.successionWatch.age + "d / " + scan.phases.join(" / "), effect: "three years of real succession and regrowth" },
-        "074": { observed: scan.regimes.join(" / "), effect: "fire risk, wind exposure and atlas REGIME" },
-        "075": { observed: pasture?.systemLabel + " / browse " + Math.round(pasture.browsePressure * 100) + "%", effect: "browsing pressure and slower regeneration" },
-        "076": { observed: coppice?.systemLabel + " / " + coppice?.type, effect: "short rotation and coppice regeneration" },
-        "077": { observed: standards?.systemLabel + " / " + standards?.type, effect: "standards and underwood rotation" },
-        "078": { observed: high?.systemLabel + " / " + high?.rotationYears + "y", effect: "long rotation and timber factor" },
+        "074": { observed: scan.regimes.join(" / ") + " · severity " + Math.round(ancient.regimeSeverity * 100) + "% · patch " + ancient.regimePatch + "ha · return " + ancient.regimeReturn + "y", effect: "fire risk, wind exposure and atlas REGIME" },
+        "075": { observed: pasture?.systemLabel + " / browse " + Math.round(pasture.browsePressure * 100) + "% · retention " + pasture?.retention + "/ha", effect: "browsing pressure and slower regeneration" },
+        "076": { observed: coppice?.systemLabel + " / " + coppice?.type + " · " + coppice?.stools + " stools/ha", effect: "short rotation and coppice regeneration" },
+        "077": { observed: standards?.systemLabel + " / " + standards?.type + " · " + standards?.standards + " standards/ha", effect: "standards and underwood rotation" },
+        "078": { observed: high?.systemLabel + " / " + high?.rotationYears + "y · age " + high?.standAge + "y", effect: "long rotation and timber factor" },
         "079": { observed: selection?.systemLabel + " / " + selection?.type, effect: "selection felling" },
         "080": { observed: continuous?.systemLabel + " / " + continuous?.type, effect: "permanent cover and regeneration" },
-        "081": { observed: "edge diversity " + Math.round(scan.highLiana.edgeDiversity * 100) + "%", effect: "edge forage, light and liana structure" },
-        "082": { observed: scan.light ? "light woodland at " + scan.light.x + "," + scan.light.y : "light woodland", effect: "open canopy and herb layer" },
-        "083": { observed: "gap " + Math.round(scan.gapSample.gap * 100) + "% / age " + scan.gapSample.gapAge + "d", effect: "real canopy gap and age" },
-        "084": { observed: "liana " + Math.round(scan.highLiana.liana * 100) + "%", effect: "rattan/willow goods and rendered climbers" },
-        "085": { observed: "epiphyte " + Math.round(scan.highEpiphyte.epiphyte * 100) + "%", effect: "moss, lichen and orchid goods and trunk patches" },
-        "086": { observed: "understorey " + scan.highLiana.type, effect: "shrub/sapling habitat and browse" },
-        "087": { observed: "herb " + Math.round(scan.highLiana.herb * 100) + "% / medicine " + Math.round(scan.highLiana.medicinal * 100) + "%", effect: "herb and medicine gathering yield" },
-        "088": { observed: "roots " + Math.round(scan.wet.roots * 100) + "% / uptake " + Math.round(scan.wet.waterUptake * 100) + "%", effect: "wetness reduction and drought resilience" },
-        "089": { observed: scan.wet.humus + " / decomposition " + Math.round(scan.wet.decomposition * 100) + "%", effect: "mushroom yield and humus" },
-        "090": { observed: "mycorrhiza " + Math.round(scan.highEpiphyte.mycorrhiza * 100) + "%", effect: "regeneration, resistance and mushroom yield" },
+        "081": { observed: "edge " + edge.edgeWidth + "m mantle · " + Math.round(edge.mantle * 100) + "% cover · diversity " + Math.round(edge.edgeDiversity * 100) + "%", effect: "edge forage, light and liana structure" },
+        "082": { observed: scan.light ? "light woodland at " + scan.light.x + "," + scan.light.y + " · canopy target " + Math.round(scan.light.canopyTarget * 100) + "%" : "light woodland", effect: "open canopy and herb layer" },
+        "083": { observed: "gap " + Math.round(scan.gapSample.gap * 100) + "% · " + scan.gapSample.gapOrigin + " " + scan.gapSample.gapSize + " / age " + scan.gapSample.gapAge + "d", effect: "real canopy gap, origin and age" },
+        "084": { observed: "liana " + Math.round(scan.highLiana.liana * 100) + "% (" + (scan.highLiana.lianaTypes || []).join(", ") + ")", effect: "rattan/willow goods and rendered climbers" },
+        "085": { observed: "epiphyte " + Math.round(scan.highEpiphyte.epiphyte * 100) + "% (" + (scan.highEpiphyte.epiphyteGroups || []).join(", ") + ")", effect: "moss, lichen and orchid goods and trunk patches" },
+        "086": { observed: "understorey " + scan.highLiana.type + " · browse " + Math.round(edge.understoryBrowse * 100) + "%", effect: "shrub/sapling habitat and browse" },
+        "087": { observed: "herb " + Math.round(scan.highLiana.herb * 100) + "% / medicine " + Math.round(scan.highLiana.medicinal * 100) + "% · food " + Math.round(scan.highLiana.herbFood * 100) + "% / flowering " + Math.round(scan.highLiana.herbFlowering * 100) + "%", effect: "herb and medicine gathering yield" },
+        "088": { observed: scan.wet.rootingType + " · roots " + Math.round(scan.wet.roots * 100) + "% / uptake " + Math.round(scan.wet.waterUptake * 100) + "%", effect: "wetness reduction and drought resilience" },
+        "089": { observed: scan.wet.humus + " · " + scan.wet.litterDepth + "cm litter / " + scan.wet.humusDepth + "cm humus · decomposition " + Math.round(scan.wet.decomposition * 100) + "%", effect: "mushroom yield and humus" },
+        "090": { observed: scan.highEpiphyte.mycorrhizaType + " · " + Math.round(scan.highEpiphyte.mycorrhiza * 100) + "% network / " + scan.highEpiphyte.networkReach + "m reach", effect: "regeneration, resistance and mushroom yield" },
     };
     for (const [id, row] of Object.entries(points)) {
         assert.ok(row.observed && row.effect, "point " + id + " must have player evidence");

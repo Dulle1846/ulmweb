@@ -79,6 +79,16 @@ test("the rendered atlas lists all 60 types, their effects and their signature t
     assert.match(markup, /SEED BANK/);
     assert.match(markup, /MOTHER TREES|mother trees/);
     assert.match(markup, /GENETICS/);
+    assert.match(markup, /COHORTS/);
+    assert.match(markup, /young\/mature\/ancient · spread \d+y/);
+    assert.match(markup, /REGEN/);
+    assert.match(markup, /rain \d+% · germ \d+% · recruit \d+%/);
+    assert.match(markup, /DEADWOOD/);
+    assert.match(markup, /standing \d+% · fallen \d+% · decay \d+%/);
+    assert.match(markup, /EDGE/);
+    assert.match(markup, /diversity \d+% · cover \d+%/);
+    assert.match(markup, /HERB/);
+    assert.match(markup, /liana \d+%/);
     assert.match(markup, /SITE FIT/);
     assert.match(markup, /SYSTEM/);
     assert.match(markup, /MYCORRHIZA|mycorrhiza/);
@@ -89,6 +99,8 @@ test("the rendered atlas lists all 60 types, their effects and their signature t
     assert.match(markup, /fire \d+% · wind \d+%/);
     assert.match(markup, /uptake \d+%/);
     assert.match(markup, /decomposition \d+%/);
+    assert.match(markup, /Heart root|Deep taproot|Sinker roots|Shallow plate/);
+    assert.match(markup, /retention \d+\/ha/);
     assert.match(markup, /gap age \d+d/);
     assert.match(markup, /medicine \d+%/);
     assert.match(markup, /long snow cover/);

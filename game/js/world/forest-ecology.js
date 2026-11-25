@@ -1621,6 +1621,12 @@ export function forestStandAt(x, y, context = {}) {
         herb,
         grass,
         flowers,
+        ageStructure,
+        logs,
+        stumps,
+        compaction,
+        browsingPressure,
+        successionProgress,
         disturbance,
         succession,
         regionalType,
@@ -1637,7 +1643,8 @@ export function forestStandAt(x, y, context = {}) {
     wetness = clamp01(wetness - dynamics.soil.waterUptake * 0.03);
     browsingPressure = clamp01(browsingPressure + dynamics.silviculture.browsePressure);
     habitat.layers = Math.max(habitat.layers, dynamics.structure.layers);
-    habitat.score = clamp01(habitat.score + (dynamics.soil.mycorrhiza * 0.04 + dynamics.structure.edgeDiversity * 0.04)
+    habitat.score = clamp01(habitat.score + (dynamics.soil.mycorrhiza * 0.04
+        + dynamics.structure.edgeDiversity * 0.04 + dynamics.structure.deadwoodProfile.habitat * 0.05)
         * (regionalType?.effects.fauna || 1) * (1 + (regionalTransition?.share || 0) * 0.12));
     structure.herbLayer = dynamics.structure.herbLayer;
     structure.liana = dynamics.structure.lianaCover;
@@ -1650,6 +1657,17 @@ export function forestStandAt(x, y, context = {}) {
     structure.waterUptake = dynamics.soil.waterUptake;
     structure.decomposition = dynamics.soil.decomposition;
     structure.mycorrhiza = dynamics.soil.mycorrhiza;
+    structure.deadwoodProfile = dynamics.structure.deadwoodProfile;
+    structure.gapProfile = dynamics.structure.gapProfile;
+    structure.edgeProfile = dynamics.structure.edgeProfile;
+    structure.lianaProfile = dynamics.structure.lianaProfile;
+    structure.epiphyteProfile = dynamics.structure.epiphyteProfile;
+    structure.understoryProfile = dynamics.structure.understoryProfile;
+    structure.herbProfile = dynamics.structure.herbProfile;
+    structure.rootingType = dynamics.soil.rootingType;
+    structure.litterProfile = dynamics.soil.litterProfile;
+    structure.humusDepthCm = dynamics.soil.humusDepthCm;
+    structure.mycorrhizaType = dynamics.soil.mycorrhizaType;
     const { phenology, mastShare } = meta;
     const mastCrop = clamp01(foodPlants.length / 6 * 0.6 + mastShare * 0.4);
     const mixture = {
