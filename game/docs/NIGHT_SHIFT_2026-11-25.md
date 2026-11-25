@@ -34,13 +34,13 @@ plans, commit and deploy, and keep watching what `freebuff` commits.
 | Time (UTC) | Batch | Files / content | Verification | Commit |
 | --- | --- | --- | --- | --- |
 | 2026-11-25T01:15Z | Eight new authored chronicles plus noble-house heir continuity | `js/systems/event-chains.js`, `js/systems/nobility.js`, `tests/event-chains.test.js`, `tests/systems/nobility.test.js`, version `3.55.0`, changelog, generated spec audit | Focused suites 15/15; eight-seed 25-year noble sweep green after heir fix (seed 20261106 restored to 4 living houses); full `npm test` 1426/1426 plus syntax check (218 sources, 253 UI ids); `spec:audit` 3/3; `test:chronicles`, `test:nobility-ui` and `test:e2e` green; live production verified at 2026-11-25T01:20Z (`v3.55.0`, new chains and heir logic present) | `2684f5d` |
-| 2026-11-25T00:24Z | Four more everyday chronicles: caravan, illness, bandits, festival | `js/systems/event-chains.js`, `tests/event-chains.test.js`, `CHANGELOG.md`, generated spec audit, night log | Focused event/events suites 19/19; all four reward categories instantiate; `spec:audit` 3/3; eight isolated 25-year noble audits and targeted `nobility-balance` 2/2 green; full `npm test` 1427/1427 plus syntax check (218 sources, 253 UI ids) on the clean rerun after one transient load-related noble-sweep failure; `test:chronicles` green; live deploy pending | pending |
+| 2026-11-25T00:24Z | Four more everyday chronicles: caravan, illness, bandits, festival | `js/systems/event-chains.js`, `tests/event-chains.test.js`, `CHANGELOG.md`, generated spec audit, night log | Focused event/events suites 19/19; all four reward categories instantiate; `spec:audit` 3/3; eight isolated 25-year noble audits and targeted `nobility-balance` 2/2 green; full `npm test` 1427/1427 plus syntax check (218 sources, 253 UI ids) on the clean rerun after one transient load-related noble-sweep failure; `test:chronicles` green; live production verified at 2026-11-25T01:04Z (`v3.55.0`, all four new chains served) | `bab8278` |
 
 ## Freebuff watch
 
 - Remote branch `origin/freebuff/747ba2e7ecbd7eb66d9fab99` exists; checked again at
-  2026-11-25T01:12Z after `git fetch --all`. Head is still `6ec6f43` ("Save chat files from
-  Freebuff", 2026-11-24); no new commits since batch 1. Other historical matches are `c176d36`
+  2026-11-25T00:25Z after `git fetch --all` (and at 01:04Z before closing batch 2). Head is
+  still `6ec6f43` ("Save chat files from Freebuff", 2026-11-24); no new commits since batch 1. Other historical matches are `c176d36`
   (retire the Freebuff Sites origins) and `dd978c3` (old merge). The retired Freebuff Sites
   origins are intentionally HTTP 404 and are not deploy targets.
 - The first full run flagged the hard 16 ms grassland-overlay frame budget once under parallel
