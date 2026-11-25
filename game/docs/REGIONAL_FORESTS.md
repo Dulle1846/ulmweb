@@ -1,6 +1,6 @@
 # Regionale Waldtypen — 1.2.23.1
 
-> **Status: implementiert und verifiziert (v3.56.1).** Alle 60 Punkte aus **1.2.23.1 Weitere regionale Waldtypen** laufen als regionale Overlay-Schicht über dem bestehenden `forestStandAt()`-Vertrag. Jede erzeugte Waldkachel erhält deterministisch genau einen Typ; es gibt keinen untypisierten Default. Mit 3.56.1 sind die 18 regionalen Holzsorten vollständig spielbar: eigenes Sägewerk-Rezept, Lumber-Camp-Signaturholz, Timber-Yard-Lagerkette, saisonaler Markt mit echtem Lagerbestand, Waldtypen-Atlas und regionale Bauformen. Nachweise: `tests/world/regional-forests.test.js` (60/60 Standortproben, 0 untypisierte Kacheln im 9-Klima-Scan, Save-Roundtrip), `tests/systems/regional-timber-economy.test.js`, `tests/world/building-forms.test.js`, `tests/presentation/forest-atlas.test.js`, ein 25-Jahres-Kampagnenlauf mit Typ- und Holzzählung und `tests/browser/regional-forest-reference.mjs` (Inspektor, Atlas, Marktverkauf, gerenderte Typen, keine Konsolenfehler). Die konkreten implementierten Werte stehen in Abschnitt 10; die Holzökonomie in Abschnitt 11.
+> **Status: implementiert und verifiziert (v3.57.0).** Alle 60 Punkte aus **1.2.23.1 Weitere regionale Waldtypen** laufen als regionale Overlay-Schicht über dem bestehenden `forestStandAt()`-Vertrag. Jede erzeugte Waldkachel erhält deterministisch genau einen Typ; es gibt keinen untypisierten Default. Mit 3.57.0 sind die regionalen Effekte nicht mehr nur Anzeige: `timber` preist Lumber-Batch, Durchforstung und Holzernte, `forage` die tatsächliche Sammelmenge, `work` den Arbeitsfaktor, `flood` Verderb und Nässe, `regrowth` das Nachwachsen und `fire` das Brandrisiko. Jeder Typ trägt drei Feldmerkmale, ein Signaturgut mit eigener Saison und einen echten Übergangsgürtel zum Nachbartyp. Nachweise: `tests/world/regional-forests.test.js` (60/60 Standortproben, 0 untypisierte Kacheln im 9-Klima-Scan, Charakter-/Güter-Audit, Übergangskacheln, Save-Roundtrip), `tests/systems/forest-gathering.test.js` (Saisonbonus und Effektfaktoren), `tests/systems/regional-timber-economy.test.js`, `tests/world/building-forms.test.js`, `tests/presentation/forest-atlas.test.js`, ein 25-Jahres-Kampagnenlauf mit Typ- und Holzzählung und `tests/browser/regional-forest-reference.mjs` (Inspektor, Atlas, Marktverkauf, gerenderte Typen, keine Konsolenfehler). Die konkreten implementierten Werte stehen in Abschnitt 10; die Holzökonomie in Abschnitt 11; Charakter und Übergänge in 6.4 und 12.
 
 ## 1. Warum dieser Abschnitt existiert
 
@@ -52,7 +52,7 @@ Der regionale Patch darf **nie** pro Kachel zufällig zwischen zehn ähnlichen T
 - Jeder Typ liefert mindestens ein benanntes Holz und ein saisonales Gut.
 - Die 18 regionalen Holzsorten sind echte Waren im bestehenden `GOODS`-Katalog, hinten angehängt; es gibt keine typ-lokale Schattenwirtschaft und keine Verschiebung alter Warenindizes.
 - Jede Holzsorte hat ein echtes Sägewerk-Rezept (2 Holz → 1–3 Planks + Firewood), einen saisonalen Marktpreis und dieselbe Warenhaus-/Logistik-Kette wie die alten Güter. Das alte Logs-Rezept bleibt unverändert.
-- Der Typ darf die vorhandene Holzmenge nicht vervielfachen. Seine Produktivität liegt in einem expliziten Band und wird durch Stock-Ratio, Alter und Bewirtschaftung moduliert.
+- Der Typ darf die vorhandene Holzmenge nicht unbegrenzt vervielfachen. `effects.timber` liegt je Typ zwischen 52 % und 134 %; der Lumber-Batch begrenzt den Faktor zusätzlich auf 70–135 %, die Durchforstung auf denselben Korridor. Bestand, Alter und Bewirtschaftung bleiben die Haupttreiber.
 - Jede Ernte läuft über den bestehenden Sammel-/Holz-Ledger und reduziert den echten Bestand.
 
 ### 2.4 Darstellung und Player Read
@@ -1043,8 +1043,8 @@ Die 60 Typen sind kein zweiter Wald-Simulator. Sie sind eine regionale Overlay-S
 
 ### 6.1 Daten und Auswahl
 
-- `game/js/world/regional-forests.js` enthält `REGIONAL_FOREST_TYPES` (60 Typen), `REGIONAL_SPECIES` (18 angehängte Arten), `REGIONAL_TIMBERS` (18 benannte Holzsorten mit `basePrice`, `planks` und `firewoodYield`), `regionalTimberGood()`/`signatureTimberForRegionalType()` und `REGIONAL_FORESTS_TEST_SITES`.
-- `regionalForestTypeFor()` prüft Klima, Basisformation, Temperatur, Feuchte und Höhe. Innerhalb der passenden Kandidaten entscheidet die ökologische Priorität; ein 7×7-Cell-Hash bricht Gleichstände und macht den Typ als Region lesbar. Es gibt keinen Nachbarscan und keinen untypisierten Rückgabewert für eine echte Waldkachel.
+- `game/js/world/regional-forests.js` enthält `REGIONAL_FOREST_TYPES` (60 Typen), `REGIONAL_FOREST_CHARACTER` (60 Feldmerkmal-/Signatur-Records), `REGIONAL_SPECIES` (18 angehängte Arten), `REGIONAL_TIMBERS` (18 benannte Holzsorten mit `basePrice`, `planks` und `firewoodYield`), `regionalTimberGood()`/`signatureTimberForRegionalType()`, `regionalCharacterFor()`, `regionalForestSelectionFor()` und `REGIONAL_FORESTS_TEST_SITES`.
+- `regionalForestTypeFor()` prüft Klima, Basisformation, Temperatur, Feuchte und Höhe. Innerhalb der passenden Kandidaten entscheidet die ökologische Priorität; ein 7×7-Cell-Hash bricht Gleichstände und macht den Typ als Region lesbar. `regionalForestSelectionFor()` führt denselben Durchlauf und liefert zusätzlich den zweitbesten passenden Typ sowie die Übergangsbeimischung. Es gibt keinen Nachbarscan und keinen untypisierten Rückgabewert für eine echte Waldkachel.
 - `forestStandAt()` ruft den Regionaltyp vor Störung, Alter und Sukzession auf. `stand.type` bleibt die bestehende Formation, `stand.regionalTypeId` und die abgeleiteten Felder tragen den Regionaltyp.
 - `regionalFormationFor()` cached die Kombination aus Basisformation und Regionaltyp. Die Basiszusammensetzung bleibt erhalten, damit alte Saves und die bestehenden Misch-/Nadelwald-Verträge unverändert bleiben. Regionale Güter und Fauna werden additiv ergänzt; die regionale Palette, Kronenhöhe, Stammform und der Nebel kommen aus `regionalType.render`.
 
@@ -1052,14 +1052,16 @@ Die 60 Typen sind kein zweiter Wald-Simulator. Sie sind eine regionale Overlay-S
 
 | Effekt | Angeschlossenes System | Sichtbar für den Spieler |
 |---|---|---|
-| `timber` | Kapazität und Ertrag des Waldknotens | Holzertrag im Lumber-/Forester-Inspektor, Erntemenge |
+| `timber` | Lumber-Batch, Durchforstungsmenge und Holzanteil einer Sammelvisite; begrenzt auf 0,70–1,35 | Holzertrag im Lumber-/Forester-Inspektor, tatsächlich geerntete Logs, Dünnholzung |
 | `regrowth` | `forestRegrowthFactor()` und `regrowForests()` | Regenerationswert im Inspektor, tatsächliches Nachwachsen |
 | `fire` | `forestFireRisk` und die bestehende Störungs-/Sukzessionslogik | Brandrisiko im Inspektor, Feuerereignisse |
-| `fauna` | Habitat-/Wildtierdruck und die bestehende Faunazusammensetzung | Wildlife-Wert und Tierarten im Inspektor |
-| `forage` | Sammelproduktivität und saisonale Waldgüter | Forage-Wert und Sammelangebot |
-| `work` | Arbeitsfaktor des Waldknotens | Work-Wert, Ernte- und Wegekosten |
-| `flood` | Hochwasserschutz-/Überflutungsprofil | Hochwasserwert im Inspektor |
-| Signaturholz | Lumber Camp legt alle 5 Produktionsbatches 1 Einheit seiner regionalen Sorte ab | namentliche Ware im Lager, Sägewerk-Rezept, Marktzeile |
+| `fauna` | Habitat-/Wildtierdruck und die bestehende Faunazusammensetzung; Übergänge geben bis +6 % | Wildlife-Wert und Tierarten im Inspektor |
+| `forage` | tatsächliche Sammelmenge pflanzlicher und jagdlicher Güter; begrenzt auf 0,75–1,35 | Forage-Wert im Atlas/Inspektor, Sammel-Toast und Ledger |
+| `work` | Arbeitsfaktor beim Sammeln und am Waldknoten; begrenzt auf 0,70–1,15 | Work-Wert, Sammelmenge und Wegekosten |
+| `flood` | Nässe des Standes und Verderb der verderblichen Sammelware; kein zweites Hydrologie-Grid | Hochwasserwert im Inspektor, Verlust im Sammel-Ledger |
+| Signaturholz | Lumber Camp legt je nach `timber` alle 4–6 Produktionsbatches 1 Einheit seiner regionalen Sorte ab | namentliche Ware im Lager, Sägewerk-Rezept, Marktzeile |
+| Signaturgut + Saison | Die Sammelvisite bietet das Signaturgut immer an und zahlt in seiner Saison +1 Einheit | Atlas-Karte, Inspektor, Gather-Toast `SEASONAL BOUNTY` |
+| Übergang | Zweiter, ebenfalls passender Typ an einer Bereichsgrenze; maximal 50 % Beimischung | Inspektor, Atlas `EDGE`, gemischte Bodenpalette |
 | `timber`-Rezept | Sägewerk verarbeitet regionale Ware bevorzugt, Logs bleiben Fallback | Sägewerk-Inspektor „Timber recipe“, produzierte Planks/Firewood |
 | `insulation` | Hearth-Intervall der Wohnhäuser über die regionale Bauform | wärmere/kältere Häuser im Winter, Formzeile im Inspektor |
 
@@ -1072,6 +1074,18 @@ Jede Wirkung wird bei Bedarf gelesen und bleibt an den bestehenden Tick bzw. den
 - Alte Saves ohne Regionaldaten laden unverändert; beim ersten Zugriff entsteht derselbe Typ wie in einer frisch generierten Welt.
 - Alte Timber Yards mit den drei bisherigen Filtern werden beim Laden auf das vollständige 18-Sorten-Profil migriert; echte Custom-Filter bleiben erhalten. Die Bauform ist abgeleitet und braucht kein Save-Feld. Bestehende Lagerbestände werden beim Laden um leere Regionalholz-Slots ergänzt, nicht neu geschrieben.
 
+### 6.4 Regionalcharakter, Signaturgut und Übergänge
+
+`REGIONAL_FOREST_CHARACTER` ist eine zweite, ebenso eingefrorene Datentabelle neben dem Typkatalog. Sie liefert pro Typ:
+
+- drei Feldmerkmale für Atlas und Inspektor (z. B. `salt-laden fog`, `deep peat`, `moving dunes`);
+- ein Signaturgut, das garantiert in `goods` des Typs und in `FOREST_GOODS` registriert ist;
+- eine Saison (Frühling, Sommer, Herbst, Winter) und das Anzeige-Label für den Saisonbonus.
+
+Der Sammelpfad liest dasselbe Record. Das Signaturgut wird immer in die Kandidatenliste aufgenommen, auch wenn die generische Fünf-Slot-Auswahl es sonst verdrängen würde; in seiner Saison erhält es **+1 Einheit** und der Toast meldet `SEASONAL BOUNTY`. Außerhalb der Saison bleibt es ein normales Gut. Vier neue, echte Ledger-Güter ergänzen die Tabelle: `moss` (Medizin), `crab` (Nahrung), `serpentine-stone` und `dune-grass` (Goldpfad). Sechs zuvor nur als Text vorhandene Güter (`cacao`, `cranberries`, `fibre`, `palm-fronds`, `poplar-bark`, `tamarisk-twigs`) wurden auf bereits registrierte Waren abgebildet, sodass keine Karte ein Gut verspricht, das der Ledger nicht liefern kann.
+
+Der Übergang ist keine dritte Kategorie. `regionalForestSelectionFor()` liefert neben dem Primärtyp den zweitbesten ebenfalls passenden Typ und eine Beimischung von 0–50 %, wenn der Standort nahe an einer Temperatur-, Feuchte- oder Höhengrenze des Primärtyps liegt. Der Primärtyp behält Kachel, Ressourcen, Save und Ernte; der Nachbar liefert nur Charakter, Palette und einen kleinen Ökoton-Bonus. `forestStandAt()` gibt dafür `regionalTransition`, `regionalTransitionId`, `regionalTransitionLabel` und `regionalTransitionShare` zurück. Der Renderer mischt die Bodenpalette an solchen Kacheln um höchstens 40 %, der Atlas zählt sie als `EDGE`.
+
 ## 7. Verifikation
 
 ### 7.1 Unit- und Integrationstests
@@ -1079,10 +1093,15 @@ Jede Wirkung wird bei Bedarf gelesen und bleibt an den bestehenden Tick bzw. den
 `game/tests/world/regional-forests.test.js` prüft:
 
 - 60 eindeutige IDs und 60 dokumentierte Standortproben, jede liefert exakt ihren Typ;
+- 60 vollständige Charakter-Records mit drei Feldmerkmalen, gültiger Saison und einem Signaturgut, das der Typ selbst führt und das im Ledger registriert ist;
+- dass jedes von Typen oder Arten genannte Gut in `FOREST_GOODS` existiert (kein Phantomgut);
 - differenzierte Effekt-Tupel und mindestens 55 verschiedene Paletten;
 - eine generierte temperate Welt ohne eine einzige untypisierte Waldkachel;
+- echte Übergangskacheln: Zweittyp ungleich Primärtyp, Beimischung 0–50 %, gültige ID und Inspector-Felder;
 - einen 9-Klima-Scan, der alle 60 Typen tatsächlich erzeugt;
 - Determinismus und einen Ressourcen-Save/Load-Roundtrip für Typ, Effekte und Bestand.
+
+`game/tests/systems/forest-gathering.test.js` prüft zusätzlich, dass eine echte Sammelvisite die regionalen Faktoren meldet und das Signaturgut in seiner Saison den Bonus samt Ledger-Eintrag erhält.
 
 Die bestehenden Wald-, Nadelwald-, Mischwald-, Tropen-, Savannen-, Taiga-, Tundra- und Ressourcentests bleiben grün. Die neuen Arten wurden ausschließlich hinten an `FOREST_SPECIES` angehängt; die bestehenden 38 Indizes bleiben unverändert.
 
@@ -1107,7 +1126,7 @@ Ergebnis: **39.900 Waldkacheln, 0 untypisiert, 60/60 Typen erzeugt.** Die tatsä
 
 ### 7.3 25-Jahres-Kampagne
 
-Der deterministische Lauf `npm run test:campaign` (Seed 20261108, common-weal, 25 Jahre) war grün: 10.040 Ticks, 13,59 s, 0,929 ms pro Tick, alle Kampagnenanforderungen erfüllt, kein Game Over. Die Typzählung nach 25 Jahren:
+Der deterministische Lauf `npm run test:campaign` (Seed 20261108, common-weal, 25 Jahre) war grün: 10.040 Ticks, 14,83 s, 0,977 ms pro Tick, alle Kampagnenanforderungen erfüllt, kein Game Over. Die Typzählung nach 25 Jahren:
 
 | Typ | Kacheln |
 |---|---:|
@@ -1131,16 +1150,16 @@ Der deterministische Lauf `npm run test:campaign` (Seed 20261108, common-weal, 2
 
 Eine temperate Kampagne enthält naturgemäß nur die temperate Typen. Der 9-Klima-Scan oben belegt die Erreichbarkeit aller 60; der Kampagnenlauf belegt, dass die Typisierung auch nach 25 Jahren Waldwirtschaft, Sukzession und Ernte lückenlos bleibt.
 
-Derselbe Lauf schreibt `timberEconomy` in den Bericht: **176 regionale Holzsorten produziert**, davon **2 im Lager** über **2 Sorten** (`cork-timber`, `holm-timber`). Die Produktion kommt aus dem Lumber-Camp-Signaturpfad und dem Sägewerksverbrauch; der Vorrat bleibt klein, weil das Sägewerk die Ware sofort verarbeitet und der Markt sie nur gegen echten Lagerbestand verkauft.
+Derselbe Lauf schreibt `timberEconomy` in den Bericht: **176 regionale Holzsorten produziert**, davon **2 im Lager** über **2 Sorten** (`cork-timber`, `holm-timber`). Die Produktion kommt aus dem Lumber-Camp-Signaturpfad und dem Sägewerksverbrauch; der Vorrat bleibt klein, weil das Sägewerk die Ware sofort verarbeitet und der Markt sie nur gegen echten Lagerbestand verkauft. Der separate temperate Referenzscan zählt **419 Übergangskacheln bei 4.168 Waldkacheln** (rund 10 %), ohne den Primärtyp oder den Bestand zu verändern.
 
 ### 7.4 Browser-Referenz
 
 `node tests/browser/regional-forest-reference.mjs` startet ein echtes tropisches Reich (Seed 20261104), pausiert die Simulation, scannt alle 9.526 Waldkacheln und öffnet einen echten Lumberyard-Inspektor. Ergebnis:
 
 - **9.526 Waldkacheln, 0 untypisiert**, drei geprüfte Regionaltypen im tropischen Reich (Mangrove, Bambus, Dipterocarpen);
-- Inspektorzeile: `Forest type: Mangrovenwald — … · Timber yield 78% · Regrowth 94% · Fire -6% · Wildlife 124% · Forage 120%`;
+- Inspektorzeile: `Forest type: Mangrovenwald — … · Signature shellfish (Summer bounty) · Timber yield 78% · Regrowth 94% · Fire -6% · Wildlife 124% · Forage 120% · Work 78% · Flood 100%`;
 - drei gerenderte Stände (024 Mangrove, 028 Dipterocarpaceenwald, 025 Bambuswald) mit drei unterschiedlichen SHA-256-Bildhashes;
-- **FORESTS-Tab mit 60 Atlas-Karten**, aufgeklappte Karten für Mangrove und Küstenmammutbaum mit namentlicher Holzzeile, Sägewerksausbeute und Basispreis;
+- **FORESTS-Tab mit 60 Atlas-Karten**, jede mit drei Feldmerkmalen und Signaturgut/Saison; aufgeklappte Karten für Mangrove und Küstenmammutbaum mit namentlicher Holzzeile, Sägewerksausbeute und Basispreis;
 - **STORES-Tab mit 18 Marktzeilen**: 6 Mangrove Timber in den echten Keep gelegt, 5 über den SELL-Button verkauft, **+22 Gold**, 1 Einheit blieb im Lager, Toast `TIMBER SOLD`;
 - keine Konsolenfehler und keine Page-Errors.
 
@@ -1148,7 +1167,7 @@ Artefakte: `artifacts/regional-forests/regional-forests.json`, `regional-forests
 
 ### 7.5 Performance
 
-Die Auswahl ist O(1) pro Kachel und läuft nur beim Aufbau des Standes. Die 60 Regionalformationen werden pro Basisformation/Typ einmal gecacht; Ressourcenknoten behalten den bereits gebauten Stand. Der Kampagnen-Tick blieb mit 1,237 ms im normalen Bereich. Es gibt keinen neuen Per-Frame-Pfad; der Renderer liest nur die vorhandenen Standfelder. Bauformen werden pro Gebäude/Standort einmal in `building-forms.js` gecacht und nur über eine Palette/Form-Zeile in den bestehenden Sprite-Cache geschlüsselt. Der Atlas-Survey läuft nur beim Öffnen des Tabs und sampelt höchstens 240 Waldkacheln; die Marktzeilen lesen den vorhandenen Lagerbestand, ohne einen Scan über alle Entitäten zu starten.
+Die Auswahl ist O(1) pro Kachel und läuft nur beim Aufbau des Standes. Die 60 Regionalformationen werden pro Basisformation/Typ einmal gecacht; Ressourcenknoten behalten den bereits gebauten Stand. Der Lumber-Pfad cached den unveränderlichen Regionalanteil pro Standort (Seed + Kachel), damit die Ernte nicht nach jedem Batch einen vollen Stand neu baut. Der Kampagnen-Tick blieb mit 0,977 ms im normalen Bereich (vorher 0,929 ms). Es gibt keinen neuen Per-Frame-Pfad; der Renderer liest nur die vorhandenen Standfelder. Bauformen werden pro Gebäude/Standort einmal in `building-forms.js` gecacht und nur über eine Palette/Form-Zeile in den bestehenden Sprite-Cache geschlüsselt. Der Atlas-Survey läuft nur beim Öffnen des Tabs und sampelt höchstens 240 Waldkacheln; die Marktzeilen lesen den vorhandenen Lagerbestand, ohne einen Scan über alle Entitäten zu starten.
 
 ## 8. Implementierte Entscheidungen
 
@@ -1279,17 +1298,17 @@ Die folgenden Tabellen werden aus `REGIONAL_FOREST_TYPES` erzeugt und geben den 
 | 031 | Küstennebelwald | 90% | 98% | -3% | 112% | 110% | 88% | +15% | mushrooms, lichen, moss, herbs, honey, timber, firewood |
 | 032 | Bergnebelwald | 102% | 106% | -5% | 118% | 112% | 84% | +18% | mushrooms, moss, lichen, herbs, treefern-timber, timber, firewood |
 | 033 | Tiefland-Dipterocarpenwald | 122% | 108% | -4% | 130% | 112% | 82% | +8% | dipterocarp-timber, resin, rattan, mushrooms, herbs, timber, firewood |
-| 034 | Torfwald | 58% | 40% | +4% | 114% | 102% | 70% | +95% | peat, pine-cones, cloudberry, sphagnum, cranberries, timber, firewood |
-| 035 | Schwarzwasser-Überschwemmungswald | 72% | 88% | -6% | 126% | 92% | 74% | +120% | river-fish, fibre, herbs, mushrooms, timber, firewood |
-| 036 | Weißwasser-Auenwald | 92% | 126% | -5% | 122% | 118% | 94% | +110% | kapok-fibre, cacao, river-fish, herbs, game, timber, firewood |
+| 034 | Torfwald | 58% | 40% | +4% | 114% | 102% | 70% | +95% | peat, pine-cones, cloudberry, sphagnum, bog-cranberry, timber, firewood |
+| 035 | Schwarzwasser-Überschwemmungswald | 72% | 88% | -6% | 126% | 92% | 74% | +120% | river-fish, kapok-fibre, herbs, mushrooms, timber, firewood |
+| 036 | Weißwasser-Auenwald | 92% | 126% | -5% | 122% | 118% | 94% | +110% | kapok-fibre, cacao-pods, river-fish, herbs, game, timber, firewood |
 | 037 | Delta-Mangroven | 76% | 100% | -6% | 128% | 116% | 78% | +115% | mangrove-timber, shellfish, crab, fish, salt, reed, timber, firewood |
 | 038 | Lagunen-Mangroven | 74% | 96% | -5% | 126% | 114% | 76% | +110% | mangrove-timber, shellfish, crab, fish, salt, honey, timber, firewood |
 | 039 | Kalthangwald | 94% | 86% | -3% | 108% | 104% | 86% | +5% | mushrooms, lichen, moss, herbs, game, timber, firewood |
 | 040 | Regenschattenwald | 84% | 82% | +12% | 92% | 100% | 94% | +0% | pine-cones, resin, juniper-berries, herbs, game, timber, firewood |
 | 041 | Steppenwald | 80% | 96% | +10% | 108% | 114% | 98% | +0% | acorns, hazelnuts, mushrooms, herbs, game, timber, firewood |
 | 042 | Halbwüsten-Waldinsel | 52% | 62% | +8% | 82% | 96% | 88% | +0% | gum-arabic, thorn-branches, game, firewood, timber |
-| 043 | Oasenwald | 68% | 134% | -4% | 124% | 130% | 90% | +35% | dates, figs, palm-fronds, honey, herbs, timber, firewood |
-| 044 | Vulkanaschewald | 112% | 122% | +2% | 116% | 120% | 96% | +5% | treefern-timber, cacao, mushrooms, herbs, game, timber, firewood |
+| 043 | Oasenwald | 68% | 134% | -4% | 124% | 130% | 90% | +35% | dates, figs, palm-oil, honey, herbs, timber, firewood |
+| 044 | Vulkanaschewald | 112% | 122% | +2% | 116% | 120% | 96% | +5% | treefern-timber, cacao-pods, mushrooms, herbs, game, timber, firewood |
 | 045 | Serpentinwald | 62% | 70% | +4% | 88% | 104% | 80% | +0% | pine-cones, serpentine-stone, herbs, lichen, timber, firewood |
 | 046 | Kalksteinwald | 88% | 82% | -4% | 112% | 108% | 86% | +20% | limestone, mushrooms, herbs, honey, game, timber, firewood |
 | 047 | Dünen-Kiefernwald | 78% | 106% | +8% | 94% | 100% | 92% | +25% | pine-cones, resin, dune-grass, herbs, timber, firewood |
@@ -1372,13 +1391,81 @@ Die folgenden Tabellen werden aus `REGIONAL_FOREST_TYPES` erzeugt und geben den 
 | 059 | Zwergkiefern-Krummholz | #4f5841 #646d50 #798160 #3f4734 #8d9572 |
 | 060 | Baumgrenzen-Pionierwald | #555c45 #6a7054 #7f8465 #444a38 #939776 |
 
+### 10.4 Charakter, Signaturgut und Saison pro Typ
+
+Die Tabelle wird aus `REGIONAL_FOREST_CHARACTER` gelesen. Das Signaturgut ist immer Teil der typischen Güterliste und im Ledger registriert; in seiner Saison zahlt die Sammelvisite +1 Einheit.
+
+| ID | Typ | Feldmerkmale | Signaturgut | Saison |
+|---|---|---|---|---|
+| 001 | Borealer Nadelwald | long snow cover, peat pockets, slow regeneration | Resin | Summer |
+| 002 | Gemäßigter Regenwald | year-round rain, giant crowns, mossy floors | Mushrooms | Autumn |
+| 003 | Atlantischer Nebelwald | wind-sheared crowns, fog drip, lichen-draped bark | Moss | Spring |
+| 004 | Mediterraner Hartlaubwald | summer drought, leathery leaves, fire-adapted | Bark | Summer |
+| 005 | Sommergrüner Laubmischwald | deep brown earth, four full seasons, rich mast years | Acorns | Autumn |
+| 006 | Reiner Buchenwald | smooth grey trunks, copper leaf litter, open winter light | Beechnuts | Autumn |
+| 007 | Eichen-Hainbuchenwald | coppice stools, dense hazel understorey, rich loam | Hazelnuts | Autumn |
+| 008 | Auenwald | annual floods, fresh sediment, oxbow pools | Willow withies | Winter |
+| 009 | Bruchwald | standing water, black mud, alder roots | Sphagnum moss | Summer |
+| 010 | Moorwald | deep peat, acid water, stunted pines | Peat | Summer |
+| 011 | Kiefern-Birkenwald | poor sand, heather and lichen, fire-prone | Birch sap | Spring |
+| 012 | Fichten-Tannenwald | dark spruce, mossy deadwood, long snow | Resin | Summer |
+| 013 | Lärchenwald | gold autumn needles, open light, deep roots | Larch cones | Autumn |
+| 014 | Bergmischwald | layered altitudes, beech and fir, fresh slopes | Mushrooms | Autumn |
+| 015 | Subalpiner Wald | wind-bent scrub, short summer, snow load | Juniper berries | Autumn |
+| 016 | Küstenmammutbaumwald | red giants, coastal fog, fern understorey | Resin | Summer |
+| 017 | Pazifischer Regenwald | sitka spruce, hemlock shade, enormous biomass | Lichen | Winter |
+| 018 | Eukalyptuswald | smooth pale bark, fire regrowth, dry summer | Honey | Summer |
+| 019 | Akazien-Waldland | flat acacia crowns, thorn and gum, dry season | Gum arabic | Winter |
+| 020 | Miombo-Wald | brachystegia crowns, fire ecology, miombo mast | Mushrooms | Autumn |
+| 021 | Baobab-Waldland | barrel trunks, hot dry air, marula fruit | Baobab fruit | Autumn |
+| 022 | Dornwald | dornbusch, stony ground, thin shade | Thorn branches | Summer |
+| 023 | Galeriewald | river corridor, fever trees, dryland green | River fish | Summer |
+| 024 | Mangrovenwald | stilt roots, brackish tide, coastal shield | Shellfish | Summer |
+| 025 | Bambuswald | hollow culms, fast rhizomes, mass flowering | Bamboo shoots | Spring |
+| 026 | Teakwald | large leaves, valuable boles, monsoon drought | Honey | Spring |
+| 027 | Salwald | sal crowns, leaf fall, fire scars | Resin | Summer |
+| 028 | Dipterocarpaceenwald | emergent giants, buttress roots, mast years | Rattan | Summer |
+| 029 | Lorbeerwald | leathery laurel, cloud belt, mossy trunks | Herbs | Spring |
+| 030 | Monsunwald | teak and bamboo, monsoon rhythm, leaf flush | Giant bamboo | Summer |
+| 031 | Küstennebelwald | salt-laden fog, wind-sheared crowns, mossy bark | Moss | Spring |
+| 032 | Bergnebelwald | cloud forest, short mossy trunks, tree ferns | Lichen | Winter |
+| 033 | Tiefland-Dipterocarpenwald | giant emergents, closed dark canopy, dipterocarp mast | Rattan | Summer |
+| 034 | Torfwald | deep peat, very slow decay, black water | Peat | Summer |
+| 035 | Schwarzwasser-Aue | tea-brown water, nutrient-poor, flood pulse | River fish | Summer |
+| 036 | Weißwasser-Aue | rich sediment, fast growth, white water | Cacao pods | Autumn |
+| 037 | Delta-Mangroven | braided channels, brackish tide, mud banks | Crabs | Summer |
+| 038 | Lagunen-Mangroven | calm lagoon, tidal flooding, salt pans behind | Shellfish | Summer |
+| 039 | Kalthangwald | cool north slope, deep moss, late snow | Mushrooms | Autumn |
+| 040 | Regenschattenwald | little rain, open pine, dry ridges | Juniper berries | Autumn |
+| 041 | Steppenwald | grass between trunks, woodland edge, parkland | Hazelnuts | Autumn |
+| 042 | Halbwüsten-Waldinsel | isolated wet island, arid surround, fragile cover | Gum arabic | Summer |
+| 043 | Oasenwald | groundwater, date palms, shade in dryland | Dates | Summer |
+| 044 | Vulkanaschewald | young ash soil, very fertile, fast juvenile growth | Cacao pods | Autumn |
+| 045 | Serpentinwald | toxic metals, stunted endemics, bare rock | Serpentine Stone | Summer |
+| 046 | Kalksteinwald | karst and caves, thin soil, hidden water | Limestone | Summer |
+| 047 | Dünen-Kiefernwald | moving dunes, deep pine roots, brittle grass | Dune Grass | Summer |
+| 048 | Salzbodenwald | saline soil, halophile trees, sparse herbs | Salt | Summer |
+| 049 | Schotterauenwald | gravel bars, shifting water, narrow riparian belt | River fish | Spring |
+| 050 | Lösswald | wind-blown loess, deep fertile soil, fast youth growth | Hazelnuts | Autumn |
+| 051 | Tonboden-Eichenwald | heavy clay, winter waterlogging, summer cracking | Clay | Summer |
+| 052 | Moorbirkenwald | bog edge, crooked birches, high water table | Cloudberries | Summer |
+| 053 | Erlenbruch | alder carr, black silt, open water holes | Sphagnum moss | Summer |
+| 054 | Weidenhain | low willow bank, flexible rods, fast coppice | Willow withies | Winter |
+| 055 | Eschen-Ulmen-Aue | great river plain, tall ash and elm, long flood rhythm | Mushrooms | Autumn |
+| 056 | Pappelwald | fast juvenile growth, slender boles, fresh alluvium | Honey | Summer |
+| 057 | Haselgebüschwald | multi-stemmed hazel, bright understorey, nut harvest | Hazelnuts | Autumn |
+| 058 | Wacholderheide | open heath, scattered tree islands, grazed and burned | Juniper berries | Autumn |
+| 059 | Zwergkiefern-Krummholz | wind-shaped krummholz, low tangled crowns, treeline | Juniper berries | Autumn |
+| 060 | Baumgrenzen-Pionierwald | tough pioneers, slow growth, wind and frost | Rowan berries | Autumn |
+
 ## 11. Regionale Holzökonomie (3.56.0)
 
 Die 18 Holzsorten sind keine Anzeige-Trophäen. Sie laufen durch dieselben vier Stufen wie die alten Holzketten: Ernte → Lager → Rezept → Markt.
 
 ### 11.1 Ernte und Lagerkette
 
-- **Lumber Camp:** alle 5 Produktionsbatches legt das Camp 1 Einheit der Signatur-Holzart seines Standorts ab, sofern `outputSpace` und Lagergrenze frei sind. Der Standort wird über `getResourceNodeAt()` gelesen; `findNearestResourceNode()` bleibt unverändert, damit der Pfad keine zusätzlichen Regionalfelder tragen muss.
+- **Lumber Camp:** je nach regionalem `timber` legt das Camp alle 4–6 Produktionsbatches 1 Einheit der Signatur-Holzart seines Standorts ab, sofern `outputSpace` und Lagergrenze frei sind. Der unveränderliche Regionalanteil des Standorts wird pro Seed + Kachel gecacht; `findNearestResourceNode()` bleibt unverändert, damit der Pfad keine zusätzlichen Regionalfelder tragen muss. Der Batch selbst skaliert mit `extractionFactor × regionalem Timber (0,70–1,35)`.
+- **Durchforstung:** `thinNearestForest()` nimmt bis zu 12 Einheiten, skaliert mit demselben regionalen Timber-Faktor und schreibt weiterhin nur echten Bestand um.
 - **Forester:** liefert weiterhin benannte Waldgüter. Eine benannte Holzsorte bleibt ihre eigene Ware; das generische `timber` wird wie bisher zu `logs`. `delivered.timber` zählt beide Pfade.
 - **Timber Yard:** akzeptiert alle 18 neuen Sorten und hält ein Ziel von 18 pro Sorte. Alte Yards mit den drei bisherigen Filtern werden beim Laden auf das vollständige Profil migriert; echte Custom-Filter bleiben unangetastet.
 - **Sägewerk:** Das alte Rezept bleibt exakt `2 Logs → 2 Planks + 1 Firewood`. Zusätzlich verarbeitet das Sägewerk regionale Ware: `2 regionale Einheiten → planks` (1–3 je nach Dichte) `+ firewoodYield` (1). Regionale Ware wird bevorzugt, wenn sie am Sägewerk liegt; Logs bleiben der Fallback. Jede fünfte Lieferung fordert regionale Ware an, damit die Kette nicht an einem leeren regionalen Lager hängen bleibt.
@@ -1426,10 +1513,11 @@ Der FORESTS-Tab ist der Spieler-Katalog aller 60 Typen. Jede Karte zeigt:
 
 - ID, Kurzname, Klima und Priorität;
 - die Bodenpalette als Farbstreifen;
-- eine begrenzte Präsenzangabe (`N SAMPLED · X%` oder `NOT SURVEYED`);
+- eine begrenzte Präsenzangabe (`N SAMPLED · X%`, `N EDGE` oder `NOT SURVEYED`);
+- drei Feldmerkmale und das Signaturgut mit seiner Saison; in der laufenden Saison wird es als `IN SEASON` hervorgehoben;
 - aufgeklappt: Profil, Timber-/Regrowth-/Fire-/Wildlife-/Forage-/Work-Balken, Signaturholz mit Sägewerksausbeute und aktueller saisonaler Quote sowie Arten- und Güterchips.
 
-Der Survey ist bewusst eine Stichprobe: maximal 240 Waldkacheln, deterministisch aus dem Realm gezogen, gecacht pro Seed/Jahr/Tick und 60 Typen. Er läuft nur beim Öffnen/Rendern des Tabs, nicht pro Frame. Die angezeigte Kachelzahl ist eine Orientierung; die exakte Typzählung liefert weiterhin der Kampagnenbericht. Fehlt ein Survey (kein laufendes Reich), erklärt der Tab das statt eine leere Karte zu zeigen.
+Der Survey ist bewusst eine Stichprobe: maximal 240 Waldkacheln, deterministisch aus dem Realm gezogen, gecacht pro Seed/Jahr/Tick und 60 Typen. Er zählt Primärtyp und Übergangskacheln getrennt; `TRANSITION EDGES` ist die Summe der Kacheln, die einen zweiten Typ nennen. Er läuft nur beim Öffnen/Rendern des Tabs, nicht pro Frame. Die angezeigte Kachelzahl ist eine Orientierung; die exakte Typzählung liefert weiterhin der Kampagnenbericht. Fehlt ein Survey (kein laufendes Reich), erklärt der Tab das statt eine leere Karte zu zeigen.
 
 ## 13. Regionale Bauformen
 

@@ -2,10 +2,11 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { initWorld } from "../../js/world/world.js";
 import { state } from "../../js/core/state.js";
-import { forestStandAt } from "../../js/world/forest-ecology.js";
+import { FOREST_GOODS, forestStandAt } from "../../js/world/forest-ecology.js";
 import {
-    REGIONAL_FORESTS_TEST_SITES, REGIONAL_FOREST_TYPES, REGIONAL_FOREST_TYPE_IDS,
-    regionalForestTypeFor,
+    REGIONAL_BOUNTY_SEASONS, REGIONAL_FORESTS_TEST_SITES, REGIONAL_FOREST_CHARACTER,
+    REGIONAL_FOREST_TYPES, REGIONAL_FOREST_TYPE_IDS, REGIONAL_SPECIES,
+    regionalCharacterFor, regionalForestSelectionFor, regionalForestTypeFor,
 } from "../../js/world/regional-forests.js";
 import {
     getResourceNodeAt, harvestForest, restoreResourceGeography, serializeResourceGeography,
@@ -42,8 +43,12 @@ test("the catalogue declares all sixty ids exactly once", () => {
 test("every regional type is produced by its documented site window", () => {
     assert.equal(REGIONAL_FORESTS_TEST_SITES.length, 60);
     for (const site of REGIONAL_FORESTS_TEST_SITES) {
+        const selection = regionalForestSelectionFor({ x: 11, y: 13, seed: SEED, ...site });
         const selected = regionalForestTypeFor({ x: 11, y: 13, seed: SEED, ...site });
+        assert.equal(selection.primary?.id, site.id, site.key);
         assert.equal(selected?.id, site.id, site.key);
+        assert.ok(selection.secondary === null || selection.secondary.id !== selection.primary.id);
+        assert.ok(selection.share >= 0 && selection.share <= 0.5);
         assert.ok(selected.timber > 0.5 && selected.timber < 1.5);
         assert.ok(selected.effects.regrowth > 0 && selected.effects.regrowth <= 1.45);
         assert.ok(selected.effects.fire >= -0.1 && selected.effects.fire <= 0.3);
@@ -51,6 +56,28 @@ test("every regional type is produced by its documented site window", () => {
         assert.ok(selected.fauna.length >= 3);
         assert.ok(selected.render.palette.length >= 3);
     }
+});
+
+test("every regional type has field marks, a real signature good and a bounty season", () => {
+    assert.equal(Object.keys(REGIONAL_FOREST_CHARACTER).length, 60);
+    for (const type of REGIONAL_FOREST_TYPES) {
+        const character = regionalCharacterFor(type);
+        assert.equal(character.key, type.key);
+        assert.ok(character.traits.length >= 3, type.key + " must carry three field marks");
+        assert.ok(character.traits.every(trait => typeof trait === "string" && trait.length > 2));
+        assert.ok(Number.isInteger(character.season) && character.season >= 0 && character.season <= 3);
+        assert.equal(character.seasonLabel, REGIONAL_BOUNTY_SEASONS[character.season]);
+        assert.ok(type.goods.includes(character.signature), type.key + " signature must be one of its own goods");
+        assert.ok(FOREST_GOODS[character.signature], type.key + " signature must be a registered good");
+    }
+});
+
+test("every good named by a regional type or species is registered in the shared ledger", () => {
+    const ids = new Set();
+    for (const type of REGIONAL_FOREST_TYPES) for (const good of type.goods) ids.add(good);
+    for (const species of Object.values(REGIONAL_SPECIES)) for (const good of species.goods) ids.add(good);
+    const missing = [...ids].filter(id => !FOREST_GOODS[id]).sort();
+    assert.deepEqual(missing, [], "unregistered forest goods: " + missing.join(", "));
 });
 
 test("the sixty types do not collapse into one multiplier or one palette", () => {
@@ -61,6 +88,31 @@ test("the sixty types do not collapse into one multiplier or one palette", () =>
     const palettes = new Set(REGIONAL_FOREST_TYPES.map(type => type.render.palette.join("|")));
     assert.ok(effects.size >= 55, "types must have differentiated effects");
     assert.ok(palettes.size >= 55, "types must have differentiated ground palettes");
+});
+
+test("range edges produce real transition stands without changing the primary owner", () => {
+    initWorld(SEED, { ...WORLD_OPTIONS, climate: "temperate" });
+    let transitions = 0, forests = 0;
+    for (let y = 0; y < state.worldH; y += 2) {
+        for (let x = 0; x < state.worldW; x += 2) {
+            const node = getResourceNodeAt(x, y);
+            if (!node?.forestCapacity) continue;
+            forests++;
+            const transition = node.forestStand?.regionalTransition;
+            if (!transition) continue;
+            transitions++;
+            assert.notEqual(transition.id, node.forestRegionalType);
+            assert.ok(transition.share > 0 && transition.share <= 0.5);
+            assert.ok(REGIONAL_FOREST_TYPE_IDS.includes(transition.id));
+            assert.equal(node.forestRegionalTransitionId, transition.id);
+            assert.equal(node.forestRegionalTransitionLabel, transition.label);
+            assert.ok(node.forestRegionalSignature);
+            assert.ok(node.forestRegionalSignatureLabel);
+            assert.ok(node.forestRegionalCharacter?.traits.length >= 3);
+        }
+    }
+    assert.ok(forests > 100);
+    assert.ok(transitions > 0, "a generated realm must expose at least one transition belt");
 });
 
 test("a generated world leaves no harvestable forest tile untyped", () => {

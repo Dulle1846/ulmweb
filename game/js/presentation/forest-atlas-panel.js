@@ -4,9 +4,10 @@
 // render time and adds no per-tick simulation.
 import { state } from "../core/state.js";
 import {
-    REGIONAL_FOREST_TYPES, REGIONAL_SPECIES, signatureTimberForRegionalType,
+    REGIONAL_FOREST_TYPES, REGIONAL_SPECIES, REGIONAL_BOUNTY_SEASONS,
+    regionalCharacterFor, signatureTimberForRegionalType,
 } from "../world/regional-forests.js";
-import { forestStandAt } from "../world/forest-ecology.js";
+import { FOREST_GOODS, forestStandAt } from "../world/forest-ecology.js";
 import { timberQuote } from "../systems/regional-timber-market.js";
 
 const esc = value => String(value ?? "").replace(/[&<>"']/g, character => ({
@@ -44,12 +45,16 @@ function terrainAt(tx, ty) {
 
 // A bounded, deterministic sample of the realm's own forest tiles. Sampling
 // every stride-th forest tile keeps a panel open cheap on a large map while
-// still reporting the regional mix the player actually owns.
+// still reporting the regional mix the player actually owns. Transition tiles
+// are counted separately so an edge reads as an edge, not as a second type.
 export function forestAtlasSurvey(limit = SURVEY_LIMIT) {
     const geo = state.resourceGeography;
     const width = Number(state.worldW) || 0, height = Number(state.worldH) || 0;
     if (!geo?.forestStock || !width || !height) {
-        return { available: false, forestTiles: 0, sampled: 0, counts: {}, present: 0, types: [] };
+        return {
+            available: false, forestTiles: 0, sampled: 0, counts: {}, transitions: {},
+            transitionSamples: 0, present: 0, types: [],
+        };
     }
     const key = [geo.seed, width, height, state.year, Math.floor((Number(state.tick) || 0) / 30)].join(":");
     if (surveyCache.key === key) return surveyCache.value;
@@ -57,8 +62,8 @@ export function forestAtlasSurvey(limit = SURVEY_LIMIT) {
     const indices = [];
     for (let index = 0; index < total; index++) if (geo.forestStock[index] > 0) indices.push(index);
     const stride = Math.max(1, Math.ceil(indices.length / Math.max(1, limit)));
-    const counts = {};
-    let sampled = 0;
+    const counts = {}, transitions = {};
+    let sampled = 0, transitionSamples = 0;
     const climate = state.worldOptions?.climate || "temperate";
     for (let slot = 0; slot < indices.length; slot += stride) {
         const index = indices[slot];
@@ -78,15 +83,22 @@ export function forestAtlasSurvey(limit = SURVEY_LIMIT) {
         if (!id) continue;
         counts[id] = (counts[id] || 0) + 1;
         sampled++;
+        if (stand.regionalTransitionId) {
+            transitionSamples++;
+            transitions[stand.regionalTransitionId] = (transitions[stand.regionalTransitionId] || 0) + 1;
+        }
     }
     const types = REGIONAL_FOREST_TYPES.map(type => ({
         id: type.id, key: type.key, count: counts[type.id] || 0,
+        transitionCount: transitions[type.id] || 0,
     }));
     const value = {
         available: true,
         forestTiles: indices.length,
         sampled,
         counts,
+        transitions,
+        transitionSamples,
         present: types.filter(type => type.count > 0).length,
         types,
         climate,
@@ -121,10 +133,26 @@ function speciesList(type) {
 
 function goodsList(type) {
     const goods = (type.goods || []).slice(0, 10);
-    return goods.map(id => '<span class="forest-atlas__good">' + esc(String(id).replace(/-/g, " ")) + '</span>').join("");
+    return goods.map(id => '<span class="forest-atlas__good">'
+        + esc(FOREST_GOODS[id]?.label || String(id).replace(/-/g, " ")) + '</span>').join("");
 }
 
-function card(type, count, sampled) {
+function characterLine(type, currentSeason) {
+    const character = regionalCharacterFor(type);
+    if (!character) return "";
+    const traits = character.traits.map(trait =>
+        '<span class="forest-atlas__trait">' + esc(trait) + '</span>').join("");
+    const good = character.signature ? FOREST_GOODS[character.signature] : null;
+    const active = Boolean(good) && character.season === currentSeason;
+    const signature = good
+        ? '<div class="forest-atlas__signature' + (active ? ' is-active' : '') + '"><span>SIGNATURE</span><strong>'
+            + esc(good.label) + '</strong><em>' + esc(REGIONAL_BOUNTY_SEASONS[character.season] || "Autumn")
+            + ' bounty' + (active ? ' · IN SEASON' : '') + '</em></div>'
+        : "";
+    return '<div class="forest-atlas__character">' + traits + '</div>' + signature;
+}
+
+function card(type, count, sampled, transitionCount, currentSeason) {
     const timber = signatureTimberForRegionalType(type);
     const quote = timber ? timberQuote(timber.id) : null;
     const share = sampled > 0 ? Math.round(count / sampled * 100) : 0;
@@ -133,13 +161,16 @@ function card(type, count, sampled) {
         ? '<div class="forest-atlas__timber"><strong>' + esc(quote.label) + '</strong><span>' + esc(quote.speciesLabel)
             + ' · ' + quote.planks + ' planks per 2 · ' + quote.price.toFixed(1) + 'G quote</span></div>'
         : '<div class="forest-atlas__timber"><strong>Ordinary log chain</strong><span>No named regional timber for this type.</span></div>';
+    const presence = count > 0
+        ? number(count) + ' SAMPLED · ' + share + '%' + (transitionCount > 0 ? ' · ' + number(transitionCount) + ' EDGE' : '')
+        : 'NOT SURVEYED';
     return '<details class="forest-atlas__card' + (count > 0 ? ' is-present' : '') + '" data-forest-type="' + esc(type.id) + '">'
         + '<summary><span class="forest-atlas__palette">' + swatches(type) + '</span>'
         + '<span class="forest-atlas__title"><strong>' + esc(type.id.slice(-3)) + ' · ' + esc(type.short || type.label) + '</strong>'
         + '<small>' + esc(type.climates.join(", ")) + ' · priority ' + number(type.priority) + '</small></span>'
-        + '<span class="forest-atlas__presence">' + (count > 0 ? number(count) + ' SAMPLED · ' + share + '%' : 'NOT SURVEYED')
-        + '</span></summary>'
+        + '<span class="forest-atlas__presence">' + presence + '</span></summary>'
         + '<p class="forest-atlas__profile">' + esc(type.profile) + '</p>'
+        + characterLine(type, currentSeason)
         + '<div class="forest-atlas__stats">'
         + meter("Timber", effects.timber, signed((effects.timber ?? 1) - 1))
         + meter("Regrowth", effects.regrowth, signed((effects.regrowth ?? 1) - 1))
@@ -161,15 +192,20 @@ export function renderForestAtlasPanel() {
             + '<p class="command-note">No resource geography is available in this session.</p>';
     }
     const present = survey.types.filter(type => type.count > 0).length;
-    const cards = REGIONAL_FOREST_TYPES.map(type => card(type, survey.counts[type.id] || 0, survey.sampled)).join("");
-            return intro("THE FOREST ATLAS", "Sixty regional woodlands",
-        "Every forest tile belongs to exactly one regional type. Open a type to read its profile, its timber, its ecological effects and the named wood its sawmill can produce.")
+    const currentSeason = Math.max(0, Math.min(3, Number(state.seasonIndex) || 0));
+    const cards = REGIONAL_FOREST_TYPES.map(type => {
+        const row = survey.types.find(entry => entry.id === type.id);
+        return card(type, row?.count || 0, survey.sampled, row?.transitionCount || 0, currentSeason);
+    }).join("");
+    return intro("THE FOREST ATLAS", "Sixty regional woodlands",
+        "Every forest tile belongs to exactly one regional type, and boundary tiles name the woodland they blend into. Open a type to read its field marks, its signature good, its timber, its ecological effects and the named wood its sawmill can produce.")
         + '<div class="command-summary"><div><small>CATALOGUED</small><strong>' + number(REGIONAL_FOREST_TYPES.length) + ' TYPES</strong></div>'
         + '<div><small>IN THIS REALM</small><strong>' + number(present) + ' TYPES</strong></div>'
         + '<div><small>FOREST TILES</small><strong>' + number(survey.forestTiles) + '</strong></div>'
         + '<div><small>SURVEYED</small><strong>' + number(survey.sampled) + ' SAMPLES</strong></div>'
+        + '<div><small>TRANSITION EDGES</small><strong>' + number(survey.transitionSamples) + '</strong></div>'
         + '<div><small>SEASON</small><strong>' + esc(survey.season.toUpperCase()) + '</strong></div></div>'
         + '<div class="forest-atlas">' + cards + '</div>'
         + '<p class="command-note">The realm count comes from a bounded deterministic sample of up to ' + number(SURVEY_LIMIT)
-        + ' forest tiles; it is a survey, not a per-frame scan. Timber prices are the current seasonal base quote of the regional timber market in the Royal Stores.</p>';
+        + ' forest tiles; it is a survey, not a per-frame scan. Timber, regrowth, wildlife, forage and work are live simulation inputs: they price lumber batches, gathering yields, regrowth and habitat. Flood raises the spoilage of a perishable harvest, and a signature good pays a bonus in its own season. Timber prices are the current seasonal base quote of the regional timber market in the Royal Stores.</p>';
 }

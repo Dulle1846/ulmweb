@@ -224,6 +224,33 @@ test("thinning refuses a full lumber yard without taking forest stock", () => {
     assert.equal(getResourceNodeAt(tile.x, tile.y).forestStock, stockBefore);
 });
 
+test("a regional signature good pays a real seasonal bounty in the gather ledger", () => {
+    setup();
+    let target = null;
+    for (let y = 2; y < state.worldH - 2 && !target; y++) {
+        for (let x = 2; x < state.worldW - 2 && !target; x++) {
+            const node = getResourceNodeAt(x, y);
+            if (!node?.forestCapacity || !node.forestStock) continue;
+            const products = forestProductsAt(x, y, 250);
+            const signature = products?.stand.regionalSignature;
+            if (signature && products.goods.some(good => good.id === signature)) {
+                target = { x, y, products, signature };
+            }
+        }
+    }
+    assert.ok(target, "the fixture realm must contain a regional signature stand");
+    state.seasonIndex = target.products.stand.regionalBountySeason;
+    const result = gatherForestProducts(target.x, target.y, { dayOfYear: 250, year: 1 });
+    assert.equal(result.ok, true);
+    assert.ok(result.regional.forage >= 0.75 && result.regional.forage <= 1.35);
+    assert.ok(result.regional.timber >= 0.7 && result.regional.timber <= 1.35);
+    assert.ok(result.regional.work >= 0.7 && result.regional.work <= 1.15);
+    assert.ok(result.bounty, "the signature good must report its seasonal bounty");
+    assert.equal(result.bounty.good, target.signature);
+    assert.ok(result.bounty.amount >= 1);
+    assert.ok(result.goods.some(good => good.id === target.signature));
+});
+
 test("delivery and thinning availability mirror the player-facing gates", () => {
     setup();
     const tile = findForestWithGoods();

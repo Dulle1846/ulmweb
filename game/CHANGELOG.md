@@ -1,13 +1,51 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.56.1`
-**Next development line:** `3.57.0-dev`
+**Current production version:** `3.57.0`
+**Next development line:** `3.58.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
 **Last repository verification:** 2026-11-25 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.57.0 — Regional forests become places you can feel
+
+The sixty regional forests were visible and named, but four of their seven
+effects only changed inspector text: timber, forage, work and flood did not touch
+a single harvest, batch or loss. The atlas also stopped at a palette strip. This
+release makes every published value do work, gives each type a character and a
+signature crop, and makes the borders between two forests tangible.
+
+- **All seven effects now bite.** `timber` scales the Lumber Camp batch, the
+  thinning yield and the wood share of a gathering visit within 0.70–1.35;
+  `forage` scales plant and game harvest within 0.75–1.35; `work` feeds the
+  gathering work factor within 0.70–1.15; `flood` raises gather spoilage by up to
+  12% of its value and deepens site wetness. `regrowth`, `fire` and `fauna` stay
+  on their existing paths. The numbers shown in the atlas are the numbers the
+  simulation uses.
+- **Sixty characters, sixty signatures.** A frozen `REGIONAL_FOREST_CHARACTER`
+  record gives every type three field marks, one signature good and one bounty
+  season. The gatherer always offers the signature good and pays +1 unit in its
+  season, with a `SEASONAL BOUNTY` toast and ledger entry. Moss, crab,
+  serpentine stone and dune grass became real goods; six phantom names were
+  mapped onto registered goods so no card promises what the ledger cannot give.
+- **Borders are real belts.** `regionalForestSelectionFor()` adds a deterministic
+  second type near a temperature, moisture or elevation window edge, with a
+ 0–50% share. The primary type keeps the tile, stock and save data; the edge
+  adds character, up to +6% habitat and a mixed ground palette. No neighbour
+  scan and no third biome were introduced.
+- **The atlas and inspector tell the story.** Cards show field marks, signature
+  good and `IN SEASON`, plus a per-type `EDGE` count and a `TRANSITION EDGES`
+  summary. The site inspector names the transition, signature and season and
+  prints Work and Flood; the harvest toast calls out the seasonal bounty.
+- **Bounded cost.** The Lumber Camp caches the immutable regional share per
+  seed and tile instead of rebuilding a stand after every batch. The 25-year
+  campaign stays at 0.977 ms per tick, 10,040 ticks, 3,507 typed forest tiles,
+  0 untyped, 176 regional timbers and no game over; the temperate reference world
+  shows 419 transition tiles among 4,168 forest tiles. The browser reference
+  passes sixty atlas cards, eighteen market rows and the new inspector text with
+  no console or page errors.
 
 ## 3.56.1 — Rain-shadow forest keeps the Forester harvest whole
 

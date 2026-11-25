@@ -3860,7 +3860,7 @@ function drawForestGround(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, cli
     ctx.globalAlpha = 0.42 + stand.ground.litter * 0.24;
     const coniferFloor = stand.coniferShare > 0.45;
     const regionalPalette = stand.regionalRender?.palette;
-    const rawPalette = Array.isArray(regionalPalette) && regionalPalette.length >= 3
+    const basePalette = Array.isArray(regionalPalette) && regionalPalette.length >= 3
         ? regionalPalette
         : (stand.tropical
         ? ["#2f4c2d", "#3b5d32", "#4c4a2a", "#2a3d26", "#5a5632"]
@@ -3869,6 +3869,15 @@ function drawForestGround(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, cli
             : ["#4a3e2c", "#665033", "#7a5a37", "#3f4c35", "#8b7447"])
         : turn > 0.42 ? ["#704b2b", "#986130", "#8c7138", "#5d472b", "#a8793a"]
             : ["#4c6538", "#70733a", "#57462d", "#7a5b36", "#617b40"]);
+    // At a type boundary the neighbouring woodland bleeds into the floor
+    // palette. The blend is capped at 40% and reuses the same cached ground
+    // pass, so a transition belt is visible without a second render path.
+    const transitionPalette = stand.regionalTransition?.render?.palette;
+    const transitionShare = Math.max(0, Math.min(0.4, Number(stand.regionalTransition?.share) || 0));
+    const rawPalette = Array.isArray(transitionPalette) && transitionPalette.length >= 3 && transitionShare > 0
+        ? basePalette.map((color, index) => mixHex(color,
+            transitionPalette[(index + 1) % transitionPalette.length], transitionShare))
+        : basePalette;
     // Dense interiors are genuinely darker. This is a palette shift, not a
     // translucent disc per tile, so it cannot expose the ground lattice.
     const gloom = Math.max(0, Math.min(0.42, (0.58 - (Number(stand.visibility) || 0.7)) * 0.8));

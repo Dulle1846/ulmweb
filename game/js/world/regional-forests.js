@@ -9,6 +9,9 @@
 // species. New ids therefore cannot shift an older species index.
 // Each regional species names its own timber so the shared wood ledger can
 // tell a redwood beam from a mangrove pole without a second goods system.
+// A handful of non-wood signature goods (moss, crab, serpentine stone, dune
+// grass) complete the same ledger: they are ordinary foraged goods, not a
+// second inventory.
 export const REGIONAL_GOODS = Object.freeze({
     'nothofagus-timber': Object.freeze({ id: 'nothofagus-timber', label: 'Southern Beech Timber', category: 'wood' }),
     'podocarpus-timber': Object.freeze({ id: 'podocarpus-timber', label: 'Podocarp Timber', category: 'wood' }),
@@ -28,6 +31,10 @@ export const REGIONAL_GOODS = Object.freeze({
     'laurel-timber': Object.freeze({ id: 'laurel-timber', label: 'Laurel Timber', category: 'wood' }),
     'poplar-timber': Object.freeze({ id: 'poplar-timber', label: 'Poplar Timber', category: 'wood' }),
     'tamarisk-timber': Object.freeze({ id: 'tamarisk-timber', label: 'Tamarisk Timber', category: 'wood' }),
+    moss: Object.freeze({ id: 'moss', label: 'Moss', category: 'medicine' }),
+    crab: Object.freeze({ id: 'crab', label: 'Crabs', category: 'gather' }),
+    'serpentine-stone': Object.freeze({ id: 'serpentine-stone', label: 'Serpentine Stone', category: 'gather' }),
+    'dune-grass': Object.freeze({ id: 'dune-grass', label: 'Dune Grass', category: 'gather' }),
 });
 
 export const REGIONAL_SPECIES = Object.freeze({
@@ -173,7 +180,7 @@ export const REGIONAL_SPECIES = Object.freeze({
         summer: ['#4e7d3e', '#7ba65a'], autumn: ['#c9a53a', '#e0c65a'],
         form: 'vase', leafShape: 'triangular', height: 1.34, crown: 0.8, trunk: 1.02, lobes: 2,
         timber: 0.72, firewood: 0.9, charcoal: 0.74, wood: 'poplar-timber',
-        goods: ['poplar-bark', 'herbs', 'mushrooms'], understory: ['grass', 'fern'],
+        goods: ['bark', 'herbs', 'mushrooms'], understory: ['grass', 'fern'],
     }),
     tamarisk: Object.freeze({
         id: 'tamarisk', label: 'Tamarisk', latin: 'Tamarix',
@@ -181,7 +188,7 @@ export const REGIONAL_SPECIES = Object.freeze({
         summer: ['#5f7d4a', '#86a26a'], autumn: ['#8c7640', '#ad9657'],
         form: 'airy', leafShape: 'scale', height: 0.72, crown: 0.7, trunk: 0.6, lobes: 2,
         timber: 0.52, firewood: 0.78, charcoal: 0.64, wood: 'tamarisk-timber',
-        goods: ['tamarisk-twigs', 'salt', 'herbs'], understory: ['grass', 'herb'],
+        goods: ['willow-withies', 'salt', 'herbs'], understory: ['grass', 'herb'],
     }),
 });
 
@@ -642,7 +649,7 @@ export const REGIONAL_FOREST_TYPES = Object.freeze([
         temp: [0.10, 0.26], moisture: [0.78, 0.86], height: [0.30, 0.86], priority: 10,
         timber: 0.58, effects: { timber: 0.58, regrowth: 0.4, fire: 0.04, fauna: 1.14, forage: 1.02, work: 0.7, flood: 0.95 },
         species: { pine: 0.34, birch: 0.32, spruce: 0.18, 'dwarf-pine': 0.1, juniper: 0.06 },
-        goods: ['peat', 'pine-cones', 'cloudberry', 'sphagnum', 'cranberries', 'timber', 'firewood'],
+        goods: ['peat', 'pine-cones', 'cloudberry', 'sphagnum', 'bog-cranberry', 'timber', 'firewood'],
         fauna: ['moose', 'crane', 'frog', 'beetle', 'hare', 'fox', 'owl'],
         render: { canopy: 0.6, height: 0.66, trunk: 0.74, mist: 1.4, palette: ['#3b3c2c', '#50513a', '#666446', '#2e3024', '#797653'], silhouette: 'stunted-bog' },
         probe: { climate: 'taiga', temperature: 0.22, moisture: 0.82, height: 0.65, baseFormation: 'taiga-mixed' },
@@ -655,7 +662,7 @@ export const REGIONAL_FOREST_TYPES = Object.freeze([
         temp: [0.72, 0.90], moisture: [0.90, 1], height: [0.40, 0.54], priority: 11,
         timber: 0.72, effects: { timber: 0.72, regrowth: 0.88, fire: -0.06, fauna: 1.26, forage: 0.92, work: 0.74, flood: 1.2 },
         species: { palm: 0.28, fig: 0.24, mangrove: 0.2, balsa: 0.16, bamboo: 0.12 },
-        goods: ['river-fish', 'fibre', 'herbs', 'mushrooms', 'timber', 'firewood'],
+        goods: ['river-fish', 'kapok-fibre', 'herbs', 'mushrooms', 'timber', 'firewood'],
         fauna: ['caiman', 'giant-otter', 'river-fish', 'heron', 'frog', 'mosquito', 'crab'],
         render: { canopy: 0.86, height: 0.92, trunk: 0.88, mist: 1.8, palette: ['#2e4638', '#405b48', '#556b55', '#24382e', '#6a7d64'], silhouette: 'blackwater' },
         probe: { climate: 'tropical', temperature: 0.8, moisture: 0.94, height: 0.46, baseFormation: 'tropical-floodplain' },
@@ -668,7 +675,7 @@ export const REGIONAL_FOREST_TYPES = Object.freeze([
         temp: [0.72, 0.90], moisture: [0.78, 0.90], height: [0.40, 0.54], priority: 11.5,
         timber: 0.92, effects: { timber: 0.92, regrowth: 1.26, fire: -0.05, fauna: 1.22, forage: 1.18, work: 0.94, flood: 1.1 },
         species: { kapok: 0.24, fig: 0.22, balsa: 0.18, palm: 0.16, bamboo: 0.12, cacao: 0.08 },
-        goods: ['kapok-fibre', 'cacao', 'river-fish', 'herbs', 'game', 'timber', 'firewood'],
+        goods: ['kapok-fibre', 'cacao-pods', 'river-fish', 'herbs', 'game', 'timber', 'firewood'],
         fauna: ['caiman', 'giant-otter', 'river-fish', 'heron', 'tapir', 'macaw', 'mosquito'],
         render: { canopy: 1.08, height: 1.12, trunk: 1.0, mist: 1.5, palette: ['#33583a', '#4a7148', '#628857', '#28472f', '#7a9b68'], silhouette: 'sediment-fan' },
         probe: { climate: 'tropical', temperature: 0.8, moisture: 0.84, height: 0.46, baseFormation: 'tropical-riverbank' },
@@ -759,7 +766,7 @@ export const REGIONAL_FOREST_TYPES = Object.freeze([
         temp: [0.68, 0.84], moisture: [0.60, 0.72], height: [0.30, 0.48], priority: 10,
         timber: 0.68, effects: { timber: 0.68, regrowth: 1.34, fire: -0.04, fauna: 1.24, forage: 1.3, work: 0.9, flood: 0.35 },
         species: { palm: 0.42, fig: 0.26, acacia: 0.14, tamarisk: 0.12, willow: 0.06 },
-        goods: ['dates', 'figs', 'palm-fronds', 'honey', 'herbs', 'timber', 'firewood'],
+        goods: ['dates', 'figs', 'palm-oil', 'honey', 'herbs', 'timber', 'firewood'],
         fauna: ['camel', 'hare', 'fox', 'raptor', 'songbird', 'bee'],
         render: { canopy: 0.88, height: 1, trunk: 0.9, mist: 0.7, palette: ['#4c6b38', '#657f45', '#7d9454', '#3c562d', '#91a568'], silhouette: 'oasis-fan' },
         probe: { climate: 'savanna', temperature: 0.75, moisture: 0.68, height: 0.38, baseFormation: 'savanna-woodland' },
@@ -772,7 +779,7 @@ export const REGIONAL_FOREST_TYPES = Object.freeze([
         temp: [0.66, 0.82], moisture: [0.72, 0.90], height: [0.72, 0.92], priority: 7,
         timber: 1.12, effects: { timber: 1.12, regrowth: 1.22, fire: 0.02, fauna: 1.16, forage: 1.2, work: 0.96, flood: 0.05 },
         species: { treefern: 0.26, fig: 0.22, laurel: 0.18, cacao: 0.16, balsa: 0.1, bamboo: 0.08 },
-        goods: ['treefern-timber', 'cacao', 'mushrooms', 'herbs', 'game', 'timber', 'firewood'],
+        goods: ['treefern-timber', 'cacao-pods', 'mushrooms', 'herbs', 'game', 'timber', 'firewood'],
         fauna: ['toucan', 'spider-monkey', 'morpho-butterfly', 'beetle', 'frog', 'snake'],
         render: { canopy: 1.16, height: 1.2, trunk: 1.04, mist: 0.9, palette: ['#3f5a36', '#557347', '#6b8957', '#31472c', '#809c68'], silhouette: 'ash-cone' },
         probe: { climate: 'tropical', temperature: 0.76, moisture: 0.80, height: 0.82, baseFormation: 'tropical-montane' },
@@ -987,6 +994,102 @@ export const REGIONAL_FOREST_TYPES = Object.freeze([
     }),
 ]);
 
+// Player-facing character of every regional type: three field marks, one
+// signature good and the season in which that good is at its best. The table
+// is data only. The forest stand, atlas, inspector and gathering action read
+// the same record, so a type cannot promise peat in the atlas and deliver
+// mushrooms in the ledger.
+export const REGIONAL_BOUNTY_SEASONS = Object.freeze(['Spring', 'Summer', 'Autumn', 'Winter']);
+
+const REGIONAL_CHARACTER_DEFS = Object.freeze({
+    'boreal-taiga': { traits: ['long snow cover', 'peat pockets', 'slow regeneration'], signature: 'resin', season: 1 },
+    'temperate-rainforest': { traits: ['year-round rain', 'giant crowns', 'mossy floors'], signature: 'mushrooms', season: 2 },
+    'atlantic-cloud-forest': { traits: ['wind-sheared crowns', 'fog drip', 'lichen-draped bark'], signature: 'moss', season: 0 },
+    'mediterranean-hardleaf': { traits: ['summer drought', 'leathery leaves', 'fire-adapted'], signature: 'bark', season: 1 },
+    'temperate-broadleaf': { traits: ['deep brown earth', 'four full seasons', 'rich mast years'], signature: 'acorns', season: 2 },
+    'pure-beech': { traits: ['smooth grey trunks', 'copper leaf litter', 'open winter light'], signature: 'beechnuts', season: 2 },
+    'oak-hornbeam': { traits: ['coppice stools', 'dense hazel understorey', 'rich loam'], signature: 'hazelnuts', season: 2 },
+    'floodplain': { traits: ['annual floods', 'fresh sediment', 'oxbow pools'], signature: 'willow-withies', season: 3 },
+    'carr-woodland': { traits: ['standing water', 'black mud', 'alder roots'], signature: 'sphagnum', season: 1 },
+    'bog-woodland': { traits: ['deep peat', 'acid water', 'stunted pines'], signature: 'peat', season: 1 },
+    'pine-birch': { traits: ['poor sand', 'heather and lichen', 'fire-prone'], signature: 'birch-sap', season: 0 },
+    'spruce-fir': { traits: ['dark spruce', 'mossy deadwood', 'long snow'], signature: 'resin', season: 1 },
+    'larch-wood': { traits: ['gold autumn needles', 'open light', 'deep roots'], signature: 'larch-cones', season: 2 },
+    'montane-mixed': { traits: ['layered altitudes', 'beech and fir', 'fresh slopes'], signature: 'mushrooms', season: 2 },
+    'subalpine': { traits: ['wind-bent scrub', 'short summer', 'snow load'], signature: 'juniper-berries', season: 2 },
+    'coast-redwood': { traits: ['red giants', 'coastal fog', 'fern understorey'], signature: 'resin', season: 1 },
+    'pacific-rainforest': { traits: ['sitka spruce', 'hemlock shade', 'enormous biomass'], signature: 'lichen', season: 3 },
+    'eucalyptus': { traits: ['smooth pale bark', 'fire regrowth', 'dry summer'], signature: 'honey', season: 1 },
+    'acacia-woodland': { traits: ['flat acacia crowns', 'thorn and gum', 'dry season'], signature: 'gum-arabic', season: 3 },
+    'miombo': { traits: ['brachystegia crowns', 'fire ecology', 'miombo mast'], signature: 'mushrooms', season: 2 },
+    'baobab-woodland': { traits: ['barrel trunks', 'hot dry air', 'marula fruit'], signature: 'baobab-fruit', season: 2 },
+    'thornscrub': { traits: ['dornbusch', 'stony ground', 'thin shade'], signature: 'thorn-branches', season: 1 },
+    'gallery-forest': { traits: ['river corridor', 'fever trees', 'dryland green'], signature: 'river-fish', season: 1 },
+    'mangrove': { traits: ['stilt roots', 'brackish tide', 'coastal shield'], signature: 'shellfish', season: 1 },
+    'bamboo-forest': { traits: ['hollow culms', 'fast rhizomes', 'mass flowering'], signature: 'bamboo-shoots', season: 0 },
+    'teak-forest': { traits: ['large leaves', 'valuable boles', 'monsoon drought'], signature: 'honey', season: 0 },
+    'sal-forest': { traits: ['sal crowns', 'leaf fall', 'fire scars'], signature: 'resin', season: 1 },
+    'dipterocarp': { traits: ['emergent giants', 'buttress roots', 'mast years'], signature: 'rattan', season: 1 },
+    'laurel-forest': { traits: ['leathery laurel', 'cloud belt', 'mossy trunks'], signature: 'herbs', season: 0 },
+    'monsoon-forest': { traits: ['teak and bamboo', 'monsoon rhythm', 'leaf flush'], signature: 'bamboo', season: 1 },
+    'coastal-fog-forest': { traits: ['salt-laden fog', 'wind-sheared crowns', 'mossy bark'], signature: 'moss', season: 0 },
+    'mountain-cloud-forest': { traits: ['cloud forest', 'short mossy trunks', 'tree ferns'], signature: 'lichen', season: 3 },
+    'lowland-dipterocarp': { traits: ['giant emergents', 'closed dark canopy', 'dipterocarp mast'], signature: 'rattan', season: 1 },
+    'peat-wood': { traits: ['deep peat', 'very slow decay', 'black water'], signature: 'peat', season: 1 },
+    'blackwater-floodplain': { traits: ['tea-brown water', 'nutrient-poor', 'flood pulse'], signature: 'river-fish', season: 1 },
+    'whitewater-floodplain': { traits: ['rich sediment', 'fast growth', 'white water'], signature: 'cacao-pods', season: 2 },
+    'delta-mangrove': { traits: ['braided channels', 'brackish tide', 'mud banks'], signature: 'crab', season: 1 },
+    'lagoon-mangrove': { traits: ['calm lagoon', 'tidal flooding', 'salt pans behind'], signature: 'shellfish', season: 1 },
+    'cold-slope-forest': { traits: ['cool north slope', 'deep moss', 'late snow'], signature: 'mushrooms', season: 2 },
+    'rain-shadow-forest': { traits: ['little rain', 'open pine', 'dry ridges'], signature: 'juniper-berries', season: 2 },
+    'steppe-wood': { traits: ['grass between trunks', 'woodland edge', 'parkland'], signature: 'hazelnuts', season: 2 },
+    'semi-desert-island': { traits: ['isolated wet island', 'arid surround', 'fragile cover'], signature: 'gum-arabic', season: 1 },
+    'oasis-wood': { traits: ['groundwater', 'date palms', 'shade in dryland'], signature: 'dates', season: 1 },
+    'volcanic-ash-forest': { traits: ['young ash soil', 'very fertile', 'fast juvenile growth'], signature: 'cacao-pods', season: 2 },
+    'serpentine-forest': { traits: ['toxic metals', 'stunted endemics', 'bare rock'], signature: 'serpentine-stone', season: 1 },
+    'limestone-karst-forest': { traits: ['karst and caves', 'thin soil', 'hidden water'], signature: 'limestone', season: 1 },
+    'dune-pine-forest': { traits: ['moving dunes', 'deep pine roots', 'brittle grass'], signature: 'dune-grass', season: 1 },
+    'salt-soil-forest': { traits: ['saline soil', 'halophile trees', 'sparse herbs'], signature: 'salt', season: 1 },
+    'gravel-floodplain': { traits: ['gravel bars', 'shifting water', 'narrow riparian belt'], signature: 'river-fish', season: 0 },
+    'loess-forest': { traits: ['wind-blown loess', 'deep fertile soil', 'fast youth growth'], signature: 'hazelnuts', season: 2 },
+    'clay-oak-forest': { traits: ['heavy clay', 'winter waterlogging', 'summer cracking'], signature: 'clay', season: 1 },
+    'bog-birch': { traits: ['bog edge', 'crooked birches', 'high water table'], signature: 'cloudberry', season: 1 },
+    'alder-carr': { traits: ['alder carr', 'black silt', 'open water holes'], signature: 'sphagnum', season: 1 },
+    'willow-grove': { traits: ['low willow bank', 'flexible rods', 'fast coppice'], signature: 'willow-withies', season: 3 },
+    'ash-elm-floodplain': { traits: ['great river plain', 'tall ash and elm', 'long flood rhythm'], signature: 'mushrooms', season: 2 },
+    'poplar-wood': { traits: ['fast juvenile growth', 'slender boles', 'fresh alluvium'], signature: 'honey', season: 1 },
+    'hazel-scrub-wood': { traits: ['multi-stemmed hazel', 'bright understorey', 'nut harvest'], signature: 'hazelnuts', season: 2 },
+    'juniper-heath-wood': { traits: ['open heath', 'scattered tree islands', 'grazed and burned'], signature: 'juniper-berries', season: 2 },
+    'dwarf-pine-krummholz': { traits: ['wind-shaped krummholz', 'low tangled crowns', 'treeline'], signature: 'juniper-berries', season: 2 },
+    'treeline-pioneer-forest': { traits: ['tough pioneers', 'slow growth', 'wind and frost'], signature: 'rowan-berries', season: 2 },
+});
+
+export const REGIONAL_FOREST_CHARACTER = Object.freeze(Object.fromEntries(
+    Object.entries(REGIONAL_CHARACTER_DEFS).map(([key, def]) => [key, Object.freeze({
+        key,
+        traits: Object.freeze([...def.traits]),
+        signature: def.signature,
+        season: def.season,
+        seasonLabel: REGIONAL_BOUNTY_SEASONS[def.season] || 'Autumn',
+    })])
+));
+
+const CHARACTER_CACHE = new Map();
+export function regionalCharacterFor(typeOrKey) {
+    const key = typeof typeOrKey === 'string' ? typeOrKey : typeOrKey?.key;
+    if (!key) return null;
+    if (CHARACTER_CACHE.has(key)) return CHARACTER_CACHE.get(key);
+    const base = REGIONAL_FOREST_CHARACTER[key] || null;
+    // The catalogue is frozen, so an incomplete character table must degrade
+    // to a readable field mark instead of inventing a good the ledger cannot
+    // deliver. The tests require every shipped type to have an explicit entry.
+    const value = base ? Object.freeze({ ...base }) : Object.freeze({
+        key, traits: Object.freeze(['regional woodland']), signature: null, season: 2, seasonLabel: 'Autumn',
+    });
+    CHARACTER_CACHE.set(key, value);
+    return value;
+}
+
 // Every regional species names one physical timber good. The economy uses the
 // same record for its warehouse label, its sawmill batch and its market quote,
 // so a redwood beam cannot drift into a different price on another screen.
@@ -1126,17 +1229,27 @@ function fallbackType(ctx) {
     return REGIONAL_FOREST_TYPE_BY_KEY['temperate-broadleaf'];
 }
 
+// How close a site sits to the edge of a type's own temperature/moisture/
+// height window. Zero means the site is on a boundary, one means dead centre.
+// This is the only extra arithmetic the transition belt needs.
+function siteEdgeProximity(type, ctx) {
+    let edge = 1;
+    for (const [value, range] of [
+        [ctx.temperature, type.temp], [ctx.moisture, type.moisture], [ctx.height, type.height],
+    ]) {
+        const span = Math.max(0.001, range[1] - range[0]);
+        edge = Math.min(edge, Math.min(value - range[0], range[1] - value) / span);
+    }
+    return clamp01(edge);
+}
+
 // O(1) selector over the frozen catalogue. No neighbour scan, no allocation
 // beyond the small context object, and no random state outside the seed.
-export function regionalForestTypeFor({ x = 0, y = 0, seed = 1, moisture = 0.55, temperature = 0.55,
-    height = 0.45, climate = 'temperate', baseFormation = null, stockRatio = 1 } = {}) {
-    if (!baseFormation) return null;
-    const ctx = {
-        x: Number(x) || 0, y: Number(y) || 0, seed: Number(seed) || 1,
-        moisture: clamp01(moisture), temperature: clamp01(temperature), height: clamp01(height),
-        climate: String(climate || 'temperate'), baseFormation, stockRatio: clamp01(stockRatio),
-    };
-    let best = null, bestScore = -Infinity;
+// The second return value is the transition neighbour: a type that also fits
+// the site and becomes visible when the site sits near the primary's range
+// edge. It is a real ecological boundary, not a random second label.
+function selectRegionalForest(ctx) {
+    let best = null, bestScore = -Infinity, second = null, secondScore = -Infinity;
     for (const type of REGIONAL_FOREST_TYPES) {
         if (!matchesSite(type, ctx)) continue;
         // The priority encodes the hard ecological ordering (mangrove before
@@ -1145,9 +1258,40 @@ export function regionalForestTypeFor({ x = 0, y = 0, seed = 1, moisture = 0.55,
         // the result read as a region rather than per-tile noise.
         const patch = coarseUnit(ctx.seed, ctx.x, ctx.y, 7, type.key.length * 37 + type.id.charCodeAt(type.id.length - 1));
         const score = (Number(type.priority) || 0) * 100 + patch;
-        if (score > bestScore) { best = type; bestScore = score; }
+        if (score > bestScore) {
+            second = best; secondScore = bestScore;
+            best = type; bestScore = score;
+        } else if (score > secondScore) {
+            second = type; secondScore = score;
+        }
     }
-    return best || fallbackType(ctx);
+    const primary = best || fallbackType(ctx);
+    let secondary = null, share = 0;
+    if (best && second && second.id !== best.id) {
+        const edge = siteEdgeProximity(best, ctx);
+        if (edge < 0.16) {
+            // A boundary stand is a blend, never a third type: the primary
+            // still owns the tile and every resource/save contract, while the
+            // neighbour contributes up to half of the field character.
+            const blend = Math.round(clamp01(1 - edge / 0.16) * 100) / 200;
+            if (blend >= 0.06) { secondary = second; share = blend; }
+        }
+    }
+    return { primary, secondary, share };
+}
+
+export function regionalForestSelectionFor({ x = 0, y = 0, seed = 1, moisture = 0.55, temperature = 0.55,
+    height = 0.45, climate = 'temperate', baseFormation = null, stockRatio = 1 } = {}) {
+    if (!baseFormation) return { primary: null, secondary: null, share: 0 };
+    return selectRegionalForest({
+        x: Number(x) || 0, y: Number(y) || 0, seed: Number(seed) || 1,
+        moisture: clamp01(moisture), temperature: clamp01(temperature), height: clamp01(height),
+        climate: String(climate || 'temperate'), baseFormation, stockRatio: clamp01(stockRatio),
+    });
+}
+
+export function regionalForestTypeFor(context = {}) {
+    return regionalForestSelectionFor(context).primary;
 }
 
 export const REGIONAL_FORESTS_TEST_SITES = Object.freeze(REGIONAL_FOREST_TYPES.map(type => Object.freeze({

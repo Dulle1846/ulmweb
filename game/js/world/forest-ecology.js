@@ -25,7 +25,9 @@ import { SWAMP_GOODS } from './swamp-ecology.js';
 import { MOUNTAIN_GOODS } from './mountain-ecology.js';
 import { VOLCANO_GOODS } from './volcano-ecology.js';
 import { COAST_GOODS } from './coast-ecology.js';
-import { REGIONAL_GOODS, REGIONAL_SPECIES, regionalForestTypeFor } from './regional-forests.js';
+import {
+    REGIONAL_GOODS, REGIONAL_SPECIES, regionalCharacterFor, regionalForestSelectionFor,
+} from './regional-forests.js';
 
 const clamp01 = value => Math.max(0, Math.min(1, value));
 const fract = value => value - Math.floor(value);
@@ -1142,11 +1144,24 @@ export function forestStandAt(x, y, context = {}) {
     // The regional layer is selected from the same site factors as the base
     // formation and attached before disturbance/age are applied. A forest tile
     // therefore always has exactly one regional type, even when its visible
-    // formation is a burn scar or a windthrow gap.
-    const regionalType = forest ? regionalForestTypeFor({
+    // formation is a burn scar or a windthrow gap. Near a range edge the same
+    // selection also names the neighbouring type as a transition blend; the
+    // primary still owns every resource and save contract.
+    const regionalSelection = forest ? regionalForestSelectionFor({
         x: tx, y: ty, seed, moisture, temperature, height, climate,
         baseFormation: baseFormation.id, stockRatio,
     }) : null;
+    const regionalType = regionalSelection?.primary || null;
+    const regionalNeighbour = regionalSelection?.secondary || null;
+    const regionalTransition = regionalNeighbour ? Object.freeze({
+        id: regionalNeighbour.id,
+        key: regionalNeighbour.key,
+        label: regionalNeighbour.label,
+        short: regionalNeighbour.short || regionalNeighbour.label,
+        share: regionalSelection.share,
+        render: regionalNeighbour.render,
+    }) : null;
+    const regionalCharacter = regionalType ? regionalCharacterFor(regionalType) : null;
     const climaxFormation = regionalType ? regionalFormationFor(baseFormation, regionalType) : baseFormation;
     let formation = climaxFormation;
     let disturbance = formation.disturbance;
@@ -1353,6 +1368,7 @@ export function forestStandAt(x, y, context = {}) {
     // hydrology grid.
     const wetness = clamp01((moisture - 0.48) * 1.35 + (formation.id === 'wet-conifer' ? 0.2 : 0)
         + (formation.id === 'alluvial' ? 0.12 : 0)
+        + Math.max(0, Number(regionalType?.effects.flood) || 0) * 0.08
         + (tropical ? tropical.water.pools * 0.24 + tropical.water.temporaryFloods * 0.18 : 0));
     const windExposure = clamp01(exposure * 0.72 + (height > 0.76 ? 0.16 : 0) + (formation.id === 'subalpine-scrub' ? 0.12 : 0));
     const treeline = formation.id === 'subalpine-scrub' || (height > 0.88 && temperature < 0.48);
@@ -1522,7 +1538,10 @@ export function forestStandAt(x, y, context = {}) {
         edge: ecotone,
         score: clamp01((formation.fauna.length / 10 * 0.34 + speciesDiversity * 0.24
             + structure.deadwood * 0.16 + (ecotone ? 0.1 : 0) + foodPlants.length / 8 * 0.16)
-            * (regionalType?.effects.fauna || 1)),
+            * (regionalType?.effects.fauna || 1)
+            // An ecotone carries species from both sides. The blend share is
+            // bounded to 0.5, so the bonus never exceeds six percent.
+            * (1 + (regionalTransition?.share || 0) * 0.12)),
     };
     const derived = formationDerived(formation, meta, ageClass, disturbance);
     const { silviculture, woodQuality } = derived;
@@ -1569,6 +1588,18 @@ export function forestStandAt(x, y, context = {}) {
         regionalEffects: regionalType?.effects || null,
         regionalRender: regionalType?.render || null,
         regionalSilhouette: regionalType?.render?.silhouette || null,
+        // Player-facing field marks, signature good and its best season. The
+        // atlas, inspector and gathering action all read this same record.
+        regionalCharacter,
+        regionalSignature: regionalCharacter?.signature || null,
+        regionalSignatureLabel: regionalCharacter?.signature
+            ? (FOREST_GOODS[regionalCharacter.signature]?.label || regionalCharacter.signature)
+            : null,
+        regionalBountySeason: regionalCharacter?.season ?? null,
+        regionalTransition,
+        regionalTransitionId: regionalTransition?.id || null,
+        regionalTransitionLabel: regionalTransition?.label || null,
+        regionalTransitionShare: regionalTransition?.share || 0,
         label: succession?.label || standLabel,
         subtype: lindenElm,
         note: formation.note,

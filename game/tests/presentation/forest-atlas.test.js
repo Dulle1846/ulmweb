@@ -37,6 +37,8 @@ test("the atlas surveys a bounded, deterministic sample of the realm's forest ti
     assert.equal(counted, first.sampled);
     assert.equal(first.types.length, 60);
     assert.ok(first.present >= 1);
+    assert.ok(Number.isInteger(first.transitionSamples) && first.transitionSamples >= 0);
+    assert.equal(first.types.reduce((sum, type) => sum + type.transitionCount, 0), first.transitionSamples);
     assert.equal(forestAtlasSurvey(60), first, "a cached survey is reused inside the same window");
 });
 
@@ -55,6 +57,12 @@ test("the rendered atlas lists all 60 types, their effects and their signature t
     assert.match(markup, /Regrowth/);
     assert.match(markup, /Wildlife/);
     assert.match(markup, /Forage/);
+    assert.match(markup, /SIGNATURE/);
+    assert.match(markup, /bounty/);
+    assert.match(markup, /TRANSITION EDGES/);
+    assert.match(markup, /long snow cover/);
+    assert.match(markup, /Moss/);
+    assert.match(markup, /Dune Grass/);
 });
 
 test("a realm without resource geography shows an honest empty atlas", () => {

@@ -13,8 +13,8 @@ import {
     requestSupply, requestTimberSupply, requestHaul, getBuildingSupplyReason, outputSpace, recordGoodMovement,
     findLocalWarehouse, consumeFromWarehouse
 } from "../systems/logistics.js";
-import { REGIONAL_FOREST_TYPE_BY_ID, regionalTimberGood, signatureTimberForRegionalType } from "../world/regional-forests.js";
-import { findNearestResourceNode, getResourceNodeAt, harvestForest, extractStone } from "../systems/resource-geography.js";
+import { regionalTimberGood, signatureTimberForRegionalType } from "../world/regional-forests.js";
+import { findNearestResourceNode, getForestHabitatAt, harvestForest, extractStone } from "../systems/resource-geography.js";
 import { getHazardExtractionFactor } from "../systems/hazard-modifiers.js";
 
 import { recordResourceMovement } from "../systems/goods-book.js";
@@ -47,6 +47,26 @@ const stockTargetList = {
     logs: 80, planks: 60, firewood: 50, stoneBlocks: 60, cutStone: 60,
     water: 40, grain: 120, flour: 40, ale: 40
 };
+// A regional type and its effects depend on the tile, seed, climate and base
+// formation, never on the current stock. Cache that immutable subset so a
+// lumber camp does not rebuild a full forest stand after every harvest batch.
+// The cache is bounded and keyed by the world seed; camp sites are static.
+const REGIONAL_SITE_CACHE = new Map();
+const REGIONAL_SITE_CACHE_LIMIT = 4096;
+function regionalForestAt(x, y) {
+    const key = (Number(state.worldSeed) || 1) + ":" + Math.floor(x) + ":" + Math.floor(y);
+    const cached = REGIONAL_SITE_CACHE.get(key);
+    if (cached !== undefined) return cached;
+    const habitat = getForestHabitatAt(Math.floor(x), Math.floor(y));
+    const stand = habitat?.forestStand || null;
+    const value = stand ? Object.freeze({
+        effects: stand.regionalEffects || null,
+        type: stand.regionalType || null,
+    }) : null;
+    if (REGIONAL_SITE_CACHE.size >= REGIONAL_SITE_CACHE_LIMIT) REGIONAL_SITE_CACHE.clear();
+    REGIONAL_SITE_CACHE.set(key, value);
+    return value;
+}
 for (const good of REGIONAL_TIMBER_KEYS) stockTargetList[good] = 18;
 const STOCK_TARGETS = Object.freeze(stockTargetList);
 
@@ -264,20 +284,23 @@ function produceRecipe(building, workforce, production, knownEfficiency = null, 
             return;
         }
         if (recipe.site === "forest") {
-            // Weather sets how much timber a crew can actually bring out.
-            const batch = Math.max(1, Math.round(recipe.batch * extractionFactor));
+            // Weather and the regional type both set how much timber a crew can
+            // actually bring out. The habitat cache keeps this a map lookup for
+            // an unchanged stand; it is the same full node fauna already uses.
+            const regionalSite = regionalForestAt(node.x, node.y);
+            const regionalTimber = Math.max(0.7, Math.min(1.35, Number(regionalSite?.effects?.timber) || 1));
+            const batch = Math.max(1, Math.round(recipe.batch * extractionFactor * regionalTimber));
             const taken = harvestForest(node.x, node.y, batch);
             if (taken <= 0) { building.productionReason = "Forest stand is depleted"; return; }
             finishOutput(building, { logs: taken }, production);
             // A regional stand yields its signature timber beside the log
-            // batch. One unit every fifth batch keeps the specialty chain fed
+            // batch. One unit every few batches keeps the specialty chain fed
             // without displacing the ordinary logs that construction needs.
-            // The full site node is read only on that cadence: the cheap
-            // nearest-node search does not carry the regional survey fields.
+            // Dense timbers earn a shorter cadence, soft pioneers a longer one.
+            const cadence = regionalTimber >= 1.15 ? 4 : regionalTimber <= 0.8 ? 6 : 5;
             if (outputSpace(building) > 0
-                && ((Math.floor(state.tick / PRODUCTION_INTERVAL) + Math.floor(node.x) * 7 + Math.floor(node.y) * 13) % 5 === 0)) {
-                const site = getResourceNodeAt(node.x, node.y);
-                const regionalType = site?.forestRegionalType ? REGIONAL_FOREST_TYPE_BY_ID[site.forestRegionalType] : null;
+                && ((Math.floor(state.tick / PRODUCTION_INTERVAL) + Math.floor(node.x) * 7 + Math.floor(node.y) * 13) % cadence === 0)) {
+                const regionalType = regionalSite?.type || null;
                 const signature = signatureTimberForRegionalType(regionalType);
                 if (signature && getPhysicalStock(signature.id) < (STOCK_TARGETS[signature.id] || 18)) {
                     finishOutput(building, { [signature.id]: 1 }, production);

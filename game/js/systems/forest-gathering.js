@@ -61,7 +61,7 @@ const FOOD_DELIVERY = Object.freeze(new Set([
     "mushrooms", "chanterelle", "porcini", "wild-garlic", "wood-sorrel", "wild-strawberry",
     "sloes", "crab-apples", "berries", "truffles", "honey", "maple-syrup", "birch-sap",
     "game", "cured-game", "blueberries", "lingonberries", "rowan-berries", "elderberries", "hazelnuts",
-    "orchard-fruit", "dates", "cloudberry", "crowberry", "arctic-char", "lake-fish",
+    "orchard-fruit", "dates", "cloudberry", "crowberry", "arctic-char", "lake-fish", "crab",
 ]));
 const GOLD_DELIVERY = Object.freeze(new Set([
     "fur", "hides", "tanned-fur", "cured-hides", "resin", "beeswax", "herbs", "lichen",
@@ -70,6 +70,7 @@ const GOLD_DELIVERY = Object.freeze(new Set([
     "hay", "meadow-grass", "wildflowers", "reed", "turf", "salt", "wool",
     "desert-sand", "desert-stone", "gemstones", "copper-ore", "desert-fibre", "desert-resin", "archaeological-find",
     "antler", "bone", "peat", "soapstone", "bog-iron", "qiviut", "larch-cones", "birch-bark",
+    "dune-grass", "serpentine-stone",
 ]));
 const TROPICAL_GOLD_HUNT = Object.freeze(new Set(["hides", "feathers"]));
 
@@ -197,8 +198,17 @@ export function forestProductsAt(x, y, dayOfYear = state.dayOfYear) {
         dayOfYear: day, climate, height: terrainHeight, moisture, temperature,
         stand, use: grasslandUseAt(x, y),
     });
-    const workFactor = clamp(1 - snow.depth * 0.38 - (1 - (Number(stand.visibility) || 0)) * 0.12
-        - tropicalPenalty * 0.55 - junglePenalty * 0.22, 0.3, 1);
+    // The regional work effect is a real labour cost, not a panel number. It
+    // now shapes the same visit that gathering actually performs; before this,
+    // only the inspector's node applied it and the gather path bypassed it.
+    const regionalWork = clamp(number(stand.regionalEffects?.work, 1), 0.7, 1.15);
+    const workFactor = clamp((1 - snow.depth * 0.38 - (1 - (Number(stand.visibility) || 0)) * 0.12
+        - tropicalPenalty * 0.55 - junglePenalty * 0.22) * regionalWork, 0.3, 1);
+    // Flood-prone stands spoil their perishable harvest faster. The effect is
+    // capped and only applies to the bounded gather visit, never to stored
+    // warehouse goods.
+    const floodRisk = Math.max(0, number(stand.regionalEffects?.flood, 0));
+    const spoilageRisk = clamp(number(stand.tropical?.hazard?.spoilage, 0) + floodRisk * 0.12, 0, 0.9);
     return {
         x: Math.floor(x), y: Math.floor(y), node, stand,
         snowDepthCm: snow.cm,
@@ -216,7 +226,7 @@ export function forestProductsAt(x, y, dayOfYear = state.dayOfYear) {
         jungle: stand.jungle || null,
         jungleNavigation: stand.jungle?.navigation || null,
         landUse: stand.tropical?.landUse || null,
-        spoilageRisk: stand.tropical?.hazard?.spoilage || 0,
+        spoilageRisk,
         goods: forestGoodsFor(stand, day, climate),
     };
 }
@@ -331,11 +341,34 @@ export function gatherForestProducts(x, y, options = {}) {
     const ecotoneFactor = ecotoneGatherFactor(products.x, products.y, "forest");
     const vegetationFactor = clamp(number(products.vegetation?.yield, 1), 0.74, 1.12);
     const huntFactor = clamp(number(products.huntFactor, 1), 0.76, 1.06);
+    // Regional effects now price the actual harvest: timber for wood, forage
+    // for everything else, and a small ecotone bonus where two type windows
+    // overlap. All values are bounded so a single type cannot dominate the
+    // ledger.
+    const regionalEffects = products.stand.regionalEffects || {};
+    const forageFactor = clamp(number(regionalEffects.forage, 1), 0.75, 1.35);
+    const timberFactor = clamp(number(regionalEffects.timber, 1), 0.7, 1.35);
+    const transitionFactor = 1 + clamp(number(products.stand.regionalTransitionShare, 0), 0, 0.5) * 0.12;
+    const character = products.stand.regionalCharacter || null;
+    const signature = character?.signature || null;
+    const bountyActive = Boolean(signature)
+        && Math.floor(Number(character.season) || 0) === Math.max(0, Math.min(3, Math.floor(Number(state.seasonIndex) || 0)));
+    // A signature good is part of the field character, so it must be offered
+    // even when the generic five-slot selection would omit it.
+    if (signature && FOREST_GOODS[signature] && products.goods.some(good => good.id === signature)
+        && !candidates.some(good => good.id === signature)) {
+        candidates.push({ ...FOREST_GOODS[signature], abundance: 0.4 });
+    }
+    const bounty = bountyActive && signature
+        ? { good: signature, label: FOREST_GOODS[signature]?.label || signature, season: character.seasonLabel, amount: 0 }
+        : null;
     for (const good of candidates) {
         // Timber keeps the historical stock contract; the local density shapes
         // the gathered plant/food abundance and the distinct hunting factor.
         const densityYield = good.category === "wood" ? 1 : vegetationFactor;
-        let amount = Math.max(1, Math.round((1 + good.abundance * 3) * workFactor * ecotoneFactor * densityYield));
+        const regionalYield = good.category === "wood" ? timberFactor : forageFactor * transitionFactor;
+        let amount = Math.max(1, Math.round((1 + good.abundance * 3) * workFactor * ecotoneFactor * densityYield * regionalYield));
+        if (bounty && good.id === signature) { amount += 1; bounty.amount += 1; }
         const perishable = good.category === "gather" || good.category === "hunt";
         const spoiled = perishable ? Math.min(amount, Math.floor(amount * spoilage * 0.35)) : 0;
         if (spoiled > 0) { amount -= spoiled; spoiledTotal += spoiled; }
@@ -374,6 +407,14 @@ export function gatherForestProducts(x, y, options = {}) {
         hunt: hunt ? { species: hunt.species, label: hunt.label, taken: hunt.taken, quality: hunt.quality } : null,
         workFactor,
         ecotoneFactor,
+        regional: {
+            forage: forageFactor,
+            timber: timberFactor,
+            work: clamp(number(regionalEffects.work, 1), 0.7, 1.15),
+            transition: clamp(number(products.stand.regionalTransitionShare, 0), 0, 0.5),
+            transitionLabel: products.stand.regionalTransitionLabel || null,
+        },
+        bounty: bounty && bounty.amount > 0 ? bounty : null,
         vegetation: {
             density: products.vegetation?.density,
             band: products.vegetation?.band,
@@ -1170,7 +1211,10 @@ export function thinNearestForest(building, radius = 6) {
     const { node, point, stockBefore } = availability;
     const space = outputSpace(building);
     if (space <= 0) return { ok: false, reason: "The lumber yard's output store is full" };
-    const wanted = Math.max(1, Math.min(12, Math.floor(stockBefore * 0.12), space));
+    // A high-timber stand gives more usable stems from the same thinning. The
+    // regional effect is bounded and the 12-unit ceiling is unchanged.
+    const timberFactor = Math.max(0.7, Math.min(1.35, Number(point.forestRegionalEffects?.timber) || 1));
+    const wanted = Math.max(1, Math.min(12, Math.floor(stockBefore * 0.12 * timberFactor), space));
     const taken = harvestForest(node.x, node.y, wanted);
     if (taken <= 0) return { ok: false, reason: "The nearest stand could not be thinned" };
     const accepted = addLocalOutput(building, "logs", taken, { cause: "forest-thinning" });
