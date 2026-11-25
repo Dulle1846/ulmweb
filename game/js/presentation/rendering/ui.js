@@ -9,6 +9,7 @@ import { getSovereign } from "../../systems/royal-dynasty.js";
 import { getAmbitionSnapshot } from "../../systems/ambitions.js";
 import { getCoreCounsel } from "../core-counsel.js";
 import { getFirstSessionSnapshot } from "../first-session.js";
+import { getRealmWarningSnapshot } from "../realm-warning-snapshot.js";
 import { renderStatisticsExplorer } from "../statistics-panel.js";
 import { renderWinterHud } from "../winter-panel.js";
 import { getEndlessSnapshot } from "../../systems/endless.js";
@@ -70,14 +71,24 @@ function renderTopStatus(){
     const debt=Math.max(0,Number(state.economy?.debt)||0);
     const settlement=delta===null?"TREASURY · AWAITING LEDGER":"TREASURY "+(delta>=0?"+":"")+Math.round(delta)+" · LAST SETTLEMENT";
     setText("treasury-trend",debt>0?settlement+" · DEBT "+Math.round(debt)+"G":settlement);
-    const warnings=(state.activeEvent&&!state.activeEvent.dismissed?1:0)+(state.health?.outbreakActive?1:0)+(state.raidActive?1:0);
-    setText("warning-count",String(warnings));
+    const warnings=getRealmWarningSnapshot();
+    setText("warning-count",String(warnings.count));
     const warning=document.getElementById("warning-inbox-btn");
     if(warning){
-        warning.classList.toggle("has-warning",warnings>0);
-        setAttr(warning,"aria-label",warnings+" open warning"+(warnings===1?"":"s"));
-        const warningTitle=warnings?warnings+" realm warning"+(warnings===1?"":"s")+" need attention":"No realm warnings are open";
+        warning.classList.toggle("has-warning",warnings.count>0);
+        // Screen readers need the concrete issue, not only its category. The
+        // read model already bounds every detail to DETAIL_LIMIT, so mirroring
+        // its summary here stays small and matches the visible tooltip.
+        const label=warnings.count
+            ?warnings.count+" open warning"+(warnings.count===1?"":"s")+": "+warnings.summary
+            :"No realm warnings are open";
+        setAttr(warning,"aria-label",label);
+        const warningTitle=warnings.count?warnings.summary:"No realm warnings are open";
         if(warning.title!==warningTitle)warning.title=warningTitle;
+        const target=warnings.primary?.panel||"chronicle";
+        if(warning.dataset.kacPanel!==target)warning.dataset.kacPanel=target;
+        if(warnings.primary?.buildCategory)setAttr(warning,"data-kac-build-category",warnings.primary.buildCategory);
+        else warning.removeAttribute("data-kac-build-category");
     }
 }
 function roomEffectValue(value){

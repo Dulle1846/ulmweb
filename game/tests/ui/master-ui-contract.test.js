@@ -130,6 +130,8 @@ test("the sovereign banner exposes identity, treasury trend and a live warning i
   assert.ok(ui.includes("renderTopStatus"));
   assert.ok(ui.includes("state.economy?.history"));
   assert.ok(ui.includes("warning-count"));
+  assert.ok(ui.includes("getRealmWarningSnapshot"));
+  assert.ok(ui.includes("data-kac-build-category"));
   assert.ok(dossier.includes("ruler-dossier-btn"));
   assert.ok(hud.includes(".ruler-status"));
   assert.ok(hud.includes(".warning-inbox"));

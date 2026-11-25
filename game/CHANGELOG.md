@@ -220,6 +220,16 @@ silviculture were labels rather than stand properties. This release adds points
   no new save field or per-tick work is added. A real-browser check damages a
   wall and a house, repairs the house from its row, clears the remainder with
   the bulk order, and verifies both advertised bills against the live resources.
+- **A living warning badge.** The top-bar WARNINGS count now derives from one
+  bounded read model: unresolved or deferred realm issues, outbreaks, raids,
+  damaged structures, worn roads, active hazards and food/debt distress are each
+  one source, with the exact label and count in the tooltip and screen-reader
+  name. The badge opens the panel that can actually fix the highest-priority
+  warning — Chronicle for realm issues, Buildings, Build/Roads, Hazards or
+  Economy — instead of always falling through to a fixed destination. Road
+  condition is cached by its existing
+  revision and annual survey year, and the whole model runs only on the existing
+  throttled HUD cadence; no save field, tick work or version string changed.
 
 **Verification (2026-11-25):** focused forest, pressure, regional, mixed,
 conifer, gathering, atlas and new dynamics suites pass 48/48; the full
