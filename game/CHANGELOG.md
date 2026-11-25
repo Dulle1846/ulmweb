@@ -135,6 +135,18 @@ the ten visible in a sample.
   during normalization, before validation, and preserves the rest of the realm;
   no schema or save field was added.
 
+- **The first card teaches its two real actions.** NEXT MOVE no longer falls
+  silent after the first draw: it first says that drawing did not select a card,
+  then—only after the player explicitly selects one—says to drag it onto a valid
+  map tile or tap a tile on touch controls. The action opens the existing Cards
+  panel; no card is armed or played by the counsel, and the checklist marker
+  stays on the next unfinished milestone.
+- **The completed first session has a next chapter.** Instead of a static
+  "ready for its next chapter" sentence, the completion line now reads the live
+  scenario objective with its progress and deadline, or the next measured royal
+  ambition in a free realm. It is the same bounded counsel read model; no new
+  progression track or save field was added.
+
 ## 3.60.0 — Every forest profile now has a job
 
 The 30-point forest record is no longer only a survey. It resolves into one

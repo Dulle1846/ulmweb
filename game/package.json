@@ -47,6 +47,7 @@
     "test:first-session-guidance": "node tests/browser/first-session-guidance.mjs",
     "test:founding-autosave": "node tests/browser/founding-autosave.mjs",
     "test:first-hour-clarity": "node tests/browser/first-hour-clarity.mjs",
+    "test:next-chapter-guidance": "node tests/browser/next-chapter-guidance.mjs",
     "test:goods-shortage-board": "node tests/browser/goods-shortage-board.mjs",
     "test:road-condition": "node tests/browser/road-condition.mjs",
     "test:building-repair": "node tests/browser/building-repair-ui.mjs",

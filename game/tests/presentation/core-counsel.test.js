@@ -1,6 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { TYPE } from "../../js/core/types.js";
+import { resetState, state } from "../../js/core/state.js";
+import { applyScenarioStart, SCENARIO_PRESETS } from "../../js/systems/scenario.js";
 import { getCoreCounsel } from "../../js/presentation/core-counsel.js";
 
 function realm(overrides = {}) {
@@ -126,4 +128,95 @@ test("core counsel does not recommend a step before the realm is founded", () =>
     const counsel = getCoreCounsel({ hasStarted: false });
     assert.equal(counsel.id, "found");
     assert.equal(counsel.panel, null);
+});
+
+test("core counsel teaches the first drawn card to be selected without auto-selecting it", () => {
+    const before = realm({
+        statistics: { totalRoadTilesBuilt: 12, totalCardsDrawn: 1 },
+        hand: [{ instanceId: "card-1", name: "Cottage" }]
+    });
+    const snapshot = JSON.stringify(before);
+    const counsel = getCoreCounsel(before);
+    assert.equal(counsel.id, "card-select");
+    assert.equal(counsel.stepId, "ambition");
+    assert.equal(counsel.panel, "cards");
+    assert.equal(counsel.actionLabel, "OPEN CARDS");
+    assert.match(counsel.text, /select it before you place it/i);
+    assert.match(counsel.evidence, /Hand 1 card · no card selected/);
+    assert.equal(JSON.stringify(before), snapshot, "counsel must not arm or mutate the card");
+});
+
+test("core counsel teaches placement of an explicitly selected card without playing it", () => {
+    const before = realm({
+        statistics: { totalRoadTilesBuilt: 12, totalCardsDrawn: 1 },
+        hand: [{ instanceId: "card-1", name: "Cottage" }],
+        currentCard: { instanceId: "card-1", name: "Cottage" },
+        selectedCardInstanceId: "card-1"
+    });
+    const snapshot = JSON.stringify(before);
+    const counsel = getCoreCounsel(before);
+    assert.equal(counsel.id, "card-play");
+    assert.equal(counsel.stepId, "ambition");
+    assert.equal(counsel.panel, "cards");
+    assert.equal(counsel.actionLabel, "REVIEW CARDS");
+    assert.match(counsel.text, /drag it onto a valid map tile/i);
+    assert.match(counsel.text, /tap a tile on touch controls/i);
+    assert.match(counsel.evidence, /Selected: Cottage/);
+    assert.equal(JSON.stringify(before), snapshot, "counsel must not play the armed card");
+});
+
+test("core counsel stops first-card teaching after the card leaves the hand", () => {
+    const counsel = getCoreCounsel(realm({
+        statistics: { totalRoadTilesBuilt: 12, totalCardsDrawn: 2 },
+        hand: [{ instanceId: "card-2", name: "Cottage" }]
+    }));
+    assert.notEqual(counsel.id, "card-select");
+    assert.notEqual(counsel.id, "card-play");
+});
+
+test("core counsel keeps the checklist target valid after the first drawn card is played", () => {
+    const counsel = getCoreCounsel(realm({
+        statistics: { totalRoadTilesBuilt: 12, totalCardsDrawn: 1 },
+        hand: []
+    }));
+    assert.equal(counsel.id, "cards");
+    assert.equal(counsel.stepId, "ambition");
+});
+
+test("core counsel continues an authored scenario after the first five steps", () => {
+    resetState();
+    try {
+        state.hasStarted = true;
+        state.entities = [{ dead: false, type: TYPE.HOUSE }];
+        state.statistics.totalRoadTilesBuilt = 1;
+        state.ambitions.completed["full-larder"] = 1;
+        applyScenarioStart(SCENARIO_PRESETS["first-winter"]);
+        const counsel = getCoreCounsel(state);
+        assert.equal(counsel.id, "scenario");
+        assert.equal(counsel.stepId, null);
+        assert.equal(counsel.panel, "kingdom");
+        assert.match(counsel.text, /150 food by Spring, year 2/i);
+        assert.match(counsel.evidence, /SPRING · YEAR 2/);
+        assert.match(counsel.evidence, /IN PROGRESS/);
+    } finally {
+        resetState();
+    }
+});
+
+test("core counsel continues a free realm with the next measured ambition", () => {
+    resetState();
+    try {
+        state.hasStarted = true;
+        state.entities = [{ dead: false, type: TYPE.HOUSE }];
+        state.statistics.totalRoadTilesBuilt = 1;
+        state.ambitions.completed["full-larder"] = 1;
+        const counsel = getCoreCounsel(state);
+        assert.equal(counsel.id, "next-ambition");
+        assert.equal(counsel.stepId, null);
+        assert.equal(counsel.panel, "kingdom");
+        assert.match(counsel.text, /Next royal ambition:/);
+        assert.match(counsel.evidence, /24 housing/);
+    } finally {
+        resetState();
+    }
 });

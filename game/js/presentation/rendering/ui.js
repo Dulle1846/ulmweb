@@ -179,7 +179,7 @@ function renderFirstSession(){
     const section=document.getElementById("first-session-section");
     if(!section)return;
     const snapshot=getFirstSessionSnapshot();
-    const signature=snapshot.items.map(item=>item.done?1:0).join("")+"|"+snapshot.completed+"|"+snapshot.currentId+"|"+(snapshot.currentDetail||"")+"|"+(snapshot.needText||"")+"|"+(snapshot.ledgerBrief||"");
+    const signature=snapshot.items.map(item=>item.done?1:0).join("")+"|"+snapshot.completed+"|"+snapshot.currentId+"|"+(snapshot.currentDetail||"")+"|"+(snapshot.needText||"")+"|"+(snapshot.continuationText||"")+"|"+(snapshot.ledgerBrief||"");
     if(signature===lastFirstSessionSignature)return;
     lastFirstSessionSignature=signature;
     setText("first-session-heading",snapshot.allComplete?"FIRST SESSION COMPLETE":"FIRST SESSION");
@@ -188,7 +188,10 @@ function renderFirstSession(){
     const list=document.getElementById("first-session-list");
     const complete=document.getElementById("first-session-complete");
     const need=document.getElementById("first-session-need");
-    if(complete)complete.hidden=!snapshot.allComplete;
+    if(complete){
+        complete.hidden=!snapshot.allComplete;
+        setText("first-session-complete",snapshot.continuationText||"All five first steps are complete. The realm is ready for its next chapter.");
+    }
     if(need){
         need.hidden=!snapshot.needText;
         setText("first-session-need",snapshot.needText?"REALM NEED · "+snapshot.needText:"");

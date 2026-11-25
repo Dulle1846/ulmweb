@@ -73,6 +73,11 @@ export function getFirstSessionSnapshot() {
     const needText = !allComplete && !current && counsel.id !== "found" && counsel.id !== "steady"
         ? counsel.text
         : null;
+    const continuationText = allComplete &&
+        (counsel.id === "scenario" || counsel.id === "next-ambition") &&
+        counsel.text && counsel.evidence
+        ? counsel.text + " · " + counsel.evidence
+        : null;
     return {
         items,
         completed,
@@ -82,6 +87,7 @@ export function getFirstSessionSnapshot() {
         currentDetail: current ? (counsel.evidence || current.detail) : null,
         counselId: counsel.id,
         needText,
+        continuationText,
         ledgerBrief: ledgerBrief(state.economy?.lastLedger)
     };
 }

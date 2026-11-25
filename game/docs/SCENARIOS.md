@@ -37,7 +37,11 @@ objective card at the top of Kingdom Overview. Both read
 `js/systems/scenario.js#getScenarioSnapshot`: current value, target, deadline,
 starting stores, reward, failure consequence and the last four recorded
 outcomes. A completed or failed scenario stays visible as a record; the realm
-continues.
+continues. After the five first-session steps are closed, the same snapshot also
+feeds the completion line in `NEXT MOVE`: an authored opening keeps its live
+objective, progress and deadline in view, while a Free Realm names the next
+measured royal ambition. This is a read-only presentation continuation; no
+scenario state, reward or save field is changed.
 
 ## Simulation contract
 
@@ -77,7 +81,10 @@ history (12 entries). `save-runtime.js` normalizes it on both save and restore;
   objective, effects, snapshot.
 - `js/core/scenario-library.js` — versioned local custom-scenario library.
 - `js/presentation/scenario-panel.js` — Kingdom Overview objective card.
-- `js/presentation/rendering/ui.js` — calendar HUD.
+- `js/presentation/core-counsel.js`, `js/presentation/first-session.js` —
+  read-only first-session continuation into the NEXT MOVE and checklist HUD.
+- `js/presentation/rendering/ui.js` — calendar HUD and first-session completion
+  line.
 - `js/app/main.js` — start-screen picker, editor and start path consumer.
 - `js/core/save-runtime.js`, `js/core/save-validation.js`,
   `js/core/save-migrations.js` — schema 14 persistence.
@@ -90,3 +97,9 @@ history (12 entries). `save-runtime.js` normalizes it on both save and restore;
   custom opening, founds it through the real start screen, checks live
   stores/legitimacy and the HUD/panel, saves and reloads, then repeats the
   reading at 390 × 844. Zero page or console errors are required.
+- `tests/browser/next-chapter-guidance.mjs` (`npm run test:next-chapter-guidance`)
+  — founds through the visible start screen, draws one card, proves that the
+  counsel first asks for an explicit selection and then for an explicit
+  placement without playing the card, closes the five first steps and checks
+  both the Free Realm ambition continuation and a live authored objective. Zero
+  page or console errors are required.

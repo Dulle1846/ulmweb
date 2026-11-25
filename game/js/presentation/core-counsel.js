@@ -4,6 +4,7 @@ import { TYPE } from "../core/types.js";
 import { BUILDING_COSTS, CONSTRUCTION_SHARE, costShare, isHousingType, housingCapacityFor } from "../systems/city-config.js";
 import { ROAD_TYPES } from "../systems/roads.js";
 import { getAmbitionSnapshot } from "../systems/ambitions.js";
+import { getScenarioSnapshot } from "../systems/scenario.js";
 
 function canAfford(state, cost) {
     return Object.entries(cost || {}).every(([resource, amount]) =>
@@ -96,6 +97,7 @@ export function getCoreCounsel(state) {
     const roads = Math.max(0, Number(state?.statistics?.totalRoadTilesBuilt) || 0);
     const hand = Array.isArray(state?.hand) ? state.hand.length : 0;
     const cardsDrawn = Math.max(0, Number(state?.statistics?.totalCardsDrawn) || 0);
+    const currentCard = state?.currentCard || null;
     const morale = Number(state?.morale) || 0;
     const farm = farmCost();
     const cottage = houseCost();
@@ -103,6 +105,11 @@ export function getCoreCounsel(state) {
     const foodLine = Math.max(40, people * 3);
     const foodDisplay = Math.round(food);
     const shortageDisplay = Math.round(shortage);
+    let ambitionSnapshot = null;
+    try {
+        if (state?.ambitions && typeof state.ambitions === "object") ambitionSnapshot = getAmbitionSnapshot();
+    } catch { /* the counsel must remain available during early loading */ }
+    const completedAmbitions = ambitionSnapshot ? Math.max(0, Number(ambitionSnapshot.completedCount) || 0) : 0;
 
     if (!state?.hasStarted) {
         return {
@@ -216,12 +223,40 @@ export function getCoreCounsel(state) {
             buildType: "dirt"
         };
     }
-    if (hand === 0) {
+    if (completedAmbitions === 0 && hand === 0) {
         return {
             id: "cards",
-            stepId: "card",
+            stepId: cardsDrawn > 0 ? "ambition" : "card",
             text: "Your hand is empty. Draw a card to shape the next chapter.",
             evidence: "Hand 0 cards · " + cardsDrawn + " drawn so far",
+            actionLabel: "OPEN CARDS",
+            panel: "cards",
+            buildCategory: null,
+            buildType: null
+        };
+    }
+    // A drawn card is never armed or played by the system. Teach the two
+    // explicit player actions before the first card leaves the hand, then let
+    // the ordinary ambition path take over.
+    if (completedAmbitions === 0 && cardsDrawn === 1) {
+        if (currentCard && state?.selectedCardInstanceId) {
+            return {
+                id: "card-play",
+                stepId: "ambition",
+                text: "The card is selected. Drag it onto a valid map tile, or tap a tile on touch controls.",
+                evidence: "Selected: " + (currentCard.name || "the chosen card") +
+                    " · hand " + hand + " card · placement checks terrain, space and cost",
+                actionLabel: "REVIEW CARDS",
+                panel: "cards",
+                buildCategory: null,
+                buildType: null
+            };
+        }
+        return {
+            id: "card-select",
+            stepId: "ambition",
+            text: "A card is in hand but not armed. Select it before you place it.",
+            evidence: "Hand " + hand + " card · no card selected · drawing never places a card",
             actionLabel: "OPEN CARDS",
             panel: "cards",
             buildCategory: null,
@@ -246,7 +281,7 @@ export function getCoreCounsel(state) {
     // long-term goal lived. Only the live realm carries the ambition model;
     // synthetic counsel readers stay pure and keep their steady fallback.
     try {
-        const ambition = state?.ambitions && typeof state.ambitions === "object" ? getAmbitionSnapshot() : null;
+        const ambition = ambitionSnapshot;
         if (ambition && !ambition.allComplete && Number(ambition.completedCount) === 0) {
             return {
                 id: "ambition",
@@ -258,6 +293,36 @@ export function getCoreCounsel(state) {
                 buildCategory: null,
                 buildType: null
             };
+        }
+        // The first five steps are closed. An authored scenario keeps its own
+        // measured objective until its deadline; a free realm continues with
+        // the next real ambition. Both are reads of existing models only.
+        if (ambition && Number(ambition.completedCount) > 0) {
+            const scenario = state?.scenario ? getScenarioSnapshot() : null;
+            if (scenario?.visible) {
+                return {
+                    id: "scenario",
+                    stepId: null,
+                    text: scenario.name + " · " + scenario.objectiveLabel,
+                    evidence: scenario.progressLabel + " · " + scenario.deadlineShort + " · " + scenario.statusLabel,
+                    actionLabel: "REVIEW REALM",
+                    panel: "kingdom",
+                    buildCategory: null,
+                    buildType: null
+                };
+            }
+            if (!ambition.allComplete && ambition.title) {
+                return {
+                    id: "next-ambition",
+                    stepId: null,
+                    text: "Next royal ambition: " + ambition.title + ".",
+                    evidence: ambition.title + " · " + (ambition.progressLabel || "0 progress"),
+                    actionLabel: "REVIEW REALM",
+                    panel: "kingdom",
+                    buildCategory: null,
+                    buildType: null
+                };
+            }
         }
     } catch { /* the counsel must remain available during early loading */ }
     return {

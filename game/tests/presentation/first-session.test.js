@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { resetState, state } from "../../js/core/state.js";
 import { TYPE } from "../../js/core/types.js";
+import { applyScenarioStart, SCENARIO_PRESETS } from "../../js/systems/scenario.js";
 import { getFirstSessionSnapshot } from "../../js/presentation/first-session.js";
 import { getCoreCounsel } from "../../js/presentation/core-counsel.js";
 
@@ -57,6 +58,45 @@ test("the first-session checklist follows the existing house, road, card and amb
     assert.ok(snapshot.items.every(item => item.done));
 });
 
+test("the first-session marker stays on the next milestone while NEXT MOVE teaches card play", () => {
+    resetState();
+    state.hasStarted = true;
+    state.entities = [{ dead: false, type: TYPE.HOUSE }];
+    state.statistics.totalRoadTilesBuilt = 1;
+    state.statistics.totalCardsDrawn = 1;
+    state.hand = [{ instanceId: "card-1", name: "Cottage" }];
+    assert.equal(getCoreCounsel(state).id, "card-select");
+    const select = getFirstSessionSnapshot();
+    assert.equal(select.currentId, "ambition");
+    assert.equal(select.counselId, "card-select");
+
+    state.currentCard = { instanceId: "card-1", name: "Cottage" };
+    state.selectedCardInstanceId = "card-1";
+    assert.equal(getCoreCounsel(state).id, "card-play");
+    assert.equal(getFirstSessionSnapshot().currentId, "ambition");
+});
+
+test("a completed first session names the real scenario or next ambition", () => {
+    resetState();
+    state.hasStarted = true;
+    state.entities = [{ dead: false, type: TYPE.HOUSE }];
+    state.statistics.totalHousesBuilt = 1;
+    state.statistics.totalRoadTilesBuilt = 1;
+    state.statistics.totalCardsDrawn = 1;
+    state.ambitions.completed["full-larder"] = 1;
+    const free = getFirstSessionSnapshot();
+    assert.equal(free.counselId, "next-ambition");
+    assert.match(free.continuationText, /Next royal ambition:/);
+    assert.match(free.continuationText, /24 housing/);
+
+    applyScenarioStart(SCENARIO_PRESETS["first-winter"]);
+    const authored = getFirstSessionSnapshot();
+    assert.equal(authored.counselId, "scenario");
+    assert.match(authored.continuationText, /150 food by Spring, year 2/i);
+    assert.match(authored.continuationText, /SPRING · YEAR 2/);
+    resetState();
+});
+
 test("the first-session HUD carries the real latest twenty-day ledger in plain language", () => {
     resetState();
     state.hasStarted = true;
@@ -101,6 +141,8 @@ test("the HUD section, CSS states and on-demand renderer are wired", async () =>
     assert.ok(ui.includes('"FIRST SESSION COMPLETE"'));
     assert.ok(ui.includes("list.hidden=snapshot.allComplete"));
     assert.ok(ui.includes("complete.hidden=!snapshot.allComplete"));
+    assert.ok(ui.includes('setText("first-session-complete"'));
+    assert.ok(ui.includes("snapshot.continuationText"));
     assert.ok(ui.includes('setText("first-session-ledger"'));
     assert.ok(ui.includes("snapshot.ledgerBrief"));
 });

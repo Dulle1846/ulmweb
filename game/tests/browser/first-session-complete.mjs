@@ -99,7 +99,8 @@ try {
     assert.equal(completed.listVisible, false);
     assert.equal(completed.completeHidden, false);
     assert.equal(completed.completeVisible, true);
-    assert.match(completed.completeText, /All five first steps are complete/);
+    assert.match(completed.completeText, /Next royal ambition:/);
+    assert.match(completed.completeText, /24 housing/);
 
     // Save through the visible HUD, discard the in-memory realm by reloading,
     // then continue the persisted realm from the real start screen.
@@ -150,7 +151,8 @@ try {
     assert.equal(afterLoad.listVisible, false);
     assert.equal(afterLoad.completeHidden, false);
     assert.equal(afterLoad.completeVisible, true);
-    assert.match(afterLoad.completeText, /All five first steps are complete/);
+    assert.match(afterLoad.completeText, /Next royal ambition:/);
+    assert.match(afterLoad.completeText, /24 housing/);
     assert.deepEqual(afterLoad.stats, { housesBuilt: 1, roadTilesBuilt: 1, cardsDrawn: 1 });
     assert.deepEqual(afterLoad.agenda, { stage: 1, completed: ["common-granary"], foodDemandFactor: 0.97 });
 
@@ -215,7 +217,8 @@ try {
     assert.equal(afterImport.listVisible, false);
     assert.equal(afterImport.completeHidden, false);
     assert.equal(afterImport.completeVisible, true);
-    assert.match(afterImport.completeText, /All five first steps are complete/);
+    assert.match(afterImport.completeText, /Next royal ambition:/);
+    assert.match(afterImport.completeText, /24 housing/);
     assert.deepEqual(afterImport.stats, { housesBuilt: 1, roadTilesBuilt: 1, cardsDrawn: 1 });
     assert.deepEqual(afterImport.agenda, { stage: 1, completed: ["common-granary"], foodDemandFactor: 0.97 });
 

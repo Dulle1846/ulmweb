@@ -229,9 +229,10 @@ try {
     const afterCard = await snapshot();
     assertGuidance(afterCard, "after card");
     assert.equal(afterCard.count, "3 / 5");
-    assert.equal(afterCard.action, "REVIEW REALM");
-    assert.equal(afterCard.panel, "kingdom");
-    assert.match(afterCard.evidence, /First ambition/);
+    assert.equal(afterCard.action, "OPEN CARDS");
+    assert.equal(afterCard.panel, "cards");
+    assert.match(afterCard.counsel, /select it before you place it/i);
+    assert.match(afterCard.evidence, /Hand 1 card/);
     assert.equal(afterCard.steps.find(step => step.current)?.label, "Complete your first ambition");
 
     const beforeSave = await page.evaluate(async () => {
