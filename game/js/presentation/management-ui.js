@@ -68,8 +68,8 @@ import { getRealmCycleSnapshot, resolveRealmCyclePetition } from "../systems/rea
 import { getLegacySnapshot } from "../systems/legacy.js";
 import { constructionSnapshot, isUnderConstruction } from "../systems/construction.js";
 import { getBulkRepairSnapshot, getBuildingRepairSnapshot, getRealmDamageSnapshot, repairAllDamaged, repairBuilding } from "../systems/building-repair.js";
-import { getInventorySummary, getBuildingLogisticsStatus, getBuildingSupplyReason, getCitySummary, getLogisticsSnapshot, setWarehouseProfile } from "../systems/logistics.js";
-import { WAREHOUSE_PROFILES } from "../systems/city-config.js";
+import { getInventorySummary, getBuildingLogisticsStatus, getBuildingSupplyReason, getCitySummary, getGoodsAudit, getLogisticsSnapshot, getPhysicalStockMap, setWarehouseProfile } from "../systems/logistics.js";
+import { GOODS, GOOD_KEYS, WAREHOUSE_PROFILES } from "../systems/city-config.js";
 import { getSettlementSnapshot, getServiceReason } from "../systems/settlement.js";
 import { foresterRangeSummary } from "../systems/fields.js";
 import { renderCityPanel, handleCityPanelClick } from "./city-panel.js";
@@ -241,7 +241,49 @@ export function resources(){
  '<div class="command-summary"><div><small>FOOD BALANCE / LEDGER</small><strong>'+(cycle.balance>=0?'+':'')+amount(cycle.balance)+'</strong></div><div><small>STORAGE CAP</small><strong>'+number(cycle.storageCapacity)+'</strong></div><div><small>DEBT</small><strong>'+amount(cycle.debt)+'G</strong></div><div><small>CRISIS</small><strong>'+Math.round(cycle.crisis.severity*100)+'%</strong></div></div>'+
  '<div class="resource-detail-grid">'+RESOURCE_ORDER.map(key=>resourceCard(key,history)).join("")+'</div>'+
  '<p class="command-note">Stock history contains up to 24 completed 20-day settlements. The chart is intentionally blank until two settlements exist; no interpolated or invented points are drawn.</p>'+
+ goodsOverviewPanel(cycle)+
  timberMarketPanel();
+}
+
+// The four royal resources are only part of the economy: warehouses, building
+// inventories and carriers hold named goods. This overview reads the same
+// physical-stock and audit models the logistics system already maintains, so a
+// player can see what is actually in the realm before ordering another haul.
+// It is presentation-only: no state field, movement or tick work is added.
+function goodsOverviewPanel(cycle){
+ let stock,audit;
+ try{stock=getPhysicalStockMap();audit=getGoodsAudit();}catch{return "";}
+ const rows=audit.rows.map(row=>{
+  const good=String(row.good||"");
+  return {
+   good,
+   label:GOODS[good]?.label||(good==="food"?"Royal food":good),
+   scope:row.scope,
+   physical:Math.max(0,Number(stock?.[good] ?? row.physical)||0),
+   produced:Math.max(0,Number(row.produced)||0),
+   consumed:Math.max(0,Number(row.consumed)||0),
+   balanced:Boolean(row.balanced)
+  };
+ });
+ const needs=[];
+ const foodShortage=Math.max(0,Number(cycle?.shortage)||0);
+ if(foodShortage>0)needs.push({good:"food",label:"Royal food",detail:"Last settlement recorded "+amount(foodShortage)+" food short"});
+ for(const row of rows){
+  if(row.good==="food"||row.physical>0||row.consumed<=0)continue;
+  needs.push({good:row.good,label:row.label,detail:"Store empty · "+amount(row.consumed)+" consumed since the audit began"});
+  if(needs.length>=3)break;
+ }
+ const needMarkup=needs.length
+  ?needs.map(item=>'<div class="goods-shortage-row" data-good-need="'+esc(item.good)+'"><strong>'+esc(item.label)+'</strong><span>'+esc(item.detail)+'</span></div>').join("")
+  :'<div class="goods-shortage-row is-clear"><strong>NOTHING URGENT</strong><span>No audited store is empty while consumption is recorded.</span></div>';
+ const goodsMarkup=rows.map(row=>'<article class="goods-detail-card" data-good="'+esc(row.good)+'"><header><strong>'+esc(row.label)+'</strong><span>'+esc(row.scope)+'</span></header><div><small>IN REALM</small><b>'+number(row.physical)+'</b></div><div><small>PRODUCED</small><b>'+number(row.produced)+'</b></div><div><small>CONSUMED</small><b>'+number(row.consumed)+'</b></div><footer>'+(row.balanced?'<span class="is-balanced">BALANCED</span>':'<span class="is-unbalanced">AUDIT DIFFERENCE</span>')+'</footer></article>').join("");
+ const auditNote=audit.balanced
+  ?"The goods audit reconciles opening stock plus production minus consumption with the physical stock in warehouses, building inventories and carrier loads."
+  :"Some rows do not reconcile with opening stock plus production minus consumption; the Buildings register opens the full movement and delivery archive.";
+ return '<div class="command-section-title">PHYSICAL GOODS · '+number(rows.length)+' LEDGER LINES · '+number(GOOD_KEYS.length)+' NAMED GOODS</div>'+
+  '<div class="goods-shortage-board"><span>NEEDS ATTENTION</span>'+needMarkup+'</div>'+
+  '<div class="goods-detail-grid">'+goodsMarkup+'</div>'+
+  '<p class="command-note">'+esc(auditNote)+' Stock and audit totals are read from live state; this board never moves goods or changes a price.</p>';
 }
 
 // Regional timber is physical warehouse stock, so its market lives beside the

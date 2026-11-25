@@ -24,4 +24,7 @@ test("the resource detail panel renders the live economy cycle", () => {
     assert.match(html, /FOOD BALANCE \/ LEDGER/);
     assert.match(html, /STORAGE CAP/);
     assert.match(html, /CRISIS/);
+    assert.match(html, /PHYSICAL GOODS/, "the stores panel must expose the named-goods overview");
+    assert.match(html, /data-good="grain"/, "physical goods must be inspectable per good");
+    assert.match(html, /NOTHING URGENT/, "an empty audit must report a clear shortage board, not invent a need");
 });

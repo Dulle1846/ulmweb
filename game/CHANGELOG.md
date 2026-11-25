@@ -73,9 +73,15 @@ the ten visible in a sample.
   cottage site no longer counts as beds in NEXT MOVE: the counsel now says the
   site is not operational, names its stage, reason and outstanding materials,
   and opens the Buildings register. FIRST SESSION also shows the latest real
-  20-day settlement as one plain line — food in, eaten and spoiled, gold net
+  20-day settlement as one plain line - food in, eaten and spoiled, gold net
   after wages and upkeep. Both are presentation-only reads; no statistic,
   completion rule or save field changed.
+- **Every physical good is now inspectable.** STORES shows the named goods in
+  warehouses, building inventories and carrier loads beside the four royal
+  resources, with real produced/consumed audit lines and a bounded top-three
+  needs board driven by empty stores and the last food shortage. It is a pure
+  read of existing logistics models: no save field, price, movement or tick
+  work was added.
 
 ## 3.60.0 — Every forest profile now has a job
 

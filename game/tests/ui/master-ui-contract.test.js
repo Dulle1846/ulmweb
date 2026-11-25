@@ -150,7 +150,12 @@ test("resource details expose real stocks, flows, related buildings and bounded 
   assert.ok(management.includes("At least two completed settlements"));
   assert.ok(management.includes("Latest settlement:"));
   assert.ok(hud.includes(".resource-detail-grid"));
+  assert.ok(hud.includes(".goods-detail-grid"));
+  assert.ok(hud.includes(".goods-shortage-board"));
   assert.ok(hud.includes(".command-trend"));
+  assert.ok(management.includes("function goodsOverviewPanel("));
+  assert.ok(management.includes("getPhysicalStockMap()"));
+  assert.ok(management.includes("getGoodsAudit()"));
 });
 
 test("the item lexicon exposes base definitions and player-made records",()=>{
