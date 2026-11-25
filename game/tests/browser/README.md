@@ -131,13 +131,15 @@ opens a page containing a native text input, fills it, and verifies the value.
 That preflight matters: Chromium can launch without fontconfig or fonts and
 still crash as soon as an `<input>`, `<select>` or `<textarea>` is rendered.
 
-On CI or any machine with root, install the shared libraries and fonts as well:
+On CI or any machine with root, `npm run test:e2e:setup -- --with-deps` adds the
+shared libraries and fonts only when the browser probe fails. It retries the
+apt install with refreshed indexes, and if a mirror cannot provide the optional
+font packages it falls back to Playwright's runtime dependency set without
+`fonts-*`/`xfonts-*`, then re-runs the same launch/input probe. A setup that
+cannot render a native input still fails.
 
-```sh
-npx playwright install --with-deps chromium
-```
-
-The GitHub workflow does this through `npm run test:e2e:setup -- --with-deps`.
+The GitHub workflow uses that command through the shared
+`.github/actions/setup-game-e2e` action.
 
 ## Environment
 
@@ -238,8 +240,8 @@ configured directory for review.
 ## CI
 
 `.github/workflows/game-browser-e2e.yml` runs on pull requests and on pushes to
-`ulmweb-branch`, installs the pinned dependency, caches Chromium, runs the setup
-with `--with-deps`, and then runs `npm run test:e2e`. Screenshots from the
+`ulmweb-branch`, installs the pinned dependency, caches Chromium, runs the
+verified `--with-deps` setup, and then runs `npm run test:e2e`. Screenshots from the
 responsive review are uploaded even when the test fails. Documentation-only
 pushes to `ulmweb-branch` skip this nine-minute browser matrix; the deploy
 workflow still runs `npm test` and moves the production marker to that HEAD.

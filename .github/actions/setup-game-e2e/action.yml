@@ -1,5 +1,5 @@
 name: Set up game browser tests
-description: Install the locked Node dependencies and a cached Playwright Chromium.
+description: Install the locked Node dependencies and a verified cached Playwright Chromium.
 
 runs:
   using: composite
@@ -28,7 +28,7 @@ runs:
         path: ~/.cache/ms-playwright
         key: playwright-${{ runner.os }}-${{ hashFiles('game/package-lock.json') }}
 
-    - name: Install Chromium, system libraries and fonts
+    - name: Install and verify Chromium
       shell: bash
       working-directory: game
       run: npm run test:e2e:setup -- --with-deps

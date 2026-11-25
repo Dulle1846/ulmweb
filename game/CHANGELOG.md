@@ -1,6 +1,6 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.55.0`
+**Current production version:** `3.55.1`
 **Next development line:** `3.56.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
@@ -118,6 +118,34 @@ new games, loads and benchmarks.
   the benchmark switched from blocked to ready when a realm started, and the
   browser E2E now waits for panel content that CSS intentionally skips while it
   is off-screen.
+
+## 3.55.1 — Browser setup survives a flaky apt mirror
+
+The 20-year endurance job failed its first attempt in setup, before a single
+realm opened: `playwright install --with-deps chromium` ran one all-or-nothing
+apt transaction, and the mirror could not locate optional font packages such as
+`fonts-unifont`, `xfonts-cyrillic` and `fonts-freefont-ttf`. The rerun only went
+green because the cached browser made setup skip apt entirely. That is a
+workflow-setup defect, not a test result.
+
+- **Verify before installing packages.** Chromium's binary now installs first
+  and must pass the existing launch plus native-text-input probe before apt is
+  touched. A runner whose base libraries are sufficient no longer depends on an
+  optional font mirror at all.
+- **Retry the real dependency install.** When the probe fails, Playwright's
+  system dependencies are installed with up to three attempts and refreshed apt
+  indexes between failures.
+- **Font-free fallback with proof.** If a mirror still cannot satisfy the full
+  font list, setup installs Playwright's exact runtime package set without
+  optional `fonts-*`/`xfonts-*` packages, keeps `fonts-dejavu-core` when
+  available, and then requires the same Chromium launch/input probe to pass. A
+  browser that cannot actually render a native input still fails the job.
+- **No gate weakened.** All nine browser jobs remain, the endurance audit still
+  runs 20 years, and there is no skip, `continue-on-error`, reduced year count
+  or non-blocking job. The change is limited to the shared browser setup action
+  and its setup script.
+- **No game change.** Save format, deterministic simulation, rendering and
+  per-tick work are untouched.
 
 ## 3.53.4 — Quotes, orders and quests tell the truth
 
