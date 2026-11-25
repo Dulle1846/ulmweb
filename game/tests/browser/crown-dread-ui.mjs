@@ -82,7 +82,7 @@ try {
         const { ensureDiplomacy, updateDiplomacy } = await import("./js/systems/diplomacy.js");
         const { getDiplomaticTradeTerms } = await import("./js/systems/diplomacy-trade.js");
         const { invalidateCrownDread, getCrownDread } = await import("./js/systems/crown-dread.js");
-        const { getMilitarySnapshot, warmMilitaryCaches } = await import("./js/systems/military.js");
+        const { getMilitarySnapshot, settleOpeningMuster } = await import("./js/systems/military.js");
         state.year = 5;
         state.military.strengthPower = 200;
         state.military.strengthSoldiers = 8;
@@ -120,7 +120,7 @@ try {
         state.year = 6;
         state.military.lastMusterYear = 5;
         invalidateCrownDread();
-        warmMilitaryCaches();
+        settleOpeningMuster();
         const payroll = state.military.lastPayroll;
         const snapshot = getMilitarySnapshot();
         return {

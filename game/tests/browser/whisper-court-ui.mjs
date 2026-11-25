@@ -413,6 +413,8 @@ try {
             relation: snapshot.realms[0]?.relation,
             fear: snapshot.realms[0]?.fear,
             pressure: snapshot.rivalPressure,
+            lastMusterYear: state.military?.lastMusterYear,
+            serviceYears: state.entities.filter(entity => !entity.dead && entity.military).map(entity => entity.military.serviceYears),
             suspicion: snapshot.suspicion
         };
     }, grownAll.house.id);
@@ -453,6 +455,8 @@ try {
             relation: snapshot.realms[0]?.relation,
             fear: snapshot.realms[0]?.fear,
             pressure: snapshot.rivalPressure,
+            lastMusterYear: state.military?.lastMusterYear,
+            serviceYears: state.entities.filter(entity => !entity.dead && entity.military).map(entity => entity.military.serviceYears),
             suspicion: snapshot.suspicion,
             text: document.querySelector("#command-panel-content")?.textContent || ""
         };
@@ -473,6 +477,8 @@ try {
     assert.equal(restored.relation, beforeSave.relation);
     assert.equal(restored.fear, beforeSave.fear);
     assert.equal(restored.pressure, beforeSave.pressure);
+    assert.equal(restored.lastMusterYear, beforeSave.lastMusterYear, "loading must not settle a pending muster");
+    assert.deepEqual(restored.serviceYears, beforeSave.serviceYears, "loading must not age the garrison");
     assert.equal(restored.suspicion, beforeSave.suspicion);
     assert.match(restored.text, /AGENT ROSTER · 6 \/ 6/);
     assert.match(restored.text, /RAID WARNING/);

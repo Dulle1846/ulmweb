@@ -6,7 +6,7 @@ import { initStartingKingdom } from "../../js/world/entities.js";
 import {
     getMilitarySnapshot, recruitVillager, trainSoldier, equipSoldier,
     buyHorse, mountSoldier, updateMilitary, getSoldierPower, getSoldierArmor,
-    recordMilitaryWound, normalizeMilitaryState
+    recordMilitaryWound, normalizeMilitaryState, warmMilitaryCaches, settleOpeningMuster
 } from "../../js/systems/military.js";
 import {
     getHealthSnapshot, improveSanitation, appointHealer, brewMedicine,
@@ -116,6 +116,38 @@ test("equipment and a warhorse measurably increase power and annual upkeep is pa
     assert.ok(state.resources.food < foodBefore, "annual muster must feed soldiers and horses");
     assert.ok(state.military.lastPayroll.goldNeed > 0);
     assert.ok(state.military.history.length >= 1);
+});
+
+test("a cache warm-up never settles a pending muster or touches the saved treasury", () => {
+    setupRealm({ gold: 500, food: 500 });
+    getMilitarySnapshot();
+    const soldier = state.entities.find(entity => !entity.dead && entity.type === TYPE.GUARD);
+    assert.ok(soldier && soldier.military);
+    const before = {
+        gold: state.resources.gold,
+        food: state.resources.food,
+        lastMusterYear: state.military.lastMusterYear,
+        serviceYears: soldier.military.serviceYears,
+        history: state.military.history.length,
+        payroll: state.military.lastPayroll
+    };
+    state.year = 2;
+    assert.equal(warmMilitaryCaches(), true);
+    assert.deepEqual({
+        gold: state.resources.gold,
+        food: state.resources.food,
+        lastMusterYear: state.military.lastMusterYear,
+        serviceYears: soldier.military.serviceYears,
+        history: state.military.history.length,
+        payroll: state.military.lastPayroll
+    }, before, "warming a loaded realm must be a pure read");
+    const payroll = settleOpeningMuster();
+    assert.ok(payroll, "the explicit opening call still resolves a pending muster");
+    assert.equal(state.military.lastMusterYear, 2);
+    assert.equal(soldier.military.serviceYears, before.serviceYears + 1);
+    assert.ok(state.resources.gold < before.gold, "the muster itself still costs gold");
+    assert.ok(state.resources.food < before.food, "the muster itself still feeds the garrison");
+    assert.equal(state.military.history.length, before.history + 1);
 });
 
 test("sanitation, healers, medicine and quarantine form a connected public health economy", () => {

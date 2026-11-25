@@ -173,8 +173,16 @@ workflow-setup defect, not a test result.
   runs 20 years, and there is no skip, `continue-on-error`, reduced year count
   or non-blocking job. The change is limited to the shared browser setup action
   and its setup script.
-- **No game change.** Save format, deterministic simulation, rendering and
-  per-tick work are untouched.
+- **No game change in the setup work.** Save format, deterministic simulation,
+  rendering and per-tick work are untouched by that CI fix.
+- **A load no longer settles an old muster.** `warmMilitaryCaches()` was meant
+  to be a pure startup warm-up but still called the annual muster resolver. A
+  save whose muster year lagged its calendar year (for example one written at a
+  year boundary) silently lost gold and food and aged soldiers on load. Loading
+  now primes only the memoized reads; a new explicit `settleOpeningMuster()`
+  keeps the founding muster before the start overlay, and later musters stay in
+  the normal annual loop. The Whisper Court browser proof now checks that the
+  treasury, garrison service years and muster year survive a reload exactly.
 
 ## 3.53.4 — Quotes, orders and quests tell the truth
 

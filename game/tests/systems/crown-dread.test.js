@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { resetState, state } from "../../js/core/state.js";
 import { initStartingKingdom } from "../../js/world/entities.js";
 import { createDiplomacyState, getDiplomacySnapshot, updateDiplomacy } from "../../js/systems/diplomacy.js";
-import { createMilitaryState, getMilitarySnapshot, normalizeMilitaryState, warmMilitaryCaches } from "../../js/systems/military.js";
+import { createMilitaryState, getMilitarySnapshot, normalizeMilitaryState, settleOpeningMuster } from "../../js/systems/military.js";
 import { getDiplomaticTradeTerms } from "../../js/systems/diplomacy-trade.js";
 import {
     getCrownDread, getFrontierPressure, invalidateCrownDread, normalizeCrownDreadReading
@@ -127,7 +127,7 @@ test("fear above 60 worsens trade terms while ordinary fear stays neutral", () =
 test("the annual muster pays the diplomatic levy and saves the dread reading", () => {
     setupRealm({ year: 2 });
     state.military = { ...createMilitaryState(), lastMusterYear: 1 };
-    warmMilitaryCaches();
+    settleOpeningMuster();
     const base = state.military.lastPayroll;
     assert.ok(base, "the muster must run");
     assert.equal(base.levyFactor, 1, "no neighbours means no border levy");
@@ -141,7 +141,7 @@ test("the annual muster pays the diplomatic levy and saves the dread reading", (
     state.diplomacy.realms[0].treaty = "war";
     state.military = { ...createMilitaryState(), lastMusterYear: 1 };
     invalidateCrownDread();
-    warmMilitaryCaches();
+    settleOpeningMuster();
     const levied = state.military.lastPayroll;
     assert.ok(levied.levyFactor > 1, "war and hostility must raise the levy");
     assert.ok(levied.goldNeed > base.goldNeed, "the levy must reach the gold need");

@@ -28,7 +28,7 @@ import { warmFieldHarvestFactors } from "../systems/fields.js";
 import { warmForestFaunaCaches } from "../systems/forest-fauna.js";
 import { warmMicroEventContext } from "../systems/micro-events.js";
 import { warmHealthCaches } from "../systems/health.js";
-import { warmMilitaryCaches } from "../systems/military.js";
+import { settleOpeningMuster, warmMilitaryCaches } from "../systems/military.js";
 import { warmVillagerPaths } from "../simulation/villagers.js";
 import { startGameLoop } from "./game-loop.js";
 import { centerCamera,resize,clampCamera,setRenderScale } from "../presentation/camera.js";
@@ -742,6 +742,7 @@ async function startNewRealm(seed,profile,worldOptions=readWorldOptions(),scenar
     warmForestFaunaCaches();
     warmMicroEventContext();
     warmHealthCaches();
+    settleOpeningMuster();
     warmMilitaryCaches();
     warmLogisticsRoutes();
     warmVillagerPaths();

@@ -599,13 +599,25 @@ function maybeLaunchWarFront(military, year) {
     addLog("WAR FRONT: " + spawned + " RAIDERS CROSS THE BORDER FROM " + String(realm.name || "THE ENEMY").toUpperCase(), "#e9857b", "military");
 }
 
-// Resolve the opening year's muster before the start overlay lifts. This is
-// idempotent annual bookkeeping and runs exactly once, exactly as it would on
-// the first visible simulation tick.
-export function warmMilitaryCaches() {
+// Resolve the opening year's muster before the start overlay lifts. This is the
+// one explicit annual call for a newly founded realm; the normal yearly loop
+// settles every later muster through updateMilitary().
+export function settleOpeningMuster() {
     const military = ensureMilitary();
-    const year = yearNow();
-    if (year > military.lastMusterYear) resolveMilitaryYear();
+    if (yearNow() > military.lastMusterYear) return resolveMilitaryYear();
+    return null;
+}
+
+// A loaded save must keep the exact treasury, food stores and soldier records it
+// wrote. Prime the memoized reads the muster relies on without settling a year
+// the save never played: a pending muster belongs to the first simulation tick,
+// not to the load itself.
+export function warmMilitaryCaches() {
+    ensureMilitary();
+    getFrontierPressure();
+    getCrownDread();
+    getFaithModifiers();
+    getJusticeModifiers();
     return true;
 }
 
