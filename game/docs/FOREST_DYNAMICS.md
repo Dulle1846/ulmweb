@@ -128,10 +128,11 @@ vollen Jahren (Jahr 1 → Jahr 4, Tick 1.269) zeigt der Lauf 4.274 Waldkacheln,
 0 untypisierte Kacheln, alle sechs Bewirtschaftungssysteme, 60 Atlas-Karten und
 14 Karten mit Ökologieblock. Die Stichprobe umfasst 238 Bestände: Niederwald 20,
 Mittelwald 4, Hochwald 164, Plenterwald 1, Dauerwald 45, Waldweide 4. Die Ernte
-senkte den Bestand am Lumberyard von 181 auf 171 und legte 10 Logs ins lokale
-Lager (18 → 28); das Sammeln lieferte 2 Timber, 3 Birch sap, 3 Wild garlic,
-2 Firewood, 3 Maple syrup und 2 Mushrooms. Der Gesamtbestand bewegte sich in
-drei Jahren von 637.348 auf 629.068. Am beobachteten Störungsstand `(87, 38)`
+senkte den Bestand am Lumberyard von 181 auf 171 und legte 7 Logs plus 3
+Firewood ins lokale Lager (Logs 18 → 25); das Sammeln lieferte 2 Timber, 3 Birch
+sap, 2 Firewood, 2 Beech timber, 2 Birch timber und 2 Mushrooms. Der
+Gesamtbestand bewegte sich in drei Jahren von 637.348 auf 630.044 (Pages) bzw.
+629.657 (GitHub Pages). Am beobachteten Störungsstand `(87, 38)`
 wuchs das Störungsalter von 60 auf 600 Tage, die Phase wechselte von `fresh`
 zu `recovered` und die Samenbank von 48 % auf 36 %.
 
@@ -174,7 +175,7 @@ Screenshots `forest-atlas-ecology.png` und `forest-dynamics-live.png`. Er nutzt
 denselben `forestStandAt()`-Datensatz wie Atlas und Inspektor; es gibt keine
 test-only Waldregel.
 
-## 3a. Spielrolle: was der Spieler mit den 30 Punkten tut (v3.60.0)
+## 3a. Spielrolle: was der Spieler mit den 30 Punkten tut (v3.61.0)
 
 `forestDynamicsFor()` liefert zusätzlich ein begrenztes `working`-Profil. Es
 bündelt die 30 Teilprofile in Werte, die vorhandene Spielsysteme bereits lesen:
@@ -194,7 +195,7 @@ neu berechnet und niemals gespeichert.
 | **075–080** Waldweide, Nieder-, Mittel-, Hoch-, Plenter- und Dauerwald | Lumberyard-Knopf nutzen | Der Knopf heißt jetzt CUT COPPICE / CUT UNDERWOOD / SELECT FELLING / SINGLE-TREE CUT / POLLARD AND CLEAR / THIN NEAREST STAND; `logShare` teilt den Hieb in Logs und Firewood, Coppice/Wood-Pasture erzeugen zusätzliches Firewood im Lumber-Camp |
 | **081–083** Waldrand, Lichtwald, Kronenlücken | Rand oder Lücke aufsuchen | Manteldeckung, Lücken-Verjüngung und Krautlicht erhöhen Wild, Beeren, Kräuter und Habitat; Lückenalter bleibt lesbar |
 | **084–085** Lianen und Epiphyten | Feuchten/alten Bestand aufsuchen | Lianen liefern Weidenruten/Rattan und Fasern, Epiphyten Moos/Flechte/Orchideen; beide erhöhen die Habitatnote |
-| **080–090** Arbeitsholz und Markt | Sammeln, durchforsten, verkaufen oder liefern | `volume` skaliert Lumber-Batch und Durchforstung, `quality`/`specialty` verkürzen oder verlängern den Signature-Timber-Takt; `sawlog`/`firewood`/`logShare` teilen den Hieb. Jedes gesammelte Gut hat einen individuellen Marktpreis oder einen echten Verbraucher (Nahrung, Medizin, Pannage, Sägewerk) — siehe 3b. |
+| **080–090** Arbeitsholz und Markt | Sammeln, durchforsten, verkaufen oder liefern | `volume` skaliert Lumber-Batch und Durchforstung, `quality`/`specialty` verkürzen oder verlängern den Signature-Timber-Takt; `logShare` teilt den Hieb tatsächlich in Logs und Firewood. `sawlog`/`firewood` sind Produktmarker und Eingänge in Qualität/LogShare; Firewood senkt den Log-Anteil und kann bei Niederwald zusätzliches Sammelgut freischalten. Jedes gesammelte Gut hat einen individuellen Marktpreis oder einen echten Verbraucher (Nahrung, Medizin, Pannage, Sägewerk) — siehe 3b. |
 | **086–087** Unterholz und Krautschicht | Durchforsten, Licht schaffen, sammeln | Strauch-/Jungbaumschicht speist Wild und Beeren, Krautnahrung/Medizin/Blüte speisen Kräuter, Honig und Wild; Verbiss bremst die Regeneration |
 | **088–090** Wurzeln, Streu/Humus, Mykorrhiza | Alten, humusreichen Bestand stehen lassen | Wurzeltiefe senkt Staunässe, Streu/Humus erhöhen Wasserretention und Pilzertrag, Mykorrhiza-Typ/Reichweite speisen Pilze, Regeneration, Resistenz und Insekten |
 
@@ -205,35 +206,81 @@ Insekten in dieselben Kolonien und die Störung in dieselbe Sukzession.
 ## 3b. Jedes Waldgut hat einen Preis oder einen Verbraucher (v3.61.0)
 
 Der Audit umfasst alle **260** Einträge in `FOREST_GOODS`, nicht nur die zehn
-Güter einer Stichprobe. `tests/systems/forest-goods-economy.test.js` prüft für
-jede ID drei Dinge: einen `forestDeliveryChannel()`, einen positiven
-`forestGoodMarketPrice()` und ein sichtbares `forestGoodUseLabel()`.
+Güter einer Stichprobe. `forestDeliveryChannel()` verteilt sie vollständig:
+**62 `wood` · 74 `food` · 18 `medicine` · 106 `gold`**. Der Test
+`tests/systems/forest-goods-economy.test.js` prüft für jede ID einen Kanal,
+einen positiven Marktpreis und einen sichtbaren Verwendungstext.
 
-| Gut / Gruppe | Preis | Verbraucher / Spielerweg |
-|---|---|---|
-| `timber`, `firewood`, regionale Timbers | Holzmarkt / Sägewerk | `DELIVER FOREST GOODS` → Lumber-/Sawmill-Kette; Firewood bleibt Feuerung, regionale Timbers behalten ihre Identität und ihren Markt |
-| `honey`, `game`, `mushrooms`, Beeren, Obst, Fisch, Mast | `tradeValue` + Kategorie-Fallback, saisonal und nach Nahrungsnachfrage | `DELIVER` → royal food store; alternativ `SELL` → Gold; Mast zusätzlich Pannage |
-| Kräuter, Flechten, Rinde, Harz, Medizin-Güter | Kategorie-/`tradeValue`-Preis | `DELIVER` → `addMedicineStock()` (Heiler/`brewMedicine`); alternativ Markt |
-| Felle, Häute, gefärbt/gegerbt, Bienenwachs, Luxus-, Gift-, Faser-, Stein-, Salz- und alle übrigen Regionalgüter | individueller `tradeValue` oder Kategorie-Fallback | `DELIVER` → Gold; `SELL` → Gold; keine ID bleibt ohne Kanal |
-| `acorns`, `beechnuts`, `chestnuts`, `hazelnuts`, `hornbeam-seeds`, `spruce-cones`, `fir-cones`, `pine-cones`, `dwarf-pine-cones` | Mast-Preis | Pannage-Futter (`feedStableFromMast`) und Markt |
-| `hay`, `meadow-grass`, `steppe-grass` | Futter-Preis | Pannage-Futter und Markt |
+### Preisformel
 
-`forestGoodMarketPrice()` nutzt zuerst den vorhandenen
-`BIOME_RESOURCE_BY_ID[].tradeValue`, dann wenige Wald-Overrides und zuletzt
-den Kategoriepreis. Der Preis ist saisonal (0,94–1,12) und bei Nahrung zusätzlich
-an die bestehende Lebensmittelnachfrage gebunden. `SELL FOREST GOODS` verkauft
-das nicht-hölzerne Los zu diesem Quote und bucht Gold in dieselbe Staatskasse;
-das Goods Book bleibt der physischen Ware vorbehalten. `DELIVER FOREST GOODS` nutzt denselben
-Quote für Marktgüter und zeigt statt „X gold“ den tatsächlich gezahlten Betrag.
-Ist der lokale Yard voll, geht der Holzrest in dieselbe gefilterte
-Warehouse-Kette; dadurch wird eine echte Lieferung nicht zu totem Bestand. Holz
-bleibt bewusst im Yard, weil Logs → Planks → Bauen/Firewood die produktive Kette
-sind.
+`forestGoodMarketPrice(id)` löst den Basiswert in dieser Reihenfolge auf:
 
-Die Pannage-Liste ist keine zweite Datenpflege mehr: `MAST_GOODS` und
+`FOREST_GOOD_PRICE_OVERRIDES` → `BIOME_RESOURCE_BY_ID[alias].tradeValue` →
+`FOREST_GOOD_CATEGORY_PRICE[category]` → `0.9`.
+
+Die Aliase `beeswax→wax`, `truffles→truffle`, `juniper-berries→juniper` und
+`reed→reeds` verbinden Wald-IDs mit vorhandenen Katalogwerten. Der Preis ist
+auf mindestens `0.25` begrenzt und auf zwei Nachkommastellen gerundet. Für
+`food`-Güter multipliziert die bestehende Nahrungsnachfrage
+(`state.market.prices.food / 2`, begrenzt auf 0,8–1,4), für alle Güter die
+Saison `[0,94, 1, 1,06, 1,12]`. `forestGoodSaleValue()` zahlt
+`max(1, round(Menge × Quote))` je Gut. `DELIVER` zahlt am Wasser/Fluss
+zusätzlich den 1,5-fachen Goldwert; `SELL` gewährt diesen Flussbonus nicht.
+
+### Audit-Tabelle
+
+| Gut / Gruppe | Anzahl | Kanal | Quote | Konkreter Spielverbrauch |
+|---|---:|---|---|---|
+| `wood`: `timber`, `firewood`, regionale Timbers | 62 | `wood` | Kein `SELL`-Gold; Holz wird nicht über den Waldmarkt verkauft. Regionale Timbers haben ihren separaten `timberQuote` im Timber Market. | `DELIVER` im Lumberyard: regionale Timber-ID bleibt erhalten, generisches `timber` → `logs`, `firewood` → `firewood`; ein voller Yard leitet den Rest in die gefilterte Warehouse-Kette. Logs → Planks/Bau, Firewood → Feuerung. |
+| `food` (4), `gather`→food (64), `hunt`→food (5), `mast`→food (1: `hazelnuts`) | 74 | `food` | Override/TradeValue/Kategorie (food 1,1, gather 0,9, hunt 1,8, mast 0,7) × Nahrungsnachfrage (0,8–1,4) × Saison; Verkauf min. 1G. | `DELIVER` → royal food store; an Gefahrenstandorten bis 20 % Verlust durch `forestHazard.spoilage`; `SELL` → Gold. `hazelnuts` zusätzlich Pannage. |
+| `medicine` | 18 | `medicine` | Kategorie `medicine` (2,2) bzw. Override/TradeValue × Saison; kein Nahrungsfaktor. | `DELIVER` → `addMedicineStock()` (Heiler/`brewMedicine`); `SELL` → Gold. |
+| `gather`→gold | 27 | `gold` | Override/TradeValue/Kategorie `gather` (0,9) × Saison. | `SELL` oder `DELIVER` → Gold; am Fluss/Wasser 1,5×. Beispiele: `herbs`, `lichen`, `bark`, `resin`, `beeswax`, `linden-flower`, `willow-withies`, `salt`. Diese Gruppe ist **nicht** der Heiler-Kanal. |
+| `material` | 28 | `gold` | Kategorie `material` (0,9) bzw. Override/TradeValue × Saison. | `SELL`/`DELIVER` → Staatskasse; keine zusätzliche Baukonsumation. |
+| `luxury` | 18 | `gold` | Kategorie `luxury` (4,0) bzw. Override/TradeValue × Saison. | `SELL`/`DELIVER` → Staatskasse. |
+| `fibre` (9), `resin` (3), `poison` (4) | 16 | `gold` | Kategorie `fibre` 1,0, `resin` 1,8, `poison` 2,5; Override/TradeValue zuerst; × Saison. | `SELL`/`DELIVER` → Staatskasse. |
+| `hunt`→gold: `fur`, `hides`, `tanned-fur`, `cured-hides`, `feathers` | 5 | `gold` | Kategorie `hunt` (1,8) bzw. Override/TradeValue × Saison. | `SELL`/`DELIVER` → Gold; `PROCESS FOREST HUNT` veredelt Rohware zu `tanned-fur`/`cured-hides` vor dem Verkauf. |
+| `mast`→gold: `acorns`, `beechnuts`, `chestnuts`, `hornbeam-seeds`, `spruce-cones`, `fir-cones`, `pine-cones`, `dwarf-pine-cones`, `larch-cones` | 9 | `gold` | Kategorie `mast` (0,7) bzw. Override/TradeValue × Saison. | Zuerst Pannage (`FEED STABLE FROM MAST OR HAY`); danach `SELL`/`DELIVER` → Gold. |
+| `fodder`: `hay`, `meadow-grass`, `steppe-grass` | 3 | `gold` | Kategorie `fodder` (0,45) × Saison. | Pannage-Reserve; danach `SELL`/`DELIVER` → Gold. Der generische `forestGoodUseLabel()`-Chip nennt für Fodder derzeit nur `market`. |
+
+Die Pannage-Liste ist keine zweite Datenpflege: `MAST_GOODS` und
 `FODDER_GOODS` werden direkt aus den Kategorien in `FOREST_GOODS` abgeleitet.
-Damit sind Kegel, Haselnüsse, Hainbuchen-Samen und Steppengras echte Reserve,
-sobald sie im gemeinsamen Sammel-Ledger liegen.
+Damit sind alle zehn Mastgüter — auch Kegel, Haselnüsse, Hainbuchen-Samen und
+Lärchenzapfen — sowie alle drei Futtergüter echte Reserve, sobald sie im
+gemeinsamen Sammel-Ledger liegen. `feedStableFromMast()` entnimmt sie in
+derselben Reihenfolge Mast, dann Fodder, bis die Reserve voll ist.
+
+### Was die Knöpfe auszahlen
+
+| Aktion | Sichtbare Auszahlung | Grenze |
+|---|---|---|
+| `GATHER FOREST PRODUCTS` | Neue Mengen im Forest-goods-Ledger; Toast nennt jede Menge und ggf. den saisonalen Bounty. | Kein direkter Goldbetrag: der Vorrat muss geliefert, verkauft oder verfüttert werden. |
+| `SELL FOREST GOODS (+NG)` | Gold sofort in die Staatskasse; die nicht-hölzernen Bestände sinken; Toast `SOLD … +N GOLD`. | Nur Lumberyard/Forester, nur fertige Gebäude, kein Holz, kein Flussbonus. |
+| `DELIVER FOREST GOODS` | Holz → Yard/Warehouse, Nahrung → royal food store, Medizin → Heiler, Marktgüter → Gold; Toast nennt Ziel und Betrag. | Holz nur im Lumberyard; voller Yard nutzt die Warehouse-Kette; Nahrung kann am Gefahrenstandort verderben; Gold am Wasser 1,5×. |
+| `FEED STABLE FROM MAST OR HAY` | Mast-/Futterbestand sinkt; Reserve steigt um die verfütterten Einheiten (max. 30 Tage); Toast `PANNAGE … DAYS RESERVED`. | Ein Reservetag wird pro Simulationstag verbraucht; leere Mast-/Futtervorräte lehnen ab. |
+| `THIN …` | Entnommener Bestand erscheint als Logs und Firewood im Yard; Toast nennt die Aufteilung. | Output-Lager kann die Aktion ablehnen; kein direkter Goldbetrag. |
+| Lumber-Camp-Produktion | Der Batch skaliert mit `volume`; Logs gehen in den Yard, regionale Timbers und ggf. der Coppice-Firewood-Nebenertrag kommen hinzu. | Kein direkter Goldbetrag; der Signature-Timber wird aus demselben Hieb entnommen. |
+
+### Arbeitsholz: was `WORKING` wirklich ändert
+
+`working.timber` wird bei jedem `forestStandAt()` neu abgeleitet und nicht
+gespeichert. Atlas und Inspektor zeigen dieselben Werte. Die tatsächlichen
+Verbraucher sind:
+
+| Wert | Wirkung im bestehenden System |
+|---|---|
+| `volume` (0,80–1,20) | Multipliziert die Durchforstungsmenge (Clamp 0,80–1,20) und den Lumber-Camp-Batch (Clamp 0,85–1,15). Der entnommene Bestand bleibt exakt die erzeugte Holzmenge. |
+| `logShare` (0,24–0,92) | Teilt den tatsächlich entnommenen Stammholzbestand in Logs und Firewood: `round(taken × logShare)`, mindestens 1 Log; der Rest wird Firewood. |
+| `quality` (0–1) | Geht mit 65 % in `fineWood` ein; hohe Werte verkürzen den Signature-Timber-Takt. |
+| `specialty` (0–1) | Geht mit 35 % in `fineWood` ein und erhöht `logShare` leicht; hohe Werte verkürzen ebenfalls den Signature-Takt. |
+| `sawlog` (0–1) | Produktmarker (`> 0,25` = Sawlogs) und Eingang in `quality`/`logShare`; erzeugt **keinen** eigenen Zusatzertrag. |
+| `firewood` (0–1) | Produktmarker (`> 0,25` = Firewood); bei `coppice`/`coppice-with-standards` und `> 0,45` erscheint Firewood als zusätzliches Sammelgut. Er senkt den Log-Anteil, statt ihn zu erhöhen. |
+
+Der Signature-Timber-Takt beginnt bei 5 Batches, bei regionalem Timber-Faktor
+≥ 1,15 bei 4 und ≤ 0,80 bei 6. `fineWood = quality × 0,65 + specialty × 0,35`
+verkürzt ihn unter 0,62 um einen Batch (Minimum 3), über 0,35 verlängert ihn
+ein grober Bestand um einen (Maximum 7). Die Signature-Einheit ist ein eigener
+Spezialholz-Ertrag aus demselben Bestand; sie entfernt keinen zusätzlichen
+Stamm und dupliziert den Logs-Batch nicht.
 
 ## 3. Echte Wirkungen
 
@@ -340,8 +387,8 @@ sobald sie im gemeinsamen Sammel-Ledger liegen.
 
 ## 6. Verifikation
 
-Stand 2026-11-25: **1.467/1.467 Tests** grün. Die deterministische
-25-Jahres-Kampagne läuft **10.040 Ticks** in **21.642,2 ms** (**1,533 ms/Tick**),
+Stand 2026-11-25: **1.468/1.468 Tests** grün. Die deterministische
+25-Jahres-Kampagne läuft **10.040 Ticks** in **21.850 ms** (**1,314 ms/Tick**),
 64 Bewohner, alle 13 Ambitionen, alle Anforderungen wahr, **3.507 Waldkacheln**,
 **0 untypisiert**, 20 echte Fuel-Backfill-Aufträge (max. 1 pro Phase), kein Game
 Over. Die tropische Browser-Referenz sieht **9.526 Waldkacheln**, **0 untypisiert**,
@@ -356,9 +403,8 @@ belegt. Der Durchforstungsklick liefert **7 Logs + 3 Firewood** (Stock 181 →
 2 Birch timber und 2 Mushrooms**. Der sichtbare Verkauf hebt die Staatskasse von
 **101 auf 107 Gold** (+6 für 3 Birch sap und 2 Mushrooms), die Lieferung bringt
 **6 Logs und 2 Firewood** in Yard/Warehouse und leert das Holz-Ledger; der
-Endbestand liegt bei **629.138**. Die Working-Zeile zeigt in jedem der 12
+Endbestand liegt bei **630.044** (Pages) bzw. **629.657** (GitHub Pages). Die Working-Zeile zeigt in jedem der 12
 Atlas-Samples Sawlog, Firewood, Quality, Log Share, Pilze, Mast, Wild und Habitat.
 Der Spec-Audit meldet **1.616/1.618 implementiert** in 38 Abschnitten; offen
-bleiben nur 4.0.1 und 4.0.6. Der Produktionsdeploy wird aus genau diesem
-getesteten Commit gebaut; beide Hosts werden danach auf denselben Commit und
-den Live-Beweis geprüft.
+bleiben nur 4.0.1 und 4.0.6. Der Produktionsdeploy baut den getesteten
+Code-Stand; beide Hosts werden danach auf denselben Live-Beweis geprüft.

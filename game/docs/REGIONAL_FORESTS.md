@@ -1059,7 +1059,7 @@ Die 60 Typen sind kein zweiter Wald-Simulator. Sie sind eine regionale Overlay-S
 | `forage` | tatsächliche Sammelmenge pflanzlicher und jagdlicher Güter; begrenzt auf 0,75–1,35 | Forage-Wert im Atlas/Inspektor, Sammel-Toast und Ledger |
 | `work` | Arbeitsfaktor beim Sammeln und am Waldknoten; begrenzt auf 0,70–1,15 | Work-Wert, Sammelmenge und Wegekosten |
 | `flood` | Nässe des Standes und Verderb der verderblichen Sammelware; kein zweites Hydrologie-Grid | Hochwasserwert im Inspektor, Verlust im Sammel-Ledger |
-| Signaturholz | Lumber Camp legt je nach `timber` alle 4–6 Produktionsbatches 1 Einheit seiner regionalen Sorte ab | namentliche Ware im Lager, Sägewerk-Rezept, Marktzeile |
+| Signaturholz | Lumber Camp legt je nach regionalem `timber`-Faktor und `quality`/`specialty` alle 3–7 Produktionsbatches 1 Einheit seiner regionalen Sorte ab | namentliche Ware im Lager, Sägewerk-Rezept, Marktzeile; Details in [FOREST_DYNAMICS §3b](FOREST_DYNAMICS.md#3b-jedes-waldgut-hat-einen-preis-oder-einen-verbraucher-v3610) |
 | Signaturgut + Saison | Die Sammelvisite bietet das Signaturgut immer an und zahlt in seiner Saison +1 Einheit | Atlas-Karte, Inspektor, Gather-Toast `SEASONAL BOUNTY` |
 | Übergang | Zweiter, ebenfalls passender Typ an einer Bereichsgrenze; maximal 50 % Beimischung | Inspektor, Atlas `EDGE`, gemischte Bodenpalette |
 | `timber`-Rezept | Sägewerk verarbeitet regionale Ware bevorzugt, Logs bleiben Fallback | Sägewerk-Inspektor „Timber recipe“, produzierte Planks/Firewood |

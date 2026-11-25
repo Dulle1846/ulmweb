@@ -21,11 +21,12 @@ the ten visible in a sample.
   market quote. The previous ten goods with no channel (mast, cones, steppe
   fibre/grass, clay) are gone as a category.
 - **Individual prices, not a flat haul.** Gold delivery and the new market sale
-  use `forestGoodMarketPrice()`: existing biome `tradeValue` data first, forest
-  overrides and category fallbacks second. Food prices follow the existing food
-  market demand and all quotes follow the existing four-season factor. The old
-  flat `0.5` gold per unit is removed, and the toast reports the actual gold
-  paid instead of calling the units "gold".
+  use `forestGoodMarketPrice()`: forest overrides first, existing biome
+  `tradeValue` data second, category fallbacks third. Food prices follow the
+  existing food market demand and all quotes follow the existing four-season
+  factor. The old flat `0.5` gold per unit is removed, and the toast reports the
+  actual gold paid instead of calling the units "gold". The full channel, quote
+  and use audit is in `docs/FOREST_DYNAMICS.md` §3b.
 - **A player can choose the market.** `SELL FOREST GOODS` sells the held
   non-timber lot at the visible quote and pays the gold into the existing
   treasury; `DELIVER FOREST GOODS` still fills food, medicine and the
@@ -39,9 +40,12 @@ the ten visible in a sample.
   meadow goods.
 - **Working wood is fully consumed.** `working.timber.volume` now scales the
   lumber-camp batch as well as thinning. `quality` and `specialty` shorten or
-  lengthen the signature-timber cadence, while `sawlog`, `firewood` and
-  `logShare` keep driving the existing log/firewood split. The signature unit is
-  still carved from the same harvested batch, so no yield is double-counted.
+  lengthen the signature-timber cadence, while `logShare` drives the actual
+  log/firewood split. `sawlog` and `firewood` describe the stand's product mix;
+  firewood also lowers the log share and can unlock extra coppice forage. The
+  signature unit is a separate specialty output from the same stand harvest; it
+  removes no extra stem and does not duplicate the log batch. The
+  value-by-value table is in `docs/FOREST_DYNAMICS.md` §3b.
 - **Readable in play.** The forest atlas now has a separate WORKING row with
   sawlogs, firewood, specialty, quality, log share and volume; every good chip
   names its use. The inspector adds those working values and a Forest goods
