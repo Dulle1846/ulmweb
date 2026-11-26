@@ -578,6 +578,23 @@ try {
     const systemRows = await page.locator("#command-panel-content [data-forest-system]").count();
     assert.equal(atlasCards, 60, "the atlas must list all 60 regional types");
     assert.equal(systemRows, 6, "the atlas must show all six silvicultural systems");
+    const fieldGuide = page.locator("#command-panel-content [data-fauna-guide]");
+    await fieldGuide.waitFor({ state: "visible", timeout: 5000 });
+    if (!await fieldGuide.evaluate(element => element.open)) await fieldGuide.locator("summary").click();
+    await page.clock.runFor(60);
+    const fieldGuidePoints = await fieldGuide.locator("[data-fauna-point]").count();
+    assert.equal(fieldGuidePoints, 30, "the player field guide must expose all thirty fauna points");
+    const fieldGuideText = (await fieldGuide.innerText()).replace(/\s+/g, " ").trim();
+    for (const label of ["Regionale Hirscharten", "Wildschweine und Bodenschäden", "Wanderkorridore", "FIELD GUIDE · 30 POINTS"]) {
+        assert.ok(fieldGuideText.includes(label), "the field guide must name " + label);
+    }
+    for (const match of fieldGuideText.matchAll(/(\d+)%/g)) {
+        assert.ok(Number(match[1]) <= 100, "the field guide must not double-convert percentages: " + match[0]);
+    }
+    await fieldGuide.scrollIntoViewIfNeeded();
+    await page.screenshot({ path: resolve(OUT, "forest-atlas-field-guide.png"), fullPage: false });
+    report.atlasGuide = { points: fieldGuidePoints, text: fieldGuideText.slice(0, 6000) };
+    if (await fieldGuide.evaluate(element => element.open)) await fieldGuide.locator("summary").click();
     const ecologyCards = page.locator("#command-panel-content .forest-atlas__card")
         .filter({ has: page.locator(".forest-atlas__dynamics") });
     const ecologyCount = await ecologyCards.count();

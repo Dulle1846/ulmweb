@@ -52,6 +52,13 @@ test("the rendered atlas lists all 60 types, their effects and their signature t
     const markup = renderForestAtlasPanel();
     const cards = markup.match(/data-forest-type="/g) || [];
     assert.equal(cards.length, REGIONAL_FOREST_TYPES.length);
+    assert.match(markup, /data-fauna-guide="30"/);
+    assert.equal((markup.match(/data-fauna-point="/g) || []).length, 30,
+        "the field guide must render all thirty fauna points exactly once");
+    assert.match(markup, /FAUNA, ECOLOGY AND FOOD WEBS/i);
+    assert.match(markup, /Regionale Hirscharten/);
+    assert.match(markup, /Wanderkorridore/);
+    assert.match(markup, /FIELD GUIDE · 30 POINTS/);
     assert.match(markup, /Sixty regional woodlands/);
     assert.match(markup, /CATALOGUED/);
     assert.match(markup, /SURVEYED/);

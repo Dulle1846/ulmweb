@@ -9,7 +9,7 @@ import {
 } from "../world/regional-forests.js";
 import { FOREST_GOODS, forestStandAt } from "../world/forest-ecology.js";
 import { FOREST_MANAGEMENT_SYSTEMS } from "../world/forest-dynamics.js";
-import { forestFaunaEcologyFor } from "../world/forest-fauna-ecology.js";
+import { forestFaunaEcologyFor, forestFaunaFieldGuide } from "../world/forest-fauna-ecology.js";
 import { timberQuote } from "../systems/regional-timber-market.js";
 import { forestGoodUseLabel } from "../systems/forest-gathering.js";
 
@@ -274,6 +274,39 @@ function card(type, count, sampled, transitionCount, currentSeason, dynamics = n
         + '</details>';
 }
 
+// The atlas cards carry eight decision cells per forest type. This guide opens
+// the complete requested set once, against the richest sampled wood, so every
+// point has a visible live reading and a plain-language field note. It is one
+// bounded block of thirty rows and adds no survey or simulation work.
+function faunaFieldGuide(survey) {
+    const reference = survey.types
+        .filter(entry => entry.count > 0 && entry.fauna)
+        .sort((a, b) => (b.fauna.indicators?.biodiversity || 0) - (a.fauna.indicators?.biodiversity || 0))[0];
+    if (!reference) return "";
+    const points = forestFaunaFieldGuide(reference.fauna);
+    if (!points.length) return "";
+    const type = REGIONAL_FOREST_TYPES.find(entry => entry.id === reference.id);
+    const label = type ? (type.short || type.label) : reference.id;
+    const rows = points.map(point => {
+        const facts = point.facts.map(fact => '<span>' + esc(fact) + '</span>').join("");
+        return '<article class="forest-atlas__guide-point" data-fauna-point="' + esc(point.id) + '">'
+            + '<div class="forest-atlas__guide-head"><b>' + esc(point.id.slice(-3)) + '</b><span>' + esc(point.group.toUpperCase()) + '</span></div>'
+            + '<h4>' + esc(point.title) + '</h4>'
+            + '<p>' + facts + '</p>'
+            + '<small>' + esc(point.note) + '</small>'
+            + '</article>';
+    }).join("");
+    return '<details class="forest-atlas__field-guide" data-fauna-guide="' + number(points.length) + '">'
+        + '<summary><span>FIELD GUIDE · ' + number(points.length) + ' POINTS</span>'
+        + '<strong>Fauna, ecology and food webs</strong>'
+        + '<em>Reference wood: ' + esc(reference.id.slice(-3)) + ' · ' + esc(label) + ' · ' + esc(survey.season) + '</em></summary>'
+        + '<p class="forest-atlas__guide-intro">All thirty requested fauna and ecology points, read live from the reference wood. '
+        + 'Each value follows the same stand, season and management record that feeds hunting, gathering, herd growth and regeneration. '
+        + 'Open a forest type above to compare its own fauna summary.</p>'
+        + '<div class="forest-atlas__guide-grid">' + rows + '</div>'
+        + '</details>';
+}
+
 export function renderForestAtlasPanel() {
     const survey = forestAtlasSurvey();
     if (!survey.available) {
@@ -303,6 +336,7 @@ export function renderForestAtlasPanel() {
         + '<div><small>SURVEYED</small><strong>' + number(survey.sampled) + ' SAMPLES</strong></div>'
         + '<div><small>TRANSITION EDGES</small><strong>' + number(survey.transitionSamples) + '</strong></div>'
         + '<div><small>SEASON</small><strong>' + esc(survey.season.toUpperCase()) + '</strong></div></div>'
+        + faunaFieldGuide(survey)
         + '<div class="forest-atlas">' + cards + '</div>'
         + '<p class="command-note">The realm count comes from a bounded deterministic sample of up to ' + number(SURVEY_LIMIT)
         + ' forest tiles; it is a survey, not a per-frame scan. Timber, regrowth, wildlife, forage and work are live simulation inputs: they price lumber batches, gathering yields, regrowth and habitat. Flood raises the spoilage of a perishable harvest, and a signature good pays a bonus in its own season. The ecology block is taken from the first surveyed tile of each type: it reports the actual mixture class, succession phase, seed bank, mother trees, genetic breadth, site fitness, disease resistance, silvicultural system, roots, humus, mycorrhiza, understorey, lianas, epiphytes and canopy gaps. Timber prices are the current seasonal base quote of the regional timber market in the Royal Stores.</p>';

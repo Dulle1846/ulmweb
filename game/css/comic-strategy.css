@@ -413,10 +413,29 @@
 .forest-atlas__chip b{color:var(--color-antique-gold)}
 .forest-atlas__good{padding:2px 5px;border-radius:3px;background:rgba(0,0,0,.22);color:var(--ui-paper-muted);font:700 6px/1.2 var(--ui-body-font,sans-serif);letter-spacing:.04em;text-transform:capitalize}
 .forest-atlas__good small{display:block;font:500 5px/1.2 var(--ui-body-font,sans-serif);color:rgba(227,189,113,.85);text-transform:none;letter-spacing:0}
+.forest-atlas__field-guide{margin:10px 0 2px;border:1px solid rgba(120,160,110,.45);border-radius:6px;background:rgba(38,52,38,.2)}
+.forest-atlas__field-guide>summary{display:grid;grid-template-columns:auto minmax(0,1fr);gap:3px 10px;align-items:baseline;padding:9px 10px;cursor:pointer;list-style:none}
+.forest-atlas__field-guide>summary::-webkit-details-marker{display:none}
+.forest-atlas__field-guide>summary span{color:var(--color-antique-gold);font:700 6px/1.2 var(--ui-body-font,sans-serif);letter-spacing:.12em}
+.forest-atlas__field-guide>summary strong{color:var(--ui-paper-text);font:700 10px/1.2 var(--ui-title-font,Georgia,serif);letter-spacing:.03em}
+.forest-atlas__field-guide>summary em{grid-column:2;color:var(--ui-paper-muted);font:700 6px/1.3 var(--ui-body-font,sans-serif);font-style:normal;letter-spacing:.05em}
+.forest-atlas__guide-intro{margin:0;padding:0 10px 8px;color:var(--ui-paper-muted);font:400 8px/1.5 var(--ui-body-font,sans-serif)}
+.forest-atlas__guide-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:6px;padding:0 8px 8px}
+.forest-atlas__guide-point{display:flex;min-width:0;flex-direction:column;gap:3px;padding:7px 8px;border:1px solid var(--ui-line);border-radius:4px;background:rgba(20,24,20,.32)}
+.forest-atlas__guide-head{display:flex;gap:6px;align-items:baseline;justify-content:space-between}
+.forest-atlas__guide-head b{color:var(--color-antique-gold);font:700 8px/1 var(--ui-number-font,monospace);letter-spacing:.08em}
+.forest-atlas__guide-head span{color:var(--ui-paper-muted);font:700 5.5px/1.2 var(--ui-body-font,sans-serif);letter-spacing:.09em;text-transform:uppercase}
+.forest-atlas__guide-point h4{margin:0;color:var(--ui-paper-text);font:700 8px/1.3 var(--ui-title-font,Georgia,serif);letter-spacing:.02em}
+.forest-atlas__guide-point p{display:flex;flex-direction:column;gap:2px;margin:0;color:var(--ui-paper-text);font:700 6.5px/1.35 var(--ui-body-font,sans-serif)}
+.forest-atlas__guide-point p span{overflow-wrap:anywhere}
+.forest-atlas__guide-point small{color:var(--ui-paper-muted);font:400 7px/1.45 var(--ui-body-font,sans-serif)}
 @media(max-width:620px){
  .timber-market__row{grid-template-columns:minmax(0,1fr) auto}
  .timber-market__sell{grid-column:1 / -1}
  .forest-atlas__card>summary{grid-template-columns:auto minmax(0,1fr)}
  .forest-atlas__presence{grid-column:1 / -1;justify-self:start}
  .forest-atlas__stats{grid-template-columns:1fr}
+ .forest-atlas__guide-grid{grid-template-columns:1fr}
+ .forest-atlas__field-guide>summary{grid-template-columns:1fr}
+ .forest-atlas__field-guide>summary em{grid-column:1}
 }

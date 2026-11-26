@@ -1,6 +1,6 @@
 # Fauna, Ökologie und Nahrungsnetze · 1.2.23.1.091–120
 
-> **Status: implementiert, vertieft und als Spielmechanik verdrahtet (v3.64.0).**
+> **Status: implementiert, vertieft und als Spielmechanik verdrahtet (v3.65.0).**
 > Die 30 Punkte laufen als eine reine, abgeleitete `forest-fauna-ecology`-Schicht
 > über dem bestehenden `forestStandAt()`-Vertrag. Es gibt keine zweite Karte,
 > keinen zweiten Waldsimulator, keinen neuen Save-Typ und keine zusätzliche
@@ -151,6 +151,31 @@ Die Werte sind keine Parallelökologie. Sie fließen in vorhandene Systeme:
 | **Atlas** (`forest-atlas-panel.js`) | Acht neue Zellen: WILDLIFE, PREDATORS, WATER FAUNA, INSECTS, DEADWOOD LIFE, CYCLE, CORRIDOR, HARVEST | Jede der 60 regionalen Karten zeigt die echte Lebensgemeinschaft ihres ersten Bestands, ohne einen zweiten Survey. |
 | **Inspektor** (`management-ui.js`) | `forestFaunaEcologySummary()` plus `FAUNA ECOLOGY`, `FOOD WEB`, `INDICATORS` | Der Lumberyard/Forester zeigt regionale Deer-Art, Browse, Wühlen, Wolf/Bär, Biber/Otter, Fisch, Bestäuber, Schädlinge, Wasser, Zyklus, Korridor, Gesundheits-/Altwald-/Vielfaltsindizes und die Größe des Nahrungsnetzes. |
 | **Karte** (`forestFaunaFor`) | `stand.fauna`, regionale Key, `wetness`, `mastCrop`, Alter | Bär, Biber, Otter, Elch und Rentier erscheinen als echte Marker, wenn ihr Habitat sie trägt. Die Auswahl bleibt begrenzt und nutzt die vorhandenen Renderer-Formen. |
+
+### Der Feldguide im Atlas (3.65.0)
+
+Der Atlas zeigte bisher acht Zusammenfassungszellen pro regionalem Typ. Seit
+**3.65.0** öffnet zusätzlich ein einzelner, standardmäßig geschlossener
+`FIELD GUIDE · 30 POINTS`-Block alle dreißig Punkte auf einmal. Er ist kein
+zweiter Survey: Der Block nimmt den bereits gesampledten Bestand mit der
+höchsten Biodiversität als Referenz und liest `forestFaunaFieldGuide()` aus
+demselben `forestFaunaEcologyFor()`-Rekord.
+
+Jede Zeile enthält:
+
+- die stabile ID und den Titel des Punkts,
+- die Gilde (z. B. `predator`, `insect`, `aquatic`),
+- zwei Live-Werte mit Einheit,
+- eine statische Feldnotiz aus `FOREST_FAUNA_NOTES`, die erklärt, welche
+  Standentscheidung den Wert bewegt.
+
+`forestFaunaFieldGuide()` liefert immer genau 30 Einträge in der Reihenfolge
+von `FOREST_FAUNA_POINT_IDS`; der Test prüft IDs, Titel, Gilde, Notizlänge,
+zwei Lesungen pro Punkt und dass keine `undefined`-/`NaN`-Werte in die UI
+gelangen. Der Atlas-Test zählt exakt 30 `data-fauna-point`-Zeilen, und der
+Live-Browser-Proof öffnet den Block über die echte Spieler-UI und prüft die
+Prozentgrenzen. Der Guide kostet nur beim Rendern des Atlas; das tägliche
+Herdenmodell liest weiterhin die 25-Zahlen-Projektion.
 
 ### Die fünf neuen gespeicherten Herden
 

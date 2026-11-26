@@ -1,13 +1,52 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.64.1`
-**Next development line:** `3.65.0-dev`
+**Current production version:** `3.65.0`
+**Next development line:** `3.66.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
 **Last repository verification:** 2026-11-26 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.65.0 — Every fauna point gets a field guide
+
+The complete **1.2.23.1.091–120** ecology set was already a live, derived layer
+behind hunting, gathering, herd growth, regeneration and the forest atlas. The
+atlas exposed eight decision cells per regional type, but the full thirty-point
+record was only readable in code and documentation. This release turns that
+record into a player-facing field guide without adding a second simulation,
+save field or per-frame cost.
+
+- **All thirty points now have a readable entry.** `forestFaunaFieldGuide()`
+  expands the same detailed record used by the atlas and inspector into thirty
+  rows. Each row carries its stable id (`1.2.23.1.091`–`1.2.23.1.120`), title,
+  guild group, two live readings and a field note explaining what moves it.
+- **The reference wood is the richest sampled stand.** The atlas opens one
+  `FIELD GUIDE · 30 POINTS` block against the sampled type with the highest
+  biodiversity. The guide names the reference wood, its id and the current
+  season, and all values stay live as the realm advances.
+- **Every point has an in-game explanation.** `FOREST_FAUNA_NOTES` covers
+  regional deer, boar rooting, bears, wolf packs, lynx ambush cover, raptor
+  indicators, owl hollows, woodpecker cavities, songbird chorus, beaver ponds,
+  otter water quality, marten/weasel caching, hare/rabbit edge use, rodent
+  caches, bat roosts, pollinators and pests, ant mounds, wild-bee nests,
+  butterflies, deadwood beetles, amphibians, reptiles, fish, mussels/crayfish,
+  fungi, moss/lichen, parasites, scavengers, predator–prey cycles and
+  corridors. The text is static; every number beside it is derived.
+- **No new save or tick work.** The guide is built only when the atlas renders,
+  from the existing bounded survey sample. The herd model still reads the
+  compact quick-signal projection; the detailed thirty-guild record is not
+  attached to every stand or frame.
+- **The player view is bounded.** The guide is one collapsed `<details>` block
+  with exactly thirty entries, so it does not inflate all sixty atlas cards.
+  Opening a type still shows its own eight fauna cells for comparison.
+- **Release gate.** Full `npm test` passes **1534/1534**; the syntax gate covers
+  **224 source files / 254 UI ids**. The live Chromium forest proof opens the
+  guide through the real UI, counts **30 points**, checks key titles, keeps
+  every percent at or below 100, and reports **60 atlas cards**, **14 ecology
+  blocks**, **12 sampled stands** and zero page or console errors. It writes
+  `artifacts/forest-dynamics-live/forest-atlas-field-guide.png`.
 
 ## 3.64.1 — Fauna readings keep their units
 

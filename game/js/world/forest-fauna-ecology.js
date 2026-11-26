@@ -141,6 +141,42 @@ export const FOREST_FAUNA_POINTS = Object.freeze({
 
 export const FOREST_FAUNA_POINT_IDS = Object.freeze(Object.keys(FOREST_FAUNA_POINTS));
 
+// Player-facing field notes. They explain what the live values mean and which
+// stand decision moves them. The notes are static text; every number beside
+// them still comes from the same derived record as the simulation.
+export const FOREST_FAUNA_NOTES = Object.freeze({
+    '1.2.23.1.091': 'Regional deer follow the wood and the climate. Browse pressure feeds back into regeneration, while winter yards and hunting quotas decide next season\u2019s herd.',
+    '1.2.23.1.092': 'Wild boar turn the litter for roots and mast. Sounder size and rooting rise in mast years; repeated soil damage and crop risk follow the same pressure.',
+    '1.2.23.1.093': 'Bears are rare apex predators of old, remote woods. Mast, berries and deadwood hold them; they take deer and boar and raise livestock risk at the edge.',
+    '1.2.23.1.094': 'Wolf packs need prey, cover and quiet. Pack size follows habitat and remoteness; corridor use names the routes a pack would need to reach new woods.',
+    '1.2.23.1.095': 'The lynx is a solitary ambusher. Deadwood, shrub thickets and young stands give it cover; it controls roe deer and hares without needing a pack.',
+    '1.2.23.1.096': 'Raptor pairs are the wood\u2019s public health index. Canopy nest sites, edge hunting lanes, rodents and low disturbance decide how many pairs stay.',
+    '1.2.23.1.097': 'Owls depend on old trees and hollows. Their pairs track cavity roosts and small mammal prey, and their night activity rises in dark, structured stands.',
+    '1.2.23.1.098': 'Woodpeckers are the first sign that deadwood continuity is returning. Standing deadwood and old trees decide their pairs and the cavities they excavate.',
+    '1.2.23.1.099': 'Songbird richness follows layers, flowers and berries. Dawn and dusk chorus peak in spring and fade to contact calls in winter.',
+    '1.2.23.1.100': 'Beavers build ponds from willow and broadleaf. Colonies store water, create fish nurseries and coppice regrowth, but raise flood risk on wet ground.',
+    '1.2.23.1.101': 'Otters need clean water and fish. Their presence is a direct check on water quality, stream shade and the corridor along the watercourse.',
+    '1.2.23.1.102': 'Martens and weasels cache prey and control rodents. Shrub cover and cavity trees decide whether these small predators stay in the wood.',
+    '1.2.23.1.103': 'Hares need open edges and young growth. Rabbits follow settlement edges and warrens, and can damage crops where cover is abundant.',
+    '1.2.23.1.104': 'Rodents cache mast and seeds. Their hoards disperse trees and feed owls, raptors, martens and boar through the winter.',
+    '1.2.23.1.105': 'Bats need cavities and old crowns for roosts. Colonies hunt nocturnal insects over water, flowering layers and deadwood-rich edges.',
+    '1.2.23.1.106': 'Insect richness splits into pollinators, pests and bird food. Drought, pure conifer stands and lost deadwood shift the balance toward pests.',
+    '1.2.23.1.107': 'Ant mounds turn soil and defend trees against larvae. Litter, shade and moisture keep colonies active; drought and pure stands reduce them.',
+    '1.2.23.1.108': 'Wild bees nest in deadwood, cavities and bare ground. Flower cover and undisturbed nesting sites decide pollination and honey potential.',
+    '1.2.23.1.109': 'Butterflies follow nectar, sunlit gaps and edge flowers. Broods and colour change with the season, and winter is spent as larvae or hibernation.',
+    '1.2.23.1.110': 'Deadwood beetles indicate old-growth continuity. Standing and fallen deadwood, decay and cavity trees decide their richness and red-list load.',
+    '1.2.23.1.111': 'Amphibians need fish-free pools and wet hollows. Fish presence lowers juvenile survival; spring is the spawning chorus.',
+    '1.2.23.1.112': 'Reptiles need sunlit clearings and leaf-litter refuges. Dense shade pushes them to the edge, while open woods keep basking sites.',
+    '1.2.23.1.113': 'Fish need shaded, clean, uncompacted streams. Trout and bullhead biomass follows water quality, pools and shade.',
+    '1.2.23.1.114': 'Crayfish and mussels filter the water and are sensitive indicators. Compaction, pollution and lost shade remove them before fish disappear.',
+    '1.2.23.1.115': 'Fungi fruit in autumn, decompose deadwood and support mycorrhiza. Edible and medicinal yields follow soil, litter and old-growth structure.',
+    '1.2.23.1.116': 'Moss and lichen track humidity, shade and air quality. Desiccation risk rises when a moist stand is opened and the floor dries.',
+    '1.2.23.1.117': 'Parasites follow host density: ticks on deer, liver fluke on wet boar ground, mange in dense fox cover. The load is a condition reading for the herd.',
+    '1.2.23.1.118': 'Scavengers remove carcasses and return nutrients. Open, warm woods clean up faster than closed, cold ones; hunting leaves the carcass sites.',
+    '1.2.23.1.119': 'Hare\u2013lynx, vole\u2013owl and mast cycles swing on fixed periods from seed, tile and year. The phase describes the swing while local habitat still sets the herd ceiling.',
+    '1.2.23.1.120': 'Corridors follow the edge mantle, canopy, water and regional transition belts. The barrier label reports how fragmented the approach to this wood is.',
+});
+
 // A compact signal record. The stand, the herd model and the renderer read
 // these numbers; they are cheap enough to calculate for every visible stand
 // without allocating thirty guild objects.
@@ -1127,6 +1163,148 @@ function buildSummary(record) {
     bits.push('cycle ' + record.cycles.hareLynx.label + ' · corridor '
         + record.corridors.quality + '%');
     return bits.join(' · ');
+}
+
+// One live row per requested point for the in-game field guide. The rows are
+// derived from the same record as the atlas and inspector, so the guide cannot
+// drift from the simulation.
+const FIELD_GUIDE_FACTS = Object.freeze({
+    deer: r => [
+        r.deer.primary + ' · ' + r.deer.densityPer100Ha + '/100 ha',
+        'browse ' + r.deer.browsePressure + '% · predators ' + r.deer.predators,
+    ],
+    boar: r => [
+        r.boar.sounderSize + ' animals · rooting ' + r.boar.rooting + '%',
+        'mast ' + r.boar.mastUse + '% · crop risk ' + r.boar.cropRisk + '%',
+    ],
+    bear: r => [
+        r.bear.present ? r.bear.densityPer100Km2 + '/100 km² · ' + r.bear.denSites + ' den sites' : 'No resident bear',
+        'danger ' + pct(r.bear.danger) + '% · ' + (r.bear.cubs ? 'cubs in spring' : 'solitary'),
+    ],
+    wolf: r => [
+        r.wolf.present ? 'pack ' + r.wolf.packSize + ' · hunt ' + pct(r.wolf.huntSuccess) + '%' : 'No resident pack',
+        'territory ' + r.wolf.territoryKm2 + ' km² · livestock ' + pct(r.wolf.livestockRisk) + '%',
+    ],
+    lynx: r => [
+        r.lynx.present ? r.lynx.densityPer100Km2 + '/100 km² · ' + r.lynx.territoryKm2 + ' km²' : 'No resident lynx',
+        'stealth ' + pct(r.lynx.stealth) + '% · ambush ' + pct(r.lynx.ambushCover) + '%',
+    ],
+    raptors: r => [
+        r.raptors.pairs + ' pairs · indicator ' + r.raptors.indicator + '%',
+        (r.raptors.species || []).slice(0, 3).join(' · '),
+    ],
+    owls: r => [
+        r.owls.pairs + ' pairs · ' + r.owls.hollows + ' hollows',
+        'night activity ' + r.owls.nightActivity + '% · ' + (r.owls.fledgingSeason ? 'fledging' : 'roosting'),
+    ],
+    woodpeckers: r => [
+        r.woodpeckers.pairs + ' pairs · ' + r.woodpeckers.cavitiesExcavated + ' cavities',
+        'standing deadwood ' + r.woodpeckers.standingDeadwoodUse + '% · drumming ' + r.woodpeckers.drumming + '%',
+    ],
+    songbirds: r => [
+        r.songbirds.speciesRichness + ' species · ' + r.songbirds.migrants + ' migrants',
+        'chorus dawn ' + pct(r.songbirds.chorus.dawn) + '% · dusk ' + pct(r.songbirds.chorus.dusk) + '%',
+    ],
+    beavers: r => [
+        r.beavers.colonies + ' colonies · ' + r.beavers.pondsHa + ' ha ponds',
+        'storage ' + r.beavers.waterStorageM3 + ' m³ · flood ' + pct(r.beavers.floodRisk) + '%',
+    ],
+    otters: r => [
+        r.otters.individuals + ' individuals · ' + r.otters.territoryKm + ' km',
+        'clean water ' + r.otters.cleanWaterNeed + '% · fish share ' + r.otters.fishShare + '%',
+    ],
+    smallPredators: r => [
+        'marten ' + r.smallPredators.marten.densityPer100Km2 + '/100 km² · weasel ' + r.smallPredators.weasel.densityPer100Km2 + '/100 km²',
+        'caching ' + r.smallPredators.marten.caching + '% · rodent control ' + r.smallPredators.weasel.rodentControl + '%',
+    ],
+    lagomorphs: r => [
+        'hare ' + r.lagomorphs.hare.densityPer100Ha + '/100 ha',
+        'rabbit ' + r.lagomorphs.rabbit.warrens + ' warrens · crop damage ' + r.lagomorphs.rabbit.cropDamage + '%',
+    ],
+    rodents: r => [
+        r.rodents.species.length + ' species · abundance ' + r.rodents.abundance + '%',
+        'cache ' + r.rodents.seedCacheKgHa + ' kg/ha · dispersal ' + r.rodents.seedDispersal + '%',
+    ],
+    bats: r => [
+        (r.bats.colony ? 'colony' : 'no colony') + ' · ' + r.bats.roosts + ' roosts',
+        'nightly insects ' + r.bats.nightlyInsectKg + ' kg · ' + r.bats.activity,
+    ],
+    insects: r => [
+        r.insects.speciesRichness + ' species · ' + r.insects.foodForBirdsKgHa + ' kg/ha bird food',
+        'pollinators ' + r.insects.pollinators + '% · pests ' + r.insects.pests + '%',
+    ],
+    ants: r => [
+        r.ants.moundsPerHa + ' mounds/ha · ' + r.ants.soilTurnoverKgHaYear + ' kg/ha·y',
+        'pest defence ' + r.ants.pestDefence + '% · ' + (r.ants.swarming ? 'swarming' : 'colonies active'),
+    ],
+    wildBees: r => [
+        r.wildBees.speciesRichness + ' species · ' + r.wildBees.nestingSites + ' nesting sites',
+        'pollination ' + r.wildBees.pollinationShare + '% · honey ' + r.wildBees.honeyPotential + '%',
+    ],
+    butterflies: r => [
+        r.butterflies.speciesRichness + ' species · ' + r.butterflies.flightWeeks + ' flight weeks',
+        r.butterflies.nectarSources + ' nectar sources · colour ' + r.butterflies.seasonalColour + '%',
+    ],
+    deadwoodBeetles: r => [
+        r.deadwoodBeetles.speciesRichness + ' species · ' + r.deadwoodBeetles.redListed + ' red-listed',
+        'old growth ' + r.deadwoodBeetles.oldGrowthIndicator + '% · deadwood need ' + r.deadwoodBeetles.deadwoodNeed + '%',
+    ],
+    amphibians: r => [
+        (r.amphibians.present ? r.amphibians.pools + ' pools' : 'No breeding pools'),
+        'juvenile survival ' + r.amphibians.juvenileSurvival + '% · fish predation ' + r.amphibians.fishPredation + '%',
+    ],
+    reptiles: r => [
+        'abundance ' + r.reptiles.abundance + '% · ' + r.reptiles.species.length + ' species',
+        r.reptiles.baskingSites + ' basking sites · ' + r.reptiles.sunnyClearings + ' clearings',
+    ],
+    fish: r => [
+        r.fish.biomassKgHa + ' kg/ha · ' + (r.fish.present ? 'present' : 'absent'),
+        'water ' + r.fish.waterQuality + '% · ' + r.fish.pools + ' pools',
+    ],
+    waterFilters: r => [
+        r.waterFilters.mussels.populationPerM2 + '/m² mussels · ' + r.waterFilters.crayfish.populationPerM2 + '/m² crayfish',
+        'filter ' + r.waterFilters.mussels.filteredLitresDay + ' L/day · indicator ' + r.waterFilters.indicator + '%',
+    ],
+    fungi: r => [
+        r.fungi.speciesRichness + ' species · ' + r.fungi.yieldKgHa + ' kg/ha',
+        'edible ' + r.fungi.edible + '% · mycorrhizal ' + r.fungi.mycorrhizal + '%',
+    ],
+    mossLichen: r => [
+        'moss ' + r.mossLichen.mossCover + '% · lichen ' + r.mossLichen.lichenCover + '%',
+        'humidity ' + r.mossLichen.humidityIndicator + '% · desiccation ' + r.mossLichen.desiccationRisk + '%',
+    ],
+    parasites: r => [
+        'load ' + r.parasites.load + '% · ' + r.parasites.ticksPerDeer + ' ticks/deer',
+        'herd condition ' + r.parasites.herdCondition + '% · ' + r.parasites.hosts.length + ' host links',
+    ],
+    scavengers: r => [
+        'abundance ' + r.scavengers.abundance + '% · ' + r.scavengers.diseaseCleanup + '% cleanup',
+        r.scavengers.carcassRemovalDays + ' days removal · ' + r.scavengers.nutrientReturnKgHaYear + ' kg/ha·y',
+    ],
+    cycles: r => [
+        'hare ' + r.cycles.hareLynx.hareIndex + '% · lynx ' + r.cycles.hareLynx.lynxIndex + '% · ' + r.cycles.hareLynx.label,
+        'mast ' + r.cycles.mast.label + ' · predation ' + r.cycles.predationPressure + '%',
+    ],
+    corridors: r => [
+        r.corridors.quality + '% quality · ' + r.corridors.links + ' links',
+        r.corridors.nearestWoodKm + ' km · ' + r.corridors.roadBarrier + ' · ' + r.corridors.direction,
+    ],
+});
+
+export function forestFaunaFieldGuide(record) {
+    if (!record) return [];
+    return FOREST_FAUNA_POINT_IDS.map(id => {
+        const meta = FOREST_FAUNA_POINTS[id];
+        const facts = (FIELD_GUIDE_FACTS[meta.key]?.(record) || []).filter(Boolean);
+        return {
+            id,
+            key: meta.key,
+            title: meta.title,
+            group: meta.group,
+            note: FOREST_FAUNA_NOTES[id] || '',
+            facts,
+        };
+    });
 }
 
 // A compact, human-readable line for the inspector. It names the values that

@@ -1,9 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-    FOREST_FAUNA_POINTS, FOREST_FAUNA_POINT_IDS, FAUNA_SEASONS,
+    FOREST_FAUNA_POINTS, FOREST_FAUNA_POINT_IDS, FOREST_FAUNA_NOTES, FAUNA_SEASONS,
     faunaSeasonAt, forestFaunaEcologyFor, forestFaunaSignalsFor,
-    forestFaunaCommunityFor, forestFaunaEcologySummary,
+    forestFaunaCommunityFor, forestFaunaEcologySummary, forestFaunaFieldGuide,
 } from "../../js/world/forest-fauna-ecology.js";
 import {
     FOREST_FAUNA, forestGoodsFor, forestStandAt,
@@ -135,6 +135,23 @@ test("all thirty point records exist, are bounded and deterministic", () => {
     assert.match(forestFaunaEcologySummary(record), /browse/i);
     assert.deepEqual(forestFaunaSignalsFor(rich()), record.signals);
     assert.equal(ecology(null), null);
+});
+
+test("the field guide expands all thirty points with live facts and field notes", () => {
+    const guide = forestFaunaFieldGuide(ecology(rich()));
+    assert.equal(guide.length, 30);
+    assert.equal(new Set(guide.map(entry => entry.id)).size, 30);
+    for (const [index, entry] of guide.entries()) {
+        assert.equal(entry.id, FOREST_FAUNA_POINT_IDS[index]);
+        assert.equal(entry.title, FOREST_FAUNA_POINTS[entry.id].title);
+        assert.equal(entry.group, FOREST_FAUNA_POINTS[entry.id].group);
+        assert.equal(entry.note, FOREST_FAUNA_NOTES[entry.id]);
+        assert.ok(entry.note.length >= 60, entry.id + " needs a useful field note");
+        assert.equal(entry.facts.length, 2, entry.id + " needs two live readings");
+        assert.ok(entry.facts.every(fact => fact && !/undefined|NaN/.test(fact)),
+            entry.id + " must not leak missing values");
+    }
+    assert.equal(forestFaunaFieldGuide(null).length, 0);
 });
 
 test("091 regional deer follow the regional forest and climate", () => {
