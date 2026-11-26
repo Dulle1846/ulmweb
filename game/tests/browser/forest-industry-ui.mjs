@@ -416,6 +416,12 @@ try {
     assert.equal(await page.locator('[data-culture-guide="30"]').count(), 1);
     assert.equal(await page.locator("[data-culture-role]").count(), 12);
     assert.equal(await page.locator("[data-culture-tech]").count(), 5);
+    assert.equal(await page.locator("[data-culture-action^='festival-']").count(), 3);
+    assert.equal(await page.locator("[data-culture-action^='offering-']").count(), 3);
+    assert.equal(await page.locator("[data-culture-doctrine]").count(), 3);
+    assert.equal(await page.locator("[data-culture-action='hermit']").count(), 1);
+    assert.equal(await page.locator("[data-culture-action='school']").count(), 1);
+    assert.equal(await page.locator("[data-culture-action='remedy']").count(), 1);
     const profileText = await page.locator("[data-culture-profile]").innerText();
     assert.match(profileText, /TABOO/);
     assert.match(profileText, /REGIONAL TALE/);
@@ -442,6 +448,20 @@ try {
     });
     assert.equal(groveAfter.summary.groves.length, 1);
     assert.equal(groveAfter.guarded, 0, "the real harvest guard must refuse the sacred tile");
+    assert.equal(groveAfter.grove.vitality, 62);
+    assert.ok(groveAfter.grove.trait && groveAfter.grove.traitLabel);
+    await page.locator("[data-culture-tend]").click();
+    await page.waitForFunction(() => document.querySelector("#action-toast")?.textContent.includes("GROVE TENDED"), null, { timeout: 5000 });
+    const tended = await page.evaluate(async () => {
+        const [{ state }, { forestCultureSummary }] = await Promise.all([
+            import("./js/core/state.js"),
+            import("./js/systems/forest-culture.js"),
+        ]);
+        const summary = forestCultureSummary();
+        return { vitality: summary.groves[0].vitality, tendedYear: summary.groves[0].tendedYear, year: state.year };
+    });
+    assert.equal(tended.vitality, 70, "tending a grove must restore real vitality");
+    assert.equal(tended.tendedYear, tended.year);
     await page.locator('[data-culture-action="lore"]').click();
     await page.waitForFunction(() => document.querySelector("#action-toast")?.textContent.includes("WOODLORE COLLECTED"), null, { timeout: 5000 });
     const loreAfter = await page.evaluate(async () => {
@@ -449,11 +469,15 @@ try {
         const summary = forestCultureSummary();
         return { lore: summary.lore.length, names: summary.profile.names.female.length, tale: summary.profile.tale.title };
     });
-    assert.equal(loreAfter.lore, 3);
-    await page.locator('[data-culture-action="offering"]').click();
+    assert.equal(loreAfter.lore, 6);
+    await page.locator('[data-culture-action="offering-herbs"]').click();
     await page.waitForFunction(() => document.querySelector("#action-toast")?.textContent.includes("OFFERING MADE"), null, { timeout: 5000 });
-    await page.locator('[data-culture-action="festival"]').click();
+    await page.locator('[data-culture-action="festival-spring"]').click();
     await page.waitForFunction(() => document.querySelector("#action-toast")?.textContent.includes("FOREST FESTIVAL"), null, { timeout: 5000 });
+    await page.locator('[data-culture-action="school"]').click();
+    await page.waitForFunction(() => document.querySelector("#action-toast")?.textContent.includes("WOODLAND SCHOOL"), null, { timeout: 5000 });
+    await page.locator('[data-culture-action="hermit"]').click();
+    await page.waitForFunction(() => document.querySelector("#action-toast")?.textContent.includes("HERMIT'S OMEN"), null, { timeout: 5000 });
     await page.locator('[data-culture-action="hunt"]').click();
     await page.waitForFunction(() => document.querySelector("#action-toast")?.textContent.includes("HUNT RITE"), null, { timeout: 5000 });
     await page.locator('[data-culture-action="wedding"]').click();
@@ -469,7 +493,10 @@ try {
     assert.equal(cultureAfter.counts.festivals, 1);
     assert.equal(cultureAfter.counts.rites, 1);
     assert.equal(cultureAfter.counts.weddings, 1);
-    assert.equal(cultureAfter.lore.length, 3);
+    assert.equal(cultureAfter.counts.apprentices, 2);
+    assert.equal(cultureAfter.lore.length, 6);
+    assert.equal(cultureAfter.doctrine.id, "balance");
+    assert.equal(cultureAfter.groves[0].vitality, 70);
     await page.locator(".culture-roles").scrollIntoViewIfNeeded();
     await page.waitForTimeout(250);
     await page.screenshot({ path: resolve(outputDir, "forest-culture-roles.png") });
@@ -486,8 +513,8 @@ try {
     await page.screenshot({ path: resolve(outputDir, "forest-culture.png") });
     evidence.checks.forestCulture = {
         before: { favor: cultureBefore.summary.favor, groves: cultureBefore.summary.groves.length, roles: cultureBefore.summary.roles },
-        grove: groveAfter.grove, guarded: groveAfter.guarded,
-        after: { favor: cultureAfter.favor, rights: cultureAfter.rights.priority, counts: cultureAfter.counts, lore: cultureAfter.lore.length },
+        grove: groveAfter.grove, guarded: groveAfter.guarded, tended,
+        after: { favor: cultureAfter.favor, rights: cultureAfter.rights.priority, counts: cultureAfter.counts, lore: cultureAfter.lore.length, doctrine: cultureAfter.doctrine.id, groveVitality: cultureAfter.groves[0].vitality },
         lore: loreAfter,
     };
 

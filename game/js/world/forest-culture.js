@@ -234,6 +234,121 @@ const ARCHETYPES = Object.freeze({
     })
 });
 
+// The three annual festivals are a real cycle, not one renamed holiday. Spring
+// opens the growing year, the woodcut feast closes the felling window, and the
+// harvest feast settles the mast, field and herd accounts. Names stay regional.
+const FESTIVAL_NAMES = Object.freeze({
+    boreal: { woodcut: "Iron Axe Night", harvest: "Mast and Frost" },
+    temperate: { woodcut: "Hewing Fair", harvest: "Mast Harvest" },
+    mediterranean: { woodcut: "Cork Cutters' Feast", harvest: "Olive and Acorn" },
+    wetland: { woodcut: "Withy Cut", harvest: "Reed Harvest" },
+    mountain: { woodcut: "Cable and Blade", harvest: "High Pasture Harvest" },
+    coastal: { woodcut: "Boat Timber Feast", harvest: "Dune Harvest" },
+    savanna: { woodcut: "Cool Burn", harvest: "First Sheaf" },
+    tropical: { woodcut: "Gap Felling Rite", harvest: "Fruit and Seed" },
+    mangrove: { woodcut: "Pole Cutters' Tide", harvest: "Propagule Feast" },
+    bamboo: { woodcut: "Culm Cutters' Round", harvest: "Shoot and Sheaf" },
+    laurel: { woodcut: "Mist Felling", harvest: "Cloud Harvest" },
+    cloud: { woodcut: "Moss Axe", harvest: "Mist Harvest" }
+});
+
+// Seasonal windows are derived from the same regional calendar text the player
+// reads. They are used by the yield modifiers and the field guide.
+const CALENDAR_SEASONS = Object.freeze({
+    boreal: { bloom: 0, hunt: 2, felling: 3 },
+    temperate: { bloom: 0, hunt: 2, felling: 3 },
+    mediterranean: { bloom: 0, hunt: 2, felling: 3 },
+    wetland: { bloom: 0, hunt: 2, felling: 1 },
+    mountain: { bloom: 0, hunt: 2, felling: 1 },
+    coastal: { bloom: 0, hunt: 2, felling: 3 },
+    savanna: { bloom: 0, hunt: 2, felling: 2 },
+    tropical: { bloom: 2, hunt: 2, felling: 1 },
+    mangrove: { bloom: 1, hunt: 2, felling: 1 },
+    bamboo: { bloom: 0, hunt: 1, felling: 1 },
+    laurel: { bloom: 0, hunt: 1, felling: 3 },
+    cloud: { bloom: 1, hunt: 1, felling: 3 }
+});
+
+// Omens, customs and practical herb lore make the archive a living body of
+// knowledge rather than three decorative paragraphs per region.
+const EXTRA_LORE = Object.freeze({
+    boreal: {
+        omen: { title: "The Lynx on the Sled Road", text: "If a lynx crosses the sled road before the first snow, the winter will be long and the mast thin." },
+        custom: { title: "The First Load", text: "The first sled load is never taken home; it goes to the shrine and the widow's yard." },
+        herbLore: { title: "Resin and Inner Bark", text: "Spruce resin and birch inner bark make a salve for cracked hands; bark is never stripped from a living trunk." }
+    },
+    temperate: {
+        omen: { title: "The Oak Before Rain", text: "When the oak leaves turn their backs before a shower, the village waits to sow." },
+        custom: { title: "The May Bough", text: "A bough is carried from the common wood to every household that helped mend the fence." },
+        herbLore: { title: "Hawthorn and Honey", text: "Hawthorn flower and honey steady a racing heart; the hedge is cut after the berries have fed the birds." }
+    },
+    mediterranean: {
+        omen: { title: "The Goat on the Wall", text: "A goat standing on the old wall before the rains means the cistern will hold." },
+        custom: { title: "First Honey", text: "The first honeycomb belongs to the grove spring, not to the table." },
+        herbLore: { title: "Laurel and Olive Leaf", text: "Laurel leaf clears a stuffy room, olive leaf tea settles the stomach; both are gathered after the dew." }
+    },
+    wetland: {
+        omen: { title: "The Heron Facing Downstream", text: "A heron facing downstream at dawn warns of a bank that will not hold." },
+        custom: { title: "The Silent Boat", text: "No one speaks on the first boat of the season until the far bank is touched." },
+        herbLore: { title: "Alder Bark and Iris Root", text: "Alder bark cools a fever; iris root is pounded for bruises, never taken inward." }
+    },
+    mountain: {
+        omen: { title: "The Eagle Below the Pass", text: "When an eagle circles below the pass, a storm is already on the ridge." },
+        custom: { title: "The Pass Bread", text: "A loaf is left at the shrine before the herds climb; the herder who finds it shares it." },
+        herbLore: { title: "Mountain Pine and Rowan", text: "Pine needle tea eases a cough; rowan berries are dried for winter, never eaten raw." }
+    },
+    coastal: {
+        omen: { title: "Gulls Flying Inland", text: "Gulls flying inland before noon mean the sea is turning." },
+        custom: { title: "The Dune Knot", text: "Every boat crew ties one knot in the dune fence before launching." },
+        herbLore: { title: "Sea Buckthorn and Thrift", text: "Sea buckthorn berries restore strength; thrift root is boiled for a poultice." }
+    },
+    savanna: {
+        omen: { title: "The Hornbill Before Rain", text: "A hornbill calling before the clouds means the first rain is close." },
+        custom: { title: "The Shared Shade", text: "The first shade of the new meeting tree belongs to the elders and the strangers." },
+        herbLore: { title: "Baobab and Acacia", text: "Baobab fruit and acacia bark are pounded for fever and thirst; the living bark is left." }
+    },
+    tropical: {
+        omen: { title: "The Macaw at the Gap", text: "Macaws crossing a new gap mean the fruiting trees have moved." },
+        custom: { title: "The Seed Debt", text: "Every household that takes fruit returns one seed to the nursery." },
+        herbLore: { title: "Fig Sap and Ceiba Leaf", text: "Fig sap seals a small cut; ceiba leaf tea cools a fever, but the mother tree is never ringed." }
+    },
+    mangrove: {
+        omen: { title: "Crabs Climbing the Roots", text: "Crabs climbing high on the roots before a storm mean the tide will follow." },
+        custom: { title: "The First Propagule", text: "The first propagule of the season is planted by the youngest child." },
+        herbLore: { title: "Mangrove Bark and Nipa", text: "Mangrove bark is boiled for a wash; nipa leaf wraps a wound until the healer comes." }
+    },
+    bamboo: {
+        omen: { title: "The Panda in the Seed Year", text: "A panda moving through a seeding stand means the whole mountain will feed on it." },
+        custom: { title: "The Empty Cup", text: "At the new shoot feast, the first cup is poured into the grove." },
+        herbLore: { title: "Bamboo Shoot and Camphor", text: "Young shoot broth restores appetite; camphor leaf is hung to keep moths from wool." }
+    },
+    laurel: {
+        omen: { title: "The Quetzal Below the Cloud", text: "A quetzal feeding below the cloud line means the mist is late." },
+        custom: { title: "The Moss Offering", text: "A pinch of moss is returned to the channel before water is drawn." },
+        herbLore: { title: "Laurel Leaf and Tree Fern", text: "Laurel leaf tea warms a chill; tree-fern hair is packed on a burn." }
+    },
+    cloud: {
+        omen: { title: "Frogs Calling in the Mist", text: "Frogs calling before the mist rain means the channels will fill." },
+        custom: { title: "The First Drop", text: "No household drinks before a cup is poured into the spring shrine." },
+        herbLore: { title: "Podocarp Bark and Moss", text: "Podocarp bark eases a cough; moss is pressed on a cut and then returned to the stone." }
+    }
+});
+
+export const FOREST_GROVE_TRAITS = Object.freeze([
+    Object.freeze({ id: "refuge", label: "Wildlife refuge", detail: "Nesting cover and undisturbed soil raise forage and game around the grove." }),
+    Object.freeze({ id: "mast", label: "Mast sanctuary", detail: "The grove's seed crop feeds the pannage reserve through the winter." }),
+    Object.freeze({ id: "spring", label: "Spring grove", detail: "Moss, herbs and clean water support the village healers." })
+]);
+
+export const FOREST_CULTURE_LORE_LABELS = Object.freeze({
+    tale: "TALE", legend: "LEGEND", song: "WORK SONG",
+    omen: "OMEN", custom: "CUSTOM", herbLore: "HERB LORE"
+});
+
+export function forestCultureGroveTraitFor(regionId, index = 0) {
+    return FOREST_GROVE_TRAITS[hashString(String(regionId) + ":" + String(index)) % FOREST_GROVE_TRAITS.length];
+}
+
 function archetypeKeyFor(type) {
     const key = String(type.key || "").toLowerCase();
     const climates = (type.climates || []).map(value => String(value).toLowerCase());
@@ -268,9 +383,19 @@ function buildProfile(type) {
     const animal = animalLabel(type);
     const region = type.short || type.label || "woodland";
     const words = text => String(text).replace(/\{tree\}/g, tree.toLowerCase()).replace(/\{animal\}/g, animal.toLowerCase());
+    const festivalNames = FESTIVAL_NAMES[archetypeKey] || FESTIVAL_NAMES.temperate;
+    const seasons = CALENDAR_SEASONS[archetypeKey] || CALENDAR_SEASONS.temperate;
+    const extra = EXTRA_LORE[archetypeKey] || EXTRA_LORE.temperate;
+    const festivalCycle = [
+        { id: "spring", name: base.festival.name + " of " + region, focus: base.festival.focus, season: 0, cost: { food: 8, gold: 5 } },
+        { id: "woodcut", name: festivalNames.woodcut + " of " + region, focus: "Blunt the axes before the felling window, feed the haulers and thank the kiln crews.", season: 3, cost: { food: 5, gold: 6 } },
+        { id: "harvest", name: festivalNames.harvest + " of " + region, focus: "Thank the mast, the field and the herd before the first frost.", season: 2, cost: { food: 9, gold: 6 } }
+    ].map(entry => Object.freeze({ ...entry, focus: words(entry.focus), cost: Object.freeze({ ...entry.cost }) }));
     const nameSeeds = {
         female: [...base.names.female, tree, animal],
-        male: [...base.names.male, tree, animal]
+        male: [...base.names.male, tree, animal],
+        trees: [...base.names.trees, tree],
+        animals: [...base.names.animals, animal]
     };
     return Object.freeze({
         id: type.id,
@@ -286,19 +411,25 @@ function buildProfile(type) {
         taboo: words(base.taboo),
         workTechnique: words(base.workTechnique),
         huntRule: words(base.huntRule),
-        festival: Object.freeze({ ...base.festival, name: base.festival.name + " of " + region }),
+        festival: festivalCycle[0],
+        festivals: Object.freeze(festivalCycle),
         offeringGood: base.offeringGood,
+        omen: Object.freeze({ title: extra.omen.title + " (" + region + ")", text: words(extra.omen.text) }),
+        custom: Object.freeze({ title: extra.custom.title + " (" + region + ")", text: words(extra.custom.text) }),
+        herbLore: Object.freeze({ title: extra.herbLore.title + " (" + region + ")", text: words(extra.herbLore.text) }),
         tale: Object.freeze({ title: base.tale.title + " (" + region + ")", moral: words(base.tale.moral) }),
         legend: Object.freeze({ title: base.legend.title + " (" + region + ")", text: words(base.legend.text) }),
         song: Object.freeze({ title: base.song.title + " (" + region + ")", verse: words(base.song.verse) }),
-        calendar: Object.freeze({ ...base.calendar }),
+        calendar: Object.freeze({ ...base.calendar, bloomSeason: seasons.bloom, huntSeason: seasons.hunt, fellingSeason: seasons.felling }),
         names: Object.freeze({
             female: Object.freeze(nameSeeds.female),
-            male: Object.freeze(nameSeeds.male)
+            male: Object.freeze(nameSeeds.male),
+            trees: Object.freeze(nameSeeds.trees || []),
+            animals: Object.freeze(nameSeeds.animals || [])
         }),
         philosophy: words(base.philosophy),
         paths: Object.freeze(base.paths.map(path => titleCase(path) + " of " + region)),
-        sources: Object.freeze(["1.2.23.1.181", "1.2.23.1.193", "1.2.23.1.194", "1.2.23.1.195", "1.2.23.1.196", "1.2.23.1.202"])
+        sources: Object.freeze(["1.2.23.1.181", "1.2.23.1.193", "1.2.23.1.194", "1.2.23.1.195", "1.2.23.1.196", "1.2.23.1.197", "1.2.23.1.198", "1.2.23.1.202", "1.2.23.1.208"])
     });
 }
 
@@ -329,26 +460,26 @@ export const FOREST_CULTURE_REQUIREMENTS = Object.freeze([
     requirement("1.2.23.1.188", "Jäger mit saisonalen Jagdregeln", "A hunting rite opens the season and the profile's hunt rule modifies the existing hunt action.", "processForestHunt; Hunt rite; calendar", "The hunt rite is a once-a-year cultural action. The profile's hunt rule and the calendar's hunt window are shown, and the culture modifier changes the existing hunt yield rather than adding a parallel hunt."),
     requirement("1.2.23.1.189", "Waldbauern mit Agroforst und Waldweide", "Farms near the wood gain an agroforestry factor; the role census names them and the pannage path feeds the herds.", "fields.js harvest; forest pannage; role census", "A farm in a woodland settlement receives the culture farm factor. Pannage already feeds stables from mast; the culture herd factor and commons right strengthen that existing path."),
     requirement("1.2.23.1.190", "Wanderhirten zwischen Wald und offener Weide", "Stablehands become transhumant herders and gain mast days when the wood is held in commons.", "feedStableFromMast; stable workforce; culture modifier", "Stables near the forest count their stablehands as herders. The commons right extends the mast-feeding window; no new herd or pasture simulation is added."),
-    requirement("1.2.23.1.191", "Einsiedler und Waldklöster", "A shrine in deep forest shelters a hermit; a scriptorium beside it forms a forest monastery and adds research weight.", "Shrine placement; scriptorium; culture knowledge", "The culture census counts deep-forest shrines as hermitages. A scriptorium within their radius is recognised as a forest monastery, and the knowledge block reports the combined study."),
+    requirement("1.2.23.1.191", "Einsiedler und Waldklöster", "A shrine in deep forest shelters a hermit; consulting them yields a regional omen, while a scriptorium forms a forest monastery.", "Shrine placement; hermit consultation; scriptorium; culture knowledge", "The culture census counts deep-forest shrines as hermitages. A yearly hermit consultation records the region's omen in the archive and adds study; a scriptorium within their radius is recognised as a forest monastery."),
     requirement("1.2.23.1.192", "Hexen und Kräuterfrauen in Märchen und Realität", "Healers near the wood are counted as herb-wives; their presence improves the culture medicine modifier and the tale archive.", "Clinic workforce; region tale; medicine modifier", "A healer whose clinic stands near forest is counted in the herb-wife role. Their lore is the region's tale, and the medicine modifier reaches the existing health path."),
     requirement("1.2.23.1.193", "Regionale Märchen über Waldtypen", "Each of the sixty regional types has its own tale, spirit and moral, collectable into the atlas archive.", "Forest Atlas → Collect lore; sixty profiles", "Collecting lore stores the home region's tale and song. The archive names the type, and the profile remains deterministic for that world seed."),
     requirement("1.2.23.1.194", "Sagen über verschwundene Wälder und alte Bäume", "A second legend per region records a lost forest or ancient tree and its warning.", "Forest Atlas → lore archive; legacy entry", "The legend is written into the same bounded archive and the realm legacy. It is region-specific and does not consume a new resource."),
     requirement("1.2.23.1.195", "Lieder und Arbeitsgesänge der Waldberufe", "Each region names a work song with a verse tied to its actual craft.", "Forest Atlas → lore archive; charcoal/woodcutter roles", "The song is collected with the tale and shown with the regional craft. Singing it is represented by the favour and morale effect of the lore action, not a separate music system."),
     requirement("1.2.23.1.196", "Waldkalender mit Blüte, Ernte und Jagdzeiten", "The home profile provides bloom, hunt and felling windows and a current-season status.", "Forest Atlas → culture calendar; gather/hunt modifiers", "The calendar is derived from the regional type. The atlas marks the current season and the active window, and the harvest systems use the same season."),
-    requirement("1.2.23.1.197", "Feste zu Frühling, Holzschlag und Ernte", "A seasonal festival can be held once a year, with the region's own name and focus.", "Forest Atlas → Hold festival; morale and politics", "The festival consumes food and gold, raises morale and legitimacy, and records the region's festival in the chronicle. Its season and focus come from the profile."),
-    requirement("1.2.23.1.198", "Opfergaben an Baum- und Waldgeister", "Honey, herbs or mushrooms from the real forest store can be offered once per season for favour.", "Forest Atlas → Make offering; forest gathering stock", "The offering consumes a gathered good, raises favour and grove devotion, and is refused when the same season has already been honoured. No new currency is created."),
+    requirement("1.2.23.1.197", "Feste zu Frühling, Holzschlag und Ernte", "Three regional festivals form a yearly cycle; each has its own season, cost and lasting effect.", "Forest Atlas → Spring, Woodcut and Harvest festivals; morale, politics and seasonal yields", "Spring opens the growing year, the woodcut feast feeds the felling window and the harvest feast settles the mast, field and herd. Each can be held once per year in its own season; the effects are real morale, political and seasonal yield changes."),
+    requirement("1.2.23.1.198", "Opfergaben an Baum- und Waldgeister", "Three different forest gifts can be offered, each with its own favour, devotion and practical effect.", "Forest Atlas → offerings; forest gathering stock; medicine and research", "Honey raises favour and devotion, herbs support the healers, and mushrooms steady morale and study. One gift may be offered per season; the region's preferred gift receives a small bonus. No new currency is created."),
     requirement("1.2.23.1.199", "Tabus gegen das Fällen heiliger Bäume", "The grove taboo and every consecrated tile are enforced in the shared harvest guard.", "harvestForest; grove list; felling actions", "A sacred grove tile returns no timber and no thinnings through the shared resource path. The atlas names the taboo, and the grove card reports its protected status."),
-    requirement("1.2.23.1.200", "Jagdrituale und Initiationsriten", "A once-a-year hunt rite opens the season and strengthens the existing hunt yield.", "Forest Atlas → Hunt rite; processForestHunt", "The rite requires a grove and food, raises morale and records the initiation in the legacy. The hunt modifier applies to the next hunt action in the same year."),
+    requirement("1.2.23.1.200", "Jagdrituale und Initiationsriten", "A once-a-year hunt rite opens the season, names new initiates and strengthens the existing hunt yield.", "Forest Atlas → Hunt rite; processForestHunt; initiate cohort", "The rite requires a grove and food, raises morale and records the initiation in the legacy. Each rite adds bounded initiates whose number feeds the hunt modifier; the existing hunt action remains the only hunt."),
     requirement("1.2.23.1.201", "Baumhochzeiten und symbolische Vermählungen", "A tree wedding binds the community to its grove and raises favour and legitimacy.", "Forest Atlas → Tree wedding; grove; politics", "The wedding needs a consecrated grove and gold. It raises grove devotion, legitimacy and clergy support, and writes a legacy entry. It is available once per year."),
     requirement("1.2.23.1.202", "Namensgebung nach Bäumen und Waldtieren", "Children born in a realm with collected woodlore receive a regional tree or animal name.", "createChildFromParents; collected lore; profile names", "The birth path asks the culture system for a name only after the home region's lore has been collected. The choice is deterministic from the child's own seed, so old saves keep their sequence."),
     requirement("1.2.23.1.203", "Waldrecht für Allmende, Jagd und Holzeinschlag", "The forester can set one of four rights priorities, changing the real yield modifiers.", "Forest Atlas → rights; culture modifiers", "Balance, commons, hunting and timber priorities each alter forage, hunt, farm, herd and timber factors. A change is allowed once a year, so a campaign cannot flip the law every day."),
     requirement("1.2.23.1.204", "Allmenderechte und Dorfgemeinschaften", "The commons priority strengthens farms, herds and forage and is visible in politics and the role census.", "Forest rights; fields; pannage; politics", "Choosing commons adds legitimacy and commons support, improves the farm, herd and forage factors, and is recorded as a village community right rather than a private grant."),
     requirement("1.2.23.1.205", "Nutzungskonflikte zwischen Bauern, Jägern und Holzfällern", "Extreme rights and a protected grove create named conflicts that can be mediated for gold.", "Forest Atlas → conflict list; mediate action", "A timber priority beside a grove, or a long hunting/commons priority, creates a bounded conflict. The player can mediate it; unresolved conflicts lower favour and morale."),
-    requirement("1.2.23.1.206", "Waldbildung für Förster und Kräuterkundige", "The forest school is represented by the woodland research branch, the forest scholar role and the school's teaching effect.", "Research → Woodland; school/scriptorium; knowledge census", "Completing woodland technologies raises the knowledge modifier. Foresters and herb-wives count as the practical school, and the atlas reports their combined instruction."),
+    requirement("1.2.23.1.206", "Waldbildung für Förster und Kräuterkundige", "A yearly forest school teaches apprentices beside the existing woodland staff and raises research and knowledge.", "Forest Atlas → Hold forest school; Research → Woodland; knowledge census", "The school needs a forester, herb-wife or woodland scholar and consumes food and gold. It adds bounded apprentices, raises research reserve and favour, and its apprentices feed the knowledge modifier."),
     requirement("1.2.23.1.207", "Kräuterkunde als Forschungszweig", "Herb lore is a real technology in the new woodland branch, gated by forestry.", "Research → Woodland; medicine and forage modifiers", "Woodland herb lore requires forestry, costs research points and improves the culture forage and medicine factors. It appears in the ordinary technology tree."),
     requirement("1.2.23.1.208", "Naturastronomie und Jahreszeitenwissen", "Natural astronomy reads the calendar, improves the festival and extends the offering window.", "Research → Woodland; forest calendar", "The astronomy technology is required for cartography and natural philosophy. Its completion adds favour from offerings and makes the calendar's season markers visible as knowledge."),
     requirement("1.2.23.1.209", "Kartographie von Waldwegen und heiligen Orten", "Cartography raises the grove cap and records the region's paths and sacred places.", "Research → Woodland; grove limit; lore archive", "The cartography technology increases the number of groves a realm may consecrate and adds the regional paths to the atlas. The grove list remains bounded."),
-    requirement("1.2.23.1.210", "Naturphilosophie über Gleichgewicht und Nutzung", "Natural philosophy is the capstone technology; it raises research and legitimacy and reports the region's philosophy.", "Research → Woodland; culture knowledge", "The final woodland technology requires cartography and astronomy. It adds research and legitimacy, and the atlas shows the home region's philosophy of balance and use.")
+    requirement("1.2.23.1.210", "Naturphilosophie über Gleichgewicht und Nutzung", "Natural philosophy is the capstone technology; it unlocks a real doctrine choice between balance, refuge and provision.", "Research → Woodland; forest doctrine; culture modifiers", "The final woodland technology requires cartography and astronomy. It adds research and legitimacy and unlocks a once-a-year doctrine: balance, refuge or provision, each trading forage, game, timber and charcoal against the other.")
 ]);
 
 export const FOREST_CULTURE_REQUIREMENT_BY_ID = Object.freeze(Object.fromEntries(
@@ -358,8 +489,27 @@ export const FOREST_CULTURE_REQUIREMENT_BY_ID = Object.freeze(Object.fromEntries
 export function forestCultureNameFor(profile, sex, seed) {
     if (!profile) return null;
     const key = sex === "female" ? "female" : "male";
-    const names = profile.names?.[key] || [];
+    const personal = profile.names?.[key] || [];
+    const trees = profile.names?.trees || [];
+    const animals = profile.names?.animals || [];
+    // The region names its children after its people, its trees and its
+    // animals. The pool stays deterministic from the child's own seed.
+    const names = personal.length ? [...personal, ...trees, ...animals] : [...trees, ...animals];
     return names.length ? pick(names, String(seed) + ":" + profile.id) : null;
+}
+
+// Six pieces of knowledge are collected together: the tale, the lost-wood
+// legend, the work song, an omen, a custom and a practical herb note.
+export function forestCultureLoreEntriesFor(profile) {
+    if (!profile) return [];
+    return Object.freeze([
+        { kind: "tale", title: profile.tale.title, text: profile.tale.moral },
+        { kind: "legend", title: profile.legend.title, text: profile.legend.text },
+        { kind: "song", title: profile.song.title, text: profile.song.verse },
+        { kind: "omen", title: profile.omen.title, text: profile.omen.text },
+        { kind: "custom", title: profile.custom.title, text: profile.custom.text },
+        { kind: "herbLore", title: profile.herbLore.title, text: profile.herbLore.text }
+    ]);
 }
 
 export function forestCultureCalendarFor(profile, seasonIndex) {
@@ -370,10 +520,19 @@ export function forestCultureCalendarFor(profile, seasonIndex) {
         { id: "felling", label: "Felling", detail: profile?.calendar?.felling || "dormant season" },
         { id: "rest", label: "Resting", detail: "the wood keeps its own account" }
     ];
+    const bloomSeason = Math.max(0, Math.min(3, Math.floor(Number(profile?.calendar?.bloomSeason) || 0)));
+    const huntSeason = Math.max(0, Math.min(3, Math.floor(Number(profile?.calendar?.huntSeason) || 2)));
+    const fellingSeason = Math.max(0, Math.min(3, Math.floor(Number(profile?.calendar?.fellingSeason) || 3)));
     return Object.freeze({
         season,
         seasonLabel: ["Spring", "Summer", "Autumn", "Winter"][season],
         active: windows[season],
+        bloomSeason,
+        huntSeason,
+        fellingSeason,
+        bloomActive: season === bloomSeason,
+        huntActive: season === huntSeason,
+        fellingActive: season === fellingSeason,
         windows: Object.freeze(windows)
     });
 }

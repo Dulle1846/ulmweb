@@ -2,9 +2,9 @@
   "version": 2,
   "generatedBy": "scripts/spec-audit.mjs",
   "scope": "All numbered 1.1 and 1.2.1–1.2.18 requirements, including the 1.2.23.1.151–210 forest economy and forest culture, plus the documented 2.x phases and 3.3–4.0 roadmap points.",
-  "commit": "7ede2fc6f5558680e01cef2d96848400e6c1f493",
-  "sourceHash": "8124dfa8189f0e070138d8b260074099982769152020f3adde8ca58f07597da3",
-  "generatedAt": "2026-11-26T21:42:38+00:00",
+  "commit": "08150dc7abc0faa213676b997e16e0a3e3a82e78",
+  "sourceHash": "bae1e3262ba260a1a7e057f1e1c88e018726556fe8c991ae56f8698943b05dc9",
+  "generatedAt": "2026-11-26T22:49:22+00:00",
   "totals": {
     "total": 1711,
     "implemented": 1711,
@@ -41236,7 +41236,7 @@
         {
           "id": "1.2.23.1.191",
           "label": "Einsiedler und Waldklöster",
-          "key": "A shrine in deep forest shelters a hermit; a scriptorium beside it forms a forest monastery and adds research weight.",
+          "key": "A shrine in deep forest shelters a hermit; consulting them yields a regional omen, while a scriptorium forms a forest monastery.",
           "group": "FOREST CULTURE",
           "status": "implemented",
           "docEvidence": "FOREST_CULTURE_REQUIREMENTS",
@@ -41410,7 +41410,7 @@
         {
           "id": "1.2.23.1.197",
           "label": "Feste zu Frühling, Holzschlag und Ernte",
-          "key": "A seasonal festival can be held once a year, with the region's own name and focus.",
+          "key": "Three regional festivals form a yearly cycle; each has its own season, cost and lasting effect.",
           "group": "FOREST CULTURE",
           "status": "implemented",
           "docEvidence": "FOREST_CULTURE_REQUIREMENTS",
@@ -41439,7 +41439,7 @@
         {
           "id": "1.2.23.1.198",
           "label": "Opfergaben an Baum- und Waldgeister",
-          "key": "Honey, herbs or mushrooms from the real forest store can be offered once per season for favour.",
+          "key": "Three different forest gifts can be offered, each with its own favour, devotion and practical effect.",
           "group": "FOREST CULTURE",
           "status": "implemented",
           "docEvidence": "FOREST_CULTURE_REQUIREMENTS",
@@ -41497,7 +41497,7 @@
         {
           "id": "1.2.23.1.200",
           "label": "Jagdrituale und Initiationsriten",
-          "key": "A once-a-year hunt rite opens the season and strengthens the existing hunt yield.",
+          "key": "A once-a-year hunt rite opens the season, names new initiates and strengthens the existing hunt yield.",
           "group": "FOREST CULTURE",
           "status": "implemented",
           "docEvidence": "FOREST_CULTURE_REQUIREMENTS",
@@ -41671,7 +41671,7 @@
         {
           "id": "1.2.23.1.206",
           "label": "Waldbildung für Förster und Kräuterkundige",
-          "key": "The forest school is represented by the woodland research branch, the forest scholar role and the school's teaching effect.",
+          "key": "A yearly forest school teaches apprentices beside the existing woodland staff and raises research and knowledge.",
           "group": "FOREST CULTURE",
           "status": "implemented",
           "docEvidence": "FOREST_CULTURE_REQUIREMENTS",
@@ -41787,7 +41787,7 @@
         {
           "id": "1.2.23.1.210",
           "label": "Naturphilosophie über Gleichgewicht und Nutzung",
-          "key": "Natural philosophy is the capstone technology; it raises research and legitimacy and reports the region's philosophy.",
+          "key": "Natural philosophy is the capstone technology; it unlocks a real doctrine choice between balance, refuge and provision.",
           "group": "FOREST CULTURE",
           "status": "implemented",
           "docEvidence": "FOREST_CULTURE_REQUIREMENTS",

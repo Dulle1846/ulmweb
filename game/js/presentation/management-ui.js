@@ -38,7 +38,7 @@ import { timberMarketSummary, sellRegionalTimber, TIMBER_SALE_LOT } from "../sys
 import { FOREST_WORKS_MODES, SAW_PROFILES, INDUSTRY_GOODS } from "../world/forest-industries.js";
 import { forestMasteryFor, forestMasterworkArchive, forestWorksStatus, runForestWorks, sawProfileIdFor, sellForestIndustryGood, setForestWorksMode, setSawProfile, supplyClinicMedicine } from "../systems/forest-industries.js";
 import { deliverForestCommission, dispatchGuildCaravan } from "../systems/forest-guild.js";
-import { collectForestLore, dedicateSacredGrove, holdForestFestival, makeForestOffering, mediateForestConflict, performHuntRite, performTreeWedding, setForestRights } from "../systems/forest-culture.js";
+import { brewForestRemedies, collectForestLore, consultForestHermit, dedicateSacredGrove, holdForestFestival, holdForestSchool, makeForestOffering, mediateForestConflict, performHuntRite, performTreeWedding, setForestDoctrine, setForestRights, tendSacredGrove } from "../systems/forest-culture.js";
 import { grandConsumerStatusFor } from "../systems/grand-consumers.js";
 import { renderScenarioPanel } from "./scenario-panel.js";
 import { renderWorldMapPanel } from "./world-map-panel.js";
@@ -2003,25 +2003,50 @@ export function setupManagementUI(){
    else toast(String(result.reason||"FOREST BATCH FAILED").toUpperCase());
    return;
   }
-  const cultureAction=e.target.closest("[data-culture-action]");
+     const cultureAction=e.target.closest("[data-culture-action]");
   if(cultureAction){
    const action=cultureAction.dataset.cultureAction;
    const result=action==="grove"?dedicateSacredGrove()
     :action==="offering"?makeForestOffering()
-    :action==="festival"?holdForestFestival()
+    :action==="offering-honey"?makeForestOffering("honey")
+    :action==="offering-herbs"?makeForestOffering("herbs")
+    :action==="offering-mushrooms"?makeForestOffering("mushrooms")
+    :action==="festival"||action==="festival-spring"?holdForestFestival("spring")
+    :action==="festival-woodcut"?holdForestFestival("woodcut")
+    :action==="festival-harvest"?holdForestFestival("harvest")
     :action==="hunt"?performHuntRite()
     :action==="wedding"?performTreeWedding()
     :action==="lore"?collectForestLore()
+    :action==="hermit"?consultForestHermit()
+    :action==="school"?holdForestSchool()
+    :action==="remedy"?brewForestRemedies()
     :{ok:false,reason:"Unknown culture action"};
    if(result.ok){
     const message=action==="grove"?"SACRED GROVE CONSECRATED · "+result.profile.groveName
-     :action==="offering"?"OFFERING MADE · "+result.good+" · FAVOUR "+result.favor
-     :action==="festival"?"FOREST FESTIVAL · "+result.festival.name
-     :action==="hunt"?"HUNT RITE OPENED"
+     :action.startsWith("offering")?"OFFERING MADE · "+result.good+" · FAVOUR "+result.favor
+     :action.startsWith("festival")?"FOREST FESTIVAL · "+result.festival.name
+     :action==="hunt"?"HUNT RITE OPENED · "+(result.initiates?.length?result.initiates.join(", "):"NO NEW INITIATES")
      :action==="wedding"?"TREE WEDDING · "+result.grove.label
+     :action==="hermit"?"HERMIT'S OMEN · "+result.omen.title
+     :action==="school"?"WOODLAND SCHOOL · "+result.taught+" APPRENTICES"
+     :action==="remedy"?"FOREST REMEDIES · +"+result.medicine+" MEDICINE"
      :"WOODLORE COLLECTED · "+result.added+" ENTRIES";
     toast(message);renderUI();render();
    }else toast(String(result.reason||"CULTURE ACTION FAILED").toUpperCase());
+   return;
+  }
+  const cultureTend=e.target.closest("[data-culture-tend]");
+  if(cultureTend){
+   const result=tendSacredGrove(cultureTend.dataset.cultureTend);
+   if(result.ok){toast("GROVE TENDED · VITALITY "+result.grove.vitality+" / 100");renderUI();render();}
+   else toast(String(result.reason||"GROVE TENDING FAILED").toUpperCase());
+   return;
+  }
+  const cultureDoctrine=e.target.closest("[data-culture-doctrine]");
+  if(cultureDoctrine){
+   const result=setForestDoctrine(cultureDoctrine.dataset.cultureDoctrine);
+   if(result.ok){toast("WOODLAND DOCTRINE · "+result.doctrine.label.toUpperCase());renderUI();render();}
+   else toast(String(result.reason||"DOCTRINE FAILED").toUpperCase());
    return;
   }
   const cultureRights=e.target.closest("[data-culture-rights]");

@@ -13,16 +13,21 @@ import { addResource } from "./resources.js";
 import { applyPoliticalEffects } from "./politics.js";
 import { recordLegacy } from "./legacy.js";
 import { getForestHabitatAt } from "./resource-geography.js";
+import { addMedicineStock } from "./health.js";
 import { sacredGroveTileAt } from "../world/sacred-groves.js";
 import {
     FOREST_CULTURE_BY_REGION,
+    FOREST_CULTURE_LORE_LABELS,
     FOREST_CULTURE_REQUIREMENTS,
+    FOREST_GROVE_TRAITS,
     forestCultureCalendarFor,
+    forestCultureGroveTraitFor,
+    forestCultureLoreEntriesFor,
     forestCultureNameFor,
     forestCultureProfileFor,
 } from "../world/forest-culture.js";
 
-export const FOREST_CULTURE_VERSION = 1;
+export const FOREST_CULTURE_VERSION = 2;
 export const FOREST_CULTURE_LIMITS = Object.freeze({
     version: FOREST_CULTURE_VERSION,
     groves: 8,
@@ -30,6 +35,8 @@ export const FOREST_CULTURE_LIMITS = Object.freeze({
     conflicts: 8,
     history: 24,
     actions: 16,
+    initiates: 24,
+    apprentices: 24,
     updateSeasonDays: 20,
 });
 export const FOREST_GROVE_BASE_LIMIT = 4;
@@ -42,6 +49,17 @@ export const FOREST_CULTURE_TECHS = Object.freeze({
     philosophy: "woodland-natural-philosophy",
 });
 export const FOREST_CULTURE_TECH_LIST = Object.freeze(Object.values(FOREST_CULTURE_TECHS));
+export const FOREST_FESTIVAL_COSTS = Object.freeze({
+    spring: Object.freeze({ food: 8, gold: 5 }),
+    woodcut: Object.freeze({ food: 5, gold: 6 }),
+    harvest: Object.freeze({ food: 9, gold: 6 }),
+});
+export const FOREST_CULTURE_DOCTRINES = Object.freeze([
+    Object.freeze({ id: "balance", label: "Balance", detail: "Forage, game, timber and charcoal share the wood without a favoured claimant." }),
+    Object.freeze({ id: "refuge", label: "Refuge", detail: "Protect grove ecology and game; timber yields less but forage, medicine and grove vitality gain." }),
+    Object.freeze({ id: "provision", label: "Provision", detail: "Put the wood to work; timber and charcoal gain while forage and grove vitality lose." }),
+]);
+export const FOREST_CULTURE_DOCTRINE_IDS = Object.freeze(FOREST_CULTURE_DOCTRINES.map(entry => entry.id));
 
 const clamp = (value, min = 0, max = 100) => Math.max(min, Math.min(max, Number.isFinite(Number(value)) ? Number(value) : min));
 const number = (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback;
@@ -71,12 +89,23 @@ function emptyLedger() {
         offerings: 0,
         rites: 0,
         weddings: 0,
+        initiates: 0,
+        apprentices: 0,
+        teachings: 0,
         nextGroveId: 1,
         nextConflictId: 1,
         lastOfferingKey: "",
+        lastOfferingGood: "",
         festivalYear: 0,
+        festivalKind: "",
+        festivalYears: { spring: 0, woodcut: 0, harvest: 0 },
         huntYear: 0,
         weddingYear: 0,
+        hermitYear: 0,
+        schoolYear: 0,
+        remedyKey: "",
+        doctrine: "balance",
+        doctrineYear: 0,
         rightsChangedYear: 0,
         lastAnnualYear: 0,
         lastUpdateSeason: -1,
@@ -88,7 +117,7 @@ function emptyLedger() {
 
 function cleanLoreEntry(entry) {
     if (!entry || typeof entry !== "object") return null;
-    const kind = ["tale", "legend", "song"].includes(entry.kind) ? entry.kind : null;
+    const kind = ["tale", "legend", "song", "omen", "custom", "herbLore"].includes(entry.kind) ? entry.kind : null;
     const title = cleanText(entry.title, 120);
     if (!kind || !title) return null;
     return {
@@ -121,12 +150,18 @@ function cleanGrove(entry) {
     const x = Math.floor(number(entry.x, -1));
     const y = Math.floor(number(entry.y, -1));
     if (x < 0 || y < 0) return null;
+    const trait = FOREST_GROVE_TRAITS.some(item => item.id === entry.trait) ? entry.trait : "refuge";
     return {
         id: cleanText(entry.id, 80) || "grove-" + x + "-" + y,
         x, y,
         regionId: FOREST_CULTURE_BY_REGION[entry.regionId] ? entry.regionId : null,
         label: cleanText(entry.label, 120) || "Sacred grove",
+        spirit: cleanText(entry.spirit, 120) || "The grove keeper",
+        trait,
         devotion: clamp(entry.devotion ?? 50, 0, 100),
+        vitality: clamp(entry.vitality ?? 60, 0, 100),
+        ageYears: Math.max(1, Math.floor(number(entry.ageYears, 1))),
+        tendedYear: Math.max(0, Math.floor(number(entry.tendedYear, 0))),
         foundedYear: Math.max(1, Math.floor(number(entry.foundedYear, 1))),
         lastOfferingYear: Math.max(0, Math.floor(number(entry.lastOfferingYear, 0))),
     };
@@ -176,12 +211,27 @@ export function normalizeForestCulture(value) {
     ledger.offerings = Math.max(0, Math.floor(number(source.offerings)));
     ledger.rites = Math.max(0, Math.floor(number(source.rites)));
     ledger.weddings = Math.max(0, Math.floor(number(source.weddings)));
+    ledger.initiates = Math.min(FOREST_CULTURE_LIMITS.initiates, Math.max(0, Math.floor(number(source.initiates))));
+    ledger.apprentices = Math.min(FOREST_CULTURE_LIMITS.apprentices, Math.max(0, Math.floor(number(source.apprentices))));
+    ledger.teachings = Math.max(0, Math.floor(number(source.teachings)));
     ledger.nextGroveId = Math.max(1, Math.floor(number(source.nextGroveId, 1)));
     ledger.nextConflictId = Math.max(1, Math.floor(number(source.nextConflictId, 1)));
     ledger.lastOfferingKey = cleanText(source.lastOfferingKey, 40);
+    ledger.lastOfferingGood = ["honey", "herbs", "mushrooms"].includes(source.lastOfferingGood) ? source.lastOfferingGood : "";
     ledger.festivalYear = Math.max(0, Math.floor(number(source.festivalYear)));
+    ledger.festivalKind = ["spring", "woodcut", "harvest"].includes(source.festivalKind) ? source.festivalKind : "";
+    ledger.festivalYears = {
+        spring: Math.max(0, Math.floor(number(source.festivalYears?.spring, ledger.festivalYear))),
+        woodcut: Math.max(0, Math.floor(number(source.festivalYears?.woodcut))),
+        harvest: Math.max(0, Math.floor(number(source.festivalYears?.harvest))),
+    };
     ledger.huntYear = Math.max(0, Math.floor(number(source.huntYear)));
     ledger.weddingYear = Math.max(0, Math.floor(number(source.weddingYear)));
+    ledger.hermitYear = Math.max(0, Math.floor(number(source.hermitYear)));
+    ledger.schoolYear = Math.max(0, Math.floor(number(source.schoolYear)));
+    ledger.remedyKey = cleanText(source.remedyKey, 40);
+    ledger.doctrine = FOREST_CULTURE_DOCTRINE_IDS.includes(source.doctrine) ? source.doctrine : "balance";
+    ledger.doctrineYear = Math.max(0, Math.floor(number(source.doctrineYear)));
     ledger.rightsChangedYear = Math.max(0, Math.floor(number(source.rightsChangedYear)));
     ledger.lastAnnualYear = Math.max(0, Math.floor(number(source.lastAnnualYear)));
     ledger.lastUpdateSeason = Math.max(-1, Math.min(3, Math.floor(number(source.lastUpdateSeason, -1))));
@@ -198,15 +248,15 @@ export function ensureForestCulture() {
         state.economy.productionChains = {};
     }
     const current = state.economy.productionChains.forestCulture;
-    if (current && current.version === FOREST_CULTURE_VERSION) {
-        if (!Array.isArray(current.groves)) current.groves = [];
-        if (!Array.isArray(current.lore)) current.lore = [];
-        if (!Array.isArray(current.conflicts)) current.conflicts = [];
-        if (!Array.isArray(current.history)) current.history = [];
-        if (!Array.isArray(current.actions)) current.actions = [];
-        if (!current.rights || typeof current.rights !== "object") current.rights = { priority: "balance", sinceYear: 1 };
-        return current;
-    }
+    const complete = current && current.version === FOREST_CULTURE_VERSION
+        && Array.isArray(current.groves) && Array.isArray(current.lore)
+        && Array.isArray(current.conflicts) && Array.isArray(current.history)
+        && Array.isArray(current.actions) && current.rights && typeof current.rights === "object"
+        && current.festivalYears && typeof current.festivalYears === "object"
+        && Number.isFinite(Number(current.initiates)) && Number.isFinite(Number(current.apprentices))
+        && Number.isFinite(Number(current.teachings)) && typeof current.remedyKey === "string"
+        && current.groves.every(grove => grove && grove.trait && Number.isFinite(Number(grove.vitality)));
+    if (complete) return current;
     state.economy.productionChains.forestCulture = normalizeForestCulture(current);
     return state.economy.productionChains.forestCulture;
 }
@@ -351,28 +401,60 @@ export function forestCultureRightsLabel(priority) {
 
 export function forestCultureModifiers() {
     const ledger = ensureForestCulture();
+    const profile = forestCultureProfileFor(ledger.homeRegion) || homeProfile(ledger);
     const roles = forestCultureRoles();
     const knowledge = forestCultureKnowledge();
     const priority = ledger.rights.priority;
     const groves = ledger.groves.length;
     const season = seasonNow();
+    const year = yearNow();
     const active = groves > 0 || ledger.lore.length > 0;
     const favorFactor = (ledger.favor - 50) / 1000;
     const monastery = roles.monasteries;
+    const vitality = groves ? ledger.groves.reduce((sum, grove) => sum + number(grove.vitality, 60), 0) / groves : 0;
+    const vitalityFactor = groves ? (vitality - 50) / 2000 : 0;
+    const traits = ledger.groves.reduce((counts, grove) => {
+        counts[grove.trait] = (counts[grove.trait] || 0) + 1;
+        return counts;
+    }, {});
+    const refuge = traits.refuge || 0;
+    const mast = traits.mast || 0;
+    const spring = traits.spring || 0;
+    const doctrine = ledger.doctrine;
+    const springHeld = active && ledger.festivalYears.spring === year;
+    const woodcutHeld = active && ledger.festivalYears.woodcut === year;
+    const harvestHeld = active && ledger.festivalYears.harvest === year;
+    const initiateBonus = Math.min(FOREST_CULTURE_LIMITS.initiates, ledger.initiates) * 0.004;
+    const apprenticeBonus = Math.min(FOREST_CULTURE_LIMITS.apprentices, ledger.apprentices) * 0.002;
+    const calendar = forestCultureCalendarFor(profile, season);
     return Object.freeze({
         favor: ledger.favor,
         priority,
         groves,
+        groveVitality: Math.round(vitality * 10) / 10,
+        doctrine,
+        initiates: ledger.initiates,
         roles,
         knowledge,
-        forage: clamp(1 + favorFactor + groves * 0.006 + (priority === "commons" ? 0.06 : 0) + (knowledge.herbalism ? 0.04 : 0) + (active && season === 0 ? 0.03 : 0), 0.82, 1.28),
-        hunt: clamp(1 + (ledger.huntYear === yearNow() ? 0.12 : 0) + (priority === "hunt" ? 0.08 : 0) + (knowledge.astronomy ? 0.03 : 0) + (active && season === 2 ? 0.04 : 0) - (priority === "timber" ? 0.04 : 0), 0.8, 1.3),
-        farm: clamp(1 + Math.min(6, roles.forestFarmers) * 0.008 + (priority === "commons" ? 0.05 : 0) + groves * 0.008 + (active && season === 0 ? 0.02 : 0), 0.96, 1.2),
-        herd: clamp(1 + Math.min(6, roles.herders) * 0.01 + (priority === "commons" ? 0.06 : 0) + groves * 0.006, 0.96, 1.22),
-        timber: clamp(1 + (priority === "timber" ? 0.06 : 0) + (knowledge.forestry ? 0.03 : 0) - (active && groves ? 0.02 : 0), 0.92, 1.14),
-        medicine: clamp(1 + Math.min(4, roles.herbWives) * 0.02 + (knowledge.herbalism ? 0.05 : 0) + monastery * 0.03, 0.96, 1.2),
-        charcoal: clamp(1 + Math.max(0, roles.charcoal - 1) * 0.02 + (knowledge.forestry ? 0.01 : 0), 1, 1.12),
-        knowledge: clamp(1 + Object.values(knowledge).filter(Boolean).length * 0.02 + monastery * 0.01, 1, 1.14),
+        forage: clamp(1 + favorFactor + groves * 0.006 + (priority === "commons" ? 0.06 : 0) + (knowledge.herbalism ? 0.04 : 0)
+            + (active && calendar.bloomActive ? 0.03 : 0) + vitalityFactor * 0.6 + refuge * 0.005 + (harvestHeld ? 0.02 : 0)
+            + (doctrine === "refuge" ? 0.03 : 0) - (doctrine === "provision" ? 0.02 : 0), 0.82, 1.3),
+        hunt: clamp(1 + (ledger.huntYear === year ? 0.12 : 0) + (priority === "hunt" ? 0.08 : 0) + (knowledge.astronomy ? 0.03 : 0)
+            + (active && calendar.huntActive ? 0.04 : 0) + vitalityFactor * 0.4 + refuge * 0.004 + initiateBonus
+            + (harvestHeld ? 0.015 : 0) - (priority === "timber" ? 0.04 : 0) + (doctrine === "refuge" ? 0.03 : 0)
+            - (doctrine === "provision" ? 0.01 : 0), 0.8, 1.35),
+        farm: clamp(1 + Math.min(6, roles.forestFarmers) * 0.008 + (priority === "commons" ? 0.05 : 0) + groves * 0.008
+            + (active && calendar.season === 0 ? 0.02 : 0) + (springHeld ? 0.015 : 0) + vitalityFactor * 0.3, 0.96, 1.2),
+        herd: clamp(1 + Math.min(6, roles.herders) * 0.01 + (priority === "commons" ? 0.06 : 0) + groves * 0.006
+            + mast * 0.01 + (harvestHeld ? 0.02 : 0), 0.96, 1.25),
+        timber: clamp(1 + (priority === "timber" ? 0.06 : 0) + (knowledge.forestry ? 0.03 : 0) - (active && groves ? 0.02 : 0)
+            + (active && calendar.fellingActive ? 0.02 : 0) + (woodcutHeld ? 0.035 : 0)
+            + (doctrine === "provision" ? 0.04 : 0) - (doctrine === "refuge" ? 0.03 : 0), 0.92, 1.25),
+        medicine: clamp(1 + Math.min(4, roles.herbWives) * 0.02 + (knowledge.herbalism ? 0.05 : 0) + monastery * 0.03
+            + vitalityFactor * 0.5 + spring * 0.01 + (doctrine === "refuge" ? 0.02 : 0) - (doctrine === "provision" ? 0.01 : 0), 0.96, 1.25),
+        charcoal: clamp(1 + Math.max(0, roles.charcoal - 1) * 0.02 + (knowledge.forestry ? 0.01 : 0)
+            + (doctrine === "provision" ? 0.02 : 0) - (doctrine === "refuge" ? 0.01 : 0), 1, 1.14),
+        knowledge: clamp(1 + Object.values(knowledge).filter(Boolean).length * 0.02 + monastery * 0.01 + apprenticeBonus, 1, 1.2),
         morale: clamp(1 + (ledger.favor - 50) / 500 + groves * 0.005, 0.9, 1.1),
     });
 }
@@ -417,18 +499,33 @@ function ritualStock() {
     return stock;
 }
 
-function takeRitualGood(preferred) {
+function takeRitualGood(good) {
     const stock = ritualStock();
-    if (!stock) return null;
-    const order = [...new Set([preferred, "honey", "herbs", "mushrooms"].filter(Boolean))];
-    for (const good of order) {
-        const available = Math.max(0, Math.floor(number(stock[good])));
-        if (available >= 2) {
-            stock[good] = available - 2;
-            return good;
-        }
-    }
-    return null;
+    if (!stock || !["honey", "herbs", "mushrooms"].includes(good)) return null;
+    const available = Math.max(0, Math.floor(number(stock[good])));
+    if (available < 2) return null;
+    stock[good] = available - 2;
+    return good;
+}
+
+const SEASON_LABELS = Object.freeze(["spring", "summer", "autumn", "winter"]);
+
+function festivalReason(ledger, profile, grove, kind) {
+    const festival = profile?.festivals?.find(entry => entry.id === kind) || null;
+    if (!grove) return { ok: false, reason: "Consecrate a grove first" };
+    if (!festival) return { ok: false, reason: "This region has no such festival" };
+    if (seasonNow() !== festival.season) return { ok: false, reason: "Held in " + SEASON_LABELS[festival.season] };
+    if (ledger.festivalYears[kind] === yearNow()) return { ok: false, reason: "Already held this year" };
+    const cost = FOREST_FESTIVAL_COSTS[kind] || festival.cost;
+    if (!canPay(cost)) return { ok: false, reason: "Needs " + cost.food + " food and " + cost.gold + " gold" };
+    return { ok: true, reason: "Ready" };
+}
+
+function offeringReason(ledger, grove, good) {
+    if (!grove) return { ok: false, reason: "Consecrate a grove first" };
+    if (ledger.lastOfferingKey === yearNow() + "-" + seasonNow()) return { ok: false, reason: "This season has already been honoured" };
+    if (!good) return { ok: false, reason: "No forest gift is available" };
+    return { ok: true, reason: "Ready" };
 }
 
 export function forestCultureActionAvailability() {
@@ -438,23 +535,48 @@ export function forestCultureActionAvailability() {
     const shrine = state.entities.find(entity => isComplete(entity) && entity.type === TYPE.SHRINE) || null;
     const grove = findGrove(ledger);
     const reason = (ok, text) => ({ ok, reason: ok ? "Ready" : text });
+    const stock = ritualStock() || {};
+    const preferred = profile?.offeringGood;
+    const preferredGood = takeRitualGoodDry(preferred);
+    const honey = Math.max(0, Math.floor(number(stock.honey))) >= 2;
+    const herbs = Math.max(0, Math.floor(number(stock.herbs))) >= 2;
+    const mushrooms = Math.max(0, Math.floor(number(stock.mushrooms))) >= 2;
+    const groveForTend = ledger.groves.find(entry => entry.tendedYear !== yearNow()) || null;
+    const canSchool = roles.foresters + roles.herbWives + roles.scholars > 0;
+    const remedyKey = yearNow() + "-" + seasonNow();
+    const missingLore = Boolean(profile) && forestCultureLoreEntriesFor(profile)
+        .some(entry => !ledger.lore.some(saved => saved.kind === entry.kind && saved.regionId === profile.id));
     return Object.freeze({
         grove: reason(Boolean(shrine) && ledger.groves.length < forestCultureGroveLimit() && canPay({ wood: 12, gold: 8 }),
             !shrine ? "Build and finish a shrine near the wood" : ledger.groves.length >= forestCultureGroveLimit() ? "The grove limit is reached" : "Needs 12 wood and 8 gold"),
-        offering: reason(Boolean(grove) && Boolean(profile) && ledger.lastOfferingKey !== yearNow() + "-" + seasonNow() && Boolean(takeRitualGoodDry(profile?.offeringGood)),
-            !grove ? "Consecrate a grove first" : ledger.lastOfferingKey === yearNow() + "-" + seasonNow() ? "This season has already been honoured" : "Needs 2 honey, herbs or mushrooms"),
-        festival: reason(Boolean(grove) && ledger.festivalYear !== yearNow() && canPay({ food: 8, gold: 5 }),
-            !grove ? "Consecrate a grove first" : ledger.festivalYear === yearNow() ? "A festival has already been held this year" : "Needs 8 food and 5 gold"),
+        offering: offeringReason(ledger, grove, preferredGood),
+        offeringHoney: offeringReason(ledger, grove, honey ? "honey" : null),
+        offeringHerbs: offeringReason(ledger, grove, herbs ? "herbs" : null),
+        offeringMushrooms: offeringReason(ledger, grove, mushrooms ? "mushrooms" : null),
+        festival: festivalReason(ledger, profile, grove, "spring"),
+        festivalSpring: festivalReason(ledger, profile, grove, "spring"),
+        festivalWoodcut: festivalReason(ledger, profile, grove, "woodcut"),
+        festivalHarvest: festivalReason(ledger, profile, grove, "harvest"),
         hunt: reason(Boolean(grove) && ledger.huntYear !== yearNow() && canPay({ food: 4 }),
             !grove ? "Consecrate a grove first" : ledger.huntYear === yearNow() ? "The hunt rite is already open this year" : "Needs 4 food"),
         wedding: reason(Boolean(grove) && ledger.weddingYear !== yearNow() && canPay({ gold: 10 }),
             !grove ? "Consecrate a grove first" : ledger.weddingYear === yearNow() ? "A tree wedding has already been held this year" : "Needs 10 gold"),
-        lore: reason(Boolean(profile) && !ledger.lore.some(entry => entry.regionId === profile.id && entry.kind === "tale"),
-            !profile ? "No living woodland found" : "The home region's tale is already in the archive"),
+        lore: reason(missingLore && ledger.lore.length < FOREST_CULTURE_LIMITS.lore,
+            !profile ? "No living woodland found" : ledger.lore.length >= FOREST_CULTURE_LIMITS.lore ? "The woodlore archive is full" : "The home region's six lore entries are already in the archive"),
         rights: reason(roles.foresters > 0 && ledger.rightsChangedYear !== yearNow(),
             roles.foresters <= 0 ? "Appoint a forester to administer the wood-right" : "The forest law changes once a year"),
         mediate: reason(ledger.conflicts.some(entry => !entry.resolved) && canPay({ gold: 6 }),
             !ledger.conflicts.some(entry => !entry.resolved) ? "No open wood-right conflict" : "Needs 6 gold"),
+        tend: reason(Boolean(groveForTend) && canPay({ food: 2 }),
+            !groveForTend ? (grove ? "Every grove has been tended this year" : "Consecrate a grove first") : "Needs 2 food for the grove crew"),
+        hermit: reason(roles.hermits > 0 && ledger.hermitYear !== yearNow(),
+            roles.hermits <= 0 ? "A deep-forest shrine must shelter a hermit" : "The hermit has already received you this year"),
+        school: reason(canSchool && ledger.apprentices < FOREST_CULTURE_LIMITS.apprentices && ledger.schoolYear !== yearNow() && canPay({ food: 3, gold: 6 }),
+            !canSchool ? "A forester, herb-wife or woodland scholar must teach" : ledger.apprentices >= FOREST_CULTURE_LIMITS.apprentices ? "The apprentice cohort is full" : ledger.schoolYear === yearNow() ? "The forest school has already met this year" : "Needs 3 food and 6 gold"),
+        remedy: reason(Boolean(forestCultureKnowledge().herbalism) && roles.herbWives > 0 && ledger.remedyKey !== remedyKey && herbs && honey,
+            !forestCultureKnowledge().herbalism ? "Research woodland herb lore first" : roles.herbWives <= 0 ? "A herb-wife must work near the wood" : ledger.remedyKey === remedyKey ? "The remedies are already brewed this season" : "Needs 2 herbs and 1 honey"),
+        doctrine: reason(Boolean(forestCultureKnowledge().philosophy) && ledger.doctrineYear !== yearNow(),
+            !forestCultureKnowledge().philosophy ? "Research natural philosophy first" : "The doctrine changes once a year"),
     });
 }
 
@@ -495,10 +617,14 @@ export function dedicateSacredGrove() {
     if (!profile) return { ok: false, reason: "The woodland has no regional culture" };
     pay({ wood: 12, gold: 8 });
     const id = "grove-" + ledger.nextGroveId++;
+    const trait = forestCultureGroveTraitFor(profile.id, ledger.groves.length);
     ledger.groves.push({
         id, x: chosen.x, y: chosen.y, regionId: profile.id,
         label: profile.groveName + (ledger.groves.length ? " " + (ledger.groves.length + 1) : ""),
-        devotion: 50, foundedYear: yearNow(), lastOfferingYear: 0,
+        spirit: profile.spirit,
+        trait: trait.id,
+        devotion: 50, vitality: 62, ageYears: 1, tendedYear: 0,
+        foundedYear: yearNow(), lastOfferingYear: 0,
     });
     ledger.homeRegion = profile.id;
     ledger.favor = clamp(ledger.favor + 5);
@@ -510,46 +636,73 @@ export function dedicateSacredGrove() {
     return { ok: true, grove: { ...ledger.groves[ledger.groves.length - 1] }, profile };
 }
 
-export function makeForestOffering() {
+export function makeForestOffering(good = null) {
     const ledger = ensureForestCulture();
     const grove = findGrove(ledger);
     const profile = forestCultureProfileFor(ledger.homeRegion) || homeProfile(ledger);
     if (!grove) return { ok: false, reason: "Consecrate a grove first" };
     if (!profile) return { ok: false, reason: "No living woodland found" };
     if (ledger.lastOfferingKey === yearNow() + "-" + seasonNow()) return { ok: false, reason: "This season has already been honoured" };
-    const good = takeRitualGood(profile.offeringGood);
-    if (!good) return { ok: false, reason: "Needs 2 honey, herbs or mushrooms from the forest store" };
-    const bonus = knowledgeUnlocked(FOREST_CULTURE_TECHS.astronomy) ? 10 : 8;
-    ledger.favor = clamp(ledger.favor + bonus);
-    grove.devotion = clamp(grove.devotion + 8);
+    const requested = ["honey", "herbs", "mushrooms"].includes(good) ? good : (profile.offeringGood || "honey");
+    const taken = takeRitualGood(requested);
+    const chosen = taken || takeRitualGood(takeRitualGoodDry(profile.offeringGood));
+    if (!chosen) return { ok: false, reason: "Needs 2 honey, herbs or mushrooms from the forest store" };
+    const astronomy = knowledgeUnlocked(FOREST_CULTURE_TECHS.astronomy) ? 2 : 0;
+    const preferredBonus = chosen === profile.offeringGood ? 2 : 0;
+    const effects = chosen === "honey" ? { favor: 10, devotion: 10, morale: 1 }
+        : chosen === "herbs" ? { favor: 8, devotion: 6, medicine: 3 }
+            : { favor: 7, devotion: 8, morale: 2, research: 1 };
+    ledger.favor = clamp(ledger.favor + effects.favor + astronomy + preferredBonus);
+    grove.devotion = clamp(grove.devotion + effects.devotion);
     grove.lastOfferingYear = yearNow();
+    if (effects.medicine) addMedicineStock(effects.medicine);
+    if (effects.research && state.research && typeof state.research === "object") {
+        state.research.reserve = clamp(number(state.research.reserve) + effects.research, 0, 240);
+    }
+    if (effects.morale) state.morale = clamp(number(state.morale, 50) + effects.morale, 0, 100);
     ledger.lastOfferingKey = yearNow() + "-" + seasonNow();
+    ledger.lastOfferingGood = chosen;
     ledger.offerings++;
     ledger.revision++;
-    noteAction(ledger, "offering", "Offering of " + good + " at " + grove.label);
-    addLog("OFFERING MADE — " + good + " set at " + grove.label + "; the grove's favour rises.", "#d6b56d", "forest");
-    return { ok: true, good, favor: ledger.favor, grove: { ...grove } };
+    noteAction(ledger, "offering", "Offering of " + chosen + " at " + grove.label);
+    addLog("OFFERING MADE — " + chosen + " set at " + grove.label + "; the grove's favour rises.", "#d6b56d", "forest");
+    return { ok: true, good: chosen, effects, favor: ledger.favor, grove: { ...grove } };
 }
 
-export function holdForestFestival() {
+export function holdForestFestival(kind = "spring") {
     const ledger = ensureForestCulture();
     const grove = findGrove(ledger);
     const profile = forestCultureProfileFor(ledger.homeRegion) || homeProfile(ledger);
     if (!grove) return { ok: false, reason: "Consecrate a grove first" };
     if (!profile) return { ok: false, reason: "No living woodland found" };
-    if (ledger.festivalYear === yearNow()) return { ok: false, reason: "A forest festival has already been held this year" };
-    if (!canPay({ food: 8, gold: 5 })) return { ok: false, reason: "Needs 8 food and 5 gold" };
-    pay({ food: 8, gold: 5 });
+    const requested = ["spring", "woodcut", "harvest"].includes(kind) ? kind : "spring";
+    const festival = profile.festivals?.find(entry => entry.id === requested) || profile.festival;
+    if (!festival) return { ok: false, reason: "This region has no such festival" };
+    if (seasonNow() !== festival.season) return { ok: false, reason: "This festival is held in " + SEASON_LABELS[festival.season] };
+    if (ledger.festivalYears[requested] === yearNow()) return { ok: false, reason: "This festival has already been held this year" };
+    const cost = FOREST_FESTIVAL_COSTS[requested] || festival.cost || { food: 8, gold: 5 };
+    if (!canPay(cost)) return { ok: false, reason: "Needs " + cost.food + " food and " + cost.gold + " gold" };
+    pay(cost);
+    ledger.festivalYears[requested] = yearNow();
     ledger.festivalYear = yearNow();
+    ledger.festivalKind = requested;
     ledger.festivals++;
-    ledger.favor = clamp(ledger.favor + 6);
+    ledger.favor = clamp(ledger.favor + (requested === "spring" ? 6 : 5));
     ledger.revision++;
-    state.morale = clamp(number(state.morale, 50) + 4, 0, 100);
-    applyPoliticalEffects({ legitimacy: 1, clergy: 2, commons: 1 });
-    noteAction(ledger, "festival", profile.festival.name);
-    recordLegacy("festival", profile.festival.name, profile.festival.focus + " · " + profile.region, { importance: 2 });
-    addLog("FOREST FESTIVAL — " + profile.festival.name + ": " + profile.festival.focus + ".", "#d6b56d", "festival");
-    return { ok: true, festival: profile.festival, favor: ledger.favor };
+    if (requested === "spring") {
+        state.morale = clamp(number(state.morale, 50) + 4, 0, 100);
+        applyPoliticalEffects({ legitimacy: 1, clergy: 2, commons: 1 });
+    } else if (requested === "woodcut") {
+        state.morale = clamp(number(state.morale, 50) + 2, 0, 100);
+        applyPoliticalEffects({ legitimacy: 1, nobility: 1, commons: 1 });
+    } else {
+        state.morale = clamp(number(state.morale, 50) + 3, 0, 100);
+        applyPoliticalEffects({ legitimacy: 1, commons: 2, clergy: 1 });
+    }
+    noteAction(ledger, "festival", festival.name);
+    recordLegacy("festival", festival.name, festival.focus + " · " + profile.region, { importance: 2 });
+    addLog("FOREST FESTIVAL — " + festival.name + ": " + festival.focus + ".", "#d6b56d", "festival");
+    return { ok: true, kind: requested, festival, cost, favor: ledger.favor };
 }
 
 export function performHuntRite() {
@@ -563,13 +716,21 @@ export function performHuntRite() {
     pay({ food: 4 });
     ledger.huntYear = yearNow();
     ledger.rites++;
+    const animalNames = profile.names?.animals || [];
+    const initiates = [];
+    for (let index = 0; index < 2 && ledger.initiates < FOREST_CULTURE_LIMITS.initiates; index++) {
+        const name = animalNames[(ledger.rites + ledger.initiates + index) % Math.max(1, animalNames.length)];
+        if (name) initiates.push(name);
+        ledger.initiates++;
+    }
     ledger.favor = clamp(ledger.favor + 3);
     ledger.revision++;
     state.morale = clamp(number(state.morale, 50) + 2, 0, 100);
     applyPoliticalEffects({ commons: 1 });
-    noteAction(ledger, "hunt", "Hunt rite · " + profile.huntRule.slice(0, 70));
-    addLog("HUNT RITE OPENED — " + profile.huntRule, "#b58b62", "forest");
-    return { ok: true, rule: profile.huntRule, year: yearNow() };
+    noteAction(ledger, "hunt", "Hunt rite · " + (initiates.length ? initiates.join(", ") : "the wood remembers") + " · " + profile.huntRule.slice(0, 48));
+    recordLegacy("forest", "Hunt initiation", (initiates.length ? initiates.join(" and ") + " · " : "") + profile.region, { importance: 1 });
+    addLog("HUNT RITE OPENED — " + profile.huntRule + (initiates.length ? " " + initiates.join(" and ") + " are initiated." : ""), "#b58b62", "forest");
+    return { ok: true, rule: profile.huntRule, year: yearNow(), initiates, total: ledger.initiates };
 }
 
 export function performTreeWedding() {
@@ -589,6 +750,111 @@ export function performTreeWedding() {
     recordLegacy("forest", "Tree wedding", "The village is wed to " + grove.label + " for another year.", { importance: 2 });
     addLog("TREE WEDDING — the village is bound to " + grove.label + ".", "#c7a26b", "forest");
     return { ok: true, grove: { ...grove }, favor: ledger.favor };
+}
+
+export function tendSacredGrove(groveId = null) {
+    const ledger = ensureForestCulture();
+    const grove = groveId
+        ? ledger.groves.find(entry => entry.id === groveId) || null
+        : ledger.groves.slice().sort((a, b) => number(a.vitality, 60) - number(b.vitality, 60))[0] || null;
+    if (!grove) return { ok: false, reason: "Consecrate a grove first" };
+    if (grove.tendedYear === yearNow()) return { ok: false, reason: "This grove has already been tended this year" };
+    if (!canPay({ food: 2 })) return { ok: false, reason: "Needs 2 food for the grove crew" };
+    pay({ food: 2 });
+    grove.vitality = clamp(number(grove.vitality, 60) + 8, 0, 100);
+    grove.devotion = clamp(number(grove.devotion, 50) + 6, 0, 100);
+    grove.tendedYear = yearNow();
+    ledger.favor = clamp(ledger.favor + 3);
+    ledger.revision++;
+    noteAction(ledger, "tend", "Tended " + grove.label);
+    addLog("GROVE TENDED — " + grove.label + " gains vitality and devotion.", "#8fbf7f", "forest");
+    return { ok: true, grove: { ...grove }, favor: ledger.favor };
+}
+
+export function consultForestHermit() {
+    const ledger = ensureForestCulture();
+    const roles = forestCultureRoles();
+    const profile = forestCultureProfileFor(ledger.homeRegion) || homeProfile(ledger);
+    if (roles.hermits <= 0) return { ok: false, reason: "A deep-forest shrine must shelter a hermit" };
+    if (!profile) return { ok: false, reason: "No living woodland found" };
+    if (ledger.hermitYear === yearNow()) return { ok: false, reason: "The hermit has already received you this year" };
+    ledger.hermitYear = yearNow();
+    const existing = ledger.lore.some(entry => entry.regionId === profile.id && entry.kind === "omen");
+    if (!existing && ledger.lore.length < FOREST_CULTURE_LIMITS.lore) {
+        ledger.lore.push({
+            id: "omen-" + profile.id, kind: "omen", title: profile.omen.title,
+            regionId: profile.id, text: profile.omen.text, year: yearNow(),
+        });
+    }
+    ledger.favor = clamp(ledger.favor + (existing ? 2 : 4));
+    if (state.research && typeof state.research === "object") state.research.reserve = clamp(number(state.research.reserve) + 2, 0, 240);
+    state.morale = clamp(number(state.morale, 50) + 1, 0, 100);
+    ledger.revision++;
+    noteAction(ledger, "hermit", "Consulted the hermit · " + profile.omen.title);
+    if (!existing) recordLegacy("lore", profile.omen.title, "An omen from the deep-forest hermit · " + profile.region, { importance: 1 });
+    addLog("HERMIT'S OMEN — " + profile.omen.title + ": " + profile.omen.text, "#d6b56d", "forest");
+    return { ok: true, omen: profile.omen, added: !existing, favor: ledger.favor };
+}
+
+export function holdForestSchool() {
+    const ledger = ensureForestCulture();
+    const roles = forestCultureRoles();
+    if (roles.foresters + roles.herbWives + roles.scholars <= 0) return { ok: false, reason: "A forester, herb-wife or woodland scholar must teach" };
+    if (ledger.apprentices >= FOREST_CULTURE_LIMITS.apprentices) return { ok: false, reason: "The apprentice cohort is full" };
+    if (ledger.schoolYear === yearNow()) return { ok: false, reason: "The forest school has already met this year" };
+    if (!canPay({ food: 3, gold: 6 })) return { ok: false, reason: "Needs 3 food and 6 gold" };
+    pay({ food: 3, gold: 6 });
+    const taught = Math.min(2, FOREST_CULTURE_LIMITS.apprentices - ledger.apprentices);
+    ledger.apprentices += Math.max(0, taught);
+    ledger.teachings++;
+    ledger.schoolYear = yearNow();
+    ledger.favor = clamp(ledger.favor + 3);
+    if (state.research && typeof state.research === "object") state.research.reserve = clamp(number(state.research.reserve) + 4, 0, 240);
+    state.morale = clamp(number(state.morale, 50) + 1, 0, 100);
+    ledger.revision++;
+    noteAction(ledger, "school", "Forest school met · " + ledger.apprentices + " apprentices");
+    addLog("WOODLAND SCHOOL — " + Math.max(0, taught) + " apprentices learn the wood; research reserve rises.", "#8fbf7f", "forest");
+    return { ok: true, taught: Math.max(0, taught), apprentices: ledger.apprentices, favor: ledger.favor };
+}
+
+export function brewForestRemedies() {
+    const ledger = ensureForestCulture();
+    const roles = forestCultureRoles();
+    if (!knowledgeUnlocked(FOREST_CULTURE_TECHS.herbalism)) return { ok: false, reason: "Research woodland herb lore first" };
+    if (roles.herbWives <= 0) return { ok: false, reason: "A herb-wife must work near the wood" };
+    const key = yearNow() + "-" + seasonNow();
+    if (ledger.remedyKey === key) return { ok: false, reason: "The remedies are already brewed this season" };
+    const stock = ritualStock();
+    if (!stock || number(stock.herbs) < 2 || number(stock.honey) < 1) return { ok: false, reason: "Needs 2 herbs and 1 honey" };
+    stock.herbs = Math.floor(number(stock.herbs)) - 2;
+    stock.honey = Math.floor(number(stock.honey)) - 1;
+    const accepted = addMedicineStock(4);
+    ledger.remedyKey = key;
+    ledger.favor = clamp(ledger.favor + 2);
+    ledger.revision++;
+    noteAction(ledger, "remedy", "Brewed forest remedies · " + accepted + " medicine");
+    addLog("FOREST REMEDIES — " + accepted + " medicine entered the clinic store.", "#8fbf7f", "forest");
+    return { ok: true, medicine: accepted, favor: ledger.favor };
+}
+
+export function setForestDoctrine(doctrine) {
+    const ledger = ensureForestCulture();
+    const next = String(doctrine || "");
+    if (!FOREST_CULTURE_DOCTRINE_IDS.includes(next)) return { ok: false, reason: "Unknown woodland doctrine" };
+    if (!knowledgeUnlocked(FOREST_CULTURE_TECHS.philosophy)) return { ok: false, reason: "Research natural philosophy first" };
+    if (ledger.doctrineYear === yearNow()) return { ok: false, reason: "The doctrine changes once a year" };
+    if (ledger.doctrine === next) return { ok: false, reason: "This doctrine is already in force" };
+    ledger.doctrine = next;
+    ledger.doctrineYear = yearNow();
+    ledger.revision++;
+    const entry = FOREST_CULTURE_DOCTRINES.find(item => item.id === next);
+    if (next === "refuge") applyPoliticalEffects({ clergy: 1, commons: 1 });
+    else if (next === "provision") applyPoliticalEffects({ nobility: 1, merchants: 1, commons: -1 });
+    else applyPoliticalEffects({ legitimacy: 1 });
+    noteAction(ledger, "doctrine", "Woodland doctrine · " + entry.label);
+    recordLegacy("law", "Woodland doctrine: " + entry.label, entry.detail, { importance: 2 });
+    addLog("WOODLAND DOCTRINE — " + entry.label + ": " + entry.detail, "#8fbf7f", "forest");
+    return { ok: true, doctrine: entry };
 }
 
 export function setForestRights(priority) {
@@ -632,12 +898,10 @@ export function collectForestLore() {
     const ledger = ensureForestCulture();
     const profile = forestCultureProfileFor(ledger.homeRegion) || homeProfile(ledger);
     if (!profile) return { ok: false, reason: "No living woodland found" };
+    if (ledger.lore.length >= FOREST_CULTURE_LIMITS.lore) return { ok: false, reason: "The woodlore archive is full" };
     const existing = new Set(ledger.lore.map(entry => entry.kind + ":" + entry.regionId));
-    const additions = [
-        { kind: "tale", title: profile.tale.title, text: profile.tale.moral },
-        { kind: "legend", title: profile.legend.title, text: profile.legend.text },
-        { kind: "song", title: profile.song.title, text: profile.song.verse },
-    ].filter(entry => !existing.has(entry.kind + ":" + profile.id));
+    const additions = forestCultureLoreEntriesFor(profile)
+        .filter(entry => !existing.has(entry.kind + ":" + profile.id));
     if (!additions.length) return { ok: false, reason: "The home region's lore is already in the archive" };
     for (const entry of additions) {
         ledger.lore.push({
@@ -657,8 +921,8 @@ export function collectForestLore() {
     }
     state.morale = clamp(number(state.morale, 50) + 1, 0, 100);
     noteAction(ledger, "lore", profile.tale.title);
-    recordLegacy("lore", profile.tale.title, profile.legend.title + " · " + profile.region, { importance: 2 });
-    addLog("WOODLORE COLLECTED — " + profile.tale.title + " enters the archive.", "#d6b56d", "forest");
+    recordLegacy("lore", profile.tale.title, profile.legend.title + " · " + profile.omen.title + " · " + profile.region, { importance: 2 });
+    addLog("WOODLORE COLLECTED — " + profile.tale.title + " and five more pieces enter the archive.", "#d6b56d", "forest");
     return { ok: true, added: additions.length, profile };
 }
 
@@ -681,7 +945,17 @@ function annualCulture(ledger, profile, roles) {
     const groves = ledger.groves.length;
     const knowledge = forestCultureKnowledge();
     const target = 42 + groves * 2 + Object.values(knowledge).filter(Boolean).length * 2
-        + (priority === "commons" ? 5 : 0) + roles.monasteries * 2 + (roles.herbWives > 0 ? 1 : 0);
+        + (priority === "commons" ? 5 : 0) + roles.monasteries * 2 + (roles.herbWives > 0 ? 1 : 0)
+        + Math.min(4, ledger.apprentices * 0.2) + (ledger.doctrine === "refuge" ? 4 : ledger.doctrine === "provision" ? -3 : 0);
+    // A grove is a living island: it ages every year and loses a little
+    // vitality when the village does not tend it. Tend it and its devotion can
+    // carry it forward; this is one bounded pass over at most eight groves.
+    for (const grove of ledger.groves) {
+        grove.ageYears = Math.max(1, Math.floor(number(grove.ageYears, 1) + 1));
+        const tended = grove.tendedYear === yearNow();
+        const change = tended ? (number(grove.devotion, 50) >= 80 ? 1 : 0) : -1;
+        grove.vitality = clamp(number(grove.vitality, 60) + change, 0, 100);
+    }
     if (ledger.favor < target) ledger.favor = clamp(ledger.favor + 1);
     else if (ledger.favor > target) ledger.favor = clamp(ledger.favor - 1);
     for (const conflict of ledger.conflicts) {
@@ -708,6 +982,8 @@ function annualCulture(ledger, profile, roles) {
         year: yearNow(), favor: ledger.favor, groves,
         conflicts: ledger.conflicts.filter(entry => !entry.resolved).length,
         lore: ledger.lore.length, priority,
+        vitality: groves ? Math.round(ledger.groves.reduce((sum, grove) => sum + number(grove.vitality, 60), 0) / groves) : 0,
+        doctrine: ledger.doctrine,
     });
     if (ledger.history.length > FOREST_CULTURE_LIMITS.history) ledger.history.length = FOREST_CULTURE_LIMITS.history;
     ledger.lastAnnualYear = yearNow();
@@ -736,6 +1012,11 @@ export function forestCultureSummary() {
     const mods = forestCultureModifiers();
     const actions = forestCultureActionAvailability();
     const spec = FOREST_CULTURE_REQUIREMENTS;
+    const doctrine = FOREST_CULTURE_DOCTRINES.find(entry => entry.id === ledger.doctrine) || FOREST_CULTURE_DOCTRINES[0];
+    const groveTraits = ledger.groves.reduce((counts, grove) => {
+        counts[grove.trait] = (counts[grove.trait] || 0) + 1;
+        return counts;
+    }, {});
     return Object.freeze({
         version: FOREST_CULTURE_VERSION,
         profile,
@@ -749,14 +1030,33 @@ export function forestCultureSummary() {
         philosophy: profile?.philosophy || "",
         paths: profile?.paths || [],
         festival: profile?.festival || null,
+        festivals: profile?.festivals || [],
+        festivalYears: { ...ledger.festivalYears },
         tale: profile?.tale || null,
         legend: profile?.legend || null,
         song: profile?.song || null,
+        omen: profile?.omen || null,
+        custom: profile?.custom || null,
+        herbLore: profile?.herbLore || null,
         calendar,
+        doctrine,
+        doctrines: FOREST_CULTURE_DOCTRINES,
+        initiates: ledger.initiates,
+        apprentices: ledger.apprentices,
+        teachings: ledger.teachings,
+        groveVitality: mods.groveVitality,
+        groveTraits,
         favor: ledger.favor,
-        groves: ledger.groves.map(grove => ({ ...grove, protected: true, region: forestCultureProfileFor(grove.regionId)?.region || profile?.region || "wood" })),
+        groves: ledger.groves.map(grove => {
+            const trait = FOREST_GROVE_TRAITS.find(item => item.id === grove.trait) || FOREST_GROVE_TRAITS[0];
+            return {
+                ...grove, protected: true,
+                region: forestCultureProfileFor(grove.regionId)?.region || profile?.region || "wood",
+                traitLabel: trait.label, traitDetail: trait.detail,
+            };
+        }),
         groveLimit: forestCultureGroveLimit(),
-        lore: ledger.lore.map(entry => ({ ...entry })),
+        lore: ledger.lore.map(entry => ({ ...entry, label: FOREST_CULTURE_LORE_LABELS[entry.kind] || entry.kind.toUpperCase() })),
         conflicts: ledger.conflicts.map(entry => ({ ...entry })),
         rights: { ...ledger.rights, label: forestCultureRightsLabel(ledger.rights.priority) },
         roles,
@@ -766,10 +1066,11 @@ export function forestCultureSummary() {
         actions,
         counts: {
             festivals: ledger.festivals, offerings: ledger.offerings, rites: ledger.rites,
-            weddings: ledger.weddings, lore: ledger.lore.length,
+            weddings: ledger.weddings, initiates: ledger.initiates, apprentices: ledger.apprentices,
+            teachings: ledger.teachings, lore: ledger.lore.length,
             openConflicts: ledger.conflicts.filter(entry => !entry.resolved).length,
         },
-        actionsLog: ledger.actions.slice(0, 6),
+        actionsLog: ledger.actions.slice(0, 8),
         requirements: spec,
         requirementCount: spec.length,
         regions: Object.keys(FOREST_CULTURE_BY_REGION).length,
@@ -784,5 +1085,6 @@ export function forestCultureSnapshot() {
 
 export function forestCultureScore() {
     const summary = forestCultureSummary();
-    return Math.round(summary.favor + summary.groves.length * 6 + summary.knowledgeCount * 4 + summary.counts.lore * 1.5 + summary.counts.festivals * 2);
+    return Math.round(summary.favor + summary.groves.length * 6 + summary.knowledgeCount * 4 + summary.counts.lore * 1.5
+        + summary.counts.festivals * 2 + summary.counts.initiates * 1.5 + summary.counts.apprentices * 1.5);
 }

@@ -671,3 +671,14 @@
 #command-panel-content .culture-requirement>summary{grid-template-columns:76px minmax(0,1fr) 12px}
 #command-panel-content .culture-requirement>summary::after{content:"+";justify-self:end;color:#d6b56d;font:700 11px/1 var(--ui-number-font,monospace)}
 #command-panel-content .culture-requirement[open]>summary::after{content:"−"}
+.culture-grove__vitality{height:4px;border:1px solid rgba(185,154,89,.35);border-radius:2px;background:rgba(12,16,12,.6);overflow:hidden}
+.culture-grove__vitality i{display:block;height:100%;background:linear-gradient(90deg,#6f9b56,#c6b35c)}
+.culture-tend{margin-top:3px;padding:4px 6px;font-size:6px}
+.culture-doctrines{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:4px}
+.culture-doctrines .command-choice{padding:6px;gap:3px}
+.culture-doctrines .command-choice strong{font-size:7px}
+.culture-doctrines .command-choice small{font-size:6px;line-height:1.35}
+.culture-craft .culture-action{min-height:46px}
+.culture-grove>div{display:grid;gap:2px;min-width:0}
+.culture-grove .command-ribbon{display:inline-block;max-width:100%;overflow-wrap:anywhere}
+.culture-grove strong,.culture-grove p,.culture-grove small{overflow-wrap:anywhere}

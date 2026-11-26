@@ -605,6 +605,25 @@ function cultureBlock() {
     const profile = culture.profile;
     const actions = culture.actions;
     const roles = culture.roles;
+    const festivals = (culture.festivals || []).map(entry => {
+        const key = entry.id === "spring" ? "festivalSpring" : entry.id === "woodcut" ? "festivalWoodcut" : "festivalHarvest";
+        const availability = actions[key] || actions.festival;
+        const cost = entry.cost || { food: 0, gold: 0 };
+        return cultureActionButton("festival-" + entry.id, entry.name.toUpperCase(),
+            seasonNames[entry.season] + " · " + cost.food + " food · " + cost.gold + " gold · " + availability.reason,
+            !availability.ok);
+    }).join("");
+    const offerings = [
+        ["honey", "HONEY", "favour and devotion"],
+        ["herbs", "HERBS", "healers' medicine"],
+        ["mushrooms", "MUSHROOMS", "morale and study"],
+    ].map(([good, label, detail]) => cultureActionButton("offering-" + good, "OFFER " + label,
+        "2 " + good + " · " + detail + " · " + actions["offering" + good[0].toUpperCase() + good.slice(1)].reason,
+        !actions["offering" + good[0].toUpperCase() + good.slice(1)].ok)).join("");
+    const doctrines = (culture.doctrines || []).map(entry => '<button type="button" class="command-choice'
+        + (culture.doctrine?.id === entry.id ? ' is-current' : '') + '" data-culture-doctrine="' + esc(entry.id) + '"'
+        + (actions.doctrine.ok ? '' : ' disabled title="' + esc(actions.doctrine.reason) + '"')
+        + '><strong>' + esc(entry.label.toUpperCase()) + '</strong><small>' + esc(entry.detail) + '</small></button>').join("");
     const rights = [
         { id: "balance", label: "BALANCE", detail: "Forage, game and timber share the wood" },
         { id: "commons", label: "COMMONS", detail: "Village farms, herds and forage first" },
@@ -627,17 +646,26 @@ function cultureBlock() {
         ["singers", "Work singers"], ["hunters", "Hunting parties"],
     ];
     const lore = culture.lore.map(entry => '<article class="culture-lore-card" data-culture-lore="' + esc(entry.kind) + '">'
-        + '<span class="command-ribbon">' + esc(entry.kind.toUpperCase()) + ' · ' + number(entry.year) + '</span>'
+        + '<span class="command-ribbon">' + esc(entry.label || entry.kind.toUpperCase()) + ' · ' + number(entry.year) + '</span>'
         + '<strong>' + esc(entry.title) + '</strong><p>' + esc(entry.text) + '</p>'
         + '<small>' + esc(REGIONAL_FOREST_TYPES.find(type => type.id === entry.regionId)?.short || entry.regionId || "home wood") + '</small></article>').join("");
     const conflicts = culture.conflicts.length ? culture.conflicts.map(entry => '<article class="culture-conflict' + (entry.resolved ? ' is-resolved' : '') + '" data-culture-conflict="' + esc(entry.id) + '" data-resolved="' + (entry.resolved ? '1' : '0') + '">'
         + '<div><span class="command-ribbon">' + esc(entry.kind.toUpperCase()) + ' · ' + (entry.resolved ? 'SETTLED ' + number(entry.resolvedYear) : 'OPEN SINCE ' + number(entry.sinceYear)) + '</span>'
         + '<strong>' + esc(entry.label) + '</strong><p>' + esc(entry.detail) + '</p></div>'
         + (entry.resolved ? '' : '<button type="button" class="command-choice" data-culture-mediate="' + esc(entry.id) + '"' + (actions.mediate.ok ? '' : ' disabled title="' + esc(actions.mediate.reason) + '"') + '>MEDIATE · 6G</button>') + '</article>').join("") : '<p class="command-note">No wood-right conflict is open. Extreme rights and a protected grove can still create one.</p>';
-    const groves = culture.groves.length ? culture.groves.map(grove => '<article class="culture-grove" data-culture-grove="' + esc(grove.id) + '" data-grove-protected="1">'
-        + '<div><span class="command-ribbon">PROTECTED FOREST ISLAND</span><strong>' + esc(grove.label) + '</strong>'
-        + '<p>' + esc(grove.region) + ' · tile ' + number(grove.x) + ', ' + number(grove.y) + ' · devotion ' + number(grove.devotion) + ' / 100</p>'
-        + '<small>Consecrated year ' + number(grove.foundedYear) + ' · the axe and the hunter are refused on this tile.</small></div></article>').join("") : '<p class="command-note">No grove is consecrated. A shrine beside living forest can withdraw its first tile from the axe.</p>';
+    const currentYear = Math.floor(Number(state.year) || 0);
+    const groves = culture.groves.length ? culture.groves.map(grove => {
+        const tended = Math.floor(Number(grove.tendedYear) || 0) === currentYear;
+        const canTend = actions.tend.ok && !tended;
+        return '<article class="culture-grove" data-culture-grove="' + esc(grove.id) + '" data-grove-protected="1" data-grove-trait="' + esc(grove.trait) + '">'
+            + '<div><span class="command-ribbon">PROTECTED · ' + esc(grove.traitLabel.toUpperCase()) + '</span><strong>' + esc(grove.label) + '</strong>'
+            + '<p>' + esc(grove.region) + ' · tile ' + number(grove.x) + ', ' + number(grove.y) + ' · devotion ' + number(grove.devotion) + ' / 100 · vitality ' + number(grove.vitality) + ' / 100</p>'
+            + '<div class="culture-grove__vitality" title="Grove vitality"><i style="width:' + percent(grove.vitality) + '%"></i></div>'
+            + '<small>' + esc(grove.traitDetail) + ' Age ' + number(grove.ageYears) + ' years. Consecrated year ' + number(grove.foundedYear) + '; the axe and the hunter are refused on this tile.</small>'
+            + (tended ? '<small>This grove has been tended this year.</small>'
+                : '<button type="button" class="command-choice culture-tend" data-culture-tend="' + esc(grove.id) + '"' + (canTend ? '' : ' disabled title="' + esc(actions.tend.reason) + '"') + '>TEND GROVE · 2 FOOD</button>')
+            + '</div></article>';
+    }).join("") : '<p class="command-note">No grove is consecrated. A shrine beside living forest can withdraw its first tile from the axe.</p>';
     const guide = culture.requirements.map(requirement => '<details class="culture-requirement" data-culture-requirement="' + esc(requirement.id) + '">'
         + '<summary><span>' + esc(requirement.id) + '</span><strong>' + esc(requirement.title) + '</strong></summary>'
         + '<p>' + esc(requirement.point) + '</p><small>' + esc(requirement.consumer) + '</small><p>' + esc(requirement.detail) + '</p></details>').join("");
@@ -651,25 +679,32 @@ function cultureBlock() {
         + '<div><small>FOREST RIGHT</small><strong>' + esc(culture.rights.label.toUpperCase()) + '</strong></div>'
         + '<div data-culture-lore="' + number(culture.lore.length) + '"><small>WOODLORE</small><strong>' + number(culture.lore.length) + ' ENTRIES</strong></div>'
         + '<div><small>OPEN CONFLICTS</small><strong>' + number(culture.counts.openConflicts) + '</strong></div>'
-        + '<div><small>REGIONAL TYPES</small><strong>' + number(culture.regions) + '</strong></div></div>'
+        + '<div><small>GROVE VITALITY</small><strong>' + number(culture.groveVitality) + ' / 100</strong></div>'
+        + '<div><small>HUNT INITIATES</small><strong>' + number(culture.initiates) + '</strong></div></div>'
         + (profile ? '<div class="culture-profile" data-culture-profile="' + esc(profile.id) + '"><div class="culture-profile__head"><span>HOME WOOD · ' + esc(profile.region.toUpperCase()) + '</span><strong>' + esc(profile.spirit) + '</strong><p>' + esc(profile.tradition) + ' · ' + esc(profile.sacredTree) + '</p></div>'
             + '<div class="culture-profile__grid"><div><small>TABOO</small><p>' + esc(profile.taboo) + '</p></div><div><small>WORK TECHNIQUE</small><p>' + esc(profile.workTechnique) + '</p></div><div><small>HUNT RULE</small><p>' + esc(profile.huntRule) + '</p></div><div><small>PHILOSOPHY</small><p>' + esc(profile.philosophy) + '</p></div></div>'
-            + '<p class="command-note">Paths: ' + esc((profile.paths || []).join(" · ")) + ' · Festival: ' + esc(profile.festival.name) + ' · ' + esc(profile.festival.focus) + '</p>'
+            + '<p class="command-note">Paths: ' + esc((profile.paths || []).join(" · ")) + ' · Festival cycle: ' + esc((profile.festivals || []).map(entry => entry.name).join(" · ")) + '</p>'
             + '<div class="culture-tale">'
             + '<div class="culture-tale__entry"><small>REGIONAL TALE</small><strong>' + esc(profile.tale.title) + '</strong><p>' + esc(profile.tale.moral) + '</p></div>'
             + '<div class="culture-tale__entry"><small>LEGEND OF THE LOST WOOD</small><strong>' + esc(profile.legend.title) + '</strong><p>' + esc(profile.legend.text) + '</p></div>'
             + '<div class="culture-tale__entry"><small>WORK SONG</small><strong>' + esc(profile.song.title) + '</strong><p>' + esc(profile.song.verse) + '</p></div>'
             + '</div></div>' : '<p class="command-note">No regional culture is available: the realm has no living forest near a shrine or hall.</p>')
         + '<div class="command-section-title">FOREST CALENDAR</div><div class="culture-calendar" data-culture-season="' + number(culture.calendar.season) + '">' + calendar + '</div>'
+        + (profile ? '<p class="command-note">Bloom window: ' + esc(profile.calendar.bloom) + ' · Hunt window: ' + esc(profile.calendar.hunt) + ' · Felling window: ' + esc(profile.calendar.felling) + '</p>' : '')
         + '<div class="command-section-title">RITUAL ACTIONS</div><div class="culture-actions">'
         + cultureActionButton("grove", "DEDICATE GROVE", "12 wood · 8 gold · " + actions.grove.reason, !actions.grove.ok)
-        + cultureActionButton("offering", "MAKE OFFERING", "2 forest goods · " + actions.offering.reason, !actions.offering.ok)
-        + cultureActionButton("festival", "HOLD FESTIVAL", "8 food · 5 gold · " + actions.festival.reason, !actions.festival.ok)
         + cultureActionButton("hunt", "HUNT RITE", "4 food · " + actions.hunt.reason, !actions.hunt.ok)
         + cultureActionButton("wedding", "TREE WEDDING", "10 gold · " + actions.wedding.reason, !actions.wedding.ok)
         + cultureActionButton("lore", "COLLECT WOODLORE", actions.lore.reason, !actions.lore.ok)
         + '</div>'
+        + '<div class="command-section-title">FESTIVAL CYCLE · THREE SEASONS</div><div class="culture-actions culture-festivals">' + festivals + '</div>'
+        + '<div class="command-section-title">OFFERINGS · ONE GIFT PER SEASON</div><div class="culture-actions culture-offerings">' + offerings + '</div>'
         + '<div class="command-section-title">SACRED GROVES · ' + number(culture.groves.length) + ' / ' + number(culture.groveLimit) + '</div><div class="culture-groves" data-culture-grove-count="' + number(culture.groves.length) + '">' + groves + '</div>'
+        + '<div class="command-section-title">CRAFT &amp; KNOWLEDGE</div><div class="culture-actions culture-craft">'
+        + cultureActionButton("hermit", "CONSULT HERMIT", actions.hermit.reason, !actions.hermit.ok)
+        + cultureActionButton("school", "HOLD FOREST SCHOOL", "3 food · 6 gold · " + actions.school.reason, !actions.school.ok)
+        + cultureActionButton("remedy", "BREW REMEDIES", "2 herbs · 1 honey · " + actions.remedy.reason, !actions.remedy.ok)
+        + '</div>'
         + '<div class="command-section-title">WOOD-RIGHT · ' + esc(culture.rights.label.toUpperCase()) + '</div><div class="culture-rights">'
         + rights.map(right => '<button type="button" class="command-choice' + (culture.rights.priority === right.id ? ' is-current' : '') + '" data-culture-rights="' + right.id + '"' + (actions.rights.ok ? '' : ' disabled title="' + esc(actions.rights.reason) + '"') + '><strong>' + right.label + '</strong><small>' + esc(right.detail) + '</small></button>').join("")
         + '</div><p class="command-note">' + esc(actions.rights.reason) + '. A forester must hold office; the law changes once a year.</p>'
@@ -677,9 +712,12 @@ function cultureBlock() {
         + '<div class="command-section-title">WOODLAND ROLES · REAL WORKERS</div><div class="culture-roles">'
         + roleRows.map(([key, label]) => '<div data-culture-role="' + key + '"><small>' + esc(label.toUpperCase()) + '</small><strong>' + number(roles[key]) + '</strong></div>').join("")
         + '</div>'
+        + '<p class="command-note">Hunt initiates: ' + number(culture.initiates) + ' · Forest-school apprentices: ' + number(culture.apprentices) + ' · School meetings: ' + number(culture.teachings) + '.</p>'
         + '<div class="command-section-title">WOODLAND KNOWLEDGE · ' + number(culture.knowledgeCount) + ' / 5</div><div class="culture-knowledge">'
         + knowledge.map(entry => '<div class="' + (culture.knowledge[entry.key] ? 'is-known' : '') + '" data-culture-tech="' + esc(entry.id) + '"><small>' + (culture.knowledge[entry.key] ? 'KNOWN' : 'RESEARCH') + '</small><strong>' + esc(entry.label) + '</strong></div>').join("")
         + '</div>'
+        + '<div class="command-section-title">NATURE PHILOSOPHY · ' + esc(culture.doctrine.label.toUpperCase()) + '</div><div class="culture-doctrines" data-culture-doctrine-id="' + esc(culture.doctrine.id) + '">' + doctrines + '</div>'
+        + '<p class="command-note">' + esc(culture.doctrine.detail) + ' ' + esc(actions.doctrine.reason) + '.</p>'
         + '<div class="command-section-title">LIVE CULTURE EFFECTS</div><div class="command-summary culture-effects">'
         + '<div><small>FORAGE</small><strong>×' + amount(culture.modifiers.forage) + '</strong></div>'
         + '<div><small>HUNT</small><strong>×' + amount(culture.modifiers.hunt) + '</strong></div>'
@@ -687,7 +725,7 @@ function cultureBlock() {
         + '<div><small>PANNAGE</small><strong>×' + amount(culture.modifiers.herd) + '</strong></div>'
         + '<div><small>MEDICINE</small><strong>×' + amount(culture.modifiers.medicine) + '</strong></div>'
         + '<div><small>TIMBER</small><strong>×' + amount(culture.modifiers.timber) + '</strong></div></div>'
-        + '<div class="command-section-title">WOODLORE ARCHIVE · ' + number(culture.lore.length) + '</div><div class="culture-lore">' + (lore || '<p class="command-note">No tale, legend or song has been collected yet. Collect woodlore to store the home region’s tale, legend and work song.</p>') + '</div>'
+        + '<div class="command-section-title">WOODLORE ARCHIVE · ' + number(culture.lore.length) + ' ENTRIES · SIX KINDS</div><div class="culture-lore">' + (lore || '<p class="command-note">No lore has been collected yet. Collect woodlore to store the region’s tale, lost-wood legend, work song, omen, custom and herb note.</p>') + '</div>'
         + '<details class="culture-guide" data-culture-guide="' + number(culture.requirementCount) + '"><summary>THIRTY-POINT CULTURE, RELIGION, SOCIETY & KNOWLEDGE FIELD GUIDE</summary><div class="culture-requirements">' + guide + '</div></details>'
         + '</section>';
 }

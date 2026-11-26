@@ -1,13 +1,64 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.78.0`
-**Next development line:** `3.79.0-dev`
+**Current production version:** `3.79.0`
+**Next development line:** `3.80.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
 **Last repository verification:** 2026-11-26 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.79.0 — Lebendige Haine, Jahresfeste und sechs Wissensarten
+
+3.78.0 introduced the thirty-point woodland culture layer. 3.79.0 deepens it
+without adding a second economy: the grove is now a living place, the calendar
+is a yearly cycle of three real festivals and three gifts, and the woodland
+professionals have their own school, medicine, omens and philosophy.
+
+- **Three seasonal festivals.** Spring, woodcut and harvest each have their own
+  season, cost and effect. Spring (8 food, 5 gold) raises morale and civic
+  legitimacy; the woodcut feast (5 food, 6 gold) feeds the winter felling
+  window; the harvest feast (9 food, 6 gold) settles mast, fields and herds.
+  Each can be held once per year and is recorded in the culture ledger.
+- **Three concrete offerings.** Honey (favour and devotion, +1 morale), herbs
+  (favour, devotion and +3 real medicine in the clinic store) and mushrooms
+  (favour, devotion, +2 morale and +1 research) consume two units of the actual
+  forest-gathering stock. The region's preferred gift still receives a small
+  bonus; one gift per season.
+- **Living sacred groves.** Every grove now has a regional trait (`refuge`,
+  `mast` or `spring`), vitality, age and a tending record. Vitality feeds
+  forage, hunt, farm, herd and medicine modifiers; a yearly tending crew costs
+  2 food, restores 8 vitality and 6 devotion, and an untended grove loses 1
+  vitality per year. Groves age once per year and remain bounded at eight.
+- **Six kinds of lore.** Collecting the home region now stores the tale, the
+  lost-wood legend, the work song, an omen, a custom and a practical herb note.
+  The archive labels each kind and the 60-entry cap stays enforced.
+- **Hermits, schools and remedies.** A deep-forest shrine shelters a hermit who
+  gives a yearly regional omen. A forest school (3 food, 6 gold) trains two
+  apprentices and raises research, favour and the knowledge modifier. A healer
+  near the wood plus woodland herb lore can brew a seasonal remedy batch (2
+  herbs, 1 honey) that adds real medicine to the clinic store.
+- **Nature-philosophy doctrine.** Natural philosophy now unlocks a once-a-year
+  doctrine: `balance`, `refuge` or `provision`. Each trades real forage, hunt,
+  farm, timber and charcoal factors against the others; the choice is visible
+  in the atlas and in every later modifier.
+- **Calendar and initiation effects.** The regional calendar's bloom, hunt and
+  felling windows now feed the existing gather, hunt and timber modifiers. The
+  hunt rite creates bounded named initiates (two per rite, cap 24) whose number
+  strengthens the hunt factor; forest-school apprentices strengthen knowledge.
+- **Save schema v2.** Old and missing culture data is normalized additively.
+  Version 1 saves load with empty festival years, no initiates, no doctrine and
+  default grove traits; the existing economy, forest and population fields are
+  untouched.
+- **Player surface.** The Forest Atlas now shows three festival buttons, three
+  offering buttons, grove vitality/trait/tending cards, hermit/school/remedy
+  actions, three doctrine cards, initiate/apprentice counts and the six lore
+  labels. The 30-point field guide remains one collapsed section.
+- **Verification.** `node --test tests/systems/forest-culture.test.js` passes
+  13/13; the browser reference covers grove tending, all three festival
+  buttons, offering effects, hermit, school and six lore entries without page
+  or console errors.
 
 ## 3.78.0 — Waldkultur, heilige Haine und Waldrecht
 
