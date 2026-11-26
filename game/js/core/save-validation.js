@@ -35,6 +35,8 @@ import { validateScenarioState } from "../systems/scenario.js";
 import { validateWorldMapSnapshot } from "../systems/world-map.js";
 import { validateCraftedItems } from "../systems/item-lexicon.js";
 import { COUNCIL_DOCKET_LIMIT, COUNCIL_HISTORY_LIMIT } from "../systems/council-laws.js";
+import { DIPLOMATIC_REALMS } from "../systems/diplomacy-config.js";
+import { DIPLOMACY_MISSION_LIMIT, DIPLOMACY_MISSION_GOALS, DIPLOMACY_MISSION_STAGES } from "../systems/diplomacy.js";
 import { resolveWorldDimensions } from "../world/terrain-model.js";
 
 export const SAVE_SCHEMA_VERSION = 15;
@@ -247,6 +249,35 @@ export function validateSaveSnapshot(snapshot) {
         const diplomacy = snapshot.diplomacy;
         if (!diplomacy || typeof diplomacy !== "object" || Array.isArray(diplomacy) || !Array.isArray(diplomacy.realms) || diplomacy.realms.length > 8) {
             fail("Save data contains an invalid diplomacy state.", { code:"INVALID_DIPLOMACY", field:"diplomacy", valueType:typeOf(diplomacy), phase:"diplomacy" });
+        }
+        if (diplomacy.missions !== undefined) {
+            const missions = diplomacy.missions;
+            if (!Array.isArray(missions) || missions.length > DIPLOMACY_MISSION_LIMIT) {
+                fail("Save data contains an invalid envoy mission list.", { code:"INVALID_DIPLOMACY_MISSIONS", field:"diplomacy.missions", valueType:typeOf(missions), phase:"diplomacy" });
+            }
+            const realmIds = new Set(DIPLOMATIC_REALMS.map(realm => realm.id));
+            const seen = new Set();
+            const validYears = value => value === undefined || value === null || (Number.isSafeInteger(value) && value >= 0);
+            for (const [index, mission] of missions.entries()) {
+                const field = "diplomacy.missions[" + index + "]";
+                if (!mission || typeof mission !== "object" || Array.isArray(mission) ||
+                    !String(mission.id || "").trim() || !realmIds.has(String(mission.realmId || "")) ||
+                    !DIPLOMACY_MISSION_GOALS.includes(String(mission.goalTreaty || "")) ||
+                    !DIPLOMACY_MISSION_STAGES.includes(String(mission.stage || "")) ||
+                    seen.has(String(mission.realmId))) {
+                    fail("Save data contains an invalid envoy mission.", { code:"INVALID_DIPLOMACY_MISSION", field, valueType:typeOf(mission), phase:"diplomacy" });
+                }
+                seen.add(String(mission.realmId));
+                if (!validYears(mission.sentYear) || !validYears(mission.negotiatedYear) || !validYears(mission.reportYear) || !validYears(mission.expiresYear)) {
+                    fail("Save data contains invalid envoy mission years.", { code:"INVALID_DIPLOMACY_MISSION_YEARS", field, valueType:typeOf(mission), phase:"diplomacy" });
+                }
+                if (mission.outcome !== undefined && mission.outcome !== null && !["accepted", "rejected"].includes(String(mission.outcome))) {
+                    fail("Save data contains an invalid envoy mission outcome.", { code:"INVALID_DIPLOMACY_MISSION_OUTCOME", field, valueType:typeOf(mission.outcome), phase:"diplomacy" });
+                }
+                if (mission.roll !== undefined && mission.roll !== null && (!Number.isFinite(Number(mission.roll)) || Number(mission.roll) < 0 || Number(mission.roll) > 1)) {
+                    fail("Save data contains an invalid envoy mission roll.", { code:"INVALID_DIPLOMACY_MISSION_ROLL", field, valueType:typeOf(mission.roll), phase:"diplomacy" });
+                }
+            }
         }
     }
     if (snapshot.military !== undefined && snapshot.military !== null) {

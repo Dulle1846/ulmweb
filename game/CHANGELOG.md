@@ -1,7 +1,7 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.79.0`
-**Next development line:** `3.80.0-dev`
+**Current production version:** `3.80.0`
+**Next development line:** `3.81.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
@@ -9,9 +9,9 @@
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
 
-## 3.79.0 — Lebendige Haine, Jahresfeste und sechs Wissensarten
+## 3.80.0 — Lebendige Haine, Jahresfeste und sechs Wissensarten
 
-3.78.0 introduced the thirty-point woodland culture layer. 3.79.0 deepens it
+3.78.0 introduced the thirty-point woodland culture layer. 3.80.0 deepens it
 without adding a second economy: the grove is now a living place, the calendar
 is a yearly cycle of three real festivals and three gifts, and the woodland
 professionals have their own school, medicine, omens and philosophy.
@@ -59,6 +59,21 @@ professionals have their own school, medicine, omens and philosophy.
   13/13; the browser reference covers grove tending, all three festival
   buttons, offering effects, hermit, school and six lore entries without page
   or console errors.
+
+## 3.79.0 — Envoy missions stage treaty negotiation
+
+The four neighbouring courts now have a player-driven alternative to paying a
+signing fee directly. An appointed resident envoy can carry one bounded mandate
+at a time through **Send → Negotiate → Report → Ratify**, with one send per
+year, one mandate per court, six active mandates overall and a four-year
+lifetime. Negotiation reads the settled relation, trust, envoy skill,
+Chancellor quality, foreign insight and a targeted foreign desk, then takes
+exactly one draw from a dedicated `"diplomacy"` stream. The visible score and
+threshold explain why a court accepted or refused; an accepted report changes
+the real treaty record on ratification, while a refusal leaves a bounded
+political scar. The annual audit closes expired, war-torn or envoy-less
+mandates once per year. NEXT MOVE and FIRST SESSION name the one ready stage
+without duplicating the opening checklist. See [Envoy missions](docs/ENVOY_MISSIONS.md).
 
 ## 3.78.0 — Waldkultur, heilige Haine und Waldrecht
 

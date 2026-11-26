@@ -104,6 +104,7 @@ test("the economy applies edict modifiers before settling the ledger", () => {
 test("the simulation expires edicts with the yearly cycle", () => {
     assert.ok(simulationSource.includes("updateEdicts"));
     assert.match(simulationSource, /const ANNUAL_TASKS = \[[\s\S]*?name: "edicts", run\(\) \{ updateEdicts\(\); \}/);
+    assert.ok(simulationSource.includes('name: "diplomaticMissions", run(annual) { annual.diplomaticMissions = updateDiplomaticMissions(); }'));
     assert.match(simulationSource, /if \(state\.year > previousYear\) \{[\s\S]*?createAnnualMaintenance\(\)/);
 });
 

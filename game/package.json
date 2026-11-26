@@ -1,6 +1,6 @@
 {
   "name": "kings-and-cards",
-  "version": "3.79.0",
+  "version": "3.80.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -63,6 +63,7 @@
     "test:production-chain-inspector": "node tests/browser/production-chain-inspector.mjs",
     "test:feudal-campaigns-ui": "node tests/browser/feudal-campaigns-ui.mjs",
     "test:council-docket-ui": "node tests/browser/council-docket-ui.mjs",
+    "test:diplomatic-missions-ui": "node tests/browser/diplomatic-missions-ui.mjs",
     "test:realm-warning-hud": "node tests/browser/realm-warning-hud.mjs",
     "test:road-owners": "node tests/browser/road-owners.mjs",
     "test:chronicles": "node tests/browser/chronicle-audit.mjs",

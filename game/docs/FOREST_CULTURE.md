@@ -1,6 +1,6 @@
 # Waldkultur, Religion, Gesellschaft und Wissen · 1.2.23.1.181–210
 
-**Status:** implementiert, verdrahtet und im Browser geprüft (v3.79.0)
+**Status:** implementiert, verdrahtet und im Browser geprüft (v3.80.0)
 **Datenmodell:** `js/world/forest-culture.js`
 **Laufzeit:** `js/systems/forest-culture.js`
 **Hain-Schutz:** `js/world/sacred-groves.js` (gelesen von Ernte, Jagd und Feuerwehr)
@@ -18,7 +18,7 @@ normalisiert. Seit **Schema v2** kommen Jahresfeste, Opfergaben, Hain-Vitalität
 Initianten, Lehrlinge, Eremitenbesuche, Schuljahre, Remedien und die
 Naturphilosophie-Doktrin hinzu.
 
-## Vertiefung 3.79.0
+## Vertiefung 3.80.0
 
 Die dreißig Punkte sind keine Liste von Schaltern. Sie bilden einen Jahreslauf:
 
@@ -171,7 +171,7 @@ Die Technologien erscheinen im normalen Research-Panel und im neuen Zweig
 **Woodland**. Die Abschlusszahlen sind dynamisch (`TECHNOLOGIES.length`), nicht
 als „24“ fest verdrahtet.
 
-## Verifikation (v3.79.0)
+## Verifikation (v3.80.0)
 
 - `node --test tests/systems/forest-culture.test.js` — 13/13 grün: 30 Punkte,
   60 Profile, Druidenjob, Hain-Schutz, Hainalterung/Pflege, drei Feste, drei
@@ -179,7 +179,7 @@ als „24“ fest verdrahtet.
   Eremit/Schule/Remedien/Doktrin, Forschung, Save-Normalisierung v1→v2.
 - `npm test` — vollständiger Lauf, siehe Release-Changelog.
 - `npm run test:campaign` — 25 Jahre, `ok: true`, 10.040 Ticks.
-- `npm run spec:audit` — 1.711/1.711 Punkte, 0 offen; Abschnitt
+- `npm run spec:audit` — 1.712/1.712 Punkte, 0 offen; Abschnitt
   `1.2.23.1.181-210` mit 30/30.
 - `npm run test:forest-industry-ui` — echte Chromium-Referenz: Profil,
   30 Feldguide-Punkte, Hainweihe, Schutzprüfung, Hainpflege, drei Fest- und

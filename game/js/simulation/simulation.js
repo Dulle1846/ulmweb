@@ -5,7 +5,7 @@ import { updateMorale } from "../systems/morale.js";
 import { checkRandomEvents,addLog } from "../systems/events.js";
 import { updateMarket } from "../systems/market.js";
 import { updateRealmCycle } from "../systems/realm-cycle.js";
-import { updateDiplomacy } from "../systems/diplomacy.js";
+import { updateDiplomacy, updateDiplomaticMissions } from "../systems/diplomacy.js";
 import { updateCourt } from "../systems/court.js";
 import { updateAdvisor } from "../systems/advisor.js";
 import { updateNobility } from "../systems/nobility.js";
@@ -107,6 +107,10 @@ const ANNUAL_TASKS = [
     // The Whisper Court reads the houses and realms settled above, pays its
     // agents once a year and writes the insight combat and trade then read.
     { name: "espionage", run() { updateEspionage(); } },
+    // Envoy missions read the Chancellor and the foreign desk settled above.
+    // One bounded annual audit only checks mandates, envoys and treaty ladders;
+    // the player's staged decisions still make the actual negotiation roll.
+    { name: "diplomaticMissions", run(annual) { annual.diplomaticMissions = updateDiplomaticMissions(); } },
     { name: "civic", run() { updateCivic(); } },
     { name: "endeavours", run() { updateEndeavours(); } },
     { name: "crownSupply", run() { settleCrownSupply(); } },

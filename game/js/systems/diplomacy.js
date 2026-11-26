@@ -1,6 +1,7 @@
 // Neighbouring realms: relations, treaties, gifts, war and peace. This state is
 // deliberately bounded to the four market partners and updates once per year.
 import { state } from "../core/state.js";
+import { rand } from "../core/random.js";
 import { DIPLOMATIC_REALMS, DIPLOMATIC_TREATIES, normalizeTreaty } from "./diplomacy-config.js";
 import { addLog } from "./events.js";
 import { addResource } from "./resources.js";
@@ -20,6 +21,13 @@ export const ALLIANCE_RELATION = 70;
 export const GUARANTEE_RELATION = 35;
 export const GUARANTEE_TERM_YEARS = 8;
 export const GUARANTEE_CREDIBILITY_DEFAULT = 60;
+export const DIPLOMACY_MISSION_LIMIT = 6;
+export const DIPLOMACY_MISSIONS_PER_REALM = 1;
+export const DIPLOMACY_MISSION_COST = Object.freeze({ gold:6 });
+export const DIPLOMACY_MISSION_GOALS = Object.freeze(["trade", "alliance"]);
+export const DIPLOMACY_MISSION_STAGES = Object.freeze(["sent", "negotiated", "reported"]);
+const DIPLOMACY_MISSION_LIFETIME_YEARS = 4;
+const DIPLOMACY_MISSION_THRESHOLDS = Object.freeze({ trade:TRADE_PACT_RELATION, alliance:ALLIANCE_RELATION });
 
 // A marriage bond is a standing discount on the same authored agreement. The
 // saved realm record only holds runtime totals; every term below remains
@@ -169,6 +177,62 @@ function normalizeHistoryEntry(entry) {
     };
 }
 
+function normalizeMissionEntry(input) {
+    if (!input || typeof input !== "object" || Array.isArray(input)) return null;
+    const id = String(input.id || "").trim().slice(0, 100);
+    const realmId = String(input.realmId || "").slice(0, 40);
+    const goalTreaty = String(input.goalTreaty || "");
+    const stage = String(input.stage || "");
+    if (!id || !REALM_BY_ID.has(realmId) || !DIPLOMACY_MISSION_GOALS.includes(goalTreaty) || !DIPLOMACY_MISSION_STAGES.includes(stage)) return null;
+    const sentYear = integer(input.sentYear, 1);
+    if (!sentYear) return null;
+    const negotiatedYear = integer(input.negotiatedYear, 0);
+    const reportYear = integer(input.reportYear, 0);
+    if ((stage === "negotiated" && (!negotiatedYear || negotiatedYear < sentYear)) ||
+        (stage === "reported" && (!negotiatedYear || !reportYear || reportYear < negotiatedYear))) return null;
+    const expiresYear = Math.max(sentYear + 1, integer(input.expiresYear, sentYear + DIPLOMACY_MISSION_LIFETIME_YEARS));
+    const savedRoll = input.roll === undefined || input.roll === null || !Number.isFinite(Number(input.roll)) ? null : clamp(input.roll, 0, 1);
+    const savedScore = input.score === undefined || input.score === null || !Number.isFinite(Number(input.score)) ? null : integer(input.score, -1000, 1000);
+    const outcome = ["accepted", "rejected"].includes(String(input.outcome || "")) ? String(input.outcome) : null;
+    const envoyId = input.envoyId ? String(input.envoyId).slice(0, 100) : null;
+    if (!envoyId) return null;
+    return {
+        id,
+        realmId,
+        goalTreaty,
+        stage,
+        envoyId,
+        envoyName:String(input.envoyName || "").slice(0, 90),
+        envoySkill:clamp(input.envoySkill ?? 0),
+        sentYear,
+        negotiatedYear,
+        reportYear,
+        expiresYear,
+        difficulty:integer(input.difficulty, 0, 100),
+        chancellorGain:Number.isFinite(Number(input.chancellorGain)) && Number(input.chancellorGain) > 0
+            ? Math.min(10, Number(input.chancellorGain)) : 1,
+        foreignInsight:clamp(input.foreignInsight ?? 0),
+        targetedForeignDesk:input.targetedForeignDesk === true || Number(input.targetedForeignDesk) === 1,
+        roll:savedRoll,
+        score:savedScore,
+        outcome,
+        summary:String(input.summary || "").trim().slice(0, 240)
+    };
+}
+
+function normalizeMissionList(input) {
+    const seen = new Set();
+    const missions = [];
+    for (const entry of Array.isArray(input) ? input : []) {
+        const mission = normalizeMissionEntry(entry);
+        if (!mission || seen.has(mission.realmId)) continue;
+        seen.add(mission.realmId);
+        missions.push(mission);
+        if (missions.length >= DIPLOMACY_MISSION_LIMIT) break;
+    }
+    return missions;
+}
+
 export function createDiplomacyState() {
     return {
         version:1,
@@ -198,7 +262,11 @@ export function createDiplomacyState() {
             relationHistory:[],
             history:[]
         })),
-        history:[]
+        history:[],
+        missions:[],
+        missionLastUpdateYear:0,
+        missionLastSendYear:0,
+        missionCounter:0
     };
 }
 
@@ -244,7 +312,11 @@ export function normalizeDiplomacySnapshot(input) {
         guaranteeHonored:integer(source.guaranteeHonored, 0, 999999),
         guaranteeRefused:integer(source.guaranteeRefused, 0, 999999),
         realms,
-        history:(Array.isArray(source.history) ? source.history : []).map(normalizeHistoryEntry).filter(Boolean).slice(0, 30)
+        history:(Array.isArray(source.history) ? source.history : []).map(normalizeHistoryEntry).filter(Boolean).slice(0, 30),
+        missions:normalizeMissionList(source.missions),
+        missionLastUpdateYear:integer(source.missionLastUpdateYear, 0),
+        missionLastSendYear:integer(source.missionLastSendYear, 0),
+        missionCounter:integer(source.missionCounter, 0, 1_000_000)
     };
 }
 
@@ -253,10 +325,13 @@ export function ensureDiplomacy() {
     const missingGuaranteeFields = current && Array.isArray(current.realms) && current.realms.some(realm =>
         !Object.hasOwn(realm, "guarantee") || !Object.hasOwn(realm, "guaranteeCall") ||
         !Object.hasOwn(realm, "tradeAgreement"));
+    const missingMissionFields = current && (!Object.hasOwn(current, "missions") ||
+        !Object.hasOwn(current, "missionLastUpdateYear") || !Object.hasOwn(current, "missionLastSendYear") ||
+        !Object.hasOwn(current, "missionCounter"));
     if (!current || typeof current !== "object" || Array.isArray(current) || current.version !== 1 ||
         !Array.isArray(current.realms) || !Number.isFinite(Number(current.guaranteeCredibility)) ||
         !Number.isFinite(Number(current.guaranteeHonored)) || !Number.isFinite(Number(current.guaranteeRefused)) ||
-        missingGuaranteeFields) {
+        missingGuaranteeFields || missingMissionFields) {
         state.diplomacy = normalizeDiplomacySnapshot(current);
     }
     return state.diplomacy;
@@ -269,6 +344,63 @@ function foreignMarriageBond(realmId) {
     if (!consortId) return null;
     const consort = (state.entities || []).find(entity => !entity.dead && String(entity.personId || entity.id) === consortId);
     return consort ? bond : null;
+}
+
+function missionRealmFor(diplomacy, mission) {
+    return diplomacy.realms.find(realm => realm.id === mission.realmId) || null;
+}
+
+function missionEnvoyEntity(realm, mission) {
+    if (!realm?.envoyId || !mission?.envoyId || String(realm.envoyId) !== String(mission.envoyId)) return null;
+    return state.entities.find(entity => !entity.dead && String(entity.personId || entity.id) === String(mission.envoyId)) || null;
+}
+
+function missionLadderOpen(realm, goalTreaty) {
+    if (!realm || realm.treaty === "war") return false;
+    return goalTreaty === "trade" ? realm.treaty === "none" : realm.treaty === "trade";
+}
+
+function missionSnapshot(diplomacy, mission) {
+    const definition = REALM_BY_ID.get(mission.realmId);
+    const realm = missionRealmFor(diplomacy, mission);
+    const year = currentYear();
+    const envoyAlive = Boolean(missionEnvoyEntity(realm, mission));
+    const open = missionLadderOpen(realm, mission.goalTreaty);
+    const goalLabel = mission.goalTreaty === "trade" ? "TRADE PACT" : "ALLIANCE";
+    let nextAction = "AWAIT NEXT YEAR";
+    let note = "The envoy is waiting for the next annual court.";
+    if (mission.stage === "sent") {
+        nextAction = "NEGOTIATE";
+        note = year > mission.sentYear ? "The court is ready to receive the negotiation." : "Negotiation opens in year " + (mission.sentYear + 1) + ".";
+    } else if (mission.stage === "negotiated") {
+        nextAction = "REPORT";
+        note = year > mission.negotiatedYear
+            ? (mission.outcome === "accepted" ? "The court accepted the terms; bring the report home." : "The court refused; report the failure and close the file.")
+            : "The report waits for year " + (mission.negotiatedYear + 1) + ".";
+    } else {
+        nextAction = "RATIFY";
+        note = year > mission.reportYear ? "The crown can ratify the negotiated treaty." : "Ratification opens in year " + (mission.reportYear + 1) + ".";
+    }
+    if (!envoyAlive) { nextAction = "CLOSED"; note = "The envoy is gone; the annual audit will close this file."; }
+    else if (!open) { nextAction = "CLOSED"; note = "War or a changed treaty has closed this negotiation."; }
+    return {
+        ...mission,
+        realmName:definition?.name || mission.realmId,
+        goalLabel,
+        stageLabel:String(mission.stage).toUpperCase(),
+        outcomeLabel:mission.outcome ? String(mission.outcome).toUpperCase() : "PENDING",
+        yearsLeft:Math.max(0, mission.expiresYear - year),
+        nextAction,
+        note,
+        canNegotiate:mission.stage === "sent" && year > mission.sentYear && envoyAlive && open,
+        canReport:mission.stage === "negotiated" && year > mission.negotiatedYear && envoyAlive && open,
+        canRatify:mission.stage === "reported" && year > mission.reportYear && mission.outcome === "accepted" && envoyAlive && open
+    };
+}
+
+export function getDiplomaticMissionSnapshot() {
+    const diplomacy = ensureDiplomacy();
+    return diplomacy.missions.map(mission => missionSnapshot(diplomacy, mission));
 }
 
 function realmSnapshot(realm) {
@@ -398,6 +530,10 @@ export function getDiplomacySnapshot() {
         pressure:getFrontierPressure(),
         lastUpdateYear:diplomacy.lastUpdateYear,
         history:diplomacy.history.slice(0, 12),
+        missions:diplomacy.missions.map(mission => missionSnapshot(diplomacy, mission)),
+        missionLastUpdateYear:diplomacy.missionLastUpdateYear,
+        missionLastSendYear:diplomacy.missionLastSendYear,
+        missionLimits:{ active:DIPLOMACY_MISSION_LIMIT, perRealm:DIPLOMACY_MISSIONS_PER_REALM, costGold:DIPLOMACY_MISSION_COST.gold, lifetimeYears:DIPLOMACY_MISSION_LIFETIME_YEARS },
         costs:DIPLOMACY_COSTS,
         thresholds:{ tradePact:TRADE_PACT_RELATION, alliance:ALLIANCE_RELATION, guarantee:GUARANTEE_RELATION },
         biomeInfluence:getSpecialBiomeInfluence().diplomacy
@@ -808,6 +944,208 @@ export function recallEnvoy(id) {
     realm.envoySkill = 0;
     realm.envoySinceYear = 0;
     return { ok:true, message:"Envoy recalled from " + definition.name, realm:realmSnapshot(realm) };
+}
+
+function locateMission(id) {
+    const diplomacy = ensureDiplomacy();
+    const mission = diplomacy.missions.find(item => item.id === id) || null;
+    const realm = mission ? diplomacy.realms.find(item => item.id === mission.realmId) || null : null;
+    return { diplomacy, mission, realm, definition:mission ? REALM_BY_ID.get(mission.realmId) || null : null };
+}
+
+function removeMission(diplomacy, missionId) {
+    const index = diplomacy.missions.findIndex(item => item.id === missionId);
+    if (index >= 0) diplomacy.missions.splice(index, 1);
+}
+
+function closeMission(diplomacy, mission, realm, definition, reason, scar = false) {
+    const name = definition?.name || mission.realmId;
+    if (scar) {
+        if (realm) {
+            realm.relation = clamp(realm.relation - 2);
+            realm.trust = clamp(realm.trust - 3);
+        }
+        applyPoliticalEffects({ legitimacy:-0.4, guilds:-0.3 });
+        state.morale = clamp((Number(state.morale) || 0) - 1);
+    }
+    record(diplomacy, realm, "mission", "Envoy mission to " + name + " closed: " + reason);
+    removeMission(diplomacy, mission.id);
+    return reason;
+}
+
+function missionRequirementMet(realm, goalTreaty) {
+    if (!realm || realm.treaty === "war") return false;
+    return realm.relation >= Math.max(10, DIPLOMACY_MISSION_THRESHOLDS[goalTreaty] - 20);
+}
+
+export function sendEnvoyMission(realmId, goalTreaty) {
+    const { diplomacy, realm, definition } = locate(realmId);
+    if (!realm || !definition) return { ok:false, reason:"unknown-realm" };
+    const goal = String(goalTreaty || "");
+    if (!DIPLOMACY_MISSION_GOALS.includes(goal)) return { ok:false, reason:"unknown-mission-goal" };
+    if (!missionLadderOpen(realm, goal)) return { ok:false, reason:"treaty-ladder-closed" };
+    if (!missionRequirementMet(realm, goal)) return { ok:false, reason:"relation-too-low-for-mission" };
+    const envoy = livingEnvoy(realm);
+    if (!envoy) return { ok:false, reason:"no-living-envoy" };
+    if (diplomacy.missions.some(item => item.realmId === realm.id)) return { ok:false, reason:"mission-already-active-for-realm" };
+    if (diplomacy.missions.length >= DIPLOMACY_MISSION_LIMIT) return { ok:false, reason:"mission-limit-reached" };
+    const year = currentYear();
+    if (diplomacy.missionLastSendYear >= year) return { ok:false, reason:"one-mission-per-year" };
+    if ((Number(state.resources?.gold) || 0) < DIPLOMACY_MISSION_COST.gold) return { ok:false, reason:"not-enough-gold" };
+    addResource("gold", -DIPLOMACY_MISSION_COST.gold);
+    diplomacy.missionCounter = Math.min(1_000_000, diplomacy.missionCounter + 1);
+    const mission = normalizeMissionEntry({
+        id:"diplomacy-mission-" + year + "-" + diplomacy.missionCounter,
+        realmId:realm.id,
+        goalTreaty:goal,
+        stage:"sent",
+        envoyId:realm.envoyId,
+        envoyName:realm.envoyName,
+        envoySkill:realm.envoySkill,
+        sentYear:year,
+        expiresYear:year + DIPLOMACY_MISSION_LIFETIME_YEARS,
+        summary:"Envoy " + (realm.envoyName || "unnamed") + " sent to " + definition.name + " to negotiate " + (goal === "trade" ? "a trade pact" : "an alliance") + "."
+    });
+    diplomacy.missions.push(mission);
+    diplomacy.missionLastSendYear = year;
+    record(diplomacy, realm, "mission", mission.summary);
+    applyPoliticalEffects({ legitimacy:0.05, guilds:0.1 });
+    addLog("ENVOY MISSION SENT TO " + definition.name.toUpperCase(), "#e8c77b", "diplomacy");
+    return {
+        ok:true,
+        message:"DIPLOMATIC MISSION SENT · " + definition.name.toUpperCase() + " · " + (goal === "trade" ? "TRADE PACT" : "ALLIANCE"),
+        mission:missionSnapshot(diplomacy, mission),
+        realm:realmSnapshot(realm)
+    };
+}
+
+export function negotiateEnvoyMission(id) {
+    const { diplomacy, mission, realm, definition } = locateMission(id);
+    if (!mission) return { ok:false, reason:"mission-not-found" };
+    if (mission.stage !== "sent") return { ok:false, reason:"mission-not-ready-for-negotiation" };
+    const year = currentYear();
+    if (year <= mission.sentYear) return { ok:false, reason:"negotiation-waits-for-next-year" };
+    if (!realm || !definition) return { ok:false, reason:"unknown-realm" };
+    if (!missionLadderOpen(realm, mission.goalTreaty)) return { ok:false, reason:"treaty-context-changed" };
+    if (!missionEnvoyEntity(realm, mission)) return { ok:false, reason:"mission-envoy-unavailable" };
+    const court = getCourtModifiers();
+    const chancellorGain = clamp(Number(court.diplomacyGain) || 1, 1, 4);
+    const foreignInsight = clamp(state.espionage?.foreignInsight ?? 0);
+    const targetedForeignDesk = (Array.isArray(state.espionage?.agents) ? state.espionage.agents : [])
+        .some(agent => String(agent?.desk) === "foreign" && String(agent?.targetId) === String(realm.id) && !agent.turned);
+    const roll = rand(0, 1, "diplomacy");
+    const score = Math.round(
+        realm.relation + realm.trust * 0.15 + (mission.envoySkill - 50) * 0.30 +
+        (chancellorGain - 1) * 40 + foreignInsight * 0.10 + (targetedForeignDesk ? 5 : 0) + (roll * 10 - 5)
+    );
+    const difficulty = DIPLOMACY_MISSION_THRESHOLDS[mission.goalTreaty];
+    const outcome = score >= difficulty ? "accepted" : "rejected";
+    mission.stage = "negotiated";
+    mission.negotiatedYear = year;
+    mission.chancellorGain = chancellorGain;
+    mission.foreignInsight = foreignInsight;
+    mission.targetedForeignDesk = targetedForeignDesk;
+    mission.roll = roll;
+    mission.score = score;
+    mission.difficulty = difficulty;
+    mission.outcome = outcome;
+    mission.summary = "Negotiation with " + definition.name + " scored " + score + "/" + difficulty +
+        " (envoy " + Math.round(mission.envoySkill) + ", chancellor ×" + chancellorGain.toFixed(2) +
+        ", foreign insight " + Math.round(foreignInsight) + ", roll " + roll.toFixed(3) + "): " + outcome + ".";
+    record(diplomacy, realm, "mission", mission.summary);
+    addLog("DIPLOMATIC NEGOTIATION · " + definition.name.toUpperCase() + " · " + outcome.toUpperCase(), outcome === "accepted" ? "#a5d6a7" : "#d8a38a", "diplomacy");
+    return {
+        ok:true,
+        message:"DIPLOMATIC NEGOTIATION · " + outcome.toUpperCase() + " · SCORE " + score + "/" + difficulty,
+        mission:missionSnapshot(diplomacy, mission),
+        realm:realmSnapshot(realm),
+        roll,
+        score,
+        difficulty,
+        outcome
+    };
+}
+
+export function reportEnvoyMission(id) {
+    const { diplomacy, mission, realm, definition } = locateMission(id);
+    if (!mission) return { ok:false, reason:"mission-not-found" };
+    if (mission.stage !== "negotiated") return { ok:false, reason:"mission-not-ready-to-report" };
+    const year = currentYear();
+    if (year <= mission.negotiatedYear) return { ok:false, reason:"report-waits-for-next-year" };
+    if (!realm || !definition) return { ok:false, reason:"unknown-realm" };
+    if (!missionEnvoyEntity(realm, mission)) return { ok:false, reason:"mission-envoy-unavailable" };
+    const name = definition.name;
+    if (mission.outcome === "rejected") {
+        const reason = "the court refused the " + (mission.goalTreaty === "trade" ? "trade pact" : "alliance");
+        closeMission(diplomacy, mission, realm, definition, reason, true);
+        return { ok:true, message:"DIPLOMATIC MISSION REJECTED · " + name.toUpperCase() + " · NO TREATY SIGNED", rejected:true };
+    }
+    mission.stage = "reported";
+    mission.reportYear = year;
+    mission.summary = "Terms accepted by " + name + " with score " + Math.round(Number(mission.score) || 0) + "/" +
+        Math.round(Number(mission.difficulty) || 0) + ". The crown can ratify in year " + (year + 1) + ".";
+    record(diplomacy, realm, "mission", mission.summary);
+    addLog("ENVOY REPORT FROM " + name.toUpperCase() + " · RATIFICATION PENDING", "#e8c77b", "diplomacy");
+    return { ok:true, message:"DIPLOMATIC REPORT FILED · " + name.toUpperCase() + " · RATIFY NEXT YEAR", mission:missionSnapshot(diplomacy, mission), realm:realmSnapshot(realm) };
+}
+
+export function ratifyEnvoyMission(id) {
+    const { diplomacy, mission, realm, definition } = locateMission(id);
+    if (!mission) return { ok:false, reason:"mission-not-found" };
+    if (mission.stage !== "reported") return { ok:false, reason:"mission-not-ready-to-ratify" };
+    if (mission.outcome !== "accepted") return { ok:false, reason:"mission-was-rejected" };
+    const year = currentYear();
+    if (year <= mission.reportYear) return { ok:false, reason:"ratification-waits-for-next-year" };
+    if (!realm || !definition) return { ok:false, reason:"unknown-realm" };
+    if (!missionLadderOpen(realm, mission.goalTreaty)) return { ok:false, reason:"treaty-context-changed" };
+    if (!missionEnvoyEntity(realm, mission)) return { ok:false, reason:"mission-envoy-unavailable" };
+    const gain = clamp(Number(mission.chancellorGain) || 1, 1, 4);
+    realm.treaty = mission.goalTreaty;
+    realm.treatySinceYear = year;
+    if (mission.goalTreaty === "trade") {
+        realm.relation = clamp(realm.relation + 4 * gain);
+        realm.trust = clamp(realm.trust + 4);
+        applyPoliticalEffects({ legitimacy:0.3, guilds:1.1 });
+    } else {
+        realm.relation = clamp(realm.relation + 6 * gain);
+        realm.trust = clamp(realm.trust + 5);
+        realm.fear = clamp(realm.fear - 2);
+        applyPoliticalEffects({ legitimacy:1, nobility:1.2, guilds:0.6 });
+        state.morale = clamp((Number(state.morale) || 0) + 1);
+    }
+    const verdict = mission.goalTreaty === "trade" ? "TRADE PACT RATIFIED" : "ALLIANCE SWORN";
+    record(diplomacy, realm, "treaty", verdict + " with " + definition.name + " after envoy negotiation");
+    record(diplomacy, realm, "mission", "Envoy mission to " + definition.name + " concluded: " + verdict);
+    removeMission(diplomacy, mission.id);
+    addLog(verdict + " · " + definition.name.toUpperCase(), "#a5d6a7", "diplomacy");
+    return { ok:true, message:"DIPLOMATIC " + verdict + " · " + definition.name.toUpperCase(), realm:realmSnapshot(realm), verdict };
+}
+
+export function updateDiplomaticMissions() {
+    const diplomacy = ensureDiplomacy();
+    const year = currentYear();
+    if (diplomacy.missionLastUpdateYear >= year) {
+        return { annual:false, year, closed:0, missions:getDiplomaticMissionSnapshot(), lastUpdateYear:diplomacy.missionLastUpdateYear };
+    }
+    let closed = 0;
+    for (const mission of [...diplomacy.missions]) {
+        if (!diplomacy.missions.includes(mission)) continue;
+        const realm = missionRealmFor(diplomacy, mission);
+        const definition = REALM_BY_ID.get(mission.realmId) || null;
+        let reason = null;
+        if (!realm || !definition) reason = "the realm no longer exists";
+        else if (realm.treaty === "war") reason = "war closed the court";
+        else if (year > mission.expiresYear) reason = "the negotiation mandate expired";
+        else if (!missionEnvoyEntity(realm, mission)) reason = "the envoy died or was recalled";
+        else if (!missionLadderOpen(realm, mission.goalTreaty)) reason = "the treaty ladder changed";
+        if (reason) {
+            closeMission(diplomacy, mission, realm, definition, reason, reason !== "the treaty ladder changed");
+            closed++;
+        }
+    }
+    diplomacy.missions = normalizeMissionList(diplomacy.missions);
+    diplomacy.missionLastUpdateYear = year;
+    return { annual:true, year, closed, missions:getDiplomaticMissionSnapshot(), lastUpdateYear:year };
 }
 
 function breakTradeAgreement(diplomacy, realm, definition, reason) {

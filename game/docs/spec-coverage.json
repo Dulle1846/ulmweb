@@ -2,12 +2,12 @@
   "version": 2,
   "generatedBy": "scripts/spec-audit.mjs",
   "scope": "All numbered 1.1 and 1.2.1–1.2.18 requirements, including the 1.2.23.1.151–210 forest economy and forest culture, plus the documented 2.x phases and 3.3–4.0 roadmap points.",
-  "commit": "08150dc7abc0faa213676b997e16e0a3e3a82e78",
-  "sourceHash": "bae1e3262ba260a1a7e057f1e1c88e018726556fe8c991ae56f8698943b05dc9",
-  "generatedAt": "2026-11-26T22:49:22+00:00",
+  "commit": "35edc2e813dc3c99fdbff02becb4b171c992a2a9",
+  "sourceHash": "c542399cff0b5162ec0de36bce6181af8fc67db202ceb6b58738e44f40f83d38",
+  "generatedAt": "2026-11-26T23:50:14+00:00",
   "totals": {
-    "total": 1711,
-    "implemented": 1711,
+    "total": 1712,
+    "implemented": 1712,
     "open": 0,
     "sections": 41
   },
@@ -44919,6 +44919,67 @@
             "js/presentation/management-ui.js#councilSection (point)"
           ],
           "probe": null
+        },
+        {
+          "id": "3.9.10",
+          "label": "Envoy missions stage treaty negotiation from skill, Chancellor, foreign-desk intel and seed",
+          "evidence": [
+            {
+              "file": "js/systems/diplomacy.js",
+              "symbol": "sendEnvoyMission"
+            },
+            {
+              "file": "js/systems/diplomacy.js",
+              "symbol": "negotiateEnvoyMission"
+            },
+            {
+              "file": "js/systems/diplomacy.js",
+              "symbol": "reportEnvoyMission"
+            },
+            {
+              "file": "js/systems/diplomacy.js",
+              "symbol": "ratifyEnvoyMission"
+            },
+            {
+              "file": "js/systems/diplomacy.js",
+              "symbol": "updateDiplomaticMissions"
+            },
+            {
+              "file": "js/systems/diplomacy.js",
+              "symbol": "getDiplomaticMissionSnapshot"
+            },
+            {
+              "file": "js/simulation/simulation.js",
+              "symbol": "diplomaticMissions"
+            },
+            {
+              "file": "js/presentation/management-ui.js",
+              "symbol": "diplomacy"
+            }
+          ],
+          "tests": [
+            "tests/systems/diplomacy.test.js",
+            "tests/systems/diplomatic-missions.test.js",
+            "tests/browser/diplomatic-missions-ui.mjs"
+          ],
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/systems/diplomacy.js#getDiplomacySnapshot (diplomacy)",
+            "js/systems/royal-dynasty.js#updateRoyalSuccession (dynasty)",
+            "js/systems/royal-crisis.js#updateRoyalCrisis (dynasty-crisis)",
+            "js/presentation/management-ui.js#royalCrisisPanel (gameplay)",
+            "js/presentation/management-ui.js#councilSection (gameplay)",
+            "js/systems/diplomacy.js#sendEnvoyMission (point)",
+            "js/systems/diplomacy.js#negotiateEnvoyMission (point)",
+            "js/systems/diplomacy.js#reportEnvoyMission (point)",
+            "js/systems/diplomacy.js#ratifyEnvoyMission (point)",
+            "js/systems/diplomacy.js#updateDiplomaticMissions (point)",
+            "js/systems/diplomacy.js#getDiplomaticMissionSnapshot (point)",
+            "js/simulation/simulation.js#diplomaticMissions (point)",
+            "js/presentation/management-ui.js#diplomacy (point)"
+          ],
+          "probe": null
         }
       ],
       "consumers": [
@@ -44964,9 +45025,9 @@
       "probeFunction": null,
       "probeClimate": "temperate",
       "probeExtra": {},
-      "implemented": 9,
+      "implemented": 10,
       "open": 0,
-      "total": 9
+      "total": 10
     },
     {
       "id": "3.10",
