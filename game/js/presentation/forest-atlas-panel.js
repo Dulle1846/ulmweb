@@ -23,6 +23,8 @@ import {
 } from "../world/forest-industries.js";
 import { forestIndustrySummary } from "../systems/forest-industries.js";
 import { forestGuildSummary } from "../systems/forest-guild.js";
+import { forestMasterworkArchive } from "../systems/forest-industries.js";
+import { grandConsumersSummary } from "../systems/grand-consumers.js";
 import { MEDICINE_MAX_STOCK } from "../systems/health.js";
 import {
     forestStewardshipAt, forestSuccessionAt, forestSuccessionChronicle,
@@ -538,14 +540,28 @@ function industryInputLabel(mode) {
 
 function guildBlock() {
     const guild = forestGuildSummary();
-    const cards = guild.active.map(entry => '<article class="forest-atlas__commission" data-forest-commission-card="' + esc(entry.id) + '" data-forest-commission-good="' + esc(entry.good) + '">'
-        + '<header><span>' + esc(entry.patronId.slice(0, 2).toUpperCase()) + '</span><b>' + esc(entry.title) + '</b></header>'
-        + '<div class="forest-atlas__commission-main"><strong>' + number(entry.quantity) + ' ' + esc(entry.label) + '</strong>'
-        + '<span>' + (entry.ready ? 'READY' : number(entry.stock) + ' IN STORE') + '</span></div>'
-        + '<p>' + esc(entry.story) + '</p>'
-        + '<div class="forest-atlas__commission-reward"><span>+' + number(entry.rewardGold) + ' G</span><span>+' + number(entry.rewardRenown) + ' RENOWN</span><span>' + number(entry.daysLeft) + ' DAYS</span></div>'
-        + '<button type="button" class="command-choice" data-forest-commission="' + esc(entry.id) + '"' + (entry.ready ? '' : ' disabled') + '>FILL COMMISSION</button>'
-        + '<small>' + esc(entry.use) + '</small></article>').join("");
+    const cards = guild.active.map(entry => {
+        const requirement = entry.requirement
+            ? '<small class="forest-atlas__commission-proof" data-forest-proof="' + esc(entry.id) + '"><b>REQUIRED STYLE</b> ' + esc(entry.requirement.style) + ' · <b>QUALITY</b> ' + esc(entry.requirement.quality) + ' · ' + number(entry.proofStock) + ' / ' + number(entry.quantity) + ' CERTIFIED</small>'
+            : '';
+        const caravan = entry.caravan
+            ? '<div class="forest-atlas__commission-caravan" data-forest-caravan-status="' + esc(entry.caravan.status) + '"><b>CARAVAN</b> ' + esc(String(entry.caravan.status).toUpperCase()) + (entry.caravanDays ? ' · ' + number(entry.caravanDays) + ' DAYS' : '') + '</div>'
+            : '';
+        const action = entry.caravanStatus === "raided"
+            ? '<button type="button" class="command-choice" data-forest-caravan="' + esc(entry.id) + '">ESCORT CARAVAN · ' + number(entry.caravan.escortCost) + ' G</button>'
+            : '<button type="button" class="command-choice" data-forest-commission="' + esc(entry.id) + '"' + (entry.ready ? '' : ' disabled') + '>FILL COMMISSION</button>';
+        const stockLine = entry.ready ? 'READY · CARAVAN ARRIVED' : entry.caravanStatus !== "arrived" ? 'WAITING FOR CARAVAN' : number(entry.stock) + ' IN STORE';
+        return '<article class="forest-atlas__commission" data-forest-commission-card="' + esc(entry.id) + '" data-forest-commission-good="' + esc(entry.good) + '">'
+            + '<header><span>' + esc(entry.patronId.slice(0, 2).toUpperCase()) + '</span><b>' + esc(entry.title) + '</b></header>'
+            + '<div class="forest-atlas__commission-main"><strong>' + number(entry.quantity) + ' ' + esc(entry.label) + '</strong>'
+            + '<span>' + esc(stockLine) + '</span></div>'
+            + '<p>' + esc(entry.story) + '</p>' + requirement + caravan
+            + '<div class="forest-atlas__commission-reward"><span>+' + number(entry.rewardGold) + ' G</span><span>+' + number(entry.rewardRenown) + ' RENOWN</span><span>' + number(entry.daysLeft) + ' DAYS</span></div>'
+            + action + '<small>' + esc(entry.use) + '</small></article>';
+    }).join("");
+    const patronRows = guild.patrons.map(patron => '<div class="forest-atlas__patron" data-patron-pact="' + esc(patron.id) + '" data-patron-active="' + (patron.active ? '1' : '0') + '"><span>' + esc(patron.seal) + '</span><b>' + esc(patron.name) + '</b><small>' + (patron.active ? 'PACT · ' : '') + esc(patron.bonusLabel) + ' · ' + number(patron.deliveries) + ' deliveries</small><em>' + (patron.active ? 'ACTIVE +' + number(patron.bonusPct) + '%' : Math.round(patron.progress * 100) + '%') + '</em></div>').join("");
+    const masterworks = forestMasterworkArchive();
+    const masterworkRows = masterworks.length ? masterworks.slice(0, 8).map(entry => '<div class="forest-atlas__masterwork" data-masterwork="' + esc(entry.id) + '"><b>' + esc(entry.style) + '</b><small>' + esc(entry.master) + ' · ' + esc(entry.region) + ' · year ' + number(entry.year) + ' · ' + number(entry.value) + ' G value</small></div>').join("") : '<p class="command-note">No masterwork has left a Forest Works yet. Mastery batches can produce one.</p>';
     const history = guild.history.length
         ? guild.history.map(entry => '<div class="forest-atlas__guild-history-row" data-guild-history="' + esc(entry.outcome) + '"><span>' + number(entry.year) + '</span><b>' + esc(entry.label) + ' ×' + number(entry.quantity) + '</b><small>' + esc(entry.patronName) + ' · ' + (entry.outcome === "expired" ? "LAPSED" : '+' + number(entry.rewardGold) + ' G') + '</small></div>').join("")
         : '<p class="command-note">No commission has been filled or lapsed yet.</p>';
@@ -568,11 +584,28 @@ function guildBlock() {
         + '<p class="command-note">' + (guild.nextTier ? number(guild.nextTier.remaining) + ' renown to tier ' + number(guild.nextTier.tier) + ' · ' + esc(guild.nextTier.title) + '. ' : 'The highest guild tier is held. ')
         + 'Each filled order consumes real, unreserved warehouse stock and pays gold, renown and faction standing. A lapsed order costs 3 renown. Every filled or lapsed order is replaced immediately from 16 patrons and all 20 forest goods, so the board never runs out.</p>'
         + '<div class="forest-atlas__commission-grid">' + (cards || '<p class="command-note">The guild board is being drawn.</p>') + '</div>'
+        + '<details class="forest-atlas__field-guide" data-patron-pacts="' + number(guild.pacts) + '"><summary><span>PATRON PACT REGISTER · ' + number(guild.pacts) + ' / ' + number(guild.patrons.length) + ' SIGNED</span><strong>Each patron is a permanent relationship</strong><em>Every pact changes a named market or research path</em></summary><div class="forest-atlas__patron-grid">' + patronRows + '</div></details>'
+        + '<details class="forest-atlas__field-guide" data-masterwork-count="' + number(masterworks.length) + '"><summary><span>MASTERWORK FURNITURE · ' + number(masterworks.length) + '</span><strong>Provenance survives the workshop</strong><em>Region, workshop, master and year</em></summary><div class="forest-atlas__masterworks">' + masterworkRows + '</div></details>'
         + '<div class="forest-atlas__clinic" data-clinic-medicine-stock="' + number(medicine) + '" data-clinic-medicine-available="' + number(medicineAvailable) + '">'
         + '<div><small>CLINIC MEDICINE STORE</small><strong>' + number(medicine) + ' / ' + number(MEDICINE_MAX_STOCK) + ' DOSES</strong><p>' + (medicineAvailable > 0 ? number(medicineAvailable) + ' doses sit unreserved in forest-works warehouses.' : 'No warehouse holds unreserved medicine. Run the apothecary or buy medicine from the forest exchange.') + '</p></div>'
         + '<button type="button" class="command-choice" data-clinic-medicine="6"' + (medicineAvailable > 0 && medicine < MEDICINE_MAX_STOCK ? '' : ' disabled') + '>SUPPLY 6 DOSES</button></div>'
         + '<details class="forest-atlas__field-guide" data-forest-guild-history="' + number(guild.history.length) + '"><summary><span>GUILD LEDGER · LAST ' + number(guild.historyLimit) + '</span><strong>Every order leaves a record</strong><em>Filled and lapsed commissions</em></summary>'
         + '<div class="forest-atlas__guild-history">' + history + '</div></details>';
+}
+
+function grandConsumersBlock() {
+    const summary = grandConsumersSummary();
+    const rows = summary.rows.length ? summary.rows.map(row => '<article class="forest-atlas__grand-consumer" data-grand-consumer-card="' + esc(row.id) + '" data-grand-status="' + esc(row.status) + '"><header><b>' + esc(row.label) + '</b><span>' + esc(String(row.status).toUpperCase()) + '</span></header><p>' + esc(row.story) + '</p><small>' + esc(row.text) + '</small><em>Batches ' + number(row.batches) + ' · ' + Object.entries(row.inputs || {}).map(([good, value]) => value + ' ' + good).join(' · ') + '</em></article>').join("") : '<p class="command-note">No shipyard or paper mill stands yet. Build one from the GRAND CONSUMERS category.</p>';
+    return '<div class="command-section-title">GRAND CONSUMERS · SHIPYARD &amp; PAPER MILL</div>'
+        + '<div class="command-summary" data-grand-consumers="' + number(summary.rows.length) + '" data-grand-ships="' + number(summary.ships) + '" data-grand-reserve="' + number(summary.reserve) + '">'
+        + '<div><small>SHIPYARDS / MILLS</small><strong>' + number(summary.shipyards) + ' / ' + number(summary.paperMills) + '</strong></div>'
+        + '<div><small>FLEET HULLS</small><strong>' + number(summary.ships) + '</strong></div>'
+        + '<div><small>SEA-LANE TRADE</small><strong>+' + number(summary.tradeBonusPct) + '%</strong></div>'
+        + '<div><small>SHIP BATCHES</small><strong>' + number(summary.shipBatches) + '</strong></div>'
+        + '<div><small>PAPER BATCHES</small><strong>' + number(summary.paperBatches) + '</strong></div>'
+        + '<div><small>RESEARCH RESERVE</small><strong>' + number(summary.reserve) + '</strong></div></div>'
+        + '<p class="command-note">These are permanent sinks, not one-off commissions: every hull consumes ship timber, pitch, tar, charcoal and potash; every paper batch consumes paper, potash and charcoal. Carriers must keep their input stores filled. A starved building waits visibly and does not consume partial goods.</p>'
+        + '<div class="forest-atlas__grand-grid">' + rows + '</div>';
 }
 
 function industryBlock() {
@@ -613,6 +646,7 @@ function industryBlock() {
         + '<div><small>FURNITURE PRESTIGE</small><strong>+' + Math.round(summary.furniturePremium * 100) + '%</strong></div></div>'
         + '<p class="command-note">Every Forest Works is a real building with its own selected industry. Standard inputs arrive by carrier from your warehouses; resin, bark, cork and other raw materials come from the live forest-gathering ledger of the wood you actually manage. Output is ordinary physical stock, hauled by the same carriers and sold here from real warehouses. ' + (last ? 'Last batch: ' + esc(last.label) + ' → ' + esc(Object.entries(last.output || {}).map(([good, value]) => value + ' ' + (INDUSTRY_GOODS[good]?.label || good)).join(' + ')) + ' · ' + esc(last.style || 'standard') + ' · ' + esc(last.quality?.grade || 'standard') + (last.mastery ? ' · ' + esc(last.mastery.label) + ' (' + number(last.mastery.batches) + ' batches)' : '') + '.' : 'No workshop has completed a batch yet.') + '</p>'
         + guildBlock()
+        + grandConsumersBlock()
         + '<details class="forest-atlas__field-guide" data-industry-catalogue="' + Object.keys(FOREST_WORKS_MODES).length + '"><summary><span>WORKSHOP CATALOGUE · ' + Object.keys(FOREST_WORKS_MODES).length + ' PATHS</span><strong>From charcoal to silk</strong><em>One building type, one site-specific choice at a time</em></summary>'
         + '<div class="forest-atlas__industry-grid">' + modeCards + '</div></details>'
         + '<details class="forest-atlas__field-guide" data-industry-market="' + number(summary.rows.length) + '"><summary><span>FOREST GOODS EXCHANGE</span><strong>Finished wares, real stock</strong><em>Prices move with season and how much you hold</em></summary>'

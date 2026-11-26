@@ -97,12 +97,16 @@ try {
             { ensureInventory },
             { getForestHabitatAt },
             { ensureForestGuild },
+            { runForestWorks, setForestWorksMode, forestMasterworkArchive, furnitureLotsSnapshot },
+            { runGrandConsumer },
         ] = await Promise.all([
             import("./js/core/state.js"),
             import("./js/core/types.js"),
             import("./js/systems/logistics.js"),
             import("./js/systems/resource-geography.js"),
             import("./js/systems/forest-guild.js"),
+            import("./js/systems/forest-industries.js"),
+            import("./js/systems/grand-consumers.js"),
         ]);
         const index = state.resourceGeography.forestStock.findIndex(stock => stock > 4);
         if (index < 0) throw new Error("The seeded realm has no working forest");
@@ -119,10 +123,35 @@ try {
         };
         ensureInventory(works);
         works.inventory.input.firewood = 9;
+        works.inventory.input.planks = 500;
+        works.inventory.input["holm-timber"] = 500;
         const villager = state.entities.find(entity => !entity.dead && entity.type === TYPE.VILLAGER);
         if (!villager) throw new Error("The seeded realm has no woodwright");
         villager.workplace = works;
         state.entities.push(works);
+
+        // Run a mastered furniture workshop until it leaves one rare masterwork,
+        // then keep its ordinary level low so the existing dossier check still
+        // observes the first charcoal batch as Apprentice.
+        if (!setForestWorksMode(works, "furniture").ok) throw new Error("Furniture mode unavailable");
+        works.forestBatches = 80;
+        let masterwork = null;
+        for (let attempt = 0; attempt < 140 && !masterwork; attempt++) {
+            const batch = runForestWorks(works, { force: true });
+            if (!batch.ok) throw new Error(batch.reason);
+            masterwork = batch.masterwork;
+            works.inventory.output.furniture = 0;
+        }
+        if (!masterwork) throw new Error("No masterwork was produced by the fixture");
+        // At least three certified pieces for the style order.
+        while (furnitureLotsSnapshot().length < 3) {
+            const batch = runForestWorks(works, { force: true });
+            if (!batch.ok) throw new Error(batch.reason);
+            works.inventory.output.furniture = 0;
+        }
+        const lot = furnitureLotsSnapshot()[0];
+        works.forestBatches = 0;
+        works.inventory.output.furniture = 0;
 
         const store = {
             id: "forest-ui-store", type: TYPE.WAREHOUSE, x: x + 2, y, dead: false,
@@ -131,17 +160,70 @@ try {
             isEnemy() { return false; },
         };
         ensureInventory(store);
-        const commission = ensureForestGuild().active[0];
-        store.warehouse.filters = [...new Set([...store.warehouse.filters, "charcoal", "medicine", commission.good])];
-        store.warehouse.stored.charcoal = 5 + (commission.good === "charcoal" ? commission.quantity : 0);
-        store.warehouse.stored[commission.good] = (Number(store.warehouse.stored[commission.good]) || 0) + commission.quantity;
+        const guild = ensureForestGuild();
+        const normal = guild.active[0];
+        normal.good = "charcoal"; normal.quantity = 4; normal.patronId = "goldsmiths";
+        normal.requirement = null; normal.deadlineTick = 99999;
+        normal.caravan = { status: "arrived", departTick: 0, arrivalTick: 0, event: "clear", eventApplied: true };
+        guild.patrons.goldsmiths = { deliveries: 2, pacts: 0, active: false, lastTick: 0 };
+        const certified = guild.active[1];
+        certified.good = "furniture"; certified.quantity = 3; certified.patronId = "great-household";
+        certified.deadlineTick = 99999;
+        certified.requirement = {
+            kind: "furniture", styleId: lot.styleId, style: lot.style,
+            qualityClass: lot.qualityClass, quality: lot.quality,
+            minScore: Math.max(0, lot.score - 0.0001), minGrade: lot.grade,
+        };
+        certified.caravan = { status: "arrived", departTick: 0, arrivalTick: 0, event: "clear", eventApplied: true };
+        const travelling = guild.active[2];
+        travelling.good = "pitch"; travelling.quantity = 5; travelling.deadlineTick = 99999;
+        travelling.requirement = null;
+        travelling.caravan = { status: "enroute", departTick: 0, arrivalTick: state.tick + 4, event: "delay", eventApplied: false, delayDays: 2 };
+        store.warehouse.filters = [...new Set([...store.warehouse.filters, "charcoal", "furniture", "medicine"])];
+        store.warehouse.stored.charcoal = 12;
+        store.warehouse.stored.furniture = 6;
         store.warehouse.stored.medicine = 8;
-        store.warehouse.used = (Number(store.warehouse.used) || 0) + 13 + commission.quantity;
         state.entities.push(store);
+
+        const shipyard = {
+            id: "grand-shipyard", type: TYPE.SHIPYARD, x: x + 3, y, dead: false,
+            construction: { stage: 3, progress: 100 }, hp: 360, maxHp: 360,
+            isBuilding() { return true; }, isEnemy() { return false; },
+        };
+        ensureInventory(shipyard);
+        Object.assign(shipyard.inventory.input, { shipTimber: 10, pitch: 5, tar: 5, charcoal: 5, potash: 5 });
+        const paperMill = {
+            id: "grand-paper-mill", type: TYPE.PAPER_MILL, x: x + 4, y, dead: false,
+            construction: { stage: 3, progress: 100 }, hp: 300, maxHp: 300,
+            isBuilding() { return true; }, isEnemy() { return false; },
+        };
+        ensureInventory(paperMill);
+        Object.assign(paperMill.inventory.input, { paper: 8, potash: 4, charcoal: 4 });
+        const starvedMill = {
+            id: "grand-paper-mill-starved", type: TYPE.PAPER_MILL, x: x + 5, y, dead: false,
+            construction: { stage: 3, progress: 100 }, hp: 300, maxHp: 300,
+            isBuilding() { return true; }, isEnemy() { return false; },
+        };
+        ensureInventory(starvedMill);
+        const workers = state.entities.filter(entity => !entity.dead && entity.type === TYPE.VILLAGER).slice(1, 9);
+        for (const worker of workers.slice(0, 3)) worker.workplace = shipyard;
+        for (const worker of workers.slice(3, 6)) worker.workplace = paperMill;
+        for (const worker of workers.slice(6, 9)) worker.workplace = starvedMill;
+        state.entities.push(shipyard, paperMill, starvedMill);
+        const shipResult = runGrandConsumer(shipyard, { force: true });
+        const paperResult = runGrandConsumer(paperMill, { force: true });
+        if (!shipResult.ok || !paperResult.ok) throw new Error(shipResult.reason || paperResult.reason);
+        // Refill the input stores so the atlas shows running, stocked consumers;
+        // the third mill remains deliberately starved.
+        Object.assign(shipyard.inventory.input, { shipTimber: 8, pitch: 4, tar: 4, charcoal: 4, potash: 4 });
+        Object.assign(paperMill.inventory.input, { paper: 6, potash: 3, charcoal: 3 });
         return {
             x, y, stand: stand.regionalType?.short || stand.regionalType?.label || stand.type,
             gold: state.resources.gold,
-            commission: { id: commission.id, good: commission.good, quantity: commission.quantity, rewardGold: commission.rewardGold, rewardRenown: commission.rewardRenown },
+            masterwork: { id: masterwork.id, style: masterwork.style, master: masterwork.master, region: masterwork.region, year: masterwork.year },
+            commission: { id: normal.id, good: normal.good, quantity: normal.quantity, rewardGold: normal.rewardGold, rewardRenown: normal.rewardRenown },
+            certified: { id: certified.id, style: lot.style, quality: lot.quality, proof: furnitureLotsSnapshot().length },
+            ships: shipResult.ships, reserve: paperResult.reserve,
         };
     });
     evidence.fixture = fixture;
@@ -153,6 +235,12 @@ try {
     assert.equal(await page.locator('[data-build-type="89"]').count(), 1);
     assert.match(await page.locator('[data-build-type="89"]').innerText(), /Forest Works/i);
     assert.equal(await page.locator('[data-build-type="63"]').count(), 1, "the sawmill must remain reachable in the forest category");
+    await page.locator('[data-build-category="grand"]').click();
+    await page.locator('[data-build-type="90"]').waitFor({ state: "visible" });
+    assert.equal(await page.locator('[data-build-type="90"]').count(), 1);
+    assert.equal(await page.locator('[data-build-type="91"]').count(), 1);
+    assert.match(await page.locator('[data-build-type="90"]').innerText(), /Shipyard/i);
+    assert.match(await page.locator('[data-build-type="91"]').innerText(), /Paper Mill/i);
     evidence.checks.buildCategory = true;
     await page.locator("#build-close-btn").click();
 
@@ -181,6 +269,15 @@ try {
     // medicine into the clinic. Both are recurring consumers, not catalogue text.
     assert.equal(await page.locator("[data-forest-commission-card]").count(), 3);
     assert.equal(await page.locator('[data-forest-guild-active="3"]').count(), 1);
+    const certifiedCard = page.locator('[data-forest-commission-card="' + fixture.certified.id + '"]');
+    const certifiedText = await certifiedCard.innerText();
+    assert.match(certifiedText, /REQUIRED STYLE/);
+    assert.match(certifiedText, new RegExp(fixture.certified.style.split(" ")[0], "i"));
+    assert.match(certifiedText, /CERTIFIED/);
+    const certifiedButton = certifiedCard.locator("[data-forest-commission]");
+    assert.ok(await certifiedButton.isEnabled(), "three certified pieces must unlock the style order");
+    assert.equal(await page.locator('[data-forest-caravan-status="enroute"]').count(), 1, "an unarrived caravan must be visible on the board");
+    evidence.checks.certifiedOrder = { text: certifiedText, fixture: fixture.certified };
     const commissionBefore = await page.evaluate(async () => {
         const [{ state }, { forestGuildSummary }, { industryWarehouseStock }] = await Promise.all([
             import("./js/core/state.js"),
@@ -209,8 +306,88 @@ try {
     assert.equal(commissionAfter.completed, commissionBefore.completed + 1);
     assert.equal(commissionAfter.active, 3);
     assert.equal(commissionAfter.history.outcome, "delivered");
-    evidence.checks.commission = { before: commissionBefore, after: commissionAfter };
+    const pactAfter = await page.evaluate(async () => {
+        const [{ forestGuildSummary }] = await Promise.all([import("./js/systems/forest-guild.js")]);
+        const guild = forestGuildSummary();
+        return { pacts: guild.pacts, goldsmiths: guild.patrons.find(entry => entry.id === "goldsmiths") };
+    });
+    assert.equal(pactAfter.goldsmiths.active, true, "the third delivery must sign the patron pact");
+    assert.ok(pactAfter.pacts >= 1);
+    const pactDetails = page.locator('[data-patron-pacts]');
+    await pactDetails.locator('summary').click();
+    await page.waitForTimeout(150);
+    assert.equal(await page.locator('[data-patron-pact]').count(), 16, "all sixteen patron relationships must be visible");
+    const signedPact = page.locator('[data-patron-pact="goldsmiths"]');
+    assert.match(await signedPact.innerText(), /PACT/);
+    assert.equal(await signedPact.getAttribute("data-patron-active"), "1");
+    const pactPaint = await signedPact.locator("b").first().evaluate(node => {
+        const style = getComputedStyle(node);
+        const details = node.closest("details");
+        const detailsStyle = getComputedStyle(details);
+        return {
+            color: style.color,
+            opacity: style.opacity,
+            visibility: style.visibility,
+            detailsOpacity: detailsStyle.opacity,
+            detailsFilter: detailsStyle.filter,
+            detailsContentVisibility: detailsStyle.contentVisibility,
+            open: details.open,
+        };
+    });
+    evidence.checks.pactPaint = pactPaint;
+    assert.equal(pactPaint.opacity, "1");
+    assert.equal(pactPaint.detailsOpacity, "1");
+    evidence.checks.commission = { before: commissionBefore, after: commissionAfter, pact: pactAfter };
     await page.screenshot({ path: resolve(outputDir, "forest-guild.png") });
+    await signedPact.scrollIntoViewIfNeeded();
+    await page.screenshot({ path: resolve(outputDir, "patron-pacts.png") });
+
+    const certifiedBefore = await page.evaluate(async id => {
+        const [{ forestGuildSummary }, { furnitureLotProof, furnitureLotsSnapshot }] = await Promise.all([
+            import("./js/systems/forest-guild.js"),
+            import("./js/systems/forest-industries.js"),
+        ]);
+        const order = forestGuildSummary().active.find(entry => entry.id === id);
+        return {
+            proof: furnitureLotProof(order.requirement.styleId, order.requirement.minScore),
+            stock: order.stock,
+            totalLots: furnitureLotsSnapshot().reduce((sum, lot) => sum + Number(lot.amount || 0), 0),
+        };
+    }, fixture.certified.id);
+    await certifiedButton.click();
+    await page.waitForFunction(() => document.querySelector("#action-toast")?.textContent.includes("GUILD COMMISSION FILLED"), null, { timeout: 5000 });
+    const certifiedAfter = await page.evaluate(async () => {
+        const [{ forestGuildSummary }, { furnitureLotsSnapshot }] = await Promise.all([
+            import("./js/systems/forest-guild.js"),
+            import("./js/systems/forest-industries.js"),
+        ]);
+        return {
+            guild: forestGuildSummary(),
+            totalLots: furnitureLotsSnapshot().reduce((sum, lot) => sum + Number(lot.amount || 0), 0),
+        };
+    });
+    assert.equal(certifiedAfter.totalLots, certifiedBefore.totalLots - 3, "delivery must consume exactly three certified lots");
+    evidence.checks.certifiedDelivery = { before: certifiedBefore, after: certifiedAfter };
+
+    await page.locator('[data-command-tab="forest"]').click();
+    await page.waitForTimeout(150);
+    const grand = await page.evaluate(async () => {
+        const [{ grandConsumersSummary }] = await Promise.all([import("./js/systems/grand-consumers.js")]);
+        return grandConsumersSummary();
+    });
+    assert.equal(grand.shipyards, 1);
+    assert.equal(grand.paperMills, 2);
+    assert.ok(grand.ships >= 1);
+    assert.ok(grand.shipBatches >= 1);
+    assert.ok(grand.paperBatches >= 1);
+    assert.ok(grand.rows.some(row => row.status === "starved"), "the empty mill must show a visible shortage");
+    assert.equal(await page.locator('[data-grand-consumers]').count(), 1, "the atlas must render the grand-consumer block");
+    assert.equal(await page.locator('[data-grand-consumer-card="grand-shipyard"]').count(), 1);
+    assert.equal(await page.locator('[data-grand-status="starved"]').count(), 1);
+    evidence.checks.grandConsumers = { ships: grand.ships, reserve: grand.reserve, rows: grand.rows.map(row => ({ id: row.id, status: row.status })) };
+    await page.locator("[data-grand-consumers]").scrollIntoViewIfNeeded();
+    await page.waitForTimeout(300);
+    await page.screenshot({ path: resolve(outputDir, "grand-consumers.png") });
 
     const clinicBefore = await page.evaluate(async () => {
         const [{ state }] = await Promise.all([import("./js/core/state.js")]);
@@ -295,6 +472,20 @@ try {
     evidence.checks.buildingForm = form;
     evidence.checks.batch = batch;
     await page.screenshot({ path: screenshotPath, fullPage: false });
+
+    // Masterwork provenance lives in the dynasty archive, not only in the shop.
+    await page.locator('[data-command-tab="dynasty"]').click();
+    const masterworkRecord = page.locator('[data-dynasty-masterwork="' + fixture.masterwork.id + '"]');
+    await masterworkRecord.waitFor({ state: "visible", timeout: 5000 });
+    await page.waitForFunction(id => document.querySelector('[data-dynasty-masterwork="' + id + '"]')?.textContent.includes("MASTERWORK"), fixture.masterwork.id, { timeout: 5000 });
+    const masterworkText = await masterworkRecord.evaluate(node => node.textContent);
+    assert.match(masterworkText, new RegExp(fixture.masterwork.master.split(" ")[0], "i"));
+    assert.match(masterworkText, new RegExp(fixture.masterwork.year));
+    assert.match(masterworkText, /prestige/i);
+    assert.equal(await page.locator("[data-dynasty-masterwork]").count() >= 1, true);
+    evidence.checks.masterwork = { fixture: fixture.masterwork, text: masterworkText };
+    await masterworkRecord.scrollIntoViewIfNeeded();
+    await page.screenshot({ path: resolve(outputDir, "dynasty-masterwork.png") });
 
     assert.deepEqual(pageErrors, []);
     assert.deepEqual(consoleErrors, []);

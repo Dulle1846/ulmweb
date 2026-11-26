@@ -2,9 +2,9 @@
   "version": 2,
   "generatedBy": "scripts/spec-audit.mjs",
   "scope": "All numbered 1.1 and 1.2.1–1.2.18 requirements, including the 1.2.23.1.151–180 forest economy, plus the documented 2.x phases and 3.3–4.0 roadmap points.",
-  "commit": "ff7ef4e18711af2edc5d94308db3a2cbd5e4ee03",
-  "sourceHash": "f6568550d7b6a2344205d27830d2d96c4ca61dbc9ea4391d7802997fd7508ef5",
-  "generatedAt": "2026-11-26T19:53:36+00:00",
+  "commit": "94a1d6f9e867658ba9df0d391c057ed6a35b6246",
+  "sourceHash": "e0fae706031fc17068f833455a557dc55400e9f8ffb41bc4990f458ee7a93bc6",
+  "generatedAt": "2026-11-26T20:33:00+00:00",
   "totals": {
     "total": 1680,
     "implemented": 1680,

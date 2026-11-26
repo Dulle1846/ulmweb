@@ -35,8 +35,9 @@ import { renderBiomePanel } from "./biome-panel.js";
 import { invalidateForestAtlasSurvey, renderForestAtlasPanel } from "./forest-atlas-panel.js";
 import { timberMarketSummary, sellRegionalTimber, TIMBER_SALE_LOT } from "../systems/regional-timber-market.js";
 import { FOREST_WORKS_MODES, SAW_PROFILES, INDUSTRY_GOODS } from "../world/forest-industries.js";
-import { forestMasteryFor, forestWorksStatus, runForestWorks, sawProfileIdFor, sellForestIndustryGood, setForestWorksMode, setSawProfile, supplyClinicMedicine } from "../systems/forest-industries.js";
-import { deliverForestCommission } from "../systems/forest-guild.js";
+import { forestMasteryFor, forestMasterworkArchive, forestWorksStatus, runForestWorks, sawProfileIdFor, sellForestIndustryGood, setForestWorksMode, setSawProfile, supplyClinicMedicine } from "../systems/forest-industries.js";
+import { deliverForestCommission, dispatchGuildCaravan } from "../systems/forest-guild.js";
+import { grandConsumerStatusFor } from "../systems/grand-consumers.js";
 import { renderScenarioPanel } from "./scenario-panel.js";
 import { renderWorldMapPanel } from "./world-map-panel.js";
 import { closeTradeRoute, getWorldMapSnapshot, openTradeRoute, pressRegionClaim, setFrontierWatch } from "../systems/world-map.js";
@@ -697,7 +698,8 @@ function buildings(){
   [TYPE.TENT]:"cottage",[TYPE.STONE_HOUSE]:"cottage",[TYPE.WAREHOUSE]:"storehouse",[TYPE.SAWMILL]:"lumber-yard",
   [TYPE.BAKERY]:"windmill",[TYPE.WELL]:"windmill",[TYPE.MASON]:"quarry",[TYPE.FORESTER]:"lumber-yard",
   [TYPE.CLINIC]:"temple",[TYPE.MARKET]:"tavern",
-  [TYPE.SMITHY]:"windmill",[TYPE.SCRIPTORIUM]:"temple",[TYPE.FOREST_WORKS]:"lumber-yard"
+  [TYPE.SMITHY]:"windmill",[TYPE.SCRIPTORIUM]:"temple",[TYPE.FOREST_WORKS]:"lumber-yard",
+  [TYPE.SHIPYARD]:"lumber-yard",[TYPE.PAPER_MILL]:"windmill"
  }[type]||"cottage");
  const rows=records.map((building,index)=>{
   const card=CARD_DECK.find(item=>item.type===building.type);
@@ -793,6 +795,8 @@ function buildings(){
   const worksStatus=building.type===TYPE.FOREST_WORKS?forestWorksStatus(building):null;
   const worksMode=worksStatus?.mode||null;
   const worksLast=building.lastForestBatch?"Last batch: "+building.lastForestBatch.label+" → "+Object.entries(building.lastForestBatch.output||{}).map(([good,value])=>value+" "+(INDUSTRY_GOODS[good]?.label||good)).join(" + ")+(building.lastForestBatch.style?" · "+building.lastForestBatch.style:"")+(building.lastForestBatch.quality?" · "+building.lastForestBatch.quality.grade:""):"No batch has run yet";
+  const grandStatus=building.type===TYPE.SHIPYARD||building.type===TYPE.PAPER_MILL?grandConsumerStatusFor(building):null;
+  const grandConsumerField=grandStatus?'<span class="building-detail-wide" data-grand-consumer="'+esc(grandStatus.id)+'" data-grand-status="'+esc(grandStatus.status)+'"><strong>'+esc(grandStatus.label)+' · permanent forest consumer</strong><small>'+esc(grandStatus.story)+'</small><small>'+esc(grandStatus.ok?'RUNNING · next batch due':'STOCKED OUT · '+grandStatus.text)+'</small><small>Batches run: '+number(grandStatus.batches)+' · Inputs: '+Object.entries(grandStatus.stock||{}).map(([good,value])=>value+' '+good).join(" · ")+'</small></span>':"";
   const forestWorksField=building.type===TYPE.FOREST_WORKS?'<span class="building-detail-wide">Forest industry<strong><select class="forest-mode-select" data-forest-mode="'+esc(building.id)+'" aria-label="Forest industry for '+esc(name)+'">'+Object.values(FOREST_WORKS_MODES).map(mode=>'<option value="'+esc(mode.id)+'"'+(worksMode?.id===mode.id?' selected':'')+'>'+esc(mode.label)+'</option>').join("")+'</select></strong><small>'+esc(worksMode?.description||"Choose a workshop")+' · Site: '+esc(worksStatus?.siteLabel||"unknown")+(worksStatus?.style?" · Style: "+esc(worksStatus.style.label):"")+' · '+esc(worksLast)+'</small><small class="building-mastery" data-forest-mastery="'+number(forestMasteryFor(building).level)+'">Mastery: '+esc(forestMasteryFor(building).label)+' · '+number(forestMasteryFor(building).batches)+' batches'+(forestMasteryFor(building).nextAt!==null?' · next '+esc(forestMasteryFor(building).nextLabel)+' at '+number(forestMasteryFor(building).nextAt):' · highest rank')+'</small><small class="'+(worksStatus?.ok?'is-balanced':'')+'">'+esc(worksStatus?.reason||worksStatus?.mode?.use||"Ready")+'</small><button type="button" class="command-choice" data-run-forest-works="'+esc(building.id)+'"'+(worksStatus?.ok?'':' disabled title="'+esc(worksStatus?.reason||"Workshop unavailable")+'"')+'>RUN ONE BATCH</button></span>':"";
   const inventory=getInventorySummary(building);
   const jobs=getBuildingLogisticsStatus(building)||[];
@@ -817,7 +821,7 @@ function buildings(){
   const profileHint=inventory?.kind==="warehouse"?'<span class="building-detail-wide warehouse-profile-hint" data-profile-hint="'+esc(inventory.profile)+'"><strong>Warehouse profile note</strong><small>'+esc(warehouseProfileHint(profileRow||inventory,inventory.profile))+'</small></span>':"";
   const fieldText=building.field?" · field "+building.field.stage+" ("+Math.round(building.field.growth)+"%) · soil "+Math.round(building.field.fertility)+"%"+(building.field.resting?" · resting":""):"";
   const stewardship=foresterStewardship(building);
-  return '<details class="building-record" data-building-name="'+esc(name.toLowerCase())+'" data-building-id="'+esc(building.id)+'"'+(String(building.id)===String(expandedBuildingId)?' open':'')+'><summary><svg class="building-record-art" viewBox="0 0 64 64" aria-hidden="true"><use href="assets/royal-building-atlas.svg#'+buildingSprite(building.type)+'"></use></svg><span class="building-record-title"><strong>'+esc(name)+'</strong><small>'+esc(building.id||("record-"+index))+' · '+Math.round(building.x)+', '+Math.round(building.y)+'</small></span><span class="building-record-status"><b>'+(isUnderConstruction(building)?site.percent+'%':condition+'%')+'</b><small>'+(isUnderConstruction(building)?"built":"condition")+'</small></span></summary><div class="building-record-details"><p>'+esc(detail)+'</p>'+chainTagMarkup+stewardship+'<div class="building-detail-grid"><span>Footprint<strong>'+amount(width)+' × '+amount(height)+' tiles</strong></span><span>Health<strong>'+amount(hp)+' / '+amount(maxHp)+'</strong></span><span>Construction<strong>'+esc(site.status)+' · '+site.percent+'%</strong></span><span>Staff<strong>'+staff+(capacity?' / '+capacity:' · not staffed')+'</strong></span><span>Workforce efficiency<strong>'+(efficiency===null?'not applicable':efficiency+'%')+'</strong></span><span>Recorded card cost<strong>'+esc(costs)+'</strong></span><span>Local store<strong>'+esc(storeText)+'</strong></span>'+(sawInfo?'<span>Timber recipe<strong>'+esc(sawInfo)+'</strong></span>':'')+sawField+forestWorksField+profileField+profileHint+'<span>Active haul<strong>'+esc(haulText)+'</strong></span><span>Supply / service<strong>'+esc(supply||"Operating")+'</strong></span><span>Building form<strong>'+esc(formText)+'</strong></span><span>Site data<strong>'+esc(siteNote)+esc(fieldText)+'</strong></span>'+manualOrderMarkup+repairButton+forestGather+forestPannage+meadowGather+wetlandWorks+mountainWorks+volcanoWorks+coastWorks+'</div></div></details>';
+  return '<details class="building-record" data-building-name="'+esc(name.toLowerCase())+'" data-building-id="'+esc(building.id)+'"'+(String(building.id)===String(expandedBuildingId)?' open':'')+'><summary><svg class="building-record-art" viewBox="0 0 64 64" aria-hidden="true"><use href="assets/royal-building-atlas.svg#'+buildingSprite(building.type)+'"></use></svg><span class="building-record-title"><strong>'+esc(name)+'</strong><small>'+esc(building.id||("record-"+index))+' · '+Math.round(building.x)+', '+Math.round(building.y)+'</small></span><span class="building-record-status"><b>'+(isUnderConstruction(building)?site.percent+'%':condition+'%')+'</b><small>'+(isUnderConstruction(building)?"built":"condition")+'</small></span></summary><div class="building-record-details"><p>'+esc(detail)+'</p>'+chainTagMarkup+stewardship+'<div class="building-detail-grid"><span>Footprint<strong>'+amount(width)+' × '+amount(height)+' tiles</strong></span><span>Health<strong>'+amount(hp)+' / '+amount(maxHp)+'</strong></span><span>Construction<strong>'+esc(site.status)+' · '+site.percent+'%</strong></span><span>Staff<strong>'+staff+(capacity?' / '+capacity:' · not staffed')+'</strong></span><span>Workforce efficiency<strong>'+(efficiency===null?'not applicable':efficiency+'%')+'</strong></span><span>Recorded card cost<strong>'+esc(costs)+'</strong></span><span>Local store<strong>'+esc(storeText)+'</strong></span>'+(sawInfo?'<span>Timber recipe<strong>'+esc(sawInfo)+'</strong></span>':'')+sawField+forestWorksField+grandConsumerField+profileField+profileHint+'<span>Active haul<strong>'+esc(haulText)+'</strong></span><span>Supply / service<strong>'+esc(supply||"Operating")+'</strong></span><span>Building form<strong>'+esc(formText)+'</strong></span><span>Site data<strong>'+esc(siteNote)+esc(fieldText)+'</strong></span>'+manualOrderMarkup+repairButton+forestGather+forestPannage+meadowGather+wetlandWorks+mountainWorks+volcanoWorks+coastWorks+'</div></div></details>';
  }).join("");
  const logisticsClosed=narrowViewport()&&!expandedBuildingLogistics;
  const rejection=!logisticsClosed&&logistics.lastRejection?'<p class="command-note logistics-rejection">LAST ORDER REJECTED · '+esc(logistics.lastRejection.reason)+' · '+esc(logistics.lastRejection.kind||"job")+' '+(logistics.lastRejection.good?esc(logistics.lastRejection.good):"")+' · tick '+number(logistics.lastRejection.tick)+'</p>':"";
@@ -1024,7 +1028,10 @@ function dynasty(){
   current=next;
  }
  const history=h.history.slice().reverse().slice(0,12).map(x=>'<article class="command-history"><strong>YEAR '+number(x.year)+' · '+esc(x.kind)+'</strong><p>'+esc(x.detail)+'</p></article>').join("");
+ const masterworks=forestMasterworkArchive();
+ const masterworkRows=masterworks.length?masterworks.map(entry=>'<article class="command-history masterwork-record" data-dynasty-masterwork="'+esc(entry.id)+'"><strong>YEAR '+number(entry.year)+' · MASTERWORK '+esc(entry.style)+'</strong><p>'+esc(entry.master)+' · '+esc(entry.region)+' · '+esc(entry.workshop)+' · '+esc(entry.quality)+' ('+esc(entry.grade)+') · '+number(entry.value)+' G value · +'+number(entry.prestige)+' prestige</p></article>').join(""):'<p class="command-note">No masterwork furniture has entered the dynasty archive yet. A master furniture workshop can produce one from a mastered batch.</p>';
  return intro("HOUSE OF THE CROWN","Dynasty & lineage","A multi-generation view of the actual kinship graph. Select any recorded person to open their full dossier.")+
+ '<div class="command-section-title">MASTERWORK FURNITURE ARCHIVE · '+number(masterworks.length)+'</div><div class="command-history-list" data-dynasty-masterworks="'+number(masterworks.length)+'">'+masterworkRows+'</div>'+
  '<div class="command-section-title">INTERACTIVE LINEAGE</div>'+lineageGraph(king,heirId)+
  '<div class="command-section-title">DESCENDANTS & SUCCESSION</div><div class="dynasty-tree">'+(generations.join("")||'<p class="command-note">No descendant links are recorded for the current sovereign.</p>')+'</div>'+
  '<div class="command-section-title">ROYAL SUCCESSION RECORD</div><div class="command-history-list">'+(history||'<p class="command-note">No royal event has been recorded yet.</p>')+'</div>'+
@@ -1979,6 +1986,13 @@ export function setupManagementUI(){
    const result=deliverForestCommission(commission.dataset.forestCommission);
    if(result.ok){toast("GUILD COMMISSION FILLED · +"+result.gold+" GOLD · +"+result.renown+" RENOWN"+(result.tier?" · TIER "+result.tier:''));renderUI();render();}
    else toast(String(result.reason||"COMMISSION FAILED").toUpperCase());
+   return;
+  }
+  const caravan=e.target.closest("[data-forest-caravan]");
+  if(caravan){
+   const result=dispatchGuildCaravan(caravan.dataset.forestCaravan);
+   if(result.ok){toast("CARAVAN ESCORTED · -"+result.cost+" GOLD · NEW ROUTE DISPATCHED");renderUI();render();}
+   else toast(String(result.reason||"CARAVAN FAILED").toUpperCase());
    return;
   }
   const clinic=e.target.closest("[data-clinic-medicine]");

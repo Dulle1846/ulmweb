@@ -518,3 +518,63 @@
  .forest-atlas__commission-grid{grid-template-columns:1fr}
  .forest-atlas__clinic{flex-direction:column;align-items:flex-start}
 }
+/* 1.2.23.1.181–190: guild pacts, caravans, grand consumers and provenance. */
+.forest-atlas__commission-proof{display:block;padding:4px 6px;border-left:2px solid var(--color-antique-gold);background:rgba(185,154,89,.08);color:var(--ui-paper-muted);font:400 6px/1.4 var(--ui-body-font,sans-serif)}
+.forest-atlas__commission-proof b{color:var(--color-antique-gold)}
+.forest-atlas__commission-caravan{padding:3px 6px;border-radius:3px;background:rgba(95,125,145,.14);color:#a8c2d0;font:700 6px/1.3 var(--ui-number-font,monospace)}
+.forest-atlas__commission-caravan[data-forest-caravan-status="raided"]{background:rgba(160,70,60,.18);color:#d8a39a}
+.forest-atlas__commission-caravan[data-forest-caravan-status="arrived"]{background:rgba(110,150,100,.16);color:#a9ca9f}
+.forest-atlas__patron-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:4px;padding:6px 8px 8px}
+.forest-atlas__patron{display:grid;grid-template-columns:20px minmax(0,1fr) auto;gap:5px 7px;align-items:baseline;padding:5px 6px;border:1px solid var(--ui-line);border-radius:3px;background:rgba(20,24,20,.26)}
+.forest-atlas__patron>span{grid-row:1 / span 2;display:grid;place-items:center;width:18px;height:18px;border:1px solid rgba(185,154,89,.55);border-radius:50%;color:var(--color-antique-gold);font:700 6px/1 var(--ui-number-font,monospace)}
+.forest-atlas__patron b{color:var(--ui-paper-text);font:700 6.5px/1.3 var(--ui-body-font,sans-serif)}
+.forest-atlas__patron small{grid-column:2 / span 2;color:var(--ui-paper-muted);font:400 6px/1.4 var(--ui-body-font,sans-serif)}
+.forest-atlas__patron em{color:var(--color-antique-gold);font:700 6px/1.2 var(--ui-number-font,monospace);font-style:normal;white-space:nowrap}
+.forest-atlas__patron[data-patron-active="1"]{border-color:rgba(196,160,92,.6);background:rgba(185,154,89,.09)}
+.forest-atlas__grand-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:6px;padding:6px 0 8px}
+.forest-atlas__grand-consumer{display:grid;gap:4px;padding:8px;border:1px solid rgba(185,154,89,.42);border-radius:5px;background:rgba(34,31,24,.42)}
+.forest-atlas__grand-consumer header{display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid rgba(185,154,89,.22);padding-bottom:4px}
+.forest-atlas__grand-consumer header b{color:var(--ui-paper-text);font:700 8px/1.2 var(--ui-title-font,Georgia,serif)}
+.forest-atlas__grand-consumer header span{padding:2px 5px;border-radius:3px;background:rgba(110,150,100,.16);color:#a9ca9f;font:700 6px/1.2 var(--ui-number-font,monospace)}
+.forest-atlas__grand-consumer[data-grand-status="starved"] header span,.forest-atlas__grand-consumer[data-grand-status="unstaffed"] header span{background:rgba(160,70,60,.18);color:#d8a39a}
+.forest-atlas__grand-consumer p{margin:0;color:var(--ui-paper-muted);font:400 7px/1.4 var(--ui-body-font,sans-serif)}
+.forest-atlas__grand-consumer small{color:var(--ui-paper-muted);font:400 6px/1.4 var(--ui-body-font,sans-serif)}
+.forest-atlas__grand-consumer em{color:var(--color-antique-gold);font:400 6px/1.4 var(--ui-number-font,monospace);font-style:normal}
+.forest-atlas__masterworks{display:grid;gap:3px;padding:2px 8px 8px}
+.forest-atlas__masterwork{display:flex;justify-content:space-between;gap:8px;padding:5px 6px;border:1px solid rgba(196,160,92,.45);border-radius:3px;background:rgba(185,154,89,.07)}
+.forest-atlas__masterwork b{color:var(--ui-paper-text);font:700 7px/1.3 var(--ui-body-font,sans-serif)}
+.forest-atlas__masterwork small{color:var(--ui-paper-muted);font:400 6px/1.35 var(--ui-body-font,sans-serif);text-align:right}
+.masterwork-record{border-left:2px solid rgba(196,160,92,.65);padding-left:7px}
+/* Summary tiles are at most a handful per panel and sit above the fold; they
+   must paint immediately even while a long archive below is being revealed. */
+#command-panel-content .command-summary>div{content-visibility:visible}
+/* Guild cards sit on the parchment command panel; keep their own dark ledger
+   surface so the 6–7px trade text stays readable at 100% zoom. */
+.forest-atlas__commission{background:rgba(28,31,26,.88);border-color:rgba(185,154,89,.52)}
+.forest-atlas__commission header b,.forest-atlas__commission p,.forest-atlas__commission>small{color:#c9b99a}
+.forest-atlas__commission-main strong{color:#f2e5c4}
+.forest-atlas__commission-main span{background:rgba(120,160,110,.22);color:#b8d5ae}
+.forest-atlas__commission-proof{background:rgba(185,154,89,.14);color:#d6c4a0}
+.forest-atlas__commission-reward span{color:#e3c98f;border-color:rgba(185,154,89,.5)}
+.forest-atlas__clinic{background:rgba(32,45,32,.78)}
+.forest-atlas__clinic small,.forest-atlas__clinic p{color:#c9b99a}
+.forest-atlas__clinic strong{color:#f2e5c4}
+.forest-atlas__patron{background:rgba(28,31,26,.88);border-color:rgba(185,154,89,.46)}
+.forest-atlas__patron b{color:#f2e5c4}
+.forest-atlas__patron small{color:#c9b99a}
+.forest-atlas__patron em{color:#e3c98f}
+.forest-atlas__patron[data-patron-active="1"]{background:rgba(73,63,38,.9);border-color:rgba(214,178,106,.75)}
+.forest-atlas__masterwork{background:rgba(28,31,26,.88);border-color:rgba(196,160,92,.58)}
+.forest-atlas__masterwork b{color:#f2e5c4}
+.forest-atlas__masterwork small{color:#c9b99a}
+/* The atlas lives inside the parchment management panel; its archive headers
+   and patron rows need their own dark contrast instead of inheriting the
+   light-on-dark world-map colours. */
+.forest-atlas__field-guide{background:rgba(28,31,26,.88);border-color:rgba(185,154,89,.5)}
+.forest-atlas__field-guide>summary strong{color:#f2e5c4}
+.forest-atlas__field-guide>summary em,.forest-atlas__guide-intro{color:#c9b99a}
+.forest-atlas__patron b{font-size:8px}
+.forest-atlas__patron small{font-size:7px;line-height:1.45}
+.forest-atlas__patron em{font-size:7px}
+.forest-atlas__masterwork b{font-size:8px}
+.forest-atlas__masterwork small{font-size:7px}

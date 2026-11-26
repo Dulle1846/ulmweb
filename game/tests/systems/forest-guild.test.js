@@ -6,13 +6,14 @@ import { initWorld } from "../../js/world/world.js";
 import { getForestHabitatAt } from "../../js/systems/resource-geography.js";
 import { ensureInventory } from "../../js/systems/logistics.js";
 import { INDUSTRY_GOODS, FOREST_WORKS_MODES } from "../../js/world/forest-industries.js";
-import { FOREST_GUILD_PATRONS, FOREST_GUILD_TIERS, forestGuildTierFor } from "../../js/world/forest-guild.js";
+import { FOREST_GUILD_PATRONS, FOREST_GUILD_TIERS, FOREST_CARAVAN_ESCORT_GOLD, forestGuildTierFor } from "../../js/world/forest-guild.js";
 import {
-    deliverForestCommission, ensureForestGuild, forestGuildSummary,
-    industryWarehouseStock, updateForestGuild,
+    deliverForestCommission, dispatchGuildCaravan, ensureForestGuild, forestGuildMarketPremium,
+    forestGuildSummary, forestPatronBonus, industryWarehouseStock, updateForestGuild,
 } from "../../js/systems/forest-guild.js";
 import {
-    forestMasteryFor, runForestWorks, setForestWorksMode, supplyClinicMedicine,
+    forestMasteryFor, furnitureLotProof, furnitureLotsSnapshot, runForestWorks,
+    setForestWorksMode, supplyClinicMedicine,
 } from "../../js/systems/forest-industries.js";
 
 function makeCanvas() {
@@ -87,6 +88,11 @@ test("the commission board is deterministic, bounded and save-safe", () => {
     const second = ensureForestGuild();
     assert.equal(second.active.map(entry => entry.good).join(","), firstGoods);
     assert.equal(second.active.map(entry => entry.id).join(","), first.active.map(entry => entry.id).join(","));
+    assert.deepEqual(
+        second.active.map(entry => entry.caravan),
+        first.active.map(entry => entry.caravan),
+        "caravan arrival, delay and raid must come from the saved deterministic stream",
+    );
 });
 
 test("filling a commission consumes real warehouse stock, pays gold and rotates the board", () => {
@@ -97,8 +103,14 @@ test("filling a commission consumes real warehouse stock, pays gold and rotates 
     state.resources = { wood: 0, stone: 0, gold: 0, food: 0 };
     state.health = { medicineStock: 0 };
     const guild = ensureForestGuild();
-    const target = guild.active[0];
+    const target = guild.active.find(entry => entry.good !== "furniture") || guild.active[0];
     state.entities = [warehouseFor(target.good, target.quantity + 2)];
+    const blocked = deliverForestCommission(target.id);
+    assert.equal(blocked.ok, false, "a commission cannot be filled before its caravan arrives");
+    state.tick = 120;
+    guild.active.find(entry => entry.id === target.id).caravan.arrivalTick = state.tick;
+    assert.equal(updateForestGuild(), true);
+    assert.equal(guild.active.find(entry => entry.id === target.id).caravan.status, "arrived");
     const before = state.resources.gold;
     const result = deliverForestCommission(target.id);
     assert.ok(result.ok, result.reason);
@@ -132,6 +144,104 @@ test("a lapsed commission moves to the ledger, costs renown and is replaced", ()
     assert.equal(guild.expired, 1);
     assert.equal(guild.history.at(-1).outcome, "expired");
     assert.ok(guild.renown < 20);
+});
+
+test("a furniture commission demands a certified style and quality proof before withdrawal", () => {
+    resetState();
+    const site = firstForestSite();
+    state.hasStarted = true;
+    state.tick = 120;
+    state.seasonIndex = 2;
+    state.resources = { wood: 200, stone: 200, gold: 100, food: 100 };
+    const works = plainBuilding(TYPE.FOREST_WORKS, "works-proof", site.x, site.y);
+    state.entities = [works];
+    ensureInventory(works);
+    works.inventory.input.planks = 40;
+    works.inventory.input["holm-timber"] = 40;
+    assert.ok(setForestWorksMode(works, "furniture").ok);
+    const batch = runForestWorks(works, { force: true });
+    assert.ok(batch.ok, batch.reason);
+    const lot = furnitureLotsSnapshot()[0];
+    assert.ok(lot?.styleId, "a furniture batch must leave a provenance lot");
+
+    const guild = ensureForestGuild();
+    const target = guild.active[0];
+    target.good = "furniture";
+    target.quantity = 3;
+    target.patronId = "great-household";
+    target.deadlineTick = 9999;
+    target.requirement = {
+        kind: "furniture", styleId: lot.styleId, style: lot.style,
+        qualityClass: lot.qualityClass, quality: lot.quality,
+        minScore: Math.max(0, lot.score - 0.0001), minGrade: lot.grade,
+    };
+    target.caravan = { status: "arrived", departTick: 0, arrivalTick: 0, event: "clear", eventApplied: true };
+    state.entities = [warehouseFor("furniture", 3)];
+    const rejected = deliverForestCommission(target.id);
+    assert.equal(rejected.ok, false, "one certified piece cannot satisfy a three-piece order");
+    assert.equal(industryWarehouseStock("furniture"), 3, "a rejected proof must not consume physical furniture");
+
+    assert.ok(runForestWorks(works, { force: true }).ok);
+    assert.ok(runForestWorks(works, { force: true }).ok);
+    assert.equal(furnitureLotProof(target.requirement.styleId, target.requirement.minScore), 3);
+    const delivered = deliverForestCommission(target.id);
+    assert.equal(delivered.ok, true, delivered.reason);
+    assert.equal(industryWarehouseStock("furniture"), 0);
+    assert.equal(furnitureLotProof(target.requirement.styleId, target.requirement.minScore), 0);
+    assert.equal(delivered.style, lot.style);
+});
+
+test("a patron pact is earned by deliveries and changes its own market path", () => {
+    resetState();
+    state.hasStarted = true;
+    state.tick = 120;
+    state.year = 4;
+    state.resources = { wood: 0, stone: 0, gold: 100, food: 0 };
+    const guild = ensureForestGuild();
+    const target = guild.active[0];
+    target.good = "charcoal";
+    target.quantity = 3;
+    target.patronId = "goldsmiths";
+    target.deadlineTick = 9999;
+    target.requirement = null;
+    target.caravan = { status: "arrived", departTick: 0, arrivalTick: 0, event: "clear", eventApplied: true };
+    guild.patrons.goldsmiths = { deliveries: 2, pacts: 0, active: false, lastTick: 0 };
+    state.entities = [warehouseFor("charcoal", 5)];
+    const result = deliverForestCommission(target.id);
+    assert.equal(result.ok, true, result.reason);
+    assert.equal(result.pactSigned, true);
+    assert.equal(guild.patrons.goldsmiths.active, true);
+    assert.equal(forestPatronBonus("goods-premium", "charcoal"), 0.10);
+    assert.ok(forestGuildMarketPremium("charcoal") > 1, "the signed patron must raise the named goods price");
+    assert.ok(guild.lastEvent?.pactSigned);
+});
+
+test("guild caravans arrive, delay and raid deterministically with bounded state", () => {
+    resetState();
+    state.hasStarted = true;
+    state.tick = 120;
+    state.year = 3;
+    state.resources = { wood: 0, stone: 0, gold: 100, food: 0 };
+    const guild = ensureForestGuild();
+    const target = guild.active[0];
+    target.caravan = { status: "enroute", departTick: 0, arrivalTick: 120, event: "delay", eventApplied: false, delayDays: 2, escortCost: FOREST_CARAVAN_ESCORT_GOLD };
+    assert.equal(updateForestGuild(), true);
+    let current = guild.active.find(entry => entry.id === target.id);
+    assert.equal(current.caravan.status, "delayed");
+    assert.equal(current.caravan.arrivalTick, 122);
+    state.tick = 150;
+    assert.equal(updateForestGuild(), true);
+    current = guild.active.find(entry => entry.id === target.id);
+    assert.equal(current.caravan.status, "arrived");
+
+    current.caravan = { status: "raided", departTick: 120, arrivalTick: 120, event: "raid", eventApplied: true, delayDays: 0, escortCost: FOREST_CARAVAN_ESCORT_GOLD };
+    const beforeGold = state.resources.gold;
+    const escorted = dispatchGuildCaravan(current.id);
+    assert.equal(escorted.ok, true, escorted.reason);
+    assert.equal(state.resources.gold, beforeGold - FOREST_CARAVAN_ESCORT_GOLD);
+    current = guild.active.find(entry => entry.id === target.id);
+    assert.equal(current.caravan.status, "enroute");
+    assert.ok(current.caravan.arrivalTick > state.tick);
 });
 
 test("workshop mastery grows from real batches and grants a deterministic bonus unit", () => {

@@ -59,6 +59,10 @@ export const TYPE = {
     // industries; its selected mode is saved in the forest-industry ledger.
     // Keeping a single id preserves every older building id and save.
     FOREST_WORKS: 89,
+    // 1.2.23.1.181–190. Two permanent grand consumers of the forest economy.
+    // Both are ordinary buildings fed by carriers and read by the daily economy.
+    SHIPYARD: 90,
+    PAPER_MILL: 91,
 
     VILLAGER: 20,
     GUARD: 21,
@@ -123,6 +127,8 @@ const MAX_HP = {
     [TYPE.GRANARY]: 280,
     [TYPE.WARD]: 180,
     [TYPE.FOREST_WORKS]: 240,
+    [TYPE.SHIPYARD]: 360,
+    [TYPE.PAPER_MILL]: 300,
     [TYPE.VILLAGER]: 35,
     [TYPE.GUARD]:    160,
     [TYPE.ARCHER]:   95,

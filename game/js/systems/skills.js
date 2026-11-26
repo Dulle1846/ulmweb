@@ -27,7 +27,7 @@ const BUILDING_SKILL = Object.freeze({
     [TYPE.CLINIC]: "care", [TYPE.STABLE]: "care",
     [TYPE.SCHOOL]: "learning", [TYPE.TEMPLE]: "learning", [TYPE.SHRINE]: "learning",
     [TYPE.BARRACKS]: "command", [TYPE.TOWER]: "command", [TYPE.WATCHHOUSE]: "command",
-    [TYPE.SMITHY]: "crafting", [TYPE.SCRIPTORIUM]: "learning", [TYPE.FOREST_WORKS]: "crafting"
+    [TYPE.SMITHY]: "crafting", [TYPE.SCRIPTORIUM]: "learning", [TYPE.FOREST_WORKS]: "crafting", [TYPE.SHIPYARD]: "crafting", [TYPE.PAPER_MILL]: "learning"
 });
 const TRAIT_BIAS = Object.freeze({
     farming: { patience: 0.35, discipline: 0.15 },

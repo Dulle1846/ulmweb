@@ -1,13 +1,65 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.76.0`
-**Next development line:** `3.77.0-dev`
+**Current production version:** `3.77.0`
+**Next development line:** `3.78.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
 **Last repository verification:** 2026-11-26 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.77.0 — Certified guild orders, caravans, patron pacts and grand consumers
+
+3.76.0 gave the forest economy a living guild and master workshops. 3.77.0
+closes the five remaining player-facing gaps without adding a parallel economy:
+every certified furniture order names a style and minimum quality, every new
+commission dispatches a real guild caravan, every patron can sign a permanent
+pact, the shipyard and paper mill consume forest stock forever, and rare
+masterworks carry their provenance into the dynasty archive.
+
+- **Certified furniture commissions.** A furniture order now requires a named
+  style (for example Carved oak) and a minimum wood-quality class. Delivery
+  checks both the unreserved furniture count and the matching provenance lots,
+  then withdraws exactly that many physical pieces and certificates. A failed
+  proof consumes nothing; the order stays on the board.
+- **Guild caravans.** Every new order dispatches a caravan with a deterministic
+  departure, arrival, delay or raid drawn from the saved guild stream. The
+  order cannot be filled before arrival. A delayed caravan is visible with its
+  remaining days; a raided caravan requires a real gold escort before a new
+  route is dispatched. Only four status values and one caravan object per order
+  are stored.
+- **Sixteen individual patron pacts.** Each patron has its own bonus, its own
+  delivery threshold (three deliveries) and its own political faction. A signed
+  pact permanently changes a named market or research path — for example
+  +10 % for charcoal and potash, +12 % for bow staves, +10 % research from
+  paper, or a naval-trade pact. Pacts also grant a one-time political effect
+  through the existing `applyPoliticalEffects` path and are listed in the guild
+  register.
+- **Shipyard and paper mill.** Two real building types (`TYPE.SHIPYARD = 90`,
+  `TYPE.PAPER_MILL = 91`) are carrier-fed permanent consumers. The shipyard
+  consumes ship timber, pitch, tar, charcoal and potash to launch fleet hulls;
+  each hull raises the existing market trade factor via the navy bonus. The
+  paper mill consumes paper, potash and charcoal and adds points to the existing
+  research reserve. Both show ready, starved or unstaffed status in the atlas
+  and building dossier; a shortage consumes no partial goods.
+- **Masterwork furniture provenance.** Guild Master furniture batches can roll
+  a rare deterministic masterwork from the saved world seed and batch counter.
+  The piece is recorded in a bounded 24-entry archive with style, region,
+  workshop, master, year, value and prestige, creates a legacy entry and appears
+  in the Dynasty panel. A bounded 120-entry provenance ledger backs certified
+  orders; it stores certificates, not a second inventory.
+- **Save and performance.** All new state is additive with defaults: old guild
+  orders receive an already-arrived legacy caravan, old nations start with zero
+  ships, and old palaces have no pacts or masterworks. Work is tick-guarded:
+  the guild runs at its 30-day cadence and the grand consumers at 60 days, with
+  no per-frame scans. Caravans, lots and masterworks are capped.
+
+Verification for this release: **1,617/1,617 tests**, the 25-year campaign, the
+spec audit **1,680/1,680 implemented, 0 open, 40 sections**, and
+`test:forest-industry-ui` including certified proof, caravan visibility, both
+grand consumers and the dynasty masterwork record. The browser path has no new
+console or page errors. Both production hosts must serve v3.77.0.
 
 ## 3.76.0 — Living guilds, master workshops and clinic medicine
 

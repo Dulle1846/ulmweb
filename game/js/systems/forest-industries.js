@@ -16,6 +16,7 @@ import { ensureForestGathering } from "./forest-gathering.js";
 import { addMedicineStock, MEDICINE_MAX_STOCK } from "./health.js";
 import { consumeIndustryGoodFromWarehouses, forestGuildMarketPremium, industryWarehouseStock } from "./forest-guild.js";
 import { addLog } from "../core/event-log.js";
+import { recordLegacy } from "./legacy.js";
 import { getForestHabitatAt } from "./resource-geography.js";
 import { REGIONAL_TIMBER_KEYS, regionalTimberGood } from "../world/regional-forests.js";
 import {
@@ -74,6 +75,102 @@ function productionLedger() {
     }
     production.forestFurniturePremium = Math.max(0, Math.min(0.4, Number(production.forestFurniturePremium) || 0));
     return production;
+}
+
+// Every furniture batch leaves a bounded provenance lot. The lot is not a
+// second warehouse: it is the quality certificate for physical furniture that
+// already sits in ordinary stores. A guild order checks both the physical
+// count and the matching certificate, then consumes both together.
+export const FOREST_FURNITURE_LOT_LIMIT = 120;
+export const FOREST_MASTERWORK_LIMIT = 24;
+const MASTER_FIRST_NAMES = Object.freeze(["Aldric", "Berta", "Caspar", "Dagmar", "Elias", "Frieda", "Gunther", "Hedda", "Ivo", "Jutta", "Konrad", "Liesel", "Matthias", "Nella", "Otto", "Petra"]);
+const MASTER_SURNAMES = Object.freeze(["Alder", "Birken", "Eichen", "Fichtner", "Hasel", "Kiefer", "Linden", "Nuss", "Ulme", "Weide", "Zeder", "Eschen"]);
+
+function hashFraction(text) {
+    let hash = 2166136261;
+    for (let index = 0; index < String(text).length; index++) {
+        hash ^= String(text).charCodeAt(index);
+        hash = Math.imul(hash, 16777619);
+    }
+    return (hash >>> 0) / 4294967296;
+}
+
+function masterNameFor(building, batch, style, region) {
+    const seed = String(building?.id || "works") + ":" + batch + ":" + (style?.id || "court") + ":" + (region || "wood");
+    const first = MASTER_FIRST_NAMES[Math.floor(hashFraction(seed + ":first") * MASTER_FIRST_NAMES.length)] || MASTER_FIRST_NAMES[0];
+    const last = MASTER_SURNAMES[Math.floor(hashFraction(seed + ":last") * MASTER_SURNAMES.length)] || MASTER_SURNAMES[0];
+    return first + " " + last;
+}
+
+function lotsLedger() {
+    const production = productionLedger();
+    production.forestFurnitureLots = (Array.isArray(production.forestFurnitureLots) ? production.forestFurnitureLots : [])
+        .filter(entry => entry && typeof entry === "object" && entry.styleId && Number(entry.amount) > 0)
+        .slice(-FOREST_FURNITURE_LOT_LIMIT);
+    production.forestMasterworks = (Array.isArray(production.forestMasterworks) ? production.forestMasterworks : [])
+        .filter(entry => entry && typeof entry === "object" && entry.id)
+        .slice(-FOREST_MASTERWORK_LIMIT);
+    production.forestLotSerial = Math.max(0, Math.floor(Number(production.forestLotSerial) || 0));
+    production.forestMasterworkSerial = Math.max(0, Math.floor(Number(production.forestMasterworkSerial) || 0));
+    return production;
+}
+
+function recordFurnitureLot(building, style, quality, amount, { masterwork = false, master, region } = {}) {
+    const production = lotsLedger();
+    const quantity = Math.max(0, Math.floor(Number(amount) || 0));
+    if (!style || !quality || quantity <= 0) return null;
+    const lot = {
+        id: "fl-" + (++production.forestLotSerial),
+        styleId: String(style.id), style: String(style.label),
+        qualityClass: String(quality.classId), quality: String(quality.label),
+        grade: String(quality.grade), score: Math.round((Number(quality.score) || 0) * 1000) / 1000,
+        region: String(region || "managed wood").slice(0, 64),
+        workshop: String(building?.id || "forest-works").slice(0, 48),
+        master: String(master || "Workshop master").slice(0, 64),
+        year: Math.max(1, Math.floor(Number(state.year) || 1)),
+        tick: Math.max(0, Math.floor(Number(state.tick) || 0)),
+        amount: quantity, masterwork: Boolean(masterwork),
+    };
+    production.forestFurnitureLots.push(lot);
+    if (production.forestFurnitureLots.length > FOREST_FURNITURE_LOT_LIMIT) {
+        production.forestFurnitureLots.splice(0, production.forestFurnitureLots.length - FOREST_FURNITURE_LOT_LIMIT);
+    }
+    return lot;
+}
+
+export function furnitureLotProof(styleId, minScore) {
+    const lots = lotsLedger().forestFurnitureLots;
+    const threshold = Math.max(0, Math.min(1, Number(minScore) || 0));
+    return lots.filter(lot => lot.styleId === styleId && Number(lot.score) >= threshold)
+        .reduce((sum, lot) => sum + Math.max(0, Number(lot.amount) || 0), 0);
+}
+
+// Called only after the physical furniture withdrawal succeeded. It consumes
+// certificates from oldest to newest; a partial proof can never be charged.
+export function consumeFurnitureLotProof(styleId, minScore, quantity) {
+    const production = lotsLedger();
+    const want = Math.max(0, Math.floor(Number(quantity) || 0));
+    if (!want) return { ok: false, moved: 0 };
+    const threshold = Math.max(0, Math.min(1, Number(minScore) || 0));
+    const matching = production.forestFurnitureLots.filter(lot => lot.styleId === styleId && Number(lot.score) >= threshold);
+    const available = matching.reduce((sum, lot) => sum + Math.max(0, Number(lot.amount) || 0), 0);
+    if (available < want) return { ok: false, moved: 0, available };
+    let remaining = want;
+    for (const lot of matching) {
+        if (remaining <= 0) break;
+        const taken = Math.min(remaining, Math.max(0, Number(lot.amount) || 0));
+        lot.amount -= taken; remaining -= taken;
+    }
+    production.forestFurnitureLots = production.forestFurnitureLots.filter(lot => Number(lot.amount) > 0);
+    return { ok: true, moved: want };
+}
+
+export function furnitureLotsSnapshot() {
+    return lotsLedger().forestFurnitureLots.map(lot => ({ ...lot })).reverse();
+}
+
+export function forestMasterworkArchive() {
+    return lotsLedger().forestMasterworks.map(entry => ({ ...entry })).reverse();
 }
 
 function forestStandAt(building) {
@@ -328,16 +425,51 @@ export function runForestWorks(building, { force = false } = {}) {
         const premium = Math.min(0.5, style.premium + quality.premium + mastery.premium + (quality.score >= 0.78 ? 0.06 : 0));
         production.forestFurniturePremium = Math.max(production.forestFurniturePremium, premium);
     }
+    let masterwork = null;
+    if (mode.style && style && quality && Number(accepted.furniture) > 0) {
+        const regional = stand.regionalType;
+        const region = typeof regional === "string" ? regional : regional?.label || regional?.short || regional?.id || stand.type || "managed wood";
+        const chance = mastery.level >= 2 ? [0, 0, 0.04, 0.07, 0.10][mastery.level] || 0 : 0;
+        const roll = hashFraction(String(building.id || "works") + ":" + nextBatches + ":" + (Number(state.worldSeed) || 1) + ":masterwork");
+        if (roll < chance) {
+            const master = masterNameFor(building, nextBatches, style, region);
+            const archive = lotsLedger();
+            const id = "mw-" + (++archive.forestMasterworkSerial);
+            masterwork = {
+                id, styleId: style.id, style: style.label,
+                qualityClass: quality.classId, quality: quality.label, grade: quality.grade,
+                score: Math.round(quality.score * 1000) / 1000,
+                region: String(region).slice(0, 64), workshop: String(building.id || "forest-works").slice(0, 48),
+                master, year: Math.max(1, Math.floor(Number(state.year) || 1)),
+                tick: Math.max(0, Math.floor(Number(state.tick) || 0)),
+                value: round2(24 + quality.score * 42 + style.premium * 100 + mastery.level * 6),
+                prestige: 2 + mastery.level,
+            };
+            archive.forestMasterworks.push(masterwork);
+            if (archive.forestMasterworks.length > FOREST_MASTERWORK_LIMIT) {
+                archive.forestMasterworks.splice(0, archive.forestMasterworks.length - FOREST_MASTERWORK_LIMIT);
+            }
+            recordFurnitureLot(building, style, quality, 1, { masterwork: true, master, region });
+            recordLegacy("masterwork", "Masterwork " + style.label, master + " · " + quality.grade + " · " + region + " · year " + masterwork.year, { importance: masterwork.prestige });
+            addLog("MASTERWORK FURNITURE · " + style.label.toUpperCase() + " BY " + master.toUpperCase(), "#d8b36a", "economy");
+            production.forestFurniturePremium = Math.min(0.5, Math.max(production.forestFurniturePremium, style.premium + quality.premium + mastery.premium + 0.02));
+        }
+        if (Number(accepted.furniture) > (masterwork ? 1 : 0)) {
+            recordFurnitureLot(building, style, quality, Number(accepted.furniture) - (masterwork ? 1 : 0), {
+                master: masterwork?.master || masterNameFor(building, nextBatches, style, region), region,
+            });
+        }
+    }
     building.lastForestBatch = {
         mode: mode.id, label: mode.label, tick: Math.max(0, Math.floor(Number(state.tick) || 0)),
         output: accepted, style: style ? style.label : null, styleId: style ? style.id : null,
         quality: quality ? { classId: quality.classId, label: quality.label, grade: quality.grade, score: quality.score } : null,
-        timber: timber?.good || null,
+        timber: timber?.good || null, masterwork,
         mastery: { level: mastery.level, label: mastery.label, batches: nextBatches, bonus: masteryBonus },
     };
     production.forestBatches += 1;
     for (const need of Object.values(mode.raw || {})) production.forestRawConsumed += need;
-    return { ok: true, mode: mode.id, label: mode.label, output: accepted, style, quality, timber: timber?.good || null };
+    return { ok: true, mode: mode.id, label: mode.label, output: accepted, style, quality, timber: timber?.good || null, masterwork };
 }
 
 export function updateForestIndustry() {

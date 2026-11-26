@@ -163,6 +163,8 @@ export const BUILDING_SIZE = {
     87: { w: 2.4, h: 2 },   // GRANARY
     88: { w: 1.4, h: 1.4 }, // WARDING STONE
     89: { w: 2.4, h: 2.1 }, // FOREST WORKS — yard, kiln and benches
+    90: { w: 3.4, h: 2.2 }, // SHIPYARD — slipway and stores
+    91: { w: 2.8, h: 2.2 }, // PAPER MILL — vats and drying racks
 };
 
 // Gebäude-Dachfarben (für Level-1-Icons und Level-2-Top-Down)

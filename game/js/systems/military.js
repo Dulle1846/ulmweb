@@ -19,6 +19,7 @@ import { getJusticeModifiers } from "./justice.js";
 import { getEndeavourModifiers } from "./endeavours.js";
 import { getResearchModifiers } from "./research.js";
 import { getCitizenModifiers } from "./population-register.js";
+import { forestPatronBonus } from "./forest-guild.js";
 import { getCrownDread, getFrontierPressure, normalizeCrownDreadReading } from "./crown-dread.js";
 import { spawnEntity, canSpawnEntity } from "../world/entities.js";
 import { WORLD_WIDTH, WORLD_HEIGHT } from "../core/config.js";
@@ -50,6 +51,9 @@ export function createMilitaryState() {
     return {
         version: 1,
         horses: 0,
+        // Ships are produced by the shipyard from real forest-industry stock.
+        // They are a scalar fleet, not entities, so old saves simply start at 0.
+        ships: 0,
         recruitsTrained: 0,
         losses: 0,
         desertions: 0,
@@ -121,6 +125,7 @@ export function normalizeMilitaryState(value = {}) {
     return {
         version: 1,
         horses: clamp(source.horses, 0, 500),
+        ships: round(source.ships),
         recruitsTrained: round(source.recruitsTrained),
         losses: round(source.losses),
         desertions: round(source.desertions),
@@ -157,6 +162,13 @@ function completedStables() {
 
 export function getMilitaryCapacity() {
     return completedBarracks().length * MAX_BARRACKS_GARRISON;
+}
+
+// A real fleet widens the safe sea lanes. The bonus is deliberately small and
+// capped; it feeds the existing market trade factor, never a parallel economy.
+export function getNavalTradeBonus() {
+    const hulls = Math.min(0.15, Math.max(0, Number(state.military?.ships) || 0) * 0.01);
+    return 1 + hulls + forestPatronBonus("naval-trade");
 }
 
 export function getStableCapacity() {

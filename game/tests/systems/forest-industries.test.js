@@ -14,8 +14,8 @@ import {
     modeFitsStand, sawBatchFor, sawProfileAccepts, woodQualityFor,
 } from "../../js/world/forest-industries.js";
 import {
-    INDUSTRY_STOCK_TARGETS, forestIndustrySummary, industryQuote,
-    runForestWorks, sellForestIndustryGood, setForestWorksMode, setSawProfile,
+    INDUSTRY_STOCK_TARGETS, forestIndustrySummary, forestMasterworkArchive, furnitureLotsSnapshot,
+    industryQuote, runForestWorks, sellForestIndustryGood, setForestWorksMode, setSawProfile,
 } from "../../js/systems/forest-industries.js";
 import { ensureInventory } from "../../js/systems/logistics.js";
 import { planSawBatch } from "../../js/simulation/buildings.js";
@@ -159,6 +159,36 @@ test("a Forest Works consumes real firewood and produces real charcoal", () => {
     assert.equal(works.inventory.output.charcoal, 2);
     assert.ok(works.lastForestBatch?.label);
     assert.ok(forestIndustrySummary().batches >= 1);
+});
+
+test("mastery batches can yield a deterministic masterwork with provenance", () => {
+    resetState();
+    const site = firstForestSite();
+    state.hasStarted = true;
+    state.tick = 600;
+    state.year = 12;
+    state.seasonIndex = 2;
+    state.resources = { wood: 500, stone: 200, gold: 100, food: 100 };
+    const works = plainBuilding(TYPE.FOREST_WORKS, "works-masterwork", site.x, site.y);
+    state.entities = [works];
+    ensureInventory(works);
+    works.forestBatches = 80;
+    works.inventory.input.planks = 500;
+    works.inventory.input["holm-timber"] = 500;
+    assert.ok(setForestWorksMode(works, "furniture").ok);
+    let masterwork = null;
+    for (let index = 0; index < 120 && !masterwork; index++) {
+        const batch = runForestWorks(works, { force: true });
+        assert.ok(batch.ok, batch.reason);
+        masterwork = batch.masterwork;
+        works.inventory.output.furniture = 0;
+    }
+    assert.ok(masterwork, "a Guild Master furniture workshop must eventually produce a masterwork");
+    assert.ok(masterwork.master && masterwork.region && masterwork.year && masterwork.value > 0);
+    const archive = forestMasterworkArchive();
+    assert.ok(archive.some(entry => entry.id === masterwork.id));
+    assert.ok(furnitureLotsSnapshot().some(lot => lot.masterwork && lot.master === masterwork.master));
+    assert.ok(state.legacy.entries.some(entry => entry.kind === "masterwork"));
 });
 
 test("a specialized sawmill refuses softwood and cuts furniture grade from hardwood", () => {

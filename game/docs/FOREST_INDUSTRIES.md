@@ -1,6 +1,6 @@
 # Regionale Waldwirtschaft 1.2.23.1.151–180
 
-**Status:** implementiert und als Spielmechanik verdrahtet (v3.76.0)
+**Status:** implementiert und als Spielmechanik verdrahtet (v3.77.0)
 **Datenmodell:** `js/world/forest-industries.js`
 **Laufzeit:** `js/systems/forest-industries.js`
 **Browser-Referenz:** `npm run test:forest-industry-ui`
@@ -375,3 +375,43 @@ deterministische Bretter, Ablauf/Rotation, Meisterschaftsboni und den
 Lagerabzug der Klinik. Der Spec-Audit führt alle dreißig Punkte als eigene
 Sektion `1.2.23.1.151–180`; jeder Eintrag nennt seinen echten Verbraucher. Der
 25-Jahres-Feldzug bleibt deterministisch und grün.
+
+## 3.77.0 — Zertifizierte Aufträge, Karawanen, Patronpakte und Großabnehmer
+
+Dieser Pass schließt die fünf zuvor offenen Spielerpfade. Die Waldwirtschaft
+bleibt eine Kette über vorhandene Lager, Carrier, Politik und Forschung; es
+gibt keine neue Währung und keinen zweiten Simulator.
+
+- **Möbelstil und Mindestqualität:** Jeder Möbelauftrag nennt jetzt einen Stil
+  und eine Qualitätsklasse. `deliverForestCommission` prüft den unreservierten
+  Möbelbestand **und** die passenden Provenienzlose, bevor es etwas entnimmt.
+  Ohne vollständigen Nachweis bleibt die Ware unangetastet.
+- **Gildenkarawanen:** Jeder neue Auftrag startet eine Karawane. Ankunft,
+  Verzögerung und Überfall kommen deterministisch aus dem gespeicherten
+  Gilden-PRNG. Erst nach `arrived` ist die Lieferung möglich; ein Überfall
+  verlangt einen bezahlten Geleitschutz. Pro Auftrag wird nur ein kleiner
+  Karawanenzustand gespeichert.
+- **16 Patronpakte:** Drei Lieferungen an denselben Patron schalten dessen
+  dauerhaften, individuellen Bonus frei (Warenpreis, Forschung oder
+  Marinehandel). Der Pakt läuft über dieselben `politics`-/Ruf-Pfade und ist im
+  Patronregister sichtbar.
+- **Schiffbauwerft und Papiermühle:** `TYPE.SHIPYARD = 90` verbraucht
+  Schiffbauholz, Pech, Teer, Holzkohle und Potasche für Flottenhüllen;
+  `TYPE.PAPER_MILL = 91` verbraucht Papier, Potasche und Holzkohle für
+  Forschungsreserve. Beide sind normale, von Carriern versorgte Gebäude mit
+  sichtbarem Status `ready`, `starved` oder `unstaffed`. Eine Stockung
+  verbraucht keine Teilware.
+- **Meisterwerke mit Provenienz:** Seltene, deterministisch gewürfelte
+  Meisterwerk-Möbel aus Meisterschafts-Batches tragen Stil, Region, Werkstatt,
+  Meister, Jahr, Wert und Prestige. Sie erscheinen im Dynastiearchiv und im
+  Gildenbereich; das Provenienzledger ist auf 120 Lose, das Meisterwerkarchiv
+  auf 24 Einträge begrenzt.
+- **Neue Grenzen:** `FOREST_FURNITURE_LOT_LIMIT = 120`,
+  `FOREST_MASTERWORK_LIMIT = 24`, `FOREST_GUILD_ACTIVE_LIMIT = 3`,
+  `GRAND_CONSUMER_INTERVAL = 60`. Alte Saves erhalten Standardwerte; alte
+  Aufträge bekommen eine bereits angekommene Legacy-Karawane.
+
+Verifiziert mit fokussierten Systemtests, vollständigem `npm test`, dem
+25-Jahres-Feldzug, dem Spec-Audit und `test:forest-industry-ui` inklusive
+Screenshot von Gildenauftrag, Karawane, Werft/Papiermühle und
+Dynastie-Provenienz.

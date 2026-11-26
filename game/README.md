@@ -1,7 +1,7 @@
 # Kings & Cards
 
-**Production version:** 3.76.0
-**Next development line:** 3.77.0-dev
+**Production version:** 3.77.0
+**Next development line:** 3.78.0-dev
 **Production branch:** `ulmweb-branch`  
 **Production URL:** https://kings-and-cards.pages.dev/
 
@@ -31,7 +31,7 @@
 22. [Fantastic & Rare Biomes 1.2.16](docs/SPECIAL_BIOMES.md) — nine rare families, the 100-point atlas manifest, seeded regions, rare goods, discovery, blight, attunement, terrain tint, cross-system quests/combat/diplomacy/city couplings, save compatibility and the Explore survey.
 23. [Transition Biomes 1.2.17](docs/TRANSITION_BIOMES.md) — fifteen named ecotones, ten landscapes, organic widths, mixed vegetation, dynamic climate/fire/logging/grazing response, farm/forest/forage/settlement/route gameplay coupling and the fifty-point audit.
 24. [Feudal campaigns](docs/FEUDAL_CAMPAIGNS.md) — war aims, theatre contracts, staged commitments, bounded annual settlement, noble-house consequences and the Military/Nobility/World Map presentation.
-25. [Regionale Waldwirtschaft 1.2.23.1.151–180](docs/FOREST_INDUSTRIES.md) — eighteen regional timbers, eight quality classes, five saw profiles, the 17-path Forest Works, twenty finished goods, regional furniture styles, the atlas exchange, the complete thirty-point player guide and the 3.76.0 living guild, workshop mastery and clinic medicine loops.
+25. [Regionale Waldwirtschaft 1.2.23.1.151–180](docs/FOREST_INDUSTRIES.md) — eighteen regional timbers, eight quality classes, five saw profiles, the 17-path Forest Works, twenty finished goods, regional furniture styles, the atlas exchange, the complete thirty-point player guide and the 3.76.0 living guild, workshop mastery and clinic medicine loops, now extended in 3.77.0 with certified style/quality orders, deterministic guild caravans, sixteen individual patron pacts, the shipyard and paper mill grand consumers, and masterwork provenance in the dynasty archive.
 
 ## Development rules
 

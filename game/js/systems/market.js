@@ -16,6 +16,7 @@ import { getDebtMarketFactor, getDebtPressure, getFoodCrisisSnapshot } from "./e
 import { getBiomeFrontierSupply, normalizeBiomeFrontierSupply } from "./biome-market-link.js";
 import { getEspionageMarketTerms } from "./espionage.js";
 import { getHazardTradeBuyFactor, getHazardTradeSellFactor } from "./hazard-modifiers.js";
+import { getNavalTradeBonus } from "./military.js";
 import { GOODS, GOOD_KEYS } from "./city-config.js";
 import { REGIONAL_TIMBER_BY_GOOD } from "../world/regional-forests.js";
 import { depositGood, getAvailableWarehouseStock, getWarehouseSpace, getWarehouses, withdrawGood } from "./logistics.js";
@@ -242,7 +243,7 @@ function getTradeFactors(partnerId) {
     const justiceTerms = getJusticeModifiers();
     const researchTerms = getResearchModifiers();
     const eraTradeFactor = Math.max(1, Math.min(1.20, Number(state.ambitions?.era?.agenda?.modifiers?.tradeFactor) || 1));
-    const tradeFactor = Math.max(0.55, faithTerms.tradeFactor * justiceTerms.tradeFactor * researchTerms.tradeFactor * (1 + getEndeavourModifiers().trade) * eraTradeFactor);
+    const tradeFactor = Math.max(0.55, faithTerms.tradeFactor * justiceTerms.tradeFactor * researchTerms.tradeFactor * (1 + getEndeavourModifiers().trade) * eraTradeFactor * getNavalTradeBonus());
     const demandFactor = 1 + Math.max(0, Number(faithTerms.festivalDemand) || 0);
     const debtFactor = getDebtMarketFactor();
     const spyTerms = getEspionageMarketTerms();

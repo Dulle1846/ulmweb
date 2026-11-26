@@ -14,7 +14,8 @@ export const NEW_BUILDING_TYPES = Object.freeze([
     TYPE.TOWN_HALL, TYPE.SCHOOL, TYPE.BATHHOUSE, TYPE.BREWERY, TYPE.GUILDHALL, TYPE.WATCHHOUSE,
     TYPE.SMITHY, TYPE.SCRIPTORIUM,
     TYPE.DAM, TYPE.AVALANCHE_BARRIER, TYPE.DRAINAGE, TYPE.FIREBREAK,
-    TYPE.WEATHER_HOUSE, TYPE.QUARANTINE, TYPE.GRANARY, TYPE.WARD, TYPE.FOREST_WORKS
+    TYPE.WEATHER_HOUSE, TYPE.QUARANTINE, TYPE.GRANARY, TYPE.WARD, TYPE.FOREST_WORKS,
+    TYPE.SHIPYARD, TYPE.PAPER_MILL
 ]);
 
 export const BUILDING_LABELS = Object.freeze({
@@ -62,7 +63,9 @@ export const BUILDING_LABELS = Object.freeze({
     [TYPE.QUARANTINE]: "Quarantine House",
     [TYPE.GRANARY]: "Granary",
     [TYPE.WARD]: "Warding Stone",
-    [TYPE.FOREST_WORKS]: "Forest Works"
+    [TYPE.FOREST_WORKS]: "Forest Works",
+    [TYPE.SHIPYARD]: "Shipyard",
+    [TYPE.PAPER_MILL]: "Paper Mill"
 });
 
 // Direct construction uses the same material language as the card catalogue.
@@ -112,13 +115,16 @@ export const BUILDING_COSTS = Object.freeze({
     [TYPE.QUARANTINE]: Object.freeze({ wood: 24, stone: 20, gold: 8 }),
     [TYPE.GRANARY]: Object.freeze({ wood: 30, stone: 20, gold: 4 }),
     [TYPE.WARD]: Object.freeze({ stone: 24, gold: 14 }),
-    [TYPE.FOREST_WORKS]: Object.freeze({ wood: 38, stone: 18, gold: 10 })
+    [TYPE.FOREST_WORKS]: Object.freeze({ wood: 38, stone: 18, gold: 10 }),
+    [TYPE.SHIPYARD]: Object.freeze({ wood: 80, stone: 40, gold: 30 }),
+    [TYPE.PAPER_MILL]: Object.freeze({ wood: 55, stone: 30, gold: 18 })
 });
 
 export const BUILD_MENU = Object.freeze([
     Object.freeze({ id: "roads", label: "ROADS", note: "Dirt, gravel and paved routes. Roads change real travel speed and upkeep." }),
     Object.freeze({ id: "housing", label: "HOUSING", types: Object.freeze([TYPE.TENT, TYPE.HOUSE, TYPE.STONE_HOUSE]) }),
     Object.freeze({ id: "forest", label: "FOREST INDUSTRY", types: Object.freeze([TYPE.FORESTER, TYPE.SAWMILL, TYPE.FOREST_WORKS]) }),
+    Object.freeze({ id: "grand", label: "GRAND CONSUMERS", types: Object.freeze([TYPE.SHIPYARD, TYPE.PAPER_MILL]) }),
     Object.freeze({ id: "production", label: "PRODUCTION", types: Object.freeze([TYPE.LUMBER, TYPE.FARM, TYPE.MILL, TYPE.BAKERY, TYPE.BREWERY, TYPE.QUARRY, TYPE.MASON, TYPE.GOLDMINE, TYPE.STABLE, TYPE.SMITHY, TYPE.SCRIPTORIUM]) }),
     Object.freeze({ id: "storage", label: "STORAGE", types: Object.freeze([TYPE.WAREHOUSE]) }),
     Object.freeze({ id: "services", label: "SERVICES", types: Object.freeze([TYPE.WELL, TYPE.TAVERN, TYPE.TEMPLE, TYPE.MARKET, TYPE.CLINIC]) }),
@@ -273,6 +279,19 @@ export const RECIPES = Object.freeze({
         label: "Run a regional forest industry", workers: 2, input: Object.freeze({}), regionalTimber: true,
         acceptedInputs: FOREST_WORKS_INPUTS, output: Object.freeze({}),
         inputCapacity: 48, outputCapacity: 48, batch: 0, custom: true
+    }),
+    // Grand consumers are ordinary carrier-fed buildings with a custom daily
+    // runtime. They hold no output store: their product is a ship in the navy
+    // or research points in the existing reserve.
+    [TYPE.SHIPYARD]: Object.freeze({
+        label: "Lay down a coastal vessel", workers: 3,
+        input: Object.freeze({ shipTimber: 2, pitch: 1, tar: 1, charcoal: 1, potash: 1 }),
+        output: Object.freeze({}), inputCapacity: 40, outputCapacity: 0, batch: 0, custom: true, grandConsumer: "shipyard"
+    }),
+    [TYPE.PAPER_MILL]: Object.freeze({
+        label: "Pulp a paper batch", workers: 3,
+        input: Object.freeze({ paper: 2, potash: 1, charcoal: 1 }),
+        output: Object.freeze({}), inputCapacity: 30, outputCapacity: 0, batch: 0, custom: true, grandConsumer: "paper-mill"
     })
 });
 

@@ -67,7 +67,9 @@ const BUILDING_PROFESSIONS = Object.freeze({
     [TYPE.TOWN_HALL]: "Clerk", [TYPE.SCHOOL]: "Teacher", [TYPE.BATHHOUSE]: "Bathkeeper",
     [TYPE.GUILDHALL]: "Guildmaster", [TYPE.WATCHHOUSE]: "Watchman", [TYPE.BREWERY]: "Brewer",
     [TYPE.KEEP]: "Courtier", [TYPE.SMITHY]: "Smith", [TYPE.SCRIPTORIUM]: "Scribe",
-    [TYPE.FOREST_WORKS]: "Woodwright"
+    [TYPE.FOREST_WORKS]: "Woodwright",
+    [TYPE.SHIPYARD]: "Shipwright",
+    [TYPE.PAPER_MILL]: "Paper maker"
 });
 const STATUS_LABELS = Object.freeze({
     royal: "Royal", soldier: "Soldier", healer: "Healer", clergy: "Clergy",

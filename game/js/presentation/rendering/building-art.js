@@ -57,6 +57,8 @@ export const REBUILD_COST = {
     [TYPE.GRANARY]: { wood: 30, stone: 20, gold: 4 },
     [TYPE.WARD]: { stone: 24, gold: 14 },
     [TYPE.FOREST_WORKS]: { wood: 38, stone: 18, gold: 10 },
+    [TYPE.SHIPYARD]: { wood: 80, stone: 40, gold: 30 },
+    [TYPE.PAPER_MILL]: { wood: 55, stone: 30, gold: 18 },
 };
 
 export const INTERIOR_ITEM_IDS = ['bed', 'table', 'chair', 'shelf', 'hearth', 'rug', 'statue', 'candle'];
