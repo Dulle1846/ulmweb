@@ -469,6 +469,7 @@ function stewardshipEventLine(entry) {
 function regionHistoryBlock(survey) {
     const pulse = survey.succession || {};
     const regions = Array.isArray(survey.regions) ? survey.regions : [];
+    const countLabel = (count, one, many) => number(count) + ' ' + (number(count) === 1 ? one : many);
     const rows = regions.map(region => {
         const sample = region.sample || {};
         const disturbances = region.disturbances || {};
@@ -490,14 +491,14 @@ function regionHistoryBlock(survey) {
         return '<details class="forest-atlas__region" data-forest-region="' + esc(region.id)
             + '" data-forest-region-biodiversity="' + pct(sample.biodiversity)
             + '" data-forest-region-flood="' + pct(sample.flood) + '">'
-            + '<summary><span>' + esc(region.label) + '</span><small>' + number(region.count)
-            + ' sampled stands · ' + esc(status) + '</small></summary>'
+            + '<summary><span>' + esc(region.label) + '</span><small>' + countLabel(region.count, 'sampled stand', 'sampled stands')
+            + ' · ' + esc(status) + '</small></summary>'
             + '<div class="command-note"><b>CURRENT</b> ' + esc(status)
             + (sample.erosionClass ? ' · erosion ' + esc(sample.erosionClass) : '')
             + (sample.biodiversityClass ? ' · habitat ' + esc(sample.biodiversityClass) : '')
             + (sample.drained ? ' · DRAINED WETLAND' : '')
             + (sample.firebreak ? ' · FIREBREAK ACTIVE TO DAY ' + number(sample.firebreakUntil) : '')
-            + ' · ' + number(disturbances.active || 0) + ' active disturbance tiles'
+            + ' · ' + countLabel(disturbances.active || 0, 'active disturbance tile', 'active disturbance tiles')
             + (kinds ? ' (' + esc(kinds) + ')' : '') + '.</div>'
             + '<ul class="forest-atlas__chronicle">'
             + (history.length ? history.map(stewardshipEventLine).join('')
@@ -508,9 +509,9 @@ function regionHistoryBlock(survey) {
         + '<div class="command-summary" data-forest-stewardship="' + number(pulse.stewardshipActions) + '" data-forest-firebreaks="'
         + number(pulse.firebreaks) + '" data-forest-drained="' + number(pulse.drained) + '">'
         + '<div><small>PLAYER ORDERS</small><strong>' + number(pulse.stewardshipActions) + '</strong></div>'
-        + '<div><small>FIREBREAKS</small><strong>' + number(pulse.firebreaks) + ' TILES</strong></div>'
+        + '<div><small>FIREBREAKS</small><strong>' + countLabel(pulse.firebreaks, 'TILE', 'TILES') + '</strong></div>'
         + '<div><small>DRAINED SITES</small><strong>' + number(pulse.drained) + '</strong></div>'
-        + '<div><small>REPLANTED</small><strong>' + number(pulse.planted) + ' UNITS</strong></div>'
+        + '<div><small>REPLANTED</small><strong>' + countLabel(pulse.planted, 'UNIT', 'UNITS') + '</strong></div>'
         + '<div><small>REGIONS CHRONICLED</small><strong>' + number(regions.length) + '</strong></div></div>'
         + '<p class="command-note">Orders are issued from a Lumber Yard or Forester\'s Lodge: reforest a clearing, clear a firebreak belt, set a controlled burn, or drain/restore a wet stand. Every order costs real stores, is saved with the realm and writes into the region history below; disturbance area, recovery and current biodiversity, erosion, flood and wetness are read from the same stand model the simulation uses.</p>'
         + '<div class="forest-atlas__regions">' + rows + '</div>';

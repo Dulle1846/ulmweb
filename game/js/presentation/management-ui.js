@@ -1883,7 +1883,7 @@ export function setupManagementUI(){
   if(reforest){
    const entity=state.entities.find(item=>!item.dead&&String(item.id)===String(reforest.dataset.reforestForest));
    const result=entity?reforestNearestForestTile(entity.x,entity.y,9):{ok:false,reason:"Building not found"};
-   if(result.ok){invalidateForestAtlasSurvey();toast("REFORESTED "+result.tiles+" TILES · +"+result.planted+" STAND UNITS · "+resourceCostLabel(result.cost));renderUI();render();}
+   if(result.ok){invalidateForestAtlasSurvey();toast("REFORESTED "+result.tiles+" "+(result.tiles===1?"TILE":"TILES")+" · +"+result.planted+" STAND "+(result.planted===1?"UNIT":"UNITS")+" · "+resourceCostLabel(result.cost));renderUI();render();}
    else toast(String(result.reason||"REFORESTATION FAILED").toUpperCase());
    return;
   }
@@ -1891,7 +1891,7 @@ export function setupManagementUI(){
   if(firebreak){
    const entity=state.entities.find(item=>!item.dead&&String(item.id)===String(firebreak.dataset.firebreakForest));
    const result=entity?buildNearestForestFirebreak(entity.x,entity.y,9):{ok:false,reason:"Building not found"};
-   if(result.ok){invalidateForestAtlasSurvey();toast("FIREBREAK · "+result.tiles+" TILES PROTECTED UNTIL DAY "+result.until);renderUI();render();}
+   if(result.ok){invalidateForestAtlasSurvey();toast("FIREBREAK · "+result.tiles+" "+(result.tiles===1?"TILE":"TILES")+" PROTECTED UNTIL DAY "+result.until);renderUI();render();}
    else toast(String(result.reason||"FIREBREAK FAILED").toUpperCase());
    return;
   }

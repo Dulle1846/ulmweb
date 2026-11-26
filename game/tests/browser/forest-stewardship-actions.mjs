@@ -307,8 +307,8 @@ try {
         "data-drain-forest", "WETLAND DRAINED");
     report.actions.toasts = { reforestToast, firebreakToast, burnToast, drainToast };
     log("actions done: " + JSON.stringify(report.actions.toasts));
-    assert.match(reforestToast, /^REFORESTED \d+ TILES · \+\d+ STAND UNITS/);
-    assert.match(firebreakToast, /^FIREBREAK · \d+ TILES PROTECTED UNTIL DAY \d+/);
+    assert.match(reforestToast, /^REFORESTED \d+ TILES? · \+\d+ STAND UNITS?/);
+    assert.match(firebreakToast, /^FIREBREAK · \d+ TILES? PROTECTED UNTIL DAY \d+/);
     assert.match(burnToast, /^CONTROLLED BURN · \+\d+ WOOD/);
     assert.match(drainToast, /^WETLAND DRAINED · FLOOD \d+% → \d+%/);
 
