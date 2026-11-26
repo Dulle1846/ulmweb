@@ -545,6 +545,13 @@
 @keyframes startLoadingSheen{0%{transform:translateX(-100%)}60%,100%{transform:translateX(100%)}}
 @keyframes startChapterIn{from{opacity:.25;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 
+/* The charter keeps its long rule descriptions legible. Two narrow columns
+   truncate "Ancestral hearth · no extra modifier" on a 1024px desktop, so the
+   grid falls back to one full-width column before that point. */
+@media(max-width:1120px){
+    #start-screen .identity-grid{grid-template-columns:1fr}
+}
+
 /* ── Responsive title sequence ─────────────────────────────────────── */
 @media(max-width:1080px){
     #start-screen>.ui-window.start-panel{grid-template-columns:minmax(0,1fr) minmax(390px,.94fr)}
