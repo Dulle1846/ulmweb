@@ -2,11 +2,11 @@
 export const SPEC_COVERAGE = Object.freeze({
   "version": 2,
   "generatedBy": "scripts/spec-audit.mjs",
-  "commit": "2917112324bf3e220fcc0efad8f4a3ef38a10442",
-  "sourceHash": "ca53ee8c458d1725bf400dea32bd30027d3f5fc6af407267cebef0bc08c8b956",
+  "commit": "ff7ef4e18711af2edc5d94308db3a2cbd5e4ee03",
+  "sourceHash": "2590a77bd1989c117abda64c74cfe7905125c07d9adfe905d4eed58c91ee25ee",
   "totals": {
-    "total": 1680,
-    "implemented": 1680,
+    "total": 1681,
+    "implemented": 1681,
     "open": 0,
     "sections": 40
   },
@@ -649,8 +649,8 @@ export const SPEC_COVERAGE = Object.freeze({
     {
       "id": "3.9",
       "title": "Dynasty, constitution and diplomacy",
-      "total": 8,
-      "implemented": 8,
+      "total": 9,
+      "implemented": 9,
       "open": 0,
       "source": "system registry"
     },

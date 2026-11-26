@@ -42,7 +42,30 @@ products with different premiums.
 - **New browser proof.** `npm run test:forest-industry-ui` builds a real Forest
   Works, opens the atlas and field guide, sells warehouse charcoal, changes the
   workshop mode and runs a real batch. The full suite remains green, and the
-  generated spec audit now covers all 1,680 registered points.
+  generated spec audit now covers all 1,681 registered points with the council docket included.
+## 3.75.0 — The council docket debates and enforces law
+
+The Government panel now carries a real legislative loop. A bill is proposed
+from four standing options, its supporters and opponents are read from the four
+political factions, a paid lobby raises support from the royal stores, and the
+next annual council session votes with a small deterministic swing. Enactment
+changes legitimacy, faction standing, morale and the government record;
+rejection leaves a scar and can be brought back next year.
+
+- **Three visible stages.** PROPOSED → LOBBIED → ENACTED/REJECTED. One proposal
+  and one paid lobby per year, one crown vote per year, and at most three bills
+  on the docket plus twenty-four archived sessions and forty government rows.
+- **Real costs and real effects.** Lobby gold, food or wood leave the same
+  ledger as every other crown decision. The bill's declared supporters and
+  opponents decide its starting support; the dedicated `"council"` stream is
+  the only random source, so combat, court and simulation draws stay in order.
+- **Save-compatible.** The docket is an optional nested field inside the
+  existing government DTO, with validation caps and quiet rebuilding for older
+  saves. No schema bump and no per-tick work: only one bounded annual vote pass.
+- **Player-facing.** Government shows the docket, bill costs, votes, margins,
+  enforcement notes and the last four council records; the same state survives
+  save/load. Spec point 3.9.9 and `tests/browser/council-docket-ui.mjs` prove it.
+
 ## 3.74.0 — Feudal campaigns have theatres
 
 The crown can now name a war aim, bind it to a real neighbouring kingdom and
