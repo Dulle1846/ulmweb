@@ -53,6 +53,7 @@
     "test:road-condition": "node tests/browser/road-condition.mjs",
     "test:building-repair": "node tests/browser/building-repair-ui.mjs",
     "test:building-bulk-repair": "node tests/browser/building-bulk-repair-ui.mjs",
+    "test:manual-logistics": "node tests/browser/manual-logistics-ui.mjs",
     "test:realm-warning-hud": "node tests/browser/realm-warning-hud.mjs",
     "test:road-owners": "node tests/browser/road-owners.mjs",
     "test:chronicles": "node tests/browser/chronicle-audit.mjs",

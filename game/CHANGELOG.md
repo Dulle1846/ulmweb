@@ -9,6 +9,26 @@
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
 
+## 3.64.0-dev — Manual carrier orders in the buildings register
+
+The Buildings register now turns a structure's declared recipe inputs and
+outputs into real player orders. Each row previews one carrier load, explains
+why an order is unavailable, and disables itself while that good already has a
+live job. Clicking a button calls the existing `requestSupply()` or
+`requestHaul()` path, so route checks, reservations, the 72-job queue cap and
+`lastRejection` remain the simulation's responsibility. No new job type, timer,
+save field or per-tick scan was added.
+
+- **Sawmills keep their regional alternatives.** Supply buttons cover declared
+  recipe inputs plus the sawmill's registered regional timbers; haul buttons
+  cover only declared outputs. A mill cannot be asked to haul grain or receive
+  flour, and a cart never advertises more than `CARRIER_CAPACITY`.
+- **The audit follows the order.** A real-browser run deposits audited grain,
+  places both orders, watches each button disable after its own job is created,
+  then runs the actual carrier movement until both jobs finish. Grain and flour
+  stay `BALANCED` before, during and after delivery; page and console errors
+  stay empty.
+
 ## 3.63.0 — The deepest ground view holds its frame
 
 This release closes the two gaps left by the 3.62.0 ground-study pass: the
