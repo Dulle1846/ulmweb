@@ -7,7 +7,8 @@ import { state } from "../core/state.js";
 import { TYPE } from "../core/types.js";
 import { addResource } from "./resources.js";
 import { addLog } from "./events.js";
-import { recordResourceMovement } from "./goods-book.js";import { ensureInventory, getPhysicalStock, recordGoodMovement } from "./logistics.js";
+import { ensureGoodsBook, recordResourceMovement } from "./goods-book.js";
+import { ensureInventory, getPhysicalStock, getWarehouses, recordGoodMovement } from "./logistics.js";
 import { getTradePartners, executeTrade } from "./market.js";
 
 export const CROWN_SUPPLY_VERSION = 2;
@@ -20,6 +21,11 @@ export const POPULATION_FOOD_PER_YEAR = 6;
 export const GARRISON_FOOD_PER_SOLDIER = 2;
 export const COMMISSARY_KEEP = Object.freeze({ wood: 600, stone: 600 });
 export const COMMISSARY_BARTER = Object.freeze({ wood: 2, stone: 3 });
+// Food goods already held by farms, mills, bakeries and warehouses are worth
+// their weight in the royal reserve. This is a conversion table, not a yield:
+// every unit is removed from a real store and booked on both sides of the book.
+export const COMMISSARY_FOOD_GOODS = Object.freeze({ grain: 1, flour: 1, bread: 1 });
+export const COMMISSARY_FOOD_KEYS = Object.freeze(Object.keys(COMMISSARY_FOOD_GOODS));
 export const GRAIN_CONTRACTS = Object.freeze([
    Object.freeze({ level: 0, label: "No standing contract", target: 0, reserveYears: 0, price: 0 }),
    Object.freeze({ level: 1, label: "Village tithe", target: 120, reserveYears: 1.5, price: 1.25 }),
@@ -43,6 +49,7 @@ const integer = (value, min = 0, max = 1_000_000) => Math.max(min, Math.min(max,
 const currentYear = () => Math.max(1, Math.floor(Number(state.year) || 1));
 const currentTick = () => Math.max(0, Math.floor(Number(state.tick) || 0));
 const clamp = (value, min, max) => Math.max(min, Math.min(max, Number.isFinite(Number(value)) ? Number(value) : min));
+const foodUnits = good => integer(COMMISSARY_FOOD_GOODS[good], 0, 100);
 
 export function createCrownSupplyState() {
     return {
@@ -148,31 +155,70 @@ function openTradePartners() {
     return getTradePartners().filter(partner => partner && !warRealms.has(String(partner.id)));
 }
 
-// The crown calls in grain already held by farms and warehouses before it
-// spends coin or goods. This is a transfer of the harvest, not a new yield.
+// The crown calls in real food goods from local stores and warehouses before
+// it spends coin or building material. Every unit is removed from a physical
+// store and booked twice: the good leaves the economy, the resource enters the
+// royal reserve. This is only reached from the player's provision action; it
+// never runs on a production or settlement tick.
 export function requisitionGranary() {
     const supply = ensureCrownSupply();
-    if (supply.grainLevel < 4) return { requisitioned: 0 };
-    const target = getCrownGrainTarget(4);
+    const byGood = Object.fromEntries(COMMISSARY_FOOD_KEYS.map(good => [good, 0]));
+    if (supply.grainLevel < 1) return { requisitioned: 0, byGood };
+    const target = getCrownGrainTarget(supply.grainLevel);
     let remaining = Math.max(0, Math.ceil(target - (Number(state.resources.food) || 0)));
-    if (remaining <= 0) return { requisitioned: 0 };
+    if (remaining <= 0) return { requisitioned: 0, byGood };
     let requisitioned = 0;
+    const take = (good, quantity, from) => {
+        const value = foodUnits(good);
+        const units = Math.min(quantity, Math.floor(remaining / value));
+        if (units <= 0) return;
+        const food = units * value;
+        addResource("food", food);
+        // The ledger id is monotonic, so two bookings for the same physical
+        // removal get distinct idempotency keys and a second provisioning in
+        // the same tick can never replay either side of the ledger.
+        const ledgerId = ensureGoodsBook().nextLedgerId;
+        const stamp = currentTick() + ":" + ledgerId;
+        recordGoodMovement({ type: "consumed", good, quantity: units, from, cause: "crown-requisition", key: "crown-requisition-good:" + stamp });
+        recordResourceMovement("food", food, "crown-requisition", { from, to: { kind: "realm", id: "royal-stores" }, key: "crown-requisition-food:" + stamp });
+        byGood[good] += units;
+        requisitioned += food;
+        remaining -= food;
+    };
     for (const entity of state.entities) {
         if (remaining <= 0) break;
         if (entity.dead || !entity.isBuilding?.()) continue;
         const inventory = ensureInventory(entity);
         if (!inventory) continue;
-        const stored = Math.min(remaining, Math.max(0, Math.floor(Number(inventory.output?.grain) || 0) - Math.floor(Number(inventory.reservedOut?.grain) || 0)));
-        if (stored > 0) {
-            inventory.output.grain -= stored;
-            addResource("food", stored);
-            recordGoodMovement({ type: "consumed", good: "grain", quantity: stored, from: { kind: "building", id: entity.id }, cause: "war-granary-requisition", key: "grain:requisition:" + currentTick() });
-            requisitioned += stored;
-            remaining -= stored;
+        for (const good of COMMISSARY_FOOD_KEYS) {
+            if (remaining <= 0) break;
+            const value = foodUnits(good);
+            if (value <= 0) continue;
+            const stored = Math.max(0, Math.floor(Number(inventory.output?.[good]) || 0) - Math.floor(Number(inventory.reservedOut?.[good]) || 0));
+            const quantity = Math.min(stored, Math.floor(remaining / value));
+            if (quantity <= 0) continue;
+            inventory.output[good] -= quantity;
+            take(good, quantity, { kind: "building", id: entity.id });
         }
     }
-    if (requisitioned > 0) addLog("THE WAR GRANARY CALLED IN " + requisitioned + " GRAIN FROM THE HARVEST", "#d8c18a", "economy");
-    return { requisitioned };
+    for (const warehouse of getWarehouses()) {
+        if (remaining <= 0) break;
+        for (const good of COMMISSARY_FOOD_KEYS) {
+            if (remaining <= 0) break;
+            const value = foodUnits(good);
+            if (value <= 0) continue;
+            const stored = Math.max(0, Math.floor(Number(warehouse.warehouse.stored?.[good]) || 0) - Math.floor(Number(warehouse.warehouse.reservedOut?.[good]) || 0));
+            const quantity = Math.min(stored, Math.floor(remaining / value));
+            if (quantity <= 0) continue;
+            warehouse.warehouse.stored[good] -= quantity;
+            take(good, quantity, { kind: "warehouse", id: warehouse.id });
+        }
+    }
+    if (requisitioned > 0) {
+        const parts = COMMISSARY_FOOD_KEYS.filter(good => byGood[good] > 0).map(good => byGood[good] + " " + good);
+        addLog("THE GRANARY CALLED IN " + requisitioned + " FOOD · " + parts.join(" + ") + " FROM REAL STORES", "#d8c18a", "economy");
+    }
+    return { requisitioned, byGood };
 }
 
 // The commissary is the player's answer to a rich-in-goods, poor-in-coin
@@ -188,7 +234,7 @@ export function provisionGranary() {
     const requisition = requisitionGranary();
     const remainingAfterHarvest = Math.max(0, Math.ceil(target - (Number(state.resources.food) || 0)));
     if (remainingAfterHarvest <= 0) {
-        return { ok: true, requisitioned: requisition.requisitioned, bought: 0, cost: 0, bartered: 0, soldWood: 0, soldStone: 0, goldRaised: 0, snapshot: getCrownSupplySnapshot() };
+        return { ok: true, requisitioned: requisition.requisitioned, byGood: requisition.byGood, bought: 0, cost: 0, bartered: 0, soldWood: 0, soldStone: 0, goldRaised: 0, message: "Granary provisioned from real stores", snapshot: getCrownSupplySnapshot() };
     }
     const contract = grainContract(supply.grainLevel);
     const soldiers = state.entities.filter(entity => !entity.dead && [TYPE.GUARD, TYPE.ARCHER, TYPE.KNIGHT].includes(entity.type)).length;
@@ -246,16 +292,17 @@ export function provisionGranary() {
             remaining -= amount;
         }
     }
-    const totalBought = bought.bought + bartered;
+    const totalBought = bought.bought + bartered + requisition.requisitioned;
     if (goldRaised > 0 || totalBought > 0) {
         record({ year: currentYear(), tick: currentTick(), grainLevel: supply.grainLevel, grainBought: totalBought, grainCost: bought.cost, waterworksLevel: supply.waterworksLevel, waterworksCost: 0, housingUpgrades: 0 });
-        addLog("GRANARY PROVISIONED · SOLD " + soldWood + " WOOD + " + soldStone + " STONE · " + totalBought + " FOOD SECURED" + (bartered ? " · " + bartered + " BARTERED" : ""), "#d8c18a", "economy");
+        addLog("GRANARY PROVISIONED · SOLD " + soldWood + " WOOD + " + soldStone + " STONE · " + totalBought + " FOOD SECURED" + (requisition.requisitioned ? " · " + requisition.requisitioned + " FROM REAL STORES" : "") + (bartered ? " · " + bartered + " BARTERED" : ""), "#d8c18a", "economy");
     }
     return {
         ok: totalBought > 0 || goldRaised > 0,
         reason: totalBought > 0 || goldRaised > 0 ? undefined : "no-grain-available",
+        message: "Granary provisioned · " + totalBought + " food secured",
         soldWood, soldStone, goldRaised, bought: bought.bought, cost: bought.cost,
-        requisitioned: requisition.requisitioned, bartered, barteredStone, barteredWood, emergency,
+        requisitioned: requisition.requisitioned, byGood: requisition.byGood, bartered, barteredStone, barteredWood, emergency,
         snapshot: getCrownSupplySnapshot()
     };
 }
@@ -284,6 +331,7 @@ export function getCrownSupplySnapshot() {
             keep,
             emergency,
             grain: getPhysicalStock("grain"),
+            foodGoods: Object.fromEntries(COMMISSARY_FOOD_KEYS.map(good => [good, getPhysicalStock(good)])),
             wood: Math.max(0, Math.floor(Number(state.resources.wood) || 0) - keep.wood),
             stone: Math.max(0, Math.floor(Number(state.resources.stone) || 0) - keep.stone),
             shortfall: Math.max(0, Math.ceil(getCrownGrainTarget(supply.grainLevel) - (Number(state.resources.food) || 0)))

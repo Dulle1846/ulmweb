@@ -17,6 +17,7 @@ import { setAuditOpening } from "../../js/systems/goods-book.js";
 import { GOOD_KEYS, WAREHOUSE_PROFILES } from "../../js/systems/city-config.js";
 import { GOODS_LEDGER_LIMIT } from "../../js/systems/goods-book.js";
 import { updateFields } from "../../js/systems/fields.js";
+import { COMMISSARY_FOOD_KEYS, requisitionGranary, setGrainContract } from "../../js/systems/crown-supply.js";
 import { updateBuildingIncome } from "../../js/simulation/buildings.js";
 import { updateSettlementNeeds, updateServices } from "../../js/systems/settlement.js";
 
@@ -1106,4 +1107,47 @@ test("the repeated-normalization fast path never enters a saved city", () => {
     ensureInventory(mill);
     assert.equal(Object.keys(mill.inventory).some(key => key.startsWith("__kac")), false);
     assert.equal(JSON.stringify(serializeCity()).includes("__kacNormalized"), false);
+});
+
+test("52 a crown requisition books every real food good and keeps the audit balanced", () => {
+    setup();
+    state.resources.gold = 0;
+    assert.equal(setGrainContract(2).ok, true, "an open food route is needed even with an empty treasury");
+    for (const partner of getTradePartners()) assert.ok(partner.stock.food > 0);
+    state.resources.food = 10;
+    const store = place(TYPE.WAREHOUSE, 30, 30);
+    store.warehouse.filters = ["grain", "flour", "bread"];
+    store.warehouse.stored.grain = 12;
+    store.warehouse.stored.flour = 8;
+    store.warehouse.stored.bread = 5;
+    store.warehouse.reservedOut.grain = 2;
+    setAuditOpening(getPhysicalStockMap());
+    const consumedBefore = Object.fromEntries(COMMISSARY_FOOD_KEYS.map(good => [good, getGoodsAudit().rows.find(row => row.good === good).consumed]));
+    const foodProducedBefore = getGoodsAudit().rows.find(row => row.good === "food").produced;
+    const result = requisitionGranary();
+    assert.deepEqual(result.byGood, { grain: 10, flour: 8, bread: 5 }, "only unreserved goods are called in");
+    assert.equal(result.requisitioned, 23);
+    assert.equal(store.warehouse.stored.grain, 2, "a carrier's grain claim survives the requisition");
+    assert.equal(store.warehouse.reservedOut.grain, 2);
+    assert.equal(state.resources.food, 33);
+    assert.equal(state.resources.gold, 0, "no crown coin is spent when real food is available");
+    const audit = getGoodsAudit();
+    assert.equal(audit.balanced, true);
+    for (const good of COMMISSARY_FOOD_KEYS) {
+        const row = audit.rows.find(entry => entry.good === good);
+        assert.equal(row.consumed - consumedBefore[good], result.byGood[good]);
+        assert.equal(row.balanced, true);
+    }
+    const food = audit.rows.find(row => row.good === "food");
+    assert.equal(food.produced - foodProducedBefore, 23);
+    assert.equal(food.balanced, true);
+    const ledger = state.city.logistics.ledger.filter(entry => entry.cause === "crown-requisition");
+    assert.equal(ledger.length, 6, "one physical-good booking and one food booking for each of the three goods");
+    assert.equal(new Set(ledger.map(entry => entry.key)).size, ledger.length, "idempotency keys are unique within the tick");
+    assert.equal(ledger.filter(entry => entry.key.startsWith("crown-requisition-good:")).length, 3);
+    assert.equal(ledger.filter(entry => entry.key.startsWith("crown-requisition-food:")).length, 3);
+    assert.equal(ledger.every(entry => GOOD_KEYS.includes(entry.good) || entry.good === "food"), true, "no unregistered good is booked");
+    assert.equal(requisitionGranary().requisitioned, 0, "a second call cannot reuse the same stock or keys");
+    assert.equal(getGoodsAudit().balanced, true);
+    assertPhysicalBooks();
 });

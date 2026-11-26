@@ -39,7 +39,7 @@ Only level IV settles grain in every season. Levels I–III keep the v3.13.0 ann
 
 The economy panel's `PROVISION THE GRANARY` action is the player's bridge between stored goods and the reserve:
 
-1. **Call in the harvest.** At level IV, `requisitionGranary()` transfers grain already held in farms and warehouses into the royal reserve. This is a movement of existing grain, not a new yield.
+1. **Call in the harvest.** At any active level, `requisitionGranary()` transfers unreserved grain, flour and bread already held in buildings and warehouses into the royal reserve. Every unit leaves its physical store and is booked as a consumed good and produced food; a carrier's reserved goods are never taken. This is a movement of existing food, not a new yield, and it runs only from the player's provision action.
 2. **Sell surplus goods.** Stone is sold first, then wood, above a **600 / 600** construction reserve. The sale goes through the existing `executeTrade` path and the proceeds buy food at the contract rate.
 3. **Barter directly.** When coin or open market grain is exhausted, the commissary accepts **2 wood or 3 stone per food**. The same 600 / 600 reserve applies at levels I–III and outside an emergency.
 4. **Emergency draw.** At level IV only, a realm below **one year** of rations may use the last wood and stone (reserve 0) to buy food. This is the explicit hunger-emergency lever, not the normal provisioning path.
@@ -85,7 +85,7 @@ The economy panel exposes:
 - `data-command="crown-water"` with `data-value="1|2|3"`.
 - `data-command="crown-housing"` for the stone-house upgrade.
 - `data-command="crown-provision"` for call-in, market sale and direct barter.
-- Live **ANNUAL DEMAND**, **RESERVE COVERAGE**, commissary surplus, target, shortfall and route status.
+- Live **ANNUAL DEMAND**, **RESERVE COVERAGE**, commissary surplus, real stored grain/flour/bread, target, shortfall and route status.
 
 All five journeys use the real start screen, management tabs, build menu, trade, diplomacy, military and research. The browser harness does not call a system function to change the realm.
 

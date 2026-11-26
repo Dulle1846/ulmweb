@@ -9,7 +9,28 @@
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
 
-## 3.64.0-dev — Manual carrier orders in the buildings register
+## 3.64.0-dev - Crown Commissary calls in real stores
+
+The granary button in the Economy panel now reads the realm's actual physical
+food goods before it touches public coin or the construction reserve. Farms,
+mills, bakeries and granaries holding grain, flour or bread can supply the
+royal reserve directly; each unit leaves its real store and is booked on both
+sides of the goods book. The button stays enabled when stored food exists even
+with an empty treasury, and its note names the three food goods it will call in
+first. Nothing runs on a tick and the crown supply save shape is unchanged.
+
+- **Real stores, real bookkeeping.** A carrier's reserved grain is never taken.
+  Every physical removal books `consumed` for its good and `produced` for royal
+  food, with unique idempotency keys for both sides. A second provision in the
+  same tick cannot replay a booking, and `getGoodsAudit()` stays `BALANCED`.
+- **Player-visible proof.** The real-browser run signs a regional contract with
+  no coin, stocks a warehouse with audited grain/flour/bread, presses the real
+  PROVISION button and confirms the food comes from stores rather than the
+  market, material reserve or a free resource grant. It then saves and restores
+  the realm, visits the realm, buildings, economy, stores, world, biome and
+  atelier panels, and reports zero page and console errors.
+
+## 3.64.0-dev - Manual carrier orders in the buildings register
 
 The Buildings register now turns a structure's declared recipe inputs and
 outputs into real player orders. Each row previews one carrier load, explains

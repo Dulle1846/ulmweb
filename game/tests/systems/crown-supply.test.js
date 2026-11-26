@@ -5,8 +5,11 @@ import { TYPE } from "../../js/core/types.js";
 import { createMarketState, updateMarket } from "../../js/systems/market.js";
 import { getHousingSnapshot } from "../../js/systems/population.js";
 import { updateServices } from "../../js/systems/settlement.js";
+import { setAuditOpening, readAuditTotals } from "../../js/systems/goods-book.js";
+import { ensureInventory, getGoodsAudit, getPhysicalStock } from "../../js/systems/logistics.js";
 import {
-    ensureCrownSupply,
+    COMMISSARY_FOOD_GOODS, COMMISSARY_FOOD_KEYS, CROWN_SUPPLY_VERSION,
+    createCrownSupplyState, ensureCrownSupply,
     getCrownAnnualFoodDemand,
     getCrownGrainTarget,
     getCrownReserveYears,
@@ -14,6 +17,7 @@ import {
     getCrownWaterCoverage,
     normalizeCrownSupplyState,
     provisionGranary,
+    requisitionGranary,
     setGrainContract,
     setWaterworks,
     settleCrownSupply,
@@ -242,4 +246,98 @@ test("a timber cottage can be rebuilt in stone for two more places", () => {
     const after = getHousingSnapshot();
     assert.equal(after.capacity, before.capacity + 2);
     assert.equal(getCrownSupplySnapshot().stoneHouses, 1);
+});
+
+function addStore(id, stock) {
+    const store = { id, type: TYPE.WAREHOUSE, x: 30, y: 30, dead: false, construction: { stage: 3 }, isBuilding: () => true };
+    state.entities.push(store);
+    ensureInventory(store);
+    for (const [good, quantity] of Object.entries(stock)) store.warehouse.stored[good] = quantity;
+    return store;
+}
+
+function addOutput(id, type, stock) {
+    const building = { id, type, x: 40, y: 30, dead: false, construction: { stage: 3 }, isBuilding: () => true };
+    state.entities.push(building);
+    ensureInventory(building);
+    for (const [good, quantity] of Object.entries(stock)) building.inventory.output[good] = quantity;
+    return building;
+}
+
+function openAudit() {
+    const opening = { food: state.resources.food };
+    for (const good of COMMISSARY_FOOD_KEYS) opening[good] = getPhysicalStock(good);
+    setAuditOpening(opening);
+}
+
+test("the commissary calls in real stored food goods before spending materials", () => {
+    fixture();
+    assert.equal(setGrainContract(2).ok, true);
+    state.resources.food = 10;
+    state.resources.gold = 0;
+    state.resources.wood = 500;
+    state.resources.stone = 500;
+    for (const partner of state.market.partners) partner.stock.food = 0;
+    const store = addStore("store-1", { grain: 20, flour: 30, bread: 40 });
+    const mill = addOutput("mill-1", TYPE.MILL, { flour: 5 });
+    const bakery = addOutput("bakery-1", TYPE.BAKERY, { bread: 4 });
+    openAudit();
+    const before = COMMISSARY_FOOD_KEYS.map(good => readAuditTotals(good, "good").consumed);
+    const foodBefore = readAuditTotals("food", "resource").produced;
+    const result = provisionGranary();
+    assert.equal(result.ok, true, "99 food from real stores must count as provisioning the granary");
+    assert.equal(result.bought, 0, "no market grain was available");
+    assert.equal(result.bartered, 0, "no material should be bartered while real food is held");
+    assert.equal(result.requisitioned, 99, "20 grain + 35 flour + 44 bread become food");
+    assert.deepEqual(result.byGood, { grain: 20, flour: 35, bread: 44 });
+    assert.equal(state.resources.food, 109);
+    assert.equal(store.warehouse.stored.grain, 0);
+    assert.equal(store.warehouse.stored.flour, 0);
+    assert.equal(store.warehouse.stored.bread, 0);
+    assert.equal(mill.inventory.output.flour, 0);
+    assert.equal(bakery.inventory.output.bread, 0);
+    assert.equal(state.resources.wood, 500);
+    assert.equal(state.resources.stone, 500);
+    assert.equal(getGoodsAudit().balanced, true, "both sides of every requisition must be booked");
+    for (const [index, good] of COMMISSARY_FOOD_KEYS.entries()) {
+        assert.equal(getPhysicalStock(good), 0, good + " must leave the physical economy");
+        assert.equal(readAuditTotals(good, "good").consumed - before[index], result.byGood[good]);
+    }
+    assert.equal(readAuditTotals("food", "resource").produced - foodBefore, 99);
+    assert.equal(CROWN_SUPPLY_VERSION, 2);
+});
+
+test("requisition respects carrier reservations and never double-books inside one tick", () => {
+    fixture();
+    assert.equal(setGrainContract(2).ok, true);
+    state.resources.food = 10;
+    state.tick = 4001;
+    const store = addStore("store-r", { grain: 10 });
+    store.warehouse.reservedOut.grain = 4;
+    openAudit();
+    const first = requisitionGranary();
+    assert.equal(first.requisitioned, 6, "reserved grain is not available to the crown");
+    assert.equal(store.warehouse.stored.grain, 4);
+    assert.equal(store.warehouse.reservedOut.grain, 4, "a carrier claim is untouched");
+    const second = requisitionGranary();
+    assert.equal(second.requisitioned, 0, "the same tick cannot call in unreserved stock twice");
+    assert.equal(readAuditTotals("grain", "good").consumed, 6);
+    const bookings = state.city.logistics.ledger.filter(entry => entry.cause === "crown-requisition");
+    assert.equal(bookings.length, 2, "one grain booking and one food booking, no duplicate");
+    assert.equal(getGoodsAudit().balanced, true);
+});
+
+test("without a grain contract the commissary leaves stores and the save shape alone", () => {
+    fixture();
+    const store = addStore("store-idle", { grain: 20, flour: 20, bread: 20 });
+    openAudit();
+    assert.deepEqual(COMMISSARY_FOOD_GOODS, { grain: 1, flour: 1, bread: 1 });
+    assert.deepEqual(requisitionGranary(), { requisitioned: 0, byGood: { grain: 0, flour: 0, bread: 0 } });
+    assert.equal(store.warehouse.stored.grain, 20);
+    assert.equal(store.warehouse.stored.flour, 20);
+    assert.equal(store.warehouse.stored.bread, 20);
+    assert.deepEqual(Object.keys(ensureCrownSupply()).sort(), Object.keys(createCrownSupplyState()).sort());
+    assert.equal(CROWN_SUPPLY_VERSION, 2);
+    assert.equal(getCrownSupplySnapshot().commissary.foodGoods.grain, 20);
+    assert.equal(getCrownSupplySnapshot().commissary.foodGoods.bread, 20);
 });
