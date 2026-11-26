@@ -270,7 +270,7 @@ function modelBlock(model) {
             + ' · return ' + number(disturbance.returnYears) + 'y'],
         ['PERFORMANCE', 'LOD ' + lod.tier + ' · ' + number(lod.maxTrees) + ' trees/chunk',
             'biodiversity ' + model.biodiversity.percent + '% · ' + number(model.regeneration.yearsToCanopy)
-            + 'y regen · ' + model.rng.vegetation],
+            + 'y regen · ' + (model.rng.streams?.vegetation || 'forest-vegetation')],
     ];
     return '<div class="forest-atlas__dynamics" data-forest-model="' + esc(model.typeId) + '">'
         + facts.map(([label, value, detail]) => '<span><small>' + esc(label) + '</small><strong>'

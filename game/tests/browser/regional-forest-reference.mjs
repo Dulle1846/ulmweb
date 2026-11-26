@@ -236,7 +236,7 @@ try {
     assert.match(ecologyText, /DISTURBANCE/, "a surveyed atlas card must show the disturbance matrix");
     assert.match(ecologyText, /PERFORMANCE/, "a surveyed atlas card must show the LOD and biodiversity budget");
     assert.match(ecologyText, /LOD detail · \d+ trees\/chunk/, "the atlas must expose the real LOD tier and tree cap");
-    assert.match(ecologyText, /biodiversity \d+% · \d+y regen/, "the atlas must expose biodiversity and regeneration");
+    assert.match(ecologyText, /biodiversity \d+% · \d+y regen · forest-vegetation/, "the atlas must expose biodiversity, regeneration and the named RNG stream");
     const modelCards = await page.locator('#command-panel-content [data-forest-model]').count();
     assert.ok(modelCards > 0, "at least one present type must render the shared forest model block");
     const modelText = await page.locator('#command-panel-content [data-forest-model]').first().innerText();

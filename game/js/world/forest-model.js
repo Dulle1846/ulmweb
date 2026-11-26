@@ -902,6 +902,7 @@ export function forestModelFor(input, options = {}) {
     const windthrow = forestWindthrowFor(stand, stand.standAge ?? stand.age);
     const water = forestWaterFlowFor(stand);
     const rng = freeze({
+        streams: FOREST_RNG_STREAMS,
         vegetation: forestRngSeedFor("vegetation", options.seed ?? stand.seed, stand.x, stand.y),
         animals: forestRngSeedFor("animals", options.seed ?? stand.seed, stand.x, stand.y),
         events: forestRngSeedFor("events", options.seed ?? stand.seed, stand.x, stand.y),

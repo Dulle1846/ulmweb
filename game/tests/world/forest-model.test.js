@@ -323,6 +323,9 @@ test("one bounded read model exposes all thirty requirements without NaN", () =>
     assert.ok(model.windthrow.risk >= 0 && model.windthrow.risk <= 1);
     assert.ok(model.water.flow >= 0 && model.water.flow <= 1);
     assert.equal(new Set([model.rng.vegetation, model.rng.animals, model.rng.events]).size, 3);
+    assert.equal(model.rng.streams.vegetation, "forest-vegetation");
+    assert.equal(model.rng.streams.animals, "forest-animals");
+    assert.equal(model.rng.streams.events, "forest-events");
     const summary = forestModelSummaryFor(model);
     assert.match(summary, /^\d{3} · \d+% region/);
     assert.doesNotMatch(summary, /undefined|NaN/);
