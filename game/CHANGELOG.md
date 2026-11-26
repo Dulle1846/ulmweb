@@ -1,7 +1,7 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.63.0`
-**Next development line:** `3.64.0-dev`
+**Current production version:** `3.64.0`
+**Next development line:** `3.65.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
@@ -9,7 +9,63 @@
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
 
-## 3.64.0-dev - Crown Commissary calls in real stores
+## 3.64.0 — The forest has a food web, not a decoration list
+
+This release adds the complete fauna, ecology and food-web layer for
+**1.2.23.1.091–120**. Every one of the 30 points now has a real record per
+regional forest type, a player-visible reading in the atlas and the lumber /
+forester inspector, and a consequence in hunting, gathering or the daily herd
+model. The layer is deterministic, save-compatible and costs nothing per frame.
+
+- **All 30 fauna points are implemented, not stubbed.** The new pure module
+  `js/world/forest-fauna-ecology.js` builds one detailed record with 30 sections
+  for any regional type: regional deer, wild boar, bear, wolf, lynx, raptors,
+  owls, woodpeckers, songbirds, beaver, otter, marten/weasel, hare/rabbit,
+  rodents, bats, insects, ants, wild bees, butterflies, deadwood beetles,
+  amphibians, reptiles, fish, crayfish/mussels, fungi, moss/lichen, parasites,
+  scavengers, predator–prey cycles and corridors. The record also exposes
+  `signals`, `community`, `foodWeb`, `indicators`, `pressures`, `products`,
+  `headline` and `summary`, so UI and simulation read the same truth.
+- **Regional deer are correct, not one global species.** Temperate Europe gets
+  red deer, fallow deer and moose; North America black-tailed deer and moose;
+  the tropics sambar, chital, muntjac and red brocket; dry Africa kudu, impala
+  and saiga. The mapping is documented, including the non-cervid ecological
+  analogues used where a true deer is not the right regional browser.
+- **Five new species are real saved herds.** Moose, reindeer, bear, beaver and
+  otter use the existing herd schema and the existing daily herd model. There is
+  no new save field and old saves keep loading unchanged; the animals appear in
+  the same herd ledger, can be hunted and leave the same kind of carcass.
+- **The food web is a real graph.** Each stand exposes **17 guilds and 24
+  links** with a named keystone guild (wolves and lynx in the live sample),
+  producer/prey/predator/scavenger roles and a trophic summary. Population
+  cycles cover hare–lynx, vole–owl and mast years; corridors report quality,
+  pinch points and the nearest connected wood.
+- **Forestry and fauna now feed each other.** Browsing, boar rooting, deadwood,
+  old trees, wet hollows, flowering edges, mast and mycorrhiza change habitat
+  quality; in return the fauna layer boosts game, fish, mushrooms, honey,
+  berries, medicine and fur gathered from the same stand. Predator pressure
+  changes herd preference and survival instead of being a decorative number.
+- **Eight new atlas cells and three inspector lines.** Every sampled regional
+  card adds **WILDLIFE, PREDATORS, WATER FAUNA, INSECTS, DEADWOOD LIFE, CYCLE,
+  CORRIDOR and HARVEST**. The lumberyard and forester lodge add `FAUNA ECOLOGY`
+  (deer, browse, rooting, wolf/bear, beaver/otter, fish, pollinators, pests,
+  water, cycle, corridor), `FOOD WEB` (keystone, guilds, links) and `INDICATORS`
+  (health, water, deadwood continuity, old growth, biodiversity). All text is
+  escaped and built from the shared record.
+- **Bounded cost on both projections.** The atlas, inspector, gathering and
+  tests use `forestFaunaEcologyFor()`. The daily herd model uses
+  `forestFaunaQuickSignalsFor()` behind a `WeakMap`, so the four-year soak stays
+  at its previous cost instead of rebuilding 30 detailed sections per stand per
+  day. No ecological work was added to the frame loop; the detailed record is
+  attached only when a caller sets `context.faunaDetail: true`.
+- **Determinism and saves are unchanged.** Every value is derived from the saved
+  stand, realm, season and tick; no `Math.random()` was added. Herds remain
+  integer-bounded and within their capacity, and the existing save schema is
+  untouched.
+
+### Also shipping in 3.64.0
+
+#### Crown Commissary calls in real stores
 
 The granary button in the Economy panel now reads the realm's actual physical
 food goods before it touches public coin or the construction reserve. Farms,
@@ -30,7 +86,7 @@ first. Nothing runs on a tick and the crown supply save shape is unchanged.
   the realm, visits the realm, buildings, economy, stores, world, biome and
   atelier panels, and reports zero page and console errors.
 
-## 3.64.0-dev - Manual carrier orders in the buildings register
+#### Manual carrier orders in the buildings register
 
 The Buildings register now turns a structure's declared recipe inputs and
 outputs into real player orders. Each row previews one carrier load, explains
@@ -49,6 +105,19 @@ save field or per-tick scan was added.
   then runs the actual carrier movement until both jobs finish. Grain and flour
   stay `BALANCED` before, during and after delivery; page and console errors
   stay empty.
+
+### Release evidence
+
+The focused fauna suite passes **35/35**, the existing forest/fauna/insect
+suites **30/30**, and the four-year soak **2/2**. The full `npm test` passes
+**1527/1527** with the syntax gate at **224 files / 254 UI ids**. The
+deterministic 25-year campaign passes with **25 years, 10,040 ticks, 3.15–3.19
+ms/tick** (31.2 s and 43.9 s in two runs on the shared runner), 64 residents,
+all **13/13 ambition stages** complete and no game over. The live Chromium proof opens **60 atlas cards**, reads **14 ecology
+blocks** and **12 sampled stands**, names **four regional deer species**,
+confirms **17 guilds / 24 links**, validates all **30 fauna points** in visible
+text and records **zero page or console errors**.
+
 
 ## 3.63.0 — The deepest ground view holds its frame
 

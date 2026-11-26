@@ -16,6 +16,7 @@ import {
 } from './tropical-ecology.js';
 import { jungleProfileFor } from './jungle-ecology.js';
 import { forestDynamicsFor } from './forest-dynamics.js';
+import { forestFaunaEcologyFor } from './forest-fauna-ecology.js';
 import { GRASSLAND_GOODS } from './grassland-ecology.js';
 import { STEPPE_GOODS } from './steppe-ecology.js';
 import { DESERT_GOODS } from './desert-ecology.js';
@@ -1705,7 +1706,7 @@ export function forestStandAt(x, y, context = {}) {
         geneticDiversity: dynamics.regeneration.geneticDiversity,
     };
 
-    return {
+    const stand = {
         x: tx, y: ty, seed,
         forest,
         type: formation.id,
@@ -1809,6 +1810,16 @@ export function forestStandAt(x, y, context = {}) {
         // Jungle interior and operations view (1.2.5). Derived, save-neutral.
         jungle,
     };
+    // The detailed fauna record (1.2.23.1.091–120) is built only for readers
+    // that ask for it: the atlas, the inspector, gathering and the focused
+    // tests. The renderer keeps its per-frame stand cheap and reads the
+    // existing fauna markers, so no frame pays for thirty guild objects.
+    if (context.faunaDetail) {
+        stand.faunaEcology = forestFaunaEcologyFor(stand, {
+            day: context.dayOfYear, climate, seed, x: tx, y: ty,
+        });
+    }
+    return stand;
 }
 
 // Ambient shade cast by the local canopy. This is a pure render profile: the
@@ -2096,9 +2107,36 @@ function workingGoodFactor(working, id, category) {
     return 1;
 }
 
+// Fauna is a real yield modifier, not a decorative list. Game follows the
+// deer/boar community, fish the clean-water guild, mushrooms the decomposer
+// and mycorrhiza network, honey the pollinators, berries the seed dispersers,
+// medicine the overall biodiversity and fur the predator/prey condition.
+const FISH_GOOD = /fish|crayfish|mussel|eel/i;
+function forestFaunaGoodsBoost(ecology, id, category) {
+    if (!ecology?.signals) return 1;
+    const signals = ecology.signals;
+    if (category === 'hunt') return clamp01(0.78 + signals.gameYield * 0.3);
+    if (FISH_GOOD.test(id)) return clamp01(0.6 + signals.fishYield * 0.55);
+    if (/mushroom|truffle|chanterelle|porcini|tinder/i.test(id)) {
+        return clamp01(0.72 + signals.mushroomYield * 0.38);
+    }
+    if (/honey|beeswax/i.test(id)) return clamp01(0.68 + signals.honeyYield * 0.45);
+    if (/^berries$|blueberr|lingonberr|rowan-berr|elderberr|strawberr/i.test(id)) {
+        return clamp01(0.8 + signals.seedDispersal * 0.25);
+    }
+    if (category === 'medicine' || /herb|valerian|woodruff|garlic|sorrel|flower/i.test(id)) {
+        return clamp01(0.82 + signals.biodiversity * 0.22);
+    }
+    if (/^fur$|hides|tanned|cured/i.test(id)) return clamp01(0.8 + signals.gameYield * 0.28);
+    return 1;
+}
+
 export function forestGoodsFor(stand, dayOfYear, climate = 'temperate') {
     if (!stand) return [];
     const seasonal = seasonGoods(dayOfYear, climate);
+    const fauna = stand.forest
+        ? (stand.faunaEcology || forestFaunaEcologyFor(stand, { day: dayOfYear, climate }))
+        : null;
     const goods = [];
     for (const id of stand.goods) {
         // A seasonal good is absent when its season has no entry. Falling back
@@ -2114,9 +2152,10 @@ export function forestGoodsFor(stand, dayOfYear, climate = 'temperate') {
         const managementBoost = category === 'wood'
             ? (Number(stand.dynamics?.silviculture?.timberFactor) || 1) : 1;
         const workingBoost = workingGoodFactor(stand.dynamics?.working, id, category);
+        const faunaBoost = forestFaunaGoodsBoost(fauna, id, category);
         const abundance = clamp01((seasonal[id] ?? base) * (0.7 + stand.productivity * 0.3)
             * (Number(stand.regionalEffects?.forage) || 1) * dynamicsBoost * managementBoost
-            * workingBoost);
+            * workingBoost * faunaBoost);
         if (abundance > 0.08) goods.push({ ...FOREST_GOODS[id], abundance });
     }
     // The stand's structure and soil make a few products available that the
@@ -2129,8 +2168,9 @@ export function forestGoodsFor(stand, dayOfYear, climate = 'temperate') {
         const boost = Number(stand.dynamics?.goods?.boost?.[id]) || 1;
         const category = FOREST_GOODS[id]?.category;
         const workingBoost = workingGoodFactor(stand.dynamics?.working, id, category);
+        const faunaBoost = forestFaunaGoodsBoost(fauna, id, category);
         const abundance = clamp01((seasonal[id] ?? 0.26) * (0.7 + stand.productivity * 0.3)
-            * (Number(stand.regionalEffects?.forage) || 1) * boost * workingBoost);
+            * (Number(stand.regionalEffects?.forage) || 1) * boost * workingBoost * faunaBoost);
         if (abundance > 0.08) goods.push({ ...FOREST_GOODS[id], abundance });
     }
     // Jungle resource pockets are real, but scattered. Add only the goods
@@ -2185,6 +2225,17 @@ export function forestFaunaFor(stand, dayOfYear, climate = 'temperate', roll = 0
     if (stand.coniferShare > 0.5 && season === 'winter') extra.push('wolf');
     if (stand.coniferShare > 0.58 && stand.ageClass === 'ancient') extra.push('lynx');
     if (stand.disturbance === 'bark-beetle') extra.push('bark-beetle');
+    // The 091–120 community is visible on the map as well as in the survey.
+    // These are habitat gates over the existing markers, not a second spawn
+    // system: the herd model still owns every population that can be hunted.
+    const regionalKey = String(stand.regionalType?.key || '');
+    const wetStand = Number(stand.wetness) || 0;
+    if (stand.ageClass === 'ancient' && (stand.mastCrop || 0) > 0.32
+        && (stand.coniferShare || 0) < 0.55 && season !== 'winter') extra.push('bear');
+    if (wetStand > 0.62) extra.push('beaver');
+    if (wetStand > 0.7) extra.push('otter');
+    if (/taiga|boreal|subalpine|spruce-fir|pine-birch|larch/i.test(regionalKey)) extra.push('moose');
+    if (/tundra|snow|arctic/i.test(regionalKey)) extra.push('reindeer');
     const jungle = stand.jungle;
     if (jungle) {
         // Thickets, trails, hidden water and old growth each add their own
@@ -2217,7 +2268,7 @@ export function forestFaunaFor(stand, dayOfYear, climate = 'temperate', roll = 0
         .filter(id => !(season === 'winter' && ['songbird', 'butterfly', 'ant', 'bee'].includes(id)));
     if (!unique.length) return [];
     const first = Math.floor(clamp01(roll) * unique.length) % unique.length;
-    const count = tropicalStand ? 4 : season === 'winter' ? 1 : 2;
+    const count = tropicalStand ? 4 : season === 'winter' ? 1 : wetStand > 0.6 ? 3 : 2;
     const picked = [];
     for (let index = 0; index < count && index < unique.length; index++) {
         const id = unique[(first + index * 2) % unique.length];

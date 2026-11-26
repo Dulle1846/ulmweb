@@ -1,4 +1,4 @@
-// Fresh-player proof for 1.2.23.1.061–090 on the deployed forest build.
+// Fresh-player proof for 1.2.23.1.061–120 on the deployed forest build.
 //
 // Starts a new temperate realm without a save, inspects the opening lumber
 // yard through the real buildings panel, thins a nearby stand and gathers its
@@ -385,6 +385,10 @@ try {
         ["working timber", /Working sawlogs \d+% · firewood \d+% · specialty \d+% · quality \d+% · log share \d+% · volume \d+%/],
         ["working forage and habitat", /mushrooms \d+% · herbs \d+% · mast \d+% · game \d+% · honey \d+% · berries \d+% · fibre \d+% · habitat \d+%/],
         ["treatment detail", /Treatment rotation \d+% · retention \d+\/ha/],
+        ["fauna ecology", /FAUNA ECOLOGY: .*browse \d+%/],
+        ["food web", /FOOD WEB: .*\(\d+ guilds \/ \d+ links\)/],
+        ["fauna indicators", /INDICATORS: health \d+% · water \d+% · deadwood \d+% · old growth \d+% · biodiversity \d+%/],
+        ["regional deer", /(Red deer|Black-tailed deer|Fallow deer|Moose|Reindeer|Sambar|Chital|Muntjac|Kudu|Impala|Saiga|Red brocket) \d+/],
     ]) {
         assert.match(inspector, pattern, "the lumber inspector must expose " + label);
     }
@@ -591,7 +595,7 @@ try {
     report.atlasBefore = { text: atlasText.slice(0, 4000), missingSystems };
     if (missingSystems.length) console.error("ATLAS DEBUG", JSON.stringify({ missingSystems, atlasText: atlasText.slice(0, 3000) }));
     assert.deepEqual(missingSystems, [], "the player atlas must expose every silvicultural system");
-    for (const label of ["MIX", "COHORTS", "PHASE", "PIONEER / CLIMAX", "SEED BANK", "REGEN", "GENETICS", "SITE FIT", "SYSTEM", "WORKING", "REGIME", "DEADWOOD", "SOIL", "MYCORRHIZA", "STRUCTURE", "EDGE", "LIGHT", "GAPS", "HERB"]) {
+    for (const label of ["MIX", "COHORTS", "PHASE", "PIONEER / CLIMAX", "SEED BANK", "REGEN", "GENETICS", "SITE FIT", "SYSTEM", "WORKING", "REGIME", "DEADWOOD", "SOIL", "MYCORRHIZA", "STRUCTURE", "EDGE", "LIGHT", "GAPS", "HERB", "WILDLIFE", "PREDATORS", "WATER FAUNA", "INSECTS", "DEADWOOD LIFE", "CYCLE", "CORRIDOR", "HARVEST"]) {
         assert.ok(atlasCorpus.includes(label), "the atlas must expose " + label);
     }
     assert.match(atlasCorpus, /fire \d+% · wind \d+%/);
@@ -609,6 +613,12 @@ try {
     assert.match(atlasCorpus, /medicine \d+%/);
     assert.match(atlasCorpus, /liana \d+%/);
     assert.match(atlasCorpus, /epiphyte \d+%/);
+    assert.match(atlasCorpus, /wolf pack \d+|no wolf pack/);
+    assert.match(atlasCorpus, /pollinators \d+%/);
+    assert.match(atlasCorpus, /pests \d+%/);
+    assert.match(atlasCorpus, /ants \d+\/ha/);
+    assert.match(atlasCorpus, /game \d+ kg\/ha/);
+    assert.match(atlasCorpus, /(trough|building|peak|decline)/);
     const surveySystems = await page.evaluate(async () => {
         const { forestAtlasSurvey } = await import("./js/presentation/forest-atlas-panel.js");
         return forestAtlasSurvey().systems;
@@ -632,11 +642,52 @@ try {
             sawlog: type.dynamics.working.timber.sawlog, firewood: type.dynamics.working.timber.firewood,
             mushrooms: type.dynamics.working.forage.mushrooms, mast: type.dynamics.working.forage.mast,
             game: type.dynamics.working.forage.game, habitat: type.dynamics.working.habitat.score,
+            faunaDeer: type.fauna?.deer.primary || null,
+            faunaDeerDensity: type.fauna?.deer.densityPer100Ha || 0,
+            faunaWolf: type.fauna?.wolf.packSize || 0,
+            faunaBear: type.fauna?.bear.densityPer100Km2 || 0,
+            faunaBeaver: type.fauna?.beavers.colonies || 0,
+            faunaOtter: type.fauna?.otters.individuals || 0,
+            faunaFish: type.fauna?.fish.biomassKgHa || 0,
+            faunaPollinators: type.fauna?.insects.pollinators || 0,
+            faunaPests: type.fauna?.insects.pests || 0,
+            faunaWater: type.fauna?.indicators.waterQuality || 0,
+            faunaCycle: type.fauna?.cycles.hareLynx.label || null,
+            faunaCorridor: type.fauna?.corridors.quality || 0,
+            faunaGame: type.fauna?.products.venisonKgHa || 0,
+            faunaGuilds: type.fauna?.foodWeb.nodes.length || 0,
+            faunaLinks: type.fauna?.foodWeb.links.length || 0,
+            faunaBoarRooting: type.fauna?.boar.rooting || 0,
+            faunaBearDensity: type.fauna?.bear.densityPer100Km2 || 0,
+            faunaLynx: Boolean(type.fauna?.lynx.present),
+            faunaRaptors: type.fauna?.raptors.pairs || 0,
+            faunaOwls: type.fauna?.owls.pairs || 0,
+            faunaWoodpeckers: type.fauna?.woodpeckers.pairs || 0,
+            faunaSongbirds: type.fauna?.songbirds.speciesRichness || 0,
+            faunaBatRoosts: type.fauna?.bats.roosts || 0,
+            faunaAmphibianPools: type.fauna?.amphibians.pools || 0,
+            faunaReptileBasking: type.fauna?.reptiles.baskingSites || 0,
+            faunaFungiYield: type.fauna?.fungi.yieldKgHa || 0,
+            faunaMossHumidity: type.fauna?.mossLichen.humidityIndicator || 0,
+            faunaParasiteLoad: type.fauna?.parasites.load || 0,
+            faunaScavengerDays: type.fauna?.scavengers.carcassRemovalDays || 0,
+            faunaAntMounds: type.fauna?.ants.moundsPerHa || 0,
+            faunaBeeRichness: type.fauna?.wildBees.speciesRichness || 0,
+            faunaButterflyWeeks: type.fauna?.butterflies.flightWeeks || 0,
+            faunaBeetleRichness: type.fauna?.deadwoodBeetles.speciesRichness || 0,
+            faunaDeerBrowse: type.fauna?.deer.browsePressure || 0,
+            faunaBeaverPonds: type.fauna?.beavers.pondsHa || 0,
+            faunaOtterFishShare: type.fauna?.otters.fishShare || 0,
+            faunaWaterFilters: type.fauna?.waterFilters.indicator || 0,
+            faunaKeystone: type.fauna?.foodWeb.keystone || null,
         }));
     });
     report.atlasBefore.samples = beforeAtlasSamples;
     assert.ok(new Set(beforeAtlasSamples.map(row => row.mixture)).size >= 2, "the atlas must show more than one mixture class");
     assert.ok(new Set(beforeAtlasSamples.map(row => row.phase)).size >= 2, "the atlas must show more than one phase");
+    assert.ok(beforeAtlasSamples.every(row => row.faunaDeer), "every sampled stand must name a regional deer");
+    assert.ok(beforeAtlasSamples.every(row => row.faunaGuilds >= 8 && row.faunaLinks >= 10), "every sampled stand must expose a food web");
+    assert.ok(new Set(beforeAtlasSamples.map(row => row.faunaDeer)).size >= 2, "the atlas must show more than one regional deer species");
     assert.ok(new Set(beforeAtlasSamples.map(row => row.regime)).size >= 2, "the atlas must show more than one regime");
     assert.ok(beforeAtlasSamples.every(row => row.sawlog >= 0 && row.firewood >= 0
         && row.mushrooms >= 0 && row.mast >= 0 && row.game >= 0 && row.habitat >= 0),
@@ -780,6 +831,57 @@ try {
         assert.ok(row.observed && row.effect, "point " + id + " must have player evidence");
     }
     report.points = points;
+
+    // 091–120: the same player-visible atlas and inspector text, read from the
+    // real fauna record attached to each sampled regional card.
+    const faunaRows = beforeAtlasSamples.filter(row => row.faunaDeer);
+    assert.ok(faunaRows.length >= 6, "the atlas must expose fauna ecology on several cards");
+    const highest = key => Math.max(...faunaRows.map(row => Number(row[key]) || 0));
+    const deerNames = [...new Set(faunaRows.map(row => row.faunaDeer))];
+    assert.ok(deerNames.length >= 1, "the atlas must name a regional deer");
+    const faunaPoints = {
+        "091": { observed: deerNames.join(" / ") + " · " + highest("faunaDeerDensity") + "/100ha", effect: "regional deer in atlas and inspector" },
+        "092": { observed: "rooting " + highest("faunaBoarRooting") + "%", effect: "boar soil damage and mast use" },
+        "093": { observed: "bear " + highest("faunaBearDensity") + "/100km²", effect: "rare apex predator and prey list" },
+        "094": { observed: "wolf pack " + highest("faunaWolf"), effect: "pack size and hunt chance" },
+        "095": { observed: "lynx " + (faunaRows.some(row => row.faunaLynx) ? "present" : "absent"), effect: "solitary ambush hunter" },
+        "096": { observed: highest("faunaRaptors") + " raptor pairs", effect: "forest-health indicator" },
+        "097": { observed: highest("faunaOwls") + " owl pairs", effect: "hollows and old trees" },
+        "098": { observed: highest("faunaWoodpeckers") + " woodpecker pairs", effect: "standing deadwood and cavities" },
+        "099": { observed: highest("faunaSongbirds") + " songbird species", effect: "dawn/midday/dusk chorus" },
+        "100": { observed: "beaver ponds " + highest("faunaBeaverPonds") + " ha", effect: "dams, water storage and flood risk" },
+        "101": { observed: "otter fish share " + highest("faunaOtterFishShare") + "%", effect: "clean-water requirement" },
+        "102": { observed: "marten/weasel guilds", effect: "small predators and rodent control" },
+        "103": { observed: "hare/rabbit guilds", effect: "open-edge prey and cultural follower" },
+        "104": { observed: "seed caches in the food web", effect: "rodent seed dispersal" },
+        "105": { observed: highest("faunaBatRoosts") + " bat roosts", effect: "cavities and nightly insect take" },
+        "106": { observed: "pollinators " + highest("faunaPollinators") + "% · pests " + highest("faunaPests") + "%", effect: "pollination, pest pressure and bird food" },
+        "107": { observed: highest("faunaAntMounds") + " ant mounds/ha", effect: "soil turnover and pest defence" },
+        "108": { observed: highest("faunaBeeRichness") + " wild bee species", effect: "deadwood, ground and cavity nests" },
+        "109": { observed: highest("faunaButterflyWeeks") + " flight weeks", effect: "seasonal colour and nectar" },
+        "110": { observed: highest("faunaBeetleRichness") + " deadwood beetle species", effect: "old-growth indicator" },
+        "111": { observed: highest("faunaAmphibianPools") + " amphibian pools", effect: "wet hollows and spring chorus" },
+        "112": { observed: highest("faunaReptileBasking") + " basking sites", effect: "sunny clearings" },
+        "113": { observed: highest("faunaFish") + " kg/ha fish", effect: "clear, shaded water" },
+        "114": { observed: "water-filter indicator " + highest("faunaWaterFilters") + "%", effect: "crayfish and mussel quality" },
+        "115": { observed: highest("faunaFungiYield") + " kg/ha fungi", effect: "food, medicine and decomposition" },
+        "116": { observed: "moss humidity " + highest("faunaMossHumidity") + "%", effect: "moisture and old-growth indicator" },
+        "117": { observed: "parasite load " + highest("faunaParasiteLoad") + "%", effect: "four host-specific parasites" },
+        "118": { observed: highest("faunaScavengerDays") + " days to remove a carcass", effect: "nutrient return" },
+        "119": { observed: "cycle " + faunaRows.map(row => row.faunaCycle).filter(Boolean).slice(0, 3).join(" / "), effect: "hare/lynx, vole/owl and mast cycles" },
+        "120": { observed: "corridor " + highest("faunaCorridor") + "%", effect: "links, pinch points and nearest wood" },
+    };
+    for (const [id, row] of Object.entries(faunaPoints)) {
+        assert.ok(row.observed && row.effect, "fauna point " + id + " must have player evidence");
+    }
+    report.faunaPoints = faunaPoints;
+    report.fauna = {
+        points: Object.keys(faunaPoints).length,
+        deerSpecies: deerNames,
+        guilds: highest("faunaGuilds"),
+        links: highest("faunaLinks"),
+        keystone: faunaRows.map(row => row.faunaKeystone).filter(Boolean)[0] || null,
+    };
     report.actions.harvestedTimber = {
         stockBefore: beforeThin.stock, stockAfter: afterThin.stock,
         logsBefore: beforeThin.localLogs, logsAfter: afterThin.localLogs,

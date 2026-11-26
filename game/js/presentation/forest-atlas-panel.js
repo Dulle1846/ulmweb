@@ -9,6 +9,7 @@ import {
 } from "../world/regional-forests.js";
 import { FOREST_GOODS, forestStandAt } from "../world/forest-ecology.js";
 import { FOREST_MANAGEMENT_SYSTEMS } from "../world/forest-dynamics.js";
+import { forestFaunaEcologyFor } from "../world/forest-fauna-ecology.js";
 import { timberQuote } from "../systems/regional-timber-market.js";
 import { forestGoodUseLabel } from "../systems/forest-gathering.js";
 
@@ -64,7 +65,7 @@ export function forestAtlasSurvey(limit = SURVEY_LIMIT) {
     const indices = [];
     for (let index = 0; index < total; index++) if (geo.forestStock[index] > 0) indices.push(index);
     const stride = Math.max(1, Math.ceil(indices.length / Math.max(1, limit)));
-    const counts = {}, transitions = {}, samples = {}, systemCounts = {};
+    const counts = {}, transitions = {}, samples = {}, faunaSamples = {}, systemCounts = {};
     let sampled = 0, transitionSamples = 0;
     const climate = state.worldOptions?.climate || "temperate";
     for (let slot = 0; slot < indices.length; slot += stride) {
@@ -85,6 +86,11 @@ export function forestAtlasSurvey(limit = SURVEY_LIMIT) {
         if (!id) continue;
         counts[id] = (counts[id] || 0) + 1;
         if (!samples[id] && stand.dynamics) samples[id] = stand.dynamics;
+        if (!faunaSamples[id] && stand.dynamics) {
+            faunaSamples[id] = forestFaunaEcologyFor(stand, {
+                day: state.dayOfYear, climate, seed: geo.seed, x, y,
+            });
+        }
         const system = stand.dynamics?.silviculture?.system;
         if (system) systemCounts[system] = (systemCounts[system] || 0) + 1;
         sampled++;
@@ -97,6 +103,7 @@ export function forestAtlasSurvey(limit = SURVEY_LIMIT) {
         id: type.id, key: type.key, count: counts[type.id] || 0,
         transitionCount: transitions[type.id] || 0,
         dynamics: samples[type.id] || null,
+        fauna: faunaSamples[type.id] || null,
     }));
     const value = {
         available: true,
@@ -174,7 +181,7 @@ const PHASE_LABELS = {
     'old-growth': 'Old growth', climax: 'Climax',
 };
 
-function dynamicsBlock(dynamics) {
+function dynamicsBlock(dynamics, fauna = null) {
     if (!dynamics) return '';
     const composition = dynamics.composition || {};
     const regeneration = dynamics.regeneration || {};
@@ -215,12 +222,24 @@ function dynamicsBlock(dynamics) {
         ['GAPS', pct(structure.canopyGap) + '%', (gap.origin || 'none') + ' · ' + (gap.sizeClass || 'none') + ' · ' + number(structure.layers) + ' layers'],
         ['HERB', 'food ' + pct(herb.food) + '%', 'medicine ' + pct(herb.medicine) + '% · flowering ' + pct(herb.flowering) + '%'],
     ];
+    if (fauna) {
+        facts.push(
+            ['WILDLIFE', fauna.deer.primary + ' ' + number(fauna.deer.densityPer100Ha) + '/100ha', 'browse ' + pct(fauna.deer.browsePressure) + ' · boar ' + number(fauna.boar.sounderSize) + ' · health ' + pct(fauna.indicators.forestHealth) + '%'],
+            ['PREDATORS', fauna.wolf.present ? 'wolf pack ' + number(fauna.wolf.packSize) : 'no wolf pack', (fauna.bear.present ? 'bear ' + number(fauna.bear.densityPer100Km2) + '/100km²' : 'no bear') + ' · lynx ' + (fauna.lynx.present ? 'present' : 'absent') + ' · raptors ' + number(fauna.raptors.pairs) + ' pairs'],
+            ['WATER FAUNA', fauna.beavers.present ? 'beaver ' + number(fauna.beavers.colonies) : 'no beaver', 'otter ' + number(fauna.otters.individuals) + ' · fish ' + number(fauna.fish.biomassKgHa) + ' kg/ha · water ' + pct(fauna.indicators.waterQuality) + '%'],
+            ['INSECTS', 'pollinators ' + pct(fauna.insects.pollinators) + '%', 'pests ' + pct(fauna.insects.pests) + '% · bees ' + number(fauna.wildBees.speciesRichness) + ' · butterflies ' + number(fauna.butterflies.speciesRichness)],
+            ['DEADWOOD LIFE', 'ants ' + number(fauna.ants.moundsPerHa) + '/ha', 'woodpeckers ' + number(fauna.woodpeckers.pairs) + ' · beetles ' + number(fauna.deadwoodBeetles.speciesRichness) + ' · owls ' + number(fauna.owls.pairs)],
+            ['CYCLE', fauna.cycles.hareLynx.label, 'hare ' + pct(fauna.cycles.hareLynx.hareIndex) + '% · lynx ' + pct(fauna.cycles.hareLynx.lynxIndex) + '% · mast ' + fauna.cycles.mast.label],
+            ['CORRIDOR', pct(fauna.corridors.quality) + '%', number(fauna.corridors.links) + ' links · ' + number(fauna.corridors.nearestWoodKm) + 'km · ' + (fauna.corridors.targetRegionalType || 'local matrix')],
+            ['HARVEST', 'game ' + number(fauna.products.venisonKgHa) + ' kg/ha', 'fish ' + number(fauna.products.fishKgHa) + ' · honey ' + number(fauna.products.honeyKgHa) + ' · mushrooms ' + number(fauna.products.mushroomsKgHa) + ' kg/ha'],
+        );
+    }
     return '<div class="forest-atlas__dynamics">' + facts.map(([label, value, detail]) =>
         '<span><small>' + esc(label) + '</small><strong>' + esc(value) + '</strong><em>' + esc(detail) + '</em></span>').join('')
         + '</div>';
 }
 
-function card(type, count, sampled, transitionCount, currentSeason, dynamics = null) {
+function card(type, count, sampled, transitionCount, currentSeason, dynamics = null, fauna = null) {
     const timber = signatureTimberForRegionalType(type);
     const quote = timber ? timberQuote(timber.id) : null;
     const share = sampled > 0 ? Math.round(count / sampled * 100) : 0;
@@ -239,7 +258,7 @@ function card(type, count, sampled, transitionCount, currentSeason, dynamics = n
         + '<span class="forest-atlas__presence">' + presence + '</span></summary>'
         + '<p class="forest-atlas__profile">' + esc(type.profile) + '</p>'
         + characterLine(type, currentSeason)
-        + dynamicsBlock(dynamics)
+        + dynamicsBlock(dynamics, fauna)
         + '<div class="forest-atlas__stats">'
         + meter("Timber", effects.timber, signed((effects.timber ?? 1) - 1))
         + meter("Regrowth", effects.regrowth, signed((effects.regrowth ?? 1) - 1))
@@ -264,7 +283,7 @@ export function renderForestAtlasPanel() {
     const currentSeason = Math.max(0, Math.min(3, Number(state.seasonIndex) || 0));
     const cards = REGIONAL_FOREST_TYPES.map(type => {
         const row = survey.types.find(entry => entry.id === type.id);
-        return card(type, row?.count || 0, survey.sampled, row?.transitionCount || 0, currentSeason, row?.dynamics || null);
+        return card(type, row?.count || 0, survey.sampled, row?.transitionCount || 0, currentSeason, row?.dynamics || null, row?.fauna || null);
     }).join("");
     return intro("THE FOREST ATLAS", "Sixty regional woodlands",
         "Every forest tile belongs to exactly one regional type, and boundary tiles name the woodland they blend into. Open a type to read its field marks, its signature good, its timber, its ecological effects and the named wood its sawmill can produce.")

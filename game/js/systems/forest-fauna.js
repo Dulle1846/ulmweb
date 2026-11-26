@@ -16,6 +16,7 @@
 import { state } from "../core/state.js";
 import { WORLD_W, WORLD_H } from "../core/config.js";
 import { forestStandAt, FOREST_FAUNA } from "../world/forest-ecology.js";
+import { forestFaunaQuickSignalsFor } from "../world/forest-fauna-ecology.js";
 import { getForestHabitatAt } from "./resource-geography.js";
 import { getHeightAt, getMoistureAt, getTemperatureAt } from "../world/world.js";
 import { seasonalState } from "../world/season.js";
@@ -65,6 +66,15 @@ const SIMULATED_SPECIES = Object.freeze({
     songbird: { base: 9, reproduction: 0.13, mortality: 0.07, mobility: 3, period: 45 },
     wolf: { base: 2.2, reproduction: 0.05, mortality: 0.045, mobility: 4, period: 60, predator: true, prey: ["deer", "roe-deer"] },
     lynx: { base: 1.8, reproduction: 0.05, mortality: 0.04, mobility: 4, period: 65, predator: true, prey: ["roe-deer", "hare", "squirrel"] },
+    // 1.2.23.1.091–120. Regional deer, the rare apex predator and the two
+    // water-bound guilds are real herds: they breed, move, can be hunted and
+    // are saved. Beaver and otter capacity is driven by the shared fauna
+    // ecology record, not by a second wetlands model.
+    moose: { base: 3.4, reproduction: 0.055, mortality: 0.03, mobility: 2, period: 85 },
+    reindeer: { base: 6, reproduction: 0.07, mortality: 0.045, mobility: 3, period: 70 },
+    bear: { base: 1.1, reproduction: 0.03, mortality: 0.025, mobility: 4, period: 95, predator: true, prey: ["deer", "roe-deer", "boar", "moose", "reindeer"] },
+    beaver: { base: 2.2, reproduction: 0.06, mortality: 0.035, mobility: 1, period: 120 },
+    otter: { base: 1.6, reproduction: 0.05, mortality: 0.035, mobility: 2, period: 70 },
     // Tropical rainforest (1.2.4.37–43). These are simulated populations like
     // the temperate herds: they breed, move, use habitat and can be hunted.
     "howler-monkey": { base: 7, reproduction: 0.075, mortality: 0.045, mobility: 2, period: 70 },
@@ -315,6 +325,23 @@ function ensureInsectCollection(model) {
     return model.insects;
 }
 
+// The detailed ecology record is pure and deterministic. Cache it per stand
+// object for one calendar day: a herd resolution or migration scan reads the
+// same record instead of rebuilding thirty guilds for every candidate.
+const ECOLOGY_CACHE = new WeakMap();
+function ecologyFor(stand, day) {
+    if (!stand?.forest) return null;
+    if (stand.faunaEcology?.signals) return stand.faunaEcology.signals;
+    const key = ((Math.floor(number(day)) % DAYS_PER_YEAR) + DAYS_PER_YEAR) % DAYS_PER_YEAR;
+    const cached = ECOLOGY_CACHE.get(stand);
+    if (cached && cached.day === key) return cached.value;
+    // A bounded signal projection, not the thirty-guild record: this runs
+    // inside daily herd resolution and must stay cheap.
+    const value = forestFaunaQuickSignalsFor(stand, { day: key });
+    ECOLOGY_CACHE.set(stand, { day: key, value });
+    return value;
+}
+
 function preferenceScore(stand, species, day) {
     const season = seasonFor(day);
     let score = 0.32 + (stand?.density || 0.55) * 0.2
@@ -335,6 +362,20 @@ function preferenceScore(stand, species, day) {
     const herbProfile = structure.herbProfile || {};
     const litterProfile = structure.litterProfile || {};
     score += (Number(habitat.score) || 0) * 0.10;
+    const ecology = ecologyFor(stand, day);
+    if (ecology) {
+        const fauna = ecology;
+        if (["deer", "roe-deer", "moose", "reindeer"].includes(species)) {
+            score += fauna.deer * 0.12 - fauna.predation * 0.05;
+        }
+        if (species === "boar") score += fauna.boar * 0.12;
+        if (species === "bear") score += fauna.bear * 0.20;
+        if (species === "wolf") score += fauna.wolf * 0.18 + fauna.deer * 0.05;
+        if (species === "lynx") score += fauna.lynx * 0.18 + fauna.rabbit * 0.04;
+        if (species === "beaver") score += fauna.beaver * 0.20;
+        if (species === "otter") score += fauna.fish * 0.18 + fauna.waterQuality * 0.10;
+        if (["owl", "woodpecker", "raptor"].includes(species)) score += fauna.biodiversity * 0.05;
+    }
 
     if (["deer", "roe-deer", "hare"].includes(species)) {
         score += stand.edge ? 0.18 : 0;

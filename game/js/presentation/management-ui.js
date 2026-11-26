@@ -28,6 +28,7 @@ import { CARD_DECK, drawPlayerCard, selectCard } from "../systems/cards.js";
 import { getResourceNodeAt } from "../systems/resource-geography.js";
 import { buildingFormFor } from "../world/building-forms.js";
 import { forestFaunaSummaryAt } from "../systems/forest-fauna.js";
+import { forestFaunaEcologyFor, forestFaunaEcologySummary } from "../world/forest-fauna-ecology.js";
 import { cleanBiomeWater, craftBiomeGoods, drainBiomeRegion, harvestBiomeResource, huntBiomeSpecies, irrigateBiomeRegion, reforestBiomeRegion, reintroduceBiomeSpecies, restoreBiomeRegion, sellBiomeCraft, sellBiomeGoods, setBiomeFocus, setBiomePolicy, setBiomeProtection, slashAndBurnBiomeRegion, surveyBiomeRegion } from "../systems/biome-resource-state.js";
 import { renderBiomePanel } from "./biome-panel.js";
 import { renderForestAtlasPanel } from "./forest-atlas-panel.js";
@@ -670,6 +671,10 @@ function buildings(){
    else if(building.type===TYPE.FARM){const effective=Number(building.field?.maxFertility);siteNote="Site fertility: "+number(node.fertility)+" / 100"+(Number.isFinite(effective)&&effective>0?" · effective soil: "+number(effective)+" / 100":"")+" · water access: "+(node.waterAccess?"yes":"no")+(grasslandSiteSummaryAt(building.x,building.y)?" · meadow: "+esc(grasslandSiteSummaryAt(building.x,building.y)):"");}
    else if(building.type===TYPE.WELL)siteNote="Water access at site tile: "+(node.waterAccess?"yes":"no");
    else if(building.type===TYPE.STABLE)siteNote="Feed reserve: "+esc(pannageSummary(building))+" · feed comes from mast, hay and meadow grass gathered in the stores."+(grasslandSiteSummaryAt(building.x,building.y)?" · pasture: "+esc(grasslandSiteSummaryAt(building.x,building.y)):"");
+   if([TYPE.LUMBER,TYPE.FORESTER].includes(building.type)&&node?.forestStand){
+    const fauna=forestFaunaEcologyFor(node.forestStand,{day:state.dayOfYear,climate:state.worldOptions?.climate||"temperate"});
+    if(fauna)siteNote+=" · FAUNA ECOLOGY: "+esc(forestFaunaEcologySummary(fauna))+" · FOOD WEB: "+esc(fauna.foodWeb.keystone)+" ("+number(fauna.foodWeb.nodes.length)+" guilds / "+number(fauna.foodWeb.links.length)+" links) · INDICATORS: health "+Math.round(Number(fauna.indicators.forestHealth)||0)+"% · water "+Math.round(Number(fauna.indicators.waterQuality)||0)+"% · deadwood "+Math.round(Number(fauna.indicators.deadwoodContinuity)||0)+"% · old growth "+Math.round(Number(fauna.indicators.oldGrowth)||0)+"% · biodiversity "+Math.round(Number(fauna.indicators.biodiversity)||0)+"%";
+   }
   }catch{}
   const deliveryAvailability=forestDeliveryAvailability(building);
   const sellAvailability=[TYPE.LUMBER,TYPE.FORESTER].includes(building.type)?forestSellAvailability(building):null;
