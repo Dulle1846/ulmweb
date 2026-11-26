@@ -10,6 +10,7 @@ import { addResource } from "./resources.js";
 import { applyPoliticalEffects } from "./politics.js";
 import { addPersonMemory, ensurePersonProfile, PERSON_SPECIES } from "./people.js";
 import { normalizeNobleFeuds, normalizeNobleHost } from "./noble-state.js";
+import { createContractState, normalizeContractState, validateContractState, getContractSnapshot } from "./feudal-campaigns.js";
 
 export const NOBILITY_HOUSE_LIMIT = 4;
 export const NOBILITY_HISTORY_LIMIT = 24;
@@ -229,7 +230,8 @@ export function createNobilityState() {
         revolts: 0,
         lastFeudYear: 0,
         hostAudit: null,
-        hostHistory: []
+        hostHistory: [],
+        contracts: createContractState()
     };
 }
 
@@ -298,7 +300,8 @@ export function normalizeNobilityState(input = state.nobility) {
                 supplies: integer(entry.supplies, 0),
                 joinedWar: integer(entry.joinedWar, 0, NOBILITY_HOUSE_LIMIT),
                 revolts: integer(entry.revolts, 0, NOBILITY_HOUSE_LIMIT)
-            }))
+            })),
+        contracts: normalizeContractState(source.contracts)
     };
     if (state.nobility === input || input === undefined) state.nobility = normalized;
     return normalized;
@@ -483,7 +486,8 @@ export function getNobilitySnapshot() {
         houseCount: living.length,
         dormantCount: houses.length - living.length,
         charterCost: { ...NOBILITY_CHARTER_COST },
-        levyCooldownYears: NOBILITY_LEVY_COOLDOWN_YEARS
+        levyCooldownYears: NOBILITY_LEVY_COOLDOWN_YEARS,
+        contracts: getContractSnapshot()
     };
 }
 
@@ -699,5 +703,6 @@ export function validateNobilityState(value) {
     if (value.hostHistory !== undefined && (!Array.isArray(value.hostHistory) || value.hostHistory.length > 12)) {
         throw new Error("Save data contains an invalid noble-host history.");
     }
+    validateContractState(value.contracts);
     return true;
 }

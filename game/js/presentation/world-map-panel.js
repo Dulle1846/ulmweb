@@ -2,6 +2,7 @@
 // and the frontiers between them. The panel is a read-only view of the single
 // world-map system; every button calls the same bounded annual state machine.
 import { getWorldMapSnapshot } from "../systems/world-map.js";
+import { getCampaignSnapshot } from "../systems/feudal-campaigns.js";
 
 const esc = value => String(value ?? "").replace(/[&<>"']/g, character => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
@@ -233,6 +234,16 @@ export function renderWorldMapPanel() {
     const routesSection = snapshot.routes.length
         ? '<div class="world-routes">' + snapshot.routes.map(route => routeRow(route, snapshot)).join("") + '</div>'
         : '<p class="command-note">No standing caravan. Choose a depot, goods and flow in one of the four frontier cards, then open the route. The first caravan leaves at the next year boundary; the panel will name exactly what it moved.</p>';
+    const campaign = getCampaignSnapshot();
+    const theatreCards = campaign.campaigns.length
+        ? campaign.campaigns.map(entry => '<article class="command-policy" data-world-campaign="' + esc(entry.id) + '"><div>' +
+            '<span class="command-ribbon">' + esc(entry.stageLabel) + ' · ' + esc(entry.aimLabel) + '</span>' +
+            '<strong>' + esc(entry.theatreName) + '</strong>' +
+            '<p>' + esc(entry.houseName || "Crown alone") + ' · power ' + entry.power + ' · risk ' + entry.risk + '/100 · ' +
+            entry.progressPercent + '% complete · ' + entry.daysRemaining + ' days to settlement.</p>' +
+            '<small>A theatre is a real neighbouring kingdom; its control and contest set the contract supply and risk.</small></div>' +
+            '<button type="button" data-kac-panel="military">OPEN MILITARY</button></article>').join("")
+        : '<p class="command-note">No war band is committed to a theatre. Open an aim in Military to bind a neighbouring kingdom to a feudal contract.</p>';
     const history = snapshot.history.length
         ? snapshot.history.map(entry => '<div><span>' + esc(String(entry.kind).toUpperCase()) + ' · YEAR ' + entry.year + '</span><p>' + esc(entry.summary) + '</p></div>').join("")
         : '<p class="command-note">The first annual world survey will write its record here.</p>';
@@ -242,6 +253,9 @@ export function renderWorldMapPanel() {
         summary + legend + kingdomLegend + mapFigure(snapshot) +
         '<div class="command-section-title">KINGDOMS &amp; PROVINCES · ' + snapshot.totals.crownProvinces + ' / ' + snapshot.limits.provinces + ' HELD BY THE CROWN</div>' +
         '<div class="world-kingdom-grid">' + snapshot.kingdoms.map(kingdom => kingdomCard(kingdom, snapshot)).join("") + '</div>' +
+        '<div class="command-section-title">THEATRE CAMPAIGNS · ' + campaign.campaigns.length + ' / ' + campaign.limits.active + ' ACTIVE · ' + campaign.counters.settlements + ' SETTLED</div>' +
+        '<p class="command-note"><strong>AIM → COMMIT → SETTLE.</strong> A war band reads the real control and contest of a neighbouring kingdom, not a forecast. Committing pays the crown and signs the noble contract; progress is one bounded scalar per day and the annual campaign audit settles it with its own random stream.</p>' +
+        '<div class="command-policy-list">' + theatreCards + '</div>' +
         '<p class="command-note">Province control drifts once per year with the owner\'s treaty, relation and morale; hostile borders and low control make a province contested. A claim spends ' + costText(snapshot.costs.claim) + ', resolves deterministically from the current year, control, garrison, loyalty and war status, and can only be pressed once per year. A successful claim lowers the former owner\'s relation and trust; a repulsed claim spends the cost and weakens the province.</p>' +
         '<div class="world-province-grid">' + snapshot.regions.map(region => regionCard(region, snapshot)).join("") + '</div>' +
         '<div class="command-section-title">FRONTIERS · ' + snapshot.realms.filter(realm => realm.pressure >= 45).length + ' PRESSED</div>' +

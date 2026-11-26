@@ -678,15 +678,27 @@ const SYSTEM_SPECS = [
             { file: "js/systems/noble-feuds.js", symbol: "updateNobleFeuds" },
             { file: "js/systems/noble-feuds.js", symbol: "mediateFeud" },
             { file: "js/presentation/management-ui.js", symbol: "nobilityPanel" }
-        ], tests: ["tests/systems/noble-feuds.test.js"] }
+        ], tests: ["tests/systems/noble-feuds.test.js"] },
+        { id: "3.8.13", label: "Feudal war aims, theatre campaigns and staged noble contracts", evidence: [
+            { file: "js/systems/feudal-campaigns.js", symbol: "WAR_AIMS" },
+            { file: "js/systems/feudal-campaigns.js", symbol: "FEUDAL_CONTRACTS" },
+            { file: "js/systems/feudal-campaigns.js", symbol: "aimCampaign" },
+            { file: "js/systems/feudal-campaigns.js", symbol: "commitCampaign" },
+            { file: "js/systems/feudal-campaigns.js", symbol: "updateCampaignProgress" },
+            { file: "js/systems/feudal-campaigns.js", symbol: "settleAnnualCampaigns" },
+            { file: "js/presentation/management-ui.js", symbol: "campaign-aim" },
+            { file: "js/presentation/world-map-panel.js", symbol: "renderWorldMapPanel" }
+        ], tests: ["tests/systems/feudal-campaigns.test.js", "tests/simulation/combat-determinism.test.js", "tests/browser/feudal-campaigns-ui.mjs"] }
     ], {
         consumers: [
             { file: "js/systems/court.js", symbol: "updateCourt", role: "simulation" },
             { file: "js/systems/nobility.js", symbol: "getNobilitySnapshot", role: "gameplay" },
             { file: "js/systems/noble-host.js", symbol: "updateNobleHosts", role: "military" },
-            { file: "js/systems/noble-feuds.js", symbol: "updateNobleFeuds", role: "conflict" }
+            { file: "js/systems/noble-feuds.js", symbol: "updateNobleFeuds", role: "conflict" },
+            { file: "js/systems/feudal-campaigns.js", symbol: "settleAnnualCampaigns", role: "campaign" },
+            { file: "js/presentation/world-map-panel.js", symbol: "renderWorldMapPanel", role: "theatre" }
         ],
-        tests: ["tests/systems/court-diplomacy.test.js", "tests/systems/nobility.test.js", "tests/systems/noble-host.test.js", "tests/systems/noble-feuds.test.js"]
+        tests: ["tests/systems/court-diplomacy.test.js", "tests/systems/nobility.test.js", "tests/systems/noble-host.test.js", "tests/systems/noble-feuds.test.js", "tests/systems/feudal-campaigns.test.js"]
     }),
     section("3.9", "Dynasty, constitution and diplomacy", [
         { id: "3.9.1", label: "Succession law drives the actual succession path", evidence: [{ file: "js/systems/government.js", symbol: "setSuccessionLaw" }, { file: "js/systems/royal-dynasty.js", symbol: "updateRoyalSuccession" }], tests: ["tests/systems/succession-law.test.js"] },

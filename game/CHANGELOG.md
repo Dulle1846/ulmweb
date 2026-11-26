@@ -1,7 +1,7 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.74.0`
-**Next development line:** `3.75.0-dev`
+**Current production version:** `3.75.0`
+**Next development line:** `3.76.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
@@ -9,7 +9,7 @@
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
 
-## 3.74.0 — The regional forest economy
+## 3.75.0 — The regional forest economy
 
 The forest now has a second life after the felling. Eighteen regional timbers
 carry real working properties, eight quality classes grade every sawn batch,
@@ -41,8 +41,32 @@ products with different premiums.
   staves and furniture all reach the ordinary warehouse and market.
 - **New browser proof.** `npm run test:forest-industry-ui` builds a real Forest
   Works, opens the atlas and field guide, sells warehouse charcoal, changes the
-  workshop mode and runs a real batch. The full suite remains green at 1,592
-  tests, and the generated spec audit now covers all 1,679 registered points.
+  workshop mode and runs a real batch. The full suite remains green, and the
+  generated spec audit now covers all 1,680 registered points.
+## 3.74.0 — Feudal campaigns have theatres
+
+The crown can now name a war aim, bind it to a real neighbouring kingdom and
+optionally to a noble house, and commit a bounded feudal contract. One scalar
+per day advances the war band; the annual campaign audit settles it with a
+dedicated deterministic stream, so combat and every older RNG path keep their
+draw order. The Military, Nobility and World Map panels explain the same state.
+
+- **Three honest stages.** AIM opens a row without spending, COMMIT pays the
+  declared gold and food cost from the royal stores and signs the contract, and
+  SETTLE resolves the outcome, books the reward through the goods ledger, moves
+  the house's loyalty and standing, and archives both records. Stage guards
+  reject duplicate aims and premature or repeated commitments.
+- **Bounded and deterministic.** At most two war bands, six contracts and twelve
+  archived rows of each kind; progress touches only the two active campaigns and
+  uses no pathfinding. Settlement reads `state.year`, the recorded power, supply
+  and risk and a `"campaign"` random stream — never `"combat"`.
+- **Save-compatible.** The nested `campaigns` and `contracts` fields are optional
+  inside the existing military and nobility DTOs. Legacy saves gain bounded empty
+  rows; there is no schema bump and no reset of an older realm.
+- **Guidance stays one path.** NEXT MOVE and the completed first-session note
+  continue to a live aim or a ready war band instead of inventing a second
+  checklist. Focused tests cover stage guards, resource gates, tick bounds,
+  annual reconciliation, RNG isolation, save preflight and UI wiring.
 
 ## 3.73.0 — Production chains become readable
 

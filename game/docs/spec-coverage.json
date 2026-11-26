@@ -2,12 +2,12 @@
   "version": 2,
   "generatedBy": "scripts/spec-audit.mjs",
   "scope": "All numbered 1.1 and 1.2.1–1.2.18 requirements, including the 1.2.23.1.151–180 forest economy, plus the documented 2.x phases and 3.3–4.0 roadmap points.",
-  "commit": "393b021e2eb45f2f9d91756b1da2734db4297dd4",
-  "sourceHash": "d37342f96d7e96b33926c2638001b5f403906d494d36a8462831d78f135be37e",
-  "generatedAt": "2026-11-26T17:56:37+00:00",
+  "commit": "2917112324bf3e220fcc0efad8f4a3ef38a10442",
+  "sourceHash": "ca53ee8c458d1725bf400dea32bd30027d3f5fc6af407267cebef0bc08c8b956",
+  "generatedAt": "2026-11-26T19:42:50+00:00",
   "totals": {
-    "total": 1679,
-    "implemented": 1679,
+    "total": 1680,
+    "implemented": 1680,
     "open": 0,
     "sections": 40
   },
@@ -43089,6 +43089,7 @@
             "tests/systems/nobility.test.js",
             "tests/systems/noble-host.test.js",
             "tests/systems/noble-feuds.test.js",
+            "tests/systems/feudal-campaigns.test.js",
             "tests/systems/advisor.test.js"
           ],
           "status": "implemented",
@@ -43098,6 +43099,8 @@
             "js/systems/nobility.js#getNobilitySnapshot (gameplay)",
             "js/systems/noble-host.js#updateNobleHosts (military)",
             "js/systems/noble-feuds.js#updateNobleFeuds (conflict)",
+            "js/systems/feudal-campaigns.js#settleAnnualCampaigns (campaign)",
+            "js/presentation/world-map-panel.js#renderWorldMapPanel (theatre)",
             "js/systems/advisor.js#ensureRoyalAdvisor (point)",
             "js/systems/advisor.js#getAdvisorSnapshot (point)"
           ],
@@ -43117,6 +43120,7 @@
             "tests/systems/nobility.test.js",
             "tests/systems/noble-host.test.js",
             "tests/systems/noble-feuds.test.js",
+            "tests/systems/feudal-campaigns.test.js",
             "tests/systems/advisor.test.js"
           ],
           "status": "implemented",
@@ -43126,6 +43130,8 @@
             "js/systems/nobility.js#getNobilitySnapshot (gameplay)",
             "js/systems/noble-host.js#updateNobleHosts (military)",
             "js/systems/noble-feuds.js#updateNobleFeuds (conflict)",
+            "js/systems/feudal-campaigns.js#settleAnnualCampaigns (campaign)",
+            "js/presentation/world-map-panel.js#renderWorldMapPanel (theatre)",
             "js/systems/advisor.js#updateAdvisor (point)"
           ],
           "probe": null
@@ -43144,6 +43150,7 @@
             "tests/systems/nobility.test.js",
             "tests/systems/noble-host.test.js",
             "tests/systems/noble-feuds.test.js",
+            "tests/systems/feudal-campaigns.test.js",
             "tests/systems/advisor.test.js"
           ],
           "status": "implemented",
@@ -43153,6 +43160,8 @@
             "js/systems/nobility.js#getNobilitySnapshot (gameplay)",
             "js/systems/noble-host.js#updateNobleHosts (military)",
             "js/systems/noble-feuds.js#updateNobleFeuds (conflict)",
+            "js/systems/feudal-campaigns.js#settleAnnualCampaigns (campaign)",
+            "js/presentation/world-map-panel.js#renderWorldMapPanel (theatre)",
             "js/systems/advisor.js#buildAdvisorAdvice (point)"
           ],
           "probe": null
@@ -43175,6 +43184,7 @@
             "tests/systems/nobility.test.js",
             "tests/systems/noble-host.test.js",
             "tests/systems/noble-feuds.test.js",
+            "tests/systems/feudal-campaigns.test.js",
             "tests/systems/advisor.test.js"
           ],
           "status": "implemented",
@@ -43184,6 +43194,8 @@
             "js/systems/nobility.js#getNobilitySnapshot (gameplay)",
             "js/systems/noble-host.js#updateNobleHosts (military)",
             "js/systems/noble-feuds.js#updateNobleFeuds (conflict)",
+            "js/systems/feudal-campaigns.js#settleAnnualCampaigns (campaign)",
+            "js/presentation/world-map-panel.js#renderWorldMapPanel (theatre)",
             "js/systems/advisor.js#resolveAdvisorAdvice (point)",
             "js/presentation/management-ui.js#advisor (point)"
           ],
@@ -43203,6 +43215,7 @@
             "tests/systems/nobility.test.js",
             "tests/systems/noble-host.test.js",
             "tests/systems/noble-feuds.test.js",
+            "tests/systems/feudal-campaigns.test.js",
             "tests/systems/advisor.test.js"
           ],
           "status": "implemented",
@@ -43212,6 +43225,8 @@
             "js/systems/nobility.js#getNobilitySnapshot (gameplay)",
             "js/systems/noble-host.js#updateNobleHosts (military)",
             "js/systems/noble-feuds.js#updateNobleFeuds (conflict)",
+            "js/systems/feudal-campaigns.js#settleAnnualCampaigns (campaign)",
+            "js/presentation/world-map-panel.js#renderWorldMapPanel (theatre)",
             "js/systems/advisor.js#buildAdvisorAdvice (point)"
           ],
           "probe": null
@@ -43230,6 +43245,7 @@
             "tests/systems/nobility.test.js",
             "tests/systems/noble-host.test.js",
             "tests/systems/noble-feuds.test.js",
+            "tests/systems/feudal-campaigns.test.js",
             "tests/systems/advisor.test.js"
           ],
           "status": "implemented",
@@ -43239,6 +43255,8 @@
             "js/systems/nobility.js#getNobilitySnapshot (gameplay)",
             "js/systems/noble-host.js#updateNobleHosts (military)",
             "js/systems/noble-feuds.js#updateNobleFeuds (conflict)",
+            "js/systems/feudal-campaigns.js#settleAnnualCampaigns (campaign)",
+            "js/presentation/world-map-panel.js#renderWorldMapPanel (theatre)",
             "js/systems/advisor.js#recordAdvisorMemory (point)"
           ],
           "probe": null
@@ -43257,6 +43275,7 @@
             "tests/systems/nobility.test.js",
             "tests/systems/noble-host.test.js",
             "tests/systems/noble-feuds.test.js",
+            "tests/systems/feudal-campaigns.test.js",
             "tests/systems/advisor.test.js"
           ],
           "status": "implemented",
@@ -43266,6 +43285,8 @@
             "js/systems/nobility.js#getNobilitySnapshot (gameplay)",
             "js/systems/noble-host.js#updateNobleHosts (military)",
             "js/systems/noble-feuds.js#updateNobleFeuds (conflict)",
+            "js/systems/feudal-campaigns.js#settleAnnualCampaigns (campaign)",
+            "js/presentation/world-map-panel.js#renderWorldMapPanel (theatre)",
             "js/systems/advisor.js#ADVISOR_SIGNAL_LIMIT (point)"
           ],
           "probe": null
@@ -43288,6 +43309,7 @@
             "tests/systems/nobility.test.js",
             "tests/systems/noble-host.test.js",
             "tests/systems/noble-feuds.test.js",
+            "tests/systems/feudal-campaigns.test.js",
             "tests/systems/court-diplomacy.test.js"
           ],
           "status": "implemented",
@@ -43297,6 +43319,8 @@
             "js/systems/nobility.js#getNobilitySnapshot (gameplay)",
             "js/systems/noble-host.js#updateNobleHosts (military)",
             "js/systems/noble-feuds.js#updateNobleFeuds (conflict)",
+            "js/systems/feudal-campaigns.js#settleAnnualCampaigns (campaign)",
+            "js/presentation/world-map-panel.js#renderWorldMapPanel (theatre)",
             "js/systems/court.js#COURT_OFFICES (point)",
             "js/systems/court.js#getCourtModifiers (point)"
           ],
@@ -43316,6 +43340,7 @@
             "tests/systems/nobility.test.js",
             "tests/systems/noble-host.test.js",
             "tests/systems/noble-feuds.test.js",
+            "tests/systems/feudal-campaigns.test.js",
             "tests/systems/court-diplomacy.test.js"
           ],
           "status": "implemented",
@@ -43325,6 +43350,8 @@
             "js/systems/nobility.js#getNobilitySnapshot (gameplay)",
             "js/systems/noble-host.js#updateNobleHosts (military)",
             "js/systems/noble-feuds.js#updateNobleFeuds (conflict)",
+            "js/systems/feudal-campaigns.js#settleAnnualCampaigns (campaign)",
+            "js/presentation/world-map-panel.js#renderWorldMapPanel (theatre)",
             "js/systems/court.js#updateCourt (point)"
           ],
           "probe": null
@@ -43347,6 +43374,7 @@
             "tests/systems/nobility.test.js",
             "tests/systems/noble-host.test.js",
             "tests/systems/noble-feuds.test.js",
+            "tests/systems/feudal-campaigns.test.js",
             "tests/systems/nobility.test.js"
           ],
           "status": "implemented",
@@ -43356,6 +43384,8 @@
             "js/systems/nobility.js#getNobilitySnapshot (gameplay)",
             "js/systems/noble-host.js#updateNobleHosts (military)",
             "js/systems/noble-feuds.js#updateNobleFeuds (conflict)",
+            "js/systems/feudal-campaigns.js#settleAnnualCampaigns (campaign)",
+            "js/presentation/world-map-panel.js#renderWorldMapPanel (theatre)",
             "js/systems/nobility.js#getNobilitySnapshot (point)",
             "js/systems/nobility.js#callNobleLevy (point)"
           ],
@@ -43383,6 +43413,7 @@
             "tests/systems/nobility.test.js",
             "tests/systems/noble-host.test.js",
             "tests/systems/noble-feuds.test.js",
+            "tests/systems/feudal-campaigns.test.js",
             "tests/systems/noble-host.test.js"
           ],
           "status": "implemented",
@@ -43392,6 +43423,8 @@
             "js/systems/nobility.js#getNobilitySnapshot (gameplay)",
             "js/systems/noble-host.js#updateNobleHosts (military)",
             "js/systems/noble-feuds.js#updateNobleFeuds (conflict)",
+            "js/systems/feudal-campaigns.js#settleAnnualCampaigns (campaign)",
+            "js/presentation/world-map-panel.js#renderWorldMapPanel (theatre)",
             "js/systems/noble-host.js#updateNobleHosts (point)",
             "js/systems/noble-host.js#orderNobleHost (point)",
             "js/presentation/management-ui.js#nobilityPanel (point)"
@@ -43420,6 +43453,7 @@
             "tests/systems/nobility.test.js",
             "tests/systems/noble-host.test.js",
             "tests/systems/noble-feuds.test.js",
+            "tests/systems/feudal-campaigns.test.js",
             "tests/systems/noble-feuds.test.js"
           ],
           "status": "implemented",
@@ -43429,9 +43463,78 @@
             "js/systems/nobility.js#getNobilitySnapshot (gameplay)",
             "js/systems/noble-host.js#updateNobleHosts (military)",
             "js/systems/noble-feuds.js#updateNobleFeuds (conflict)",
+            "js/systems/feudal-campaigns.js#settleAnnualCampaigns (campaign)",
+            "js/presentation/world-map-panel.js#renderWorldMapPanel (theatre)",
             "js/systems/noble-feuds.js#updateNobleFeuds (point)",
             "js/systems/noble-feuds.js#mediateFeud (point)",
             "js/presentation/management-ui.js#nobilityPanel (point)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "3.8.13",
+          "label": "Feudal war aims, theatre campaigns and staged noble contracts",
+          "evidence": [
+            {
+              "file": "js/systems/feudal-campaigns.js",
+              "symbol": "WAR_AIMS"
+            },
+            {
+              "file": "js/systems/feudal-campaigns.js",
+              "symbol": "FEUDAL_CONTRACTS"
+            },
+            {
+              "file": "js/systems/feudal-campaigns.js",
+              "symbol": "aimCampaign"
+            },
+            {
+              "file": "js/systems/feudal-campaigns.js",
+              "symbol": "commitCampaign"
+            },
+            {
+              "file": "js/systems/feudal-campaigns.js",
+              "symbol": "updateCampaignProgress"
+            },
+            {
+              "file": "js/systems/feudal-campaigns.js",
+              "symbol": "settleAnnualCampaigns"
+            },
+            {
+              "file": "js/presentation/management-ui.js",
+              "symbol": "campaign-aim"
+            },
+            {
+              "file": "js/presentation/world-map-panel.js",
+              "symbol": "renderWorldMapPanel"
+            }
+          ],
+          "tests": [
+            "tests/systems/court-diplomacy.test.js",
+            "tests/systems/nobility.test.js",
+            "tests/systems/noble-host.test.js",
+            "tests/systems/noble-feuds.test.js",
+            "tests/systems/feudal-campaigns.test.js",
+            "tests/systems/feudal-campaigns.test.js",
+            "tests/simulation/combat-determinism.test.js",
+            "tests/browser/feudal-campaigns-ui.mjs"
+          ],
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/systems/court.js#updateCourt (simulation)",
+            "js/systems/nobility.js#getNobilitySnapshot (gameplay)",
+            "js/systems/noble-host.js#updateNobleHosts (military)",
+            "js/systems/noble-feuds.js#updateNobleFeuds (conflict)",
+            "js/systems/feudal-campaigns.js#settleAnnualCampaigns (campaign)",
+            "js/presentation/world-map-panel.js#renderWorldMapPanel (theatre)",
+            "js/systems/feudal-campaigns.js#WAR_AIMS (point)",
+            "js/systems/feudal-campaigns.js#FEUDAL_CONTRACTS (point)",
+            "js/systems/feudal-campaigns.js#aimCampaign (point)",
+            "js/systems/feudal-campaigns.js#commitCampaign (point)",
+            "js/systems/feudal-campaigns.js#updateCampaignProgress (point)",
+            "js/systems/feudal-campaigns.js#settleAnnualCampaigns (point)",
+            "js/presentation/management-ui.js#campaign-aim (point)",
+            "js/presentation/world-map-panel.js#renderWorldMapPanel (point)"
           ],
           "probe": null
         }
@@ -43460,6 +43563,18 @@
           "symbol": "updateNobleFeuds",
           "role": "conflict",
           "valid": true
+        },
+        {
+          "file": "js/systems/feudal-campaigns.js",
+          "symbol": "settleAnnualCampaigns",
+          "role": "campaign",
+          "valid": true
+        },
+        {
+          "file": "js/presentation/world-map-panel.js",
+          "symbol": "renderWorldMapPanel",
+          "role": "theatre",
+          "valid": true
         }
       ],
       "tests": [
@@ -43478,6 +43593,10 @@
         {
           "file": "tests/systems/noble-feuds.test.js",
           "valid": true
+        },
+        {
+          "file": "tests/systems/feudal-campaigns.test.js",
+          "valid": true
         }
       ],
       "source": "",
@@ -43485,9 +43604,9 @@
       "probeFunction": null,
       "probeClimate": "temperate",
       "probeExtra": {},
-      "implemented": 12,
+      "implemented": 13,
       "open": 0,
-      "total": 12
+      "total": 13
     },
     {
       "id": "3.9",

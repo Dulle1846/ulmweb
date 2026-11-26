@@ -46,6 +46,7 @@ import { normalizeLegacyState } from "../systems/legacy.js";
 import { normalizeEndeavoursState } from "../systems/endeavours.js";
 import { normalizeHealthState } from "../systems/health.js";
 import { normalizeMilitaryState } from "../systems/military.js";
+import { createCampaignState, createContractState, normalizeCampaignState, normalizeContractState } from "../systems/feudal-campaigns.js";
 import { createEspionageState, normalizeEspionageState } from "../systems/espionage.js";
 import { normalizeAmbitions } from "../systems/ambitions.js";
 import { normalizePoliticalState } from "../systems/politics.js";
@@ -87,6 +88,40 @@ function pickFuelBackfillFields(source) {
         if (source?.[key] !== undefined) fields[key] = source[key];
     }
     return fields;
+}
+
+// Feudal campaigns live inside the existing military and nobility DTOs. The
+// nested fields are optional: legacy saves simply receive bounded empty rows,
+// and modern saves keep the same bounded campaign/contract records without a
+// schema bump. Normalising here also caps hand-edited saves before validation.
+function serializeCampaignDto(value) {
+    const source = value && typeof value === "object" && !Array.isArray(value) ? value : {};
+    return {
+        ...JSON.parse(JSON.stringify(source)),
+        campaigns: normalizeCampaignState(source.campaigns || createCampaignState())
+    };
+}
+
+function serializeContractDto(value) {
+    const source = value && typeof value === "object" && !Array.isArray(value) ? value : {};
+    return {
+        ...JSON.parse(JSON.stringify(source)),
+        contracts: normalizeContractState(source.contracts || createContractState())
+    };
+}
+
+function restoreCampaignDto(value) {
+    const source = value && typeof value === "object" && !Array.isArray(value) ? value : {};
+    const military = normalizeMilitaryState(source);
+    military.campaigns = normalizeCampaignState(source.campaigns);
+    return military;
+}
+
+function restoreContractDto(value) {
+    const source = value && typeof value === "object" && !Array.isArray(value) ? value : {};
+    const nobility = normalizeNobilityState(source);
+    nobility.contracts = normalizeContractState(source.contracts);
+    return nobility;
 }
 
 function serializeEntity(entity, indexByEntity) {
@@ -186,7 +221,7 @@ export function createSaveSnapshot() {
         issueSequence: state.issueSequence,
         hiddenRealm: JSON.parse(JSON.stringify(state.hiddenRealm || {})),
         health: JSON.parse(JSON.stringify(state.health || {})),
-        military: JSON.parse(JSON.stringify(state.military || {})),
+        military: serializeCampaignDto(state.military || {}),
         espionage: JSON.parse(JSON.stringify(state.espionage || createEspionageState())),
         faith: JSON.parse(JSON.stringify(state.faith || createFaithState())),
         justice: JSON.parse(JSON.stringify(state.justice || createJusticeState())),
@@ -254,7 +289,7 @@ export function createSaveSnapshot() {
         biomeAtlas: serializeBiomeAtlasState(),
         realmCycle: JSON.parse(JSON.stringify(state.realmCycle || createRealmCycleState())),
         court: JSON.parse(JSON.stringify(state.court || createCourtState())),
-        nobility: JSON.parse(JSON.stringify(state.nobility || createNobilityState())),
+        nobility: serializeContractDto(state.nobility || createNobilityState()),
         diplomacy: JSON.parse(JSON.stringify(state.diplomacy || createDiplomacyState())),
         expeditions: JSON.parse(JSON.stringify(normalizeExpeditionsState(state.expeditions))),
         disasterRecovery: JSON.parse(JSON.stringify(normalizeDisasterRecoveryState(state.disasterRecovery))),
@@ -449,7 +484,7 @@ export function restoreSaveSnapshot(snapshot) {
         ...(snapshot.hiddenRealm || {})
     };
     state.health = normalizeHealthState(snapshot.health || {});
-    state.military = normalizeMilitaryState(snapshot.military || {});
+    state.military = restoreCampaignDto(snapshot.military);
     state.espionage = normalizeEspionageState(snapshot.espionage || {});
     state.faith = normalizeFaithState(snapshot.faith || {});
     state.justice = normalizeJusticeState(snapshot.justice || {});
@@ -495,7 +530,7 @@ export function restoreSaveSnapshot(snapshot) {
     state.market = snapshot.market || createMarketState();
     state.realmCycle = normalizeRealmCycleState(snapshot.realmCycle);
     state.court = normalizeCourtState(snapshot.court);
-    state.nobility = normalizeNobilityState(snapshot.nobility);
+    state.nobility = restoreContractDto(snapshot.nobility);
     state.diplomacy = normalizeDiplomacySnapshot(snapshot.diplomacy);
     state.expeditions = normalizeExpeditionsState(snapshot.expeditions);
     state.disasterRecovery = normalizeDisasterRecoveryState(snapshot.disasterRecovery);

@@ -4,6 +4,7 @@ import { TYPE } from "../../js/core/types.js";
 import { resetState, state } from "../../js/core/state.js";
 import { applyScenarioStart, SCENARIO_PRESETS } from "../../js/systems/scenario.js";
 import { getCoreCounsel } from "../../js/presentation/core-counsel.js";
+import { AMBITIONS } from "../../js/systems/ambitions.js";
 
 function realm(overrides = {}) {
     return {
@@ -216,6 +217,33 @@ test("core counsel continues a free realm with the next measured ambition", () =
         assert.equal(counsel.panel, "kingdom");
         assert.match(counsel.text, /Next royal ambition:/);
         assert.match(counsel.evidence, /24 housing/);
+    } finally {
+        resetState();
+    }
+});
+
+test("core counsel extends a completed opening into the live theatre campaign", () => {
+    resetState();
+    try {
+        for (const ambition of AMBITIONS) state.ambitions.completed[ambition.id] = 1;
+        const campaign = {
+            id: "campaign-1", aim: "watch", theatre: "realm-north",
+            theatreName: "Northern March", stage: "aim", progress: 0
+        };
+        const counsel = getCoreCounsel(realm({ military: { campaigns: { active: [campaign] } } }));
+        assert.equal(counsel.id, "campaign");
+        assert.equal(counsel.stepId, null);
+        assert.equal(counsel.panel, "military");
+        assert.equal(counsel.actionLabel, "OPEN MILITARY");
+        assert.match(counsel.text, /BORDER WATCH aim in Military/);
+        assert.match(counsel.evidence, /Northern March · BORDER WATCH/);
+
+        campaign.stage = "committed";
+        campaign.progress = 100;
+        const ready = getCoreCounsel(realm({ military: { campaigns: { active: [campaign] } } }));
+        assert.equal(ready.id, "campaign");
+        assert.match(ready.text, /Settle the Northern March war band in Military/);
+        assert.match(ready.evidence, /100\/100 progress/);
     } finally {
         resetState();
     }

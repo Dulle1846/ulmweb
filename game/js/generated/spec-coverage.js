@@ -2,11 +2,11 @@
 export const SPEC_COVERAGE = Object.freeze({
   "version": 2,
   "generatedBy": "scripts/spec-audit.mjs",
-  "commit": "393b021e2eb45f2f9d91756b1da2734db4297dd4",
-  "sourceHash": "d37342f96d7e96b33926c2638001b5f403906d494d36a8462831d78f135be37e",
+  "commit": "2917112324bf3e220fcc0efad8f4a3ef38a10442",
+  "sourceHash": "ca53ee8c458d1725bf400dea32bd30027d3f5fc6af407267cebef0bc08c8b956",
   "totals": {
-    "total": 1679,
-    "implemented": 1679,
+    "total": 1680,
+    "implemented": 1680,
     "open": 0,
     "sections": 40
   },
@@ -641,8 +641,8 @@ export const SPEC_COVERAGE = Object.freeze({
     {
       "id": "3.8",
       "title": "Royal court, advisor and living nobility",
-      "total": 12,
-      "implemented": 12,
+      "total": 13,
+      "implemented": 13,
       "open": 0,
       "source": "system registry"
     },

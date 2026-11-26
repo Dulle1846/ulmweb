@@ -1,7 +1,7 @@
 # Kings & Cards
 
-**Production version:** 3.74.0
-**Next development line:** 3.75.0-dev
+**Production version:** 3.75.0
+**Next development line:** 3.76.0-dev
 **Production branch:** `ulmweb-branch`  
 **Production URL:** https://kings-and-cards.pages.dev/
 
@@ -30,6 +30,8 @@
 21. [The Endless Realm](docs/ENDLESS_REALM.md) — terminal-defeat removal, recoverable collapses, the held keep, 25-year endless ages, save compatibility and the 250-year proof.
 22. [Fantastic & Rare Biomes 1.2.16](docs/SPECIAL_BIOMES.md) — nine rare families, the 100-point atlas manifest, seeded regions, rare goods, discovery, blight, attunement, terrain tint, cross-system quests/combat/diplomacy/city couplings, save compatibility and the Explore survey.
 23. [Transition Biomes 1.2.17](docs/TRANSITION_BIOMES.md) — fifteen named ecotones, ten landscapes, organic widths, mixed vegetation, dynamic climate/fire/logging/grazing response, farm/forest/forage/settlement/route gameplay coupling and the fifty-point audit.
+24. [Feudal campaigns](docs/FEUDAL_CAMPAIGNS.md) — war aims, theatre contracts, staged commitments, bounded annual settlement, noble-house consequences and the Military/Nobility/World Map presentation.
+25. [Regionale Waldwirtschaft 1.2.23.1.151–180](docs/FOREST_INDUSTRIES.md) — eighteen regional timbers, eight quality classes, five saw profiles, the 17-path Forest Works, twenty finished goods, regional furniture styles, the atlas exchange and the complete thirty-point player guide.
 
 ## Development rules
 

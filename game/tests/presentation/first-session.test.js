@@ -6,6 +6,7 @@ import { TYPE } from "../../js/core/types.js";
 import { applyScenarioStart, SCENARIO_PRESETS } from "../../js/systems/scenario.js";
 import { getFirstSessionSnapshot } from "../../js/presentation/first-session.js";
 import { getCoreCounsel } from "../../js/presentation/core-counsel.js";
+import { AMBITIONS } from "../../js/systems/ambitions.js";
 
 test("the first-session checklist starts with founding and exposes all five steps", () => {
     resetState();
@@ -95,6 +96,33 @@ test("a completed first session names the real scenario or next ambition", () =>
     assert.match(authored.continuationText, /150 food by Spring, year 2/i);
     assert.match(authored.continuationText, /SPRING · YEAR 2/);
     resetState();
+});
+
+test("a completed first session continues into a live theatre campaign", () => {
+    resetState();
+    try {
+        for (const ambition of AMBITIONS) state.ambitions.completed[ambition.id] = 1;
+        state.hasStarted = true;
+        state.entities = [{ dead: false, type: TYPE.HOUSE }];
+        state.statistics.totalHousesBuilt = 1;
+        state.statistics.totalRoadTilesBuilt = 1;
+        state.statistics.totalCardsDrawn = 1;
+        state.military = {
+            campaigns: {
+                active: [{
+                    id: "campaign-1", aim: "watch", theatre: "realm-north",
+                    theatreName: "Northern March", stage: "aim", progress: 0
+                }]
+            }
+        };
+        const snapshot = getFirstSessionSnapshot();
+        assert.equal(snapshot.allComplete, true);
+        assert.equal(snapshot.counselId, "campaign");
+        assert.match(snapshot.continuationText, /BORDER WATCH aim in Military/);
+        assert.match(snapshot.continuationText, /Northern March · BORDER WATCH/);
+    } finally {
+        resetState();
+    }
 });
 
 test("the first-session HUD carries the real latest twenty-day ledger in plain language", () => {
