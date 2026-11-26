@@ -194,6 +194,16 @@ test("the atlas exposes region history and the live stewardship registers", () =
     assert.match(markup, /data-forest-stewardship="\d+"/);
     assert.match(markup, /data-forest-firebreaks="\d+"/);
     assert.match(markup, /data-forest-drained="\d+"/);
+
+    // A single protected tile and a single replant must read as player prose,
+    // not as the old "1 TILES / 1 UNITS" debug wording.
+    state.forestSuccession.breaks["0:0"] = state.forestSuccession.day + 30;
+    state.forestSuccession.planted = 1;
+    invalidateForestAtlasSurvey();
+    const singular = renderForestAtlasPanel();
+    assert.match(singular, /data-forest-firebreaks="1"/);
+    assert.match(singular, /<small>FIREBREAKS<\/small><strong>1 TILE<\/strong>/);
+    assert.match(singular, /<small>REPLANTED<\/small><strong>1 UNIT<\/strong>/);
 });
 
 test("a realm without resource geography shows an honest empty atlas", () => {

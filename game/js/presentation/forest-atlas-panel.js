@@ -469,7 +469,10 @@ function stewardshipEventLine(entry) {
 function regionHistoryBlock(survey) {
     const pulse = survey.succession || {};
     const regions = Array.isArray(survey.regions) ? survey.regions : [];
-    const countLabel = (count, one, many) => number(count) + ' ' + (number(count) === 1 ? one : many);
+    const countLabel = (count, one, many) => {
+        const value = Number(count) || 0;
+        return number(value) + ' ' + (value === 1 ? one : many);
+    };
     const rows = regions.map(region => {
         const sample = region.sample || {};
         const disturbances = region.disturbances || {};
