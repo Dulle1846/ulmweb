@@ -2,7 +2,8 @@
 // player-made records. The catalogue is cached; the panel never rescans the
 // live simulation on every frame.
 import { state } from "../core/state.js";
-import { BASE_ITEMS, buildItemCatalog, ITEM_CATEGORIES, itemCategoryLabel } from "../systems/item-lexicon.js";
+import { BASE_ITEMS, buildItemCatalog, ITEM_CATEGORIES, itemCategoryLabel, craftedUseOptions } from "../systems/item-lexicon.js";
+import { useCraftedItem } from "../systems/craft-production.js";
 import { renderProgressive } from "./progressive-render.js";
 
 const BASE_LABELS = new Map(BASE_ITEMS.map(item => [item.id.replace(/^base:(?:resource|good|metal|furnishing|forest):/, ""), item.label]));
@@ -22,6 +23,7 @@ let query = "";
 let cachedCatalog = null;
 let cachedTick = -1;
 let cachedCraftedKey = "";
+let useNotice = "";
 let boundContainer = null;
 const lazyGroupRows = new Map();
 let visibleLimit = 0;
@@ -41,9 +43,10 @@ function esc(value) {
 }
 
 function craftedKey() {
+    // Status changes do not change the archive length or the last id. Include
+    // every bounded record's status so committing an item repaints the panel.
     const items = Array.isArray(state.craftedItems) ? state.craftedItems : [];
-    const last = items.length ? items[items.length - 1] : null;
-    return items.length + ":" + String(last?.id || "");
+    return items.map(item => String(item?.id || "") + ":" + String(item?.status || "owned")).join(",");
 }
 
 function getCatalog() {
@@ -117,7 +120,9 @@ function renderEntry(item) {
     return '<details class="item-lexicon__entry' + (crafted ? " is-crafted" : "") + '" data-item-id="' + esc(item.id) + '">' +
         '<summary>' +
             '<span class="item-lexicon__entry-copy"><strong>' + esc(item.label) + '</strong><small>' + esc(item.source) + '</small></span>' +
-            '<span class="item-lexicon__badges"><b>' + (crafted ? "MADE" : "BASE") + '</b><em>' + esc(item.categoryLabel.toUpperCase()) + '</em></span>' +
+            '<span class="item-lexicon__badges"><b>' + (crafted ? "MADE" : "BASE") + '</b>' +
+                (crafted ? '<i class="item-lexicon__status">' + esc(String(item.status || "owned").toUpperCase()) + '</i>' : "") +
+                '<em>' + esc(item.categoryLabel.toUpperCase()) + '</em></span>' +
         '</summary>' +
         '<div class="item-lexicon__detail" data-item-detail></div>' +
     '</details>';
@@ -144,11 +149,22 @@ function detailMarkup(item) {
     if (crafted && item.materials?.length) {
         details.push('<span><small>MATERIALS</small><strong>' + esc(materialText(item)) + '</strong></span>');
     }
+    if (crafted) {
+        details.push('<span><small>STATUS</small><strong>' + esc(String(item.status || "owned").toUpperCase()) + '</strong></span>');
+    }
     const tags = (item.tags || []).slice(0, 10).map(tag => '<span>' + esc(tag) + '</span>').join("");
+    const uses = crafted && item.status === "owned" ? craftedUseOptions(item) : [];
+    const actionBar = uses.length
+        ? '<div class="item-lexicon__uses">' + uses.map(option =>
+            '<button type="button" class="item-lexicon__use" data-crafted-use="' + esc(option.id) +
+            '" data-crafted-id="' + esc(item.id) + '" title="' + esc(option.note) + '">' +
+            esc(option.label) + ' · +' + option.amount + ' ' + esc(option.resource.toUpperCase()) + '</button>'
+        ).join("") + '</div>'
+        : "";
     return '<p class="item-lexicon__summary">' + esc(item.summary) + '</p>' +
         (item.detail ? '<p class="item-lexicon__prose">' + esc(item.detail) + '</p>' : "") +
         '<div class="item-lexicon__meta">' + details.join("") + '</div>' +
-        (tags ? '<div class="item-lexicon__tags">' + tags + '</div>' : "");
+        (tags ? '<div class="item-lexicon__tags">' + tags + '</div>' : "") + actionBar;
 }
 
 function ensureItemDetail(details) {
@@ -243,6 +259,7 @@ function paint(container, { force = false } = {}) {
                 ? '<button type="button" class="item-lexicon__more" data-item-more>SHOW ' + Math.min(pageSize(), rows.length - visible.length).toLocaleString("en-US") + ' MORE</button>'
                 : '') +
             '<p class="item-lexicon__footnote">Base entries describe real definitions in the simulation. Crafted entries exist only when a unique item record has actually been registered; no live stock is invented here.</p>' +
+            (useNotice ? '<p class="item-lexicon__use-notice" role="status">' + esc(useNotice) + '</p>' : "") +
         '</div>';
     window.__itemTiming = { catalogMs: Math.round((__c1 - __c0) * 10) / 10, buildMs: Math.round((performance.now() - __c1) * 10) / 10 };
     if (isNarrowViewport() && !force && !searchFocused) renderProgressive(container, markup);
@@ -277,6 +294,15 @@ function bind(container) {
         }
         const summary = event.target.closest(".item-lexicon__entry > summary");
         if (summary) ensureItemDetail(summary.parentElement);
+        const useButton = event.target.closest("[data-crafted-use]");
+        if (useButton) {
+            const result = useCraftedItem(useButton.dataset.craftedId, useButton.dataset.craftedUse);
+            useNotice = result.ok
+                ? result.text + " · " + String(result.status).toUpperCase()
+                : String(result.reason || "USE REJECTED").toUpperCase();
+            repaint(container);
+            return;
+        }
         const categoryButton = event.target.closest("[data-item-category]");
         if (categoryButton) {
             activeCategory = categoryButton.dataset.itemCategory || "all";
@@ -329,6 +355,7 @@ export function renderItemLexicon(container) {
 export function resetItemLexicon() {
     activeCategory = "all";
     query = "";
+    useNotice = "";
     visibleLimit = 0;
     cachedCatalog = null;
     cachedTick = -1;

@@ -6,8 +6,9 @@
 // the whole archive is needed: production is checked on a bounded cadence.
 import { state } from "../core/state.js";
 import { TYPE } from "../core/types.js";
-import { CRAFT_RECIPES } from "./city-config.js";
-import { appendCraftedItem, createCraftedItem } from "./item-lexicon.js";
+import { addLog } from "../core/event-log.js";
+import { CRAFT_RECIPES, CRAFTED_ITEM_USES } from "./city-config.js";
+import { appendCraftedItem, createCraftedItem, craftedUseAmount, normalizeCraftedItems } from "./item-lexicon.js";
 import { getBuildingEfficiency } from "./economy.js";
 import { ensureInventory, requestSupply, recordGoodMovement } from "./logistics.js";
 import { addResource } from "./resources.js";
@@ -222,4 +223,46 @@ export function updateCraftProduction(phase = 0) {
         made += 1;
     }
     return made;
+}
+
+/**
+ * Commits one owned archive record to an active use or a sale. This is a
+ * player action, never a tick action: it touches one record, pays once through
+ * the royal resource ledger, writes one event, and records the resulting
+ * status so a repeated call (or a save/reload) cannot pay twice.
+ */
+export function useCraftedItem(id, use) {
+    const itemId = String(id || "").trim();
+    const useId = String(use || "").trim();
+    const archive = Array.isArray(state.craftedItems) ? state.craftedItems : [];
+    const index = archive.findIndex(entry => entry && entry.id === itemId);
+    if (index < 0) return { ok: false, reason: "ITEM NOT FOUND IN THE ARCHIVE", id: itemId, use: useId };
+    const item = archive[index];
+    const option = (CRAFTED_ITEM_USES[item.kind] || {})[useId];
+    if (!option) return { ok: false, reason: "THAT USE IS NOT AVAILABLE", id: itemId, use: useId };
+    if (item.status !== "owned") {
+        return { ok: false, reason: "ITEM ALREADY " + String(item.status).toUpperCase(), id: itemId, use: useId };
+    }
+
+    const amount = craftedUseAmount(option, item.quality);
+    const next = archive.slice();
+    next[index] = { ...item, status: option.status };
+    // Re-normalising keeps the frozen record shape, the 500-record cap and the
+    // legacy "owned" default intact after a player-driven status change.
+    state.craftedItems = normalizeCraftedItems(next);
+    addResource(option.resource, amount);
+    const ledger = craftLedger();
+    const counter = useId === "sell" ? "itemsSold" : "itemsUsed";
+    ledger[counter] = Math.max(0, number(ledger[counter], 0)) + 1;
+    ledger.lastUse = useId;
+    ledger.lastUseItemId = itemId;
+    ledger.lastUseTick = state.tick;
+
+    const text = String(item.label).toUpperCase() + " " + (useId === "sell" ? "SOLD" : "PUT TO WORK") +
+        " · +" + amount + " " + String(option.resource).toUpperCase() + " · YEAR " + state.year;
+    addLog(text, useId === "sell" ? "#d6b45e" : "#7fae89", "craft");
+    return {
+        ok: true, id: itemId, use: useId, status: option.status,
+        resource: option.resource, amount, label: String(option.label || ""), text
+    };
 }

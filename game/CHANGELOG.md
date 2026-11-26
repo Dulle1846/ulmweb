@@ -1,13 +1,42 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.67.0`
-**Next development line:** `3.68.0-dev`
+**Current production version:** `3.68.0`
+**Next development line:** `3.69.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
 **Last repository verification:** 2026-11-26 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.68.0 — Crafted items do real work
+
+Unique workshop records are now usable. The smithy and scriptorium still make
+one item per season, but an owned item in the Lexicon can be committed to its
+declared active use or sold to a buyer, with a real royal resource payout and a
+status that survives save and reload.
+
+- **A player decision with a visible result.** Each crafted dossier shows
+  `STATUS OWNED` plus two labelled buttons with the exact payout, for example
+  `ISSUE TO THE HUNT · +5 FOOD` or `SELL TO AN ARMS DEALER · +8 GOLD`. The row
+  badge becomes `USED` or `SOLD`, the event reaches the chronicle, and the
+  buttons disappear so the same record cannot pay twice.
+- **Six declared kinds, one bounded formula.** `CRAFTED_ITEM_USES` covers
+  weapons, armour, tools, books, jewellery and relics. Payouts are derived from
+  the stored quality and declared integer bounds; there is no RNG and no new
+  random stream.
+- **Save-compatible by construction.** `status` is normalized with the legacy
+  default `owned`, so old archives open unchanged. The existing `craftedItems`
+  snapshot path carries the status, the 500-record cap and the frozen record
+  shape; the save schema stays at version 15.
+- **No simulation cost.** Production intervals stay at 90 and 30 ticks, the
+  supply target stays at 8, and committing an item is a player action that
+  touches one record, pays once and logs once. The Lexicon cache key includes
+  every status so a committed item repaints immediately.
+- **Proofs.** Focused systems tests **13/13**, a real Chromium playthrough with
+  two produced items and both payouts verified (`pageErrors []`,
+  `consoleErrors []`), plus the full gate and live checks recorded on release.
+  Player and simulation details: `docs/CRAFTED_ITEM_USES.md`.
 
 ## 3.67.0 — The forest gets one shared data model
 
