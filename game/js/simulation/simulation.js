@@ -64,6 +64,7 @@ import { updateRoadWear } from "../systems/roads.js";
 import { updateSettlementMaintenance } from "../systems/settlement-owners.js";
 import { updateScenario } from "../systems/scenario.js";
 import { updateWorldMap } from "../systems/world-map.js";
+import { updateCampaignProgress, settleAnnualCampaigns } from "../systems/feudal-campaigns.js";
 
 // The annual rollover is deep but its systems are independent in strict order.
 // Headless callers run all of them in one call; the presented game loop runs
@@ -110,6 +111,10 @@ const ANNUAL_TASKS = [
     // grants: it moves standing caravans through the existing market stock and
     // reads the border pressure the realms just settled.
     { name: "worldMap", run(annual) { annual.worldMap = updateWorldMap(); } },
+    // Feudal contracts read the settled houses, hosts and theatres above. One
+    // annual pass settles ready campaigns with the dedicated campaign stream;
+    // nothing here touches combat's random draw order.
+    { name: "campaignSettle", run(annual) { annual.campaignSettle = settleAnnualCampaigns(); } },
     // One bounded hazard pass at the year boundary: eruption, earthquake,
     // ashfall and real destruction on volcanic ground. Temperate worlds return
     // immediately, so the shared campaign keeps its existing tick cost.
@@ -411,6 +416,7 @@ function finishDailyEconomy() {
     updateConstruction();
     updateVillagers();
     updateMilitary();
+    updateCampaignProgress();
     updateCombat();
     updateExpeditions();
 }

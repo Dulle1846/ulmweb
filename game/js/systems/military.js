@@ -22,6 +22,7 @@ import { getCitizenModifiers } from "./population-register.js";
 import { getCrownDread, getFrontierPressure, normalizeCrownDreadReading } from "./crown-dread.js";
 import { spawnEntity, canSpawnEntity } from "../world/entities.js";
 import { WORLD_WIDTH, WORLD_HEIGHT } from "../core/config.js";
+import { createCampaignState, normalizeCampaignState, validateCampaignState, getCampaignSnapshot } from "./feudal-campaigns.js";
 
 export const MILITARY_INTERVAL = 10;
 export const MILITARY_HISTORY_LIMIT = 24;
@@ -63,7 +64,8 @@ export function createMilitaryState() {
         strengthYear: 0,
         lastPayroll: null,
         history: [],
-        recentCasualties: []
+        recentCasualties: [],
+        campaigns: createCampaignState()
     };
 }
 
@@ -128,7 +130,8 @@ export function normalizeMilitaryState(value = {}) {
         ...normalizeCrownDreadReading(source),
         lastPayroll,
         history,
-        recentCasualties
+        recentCasualties,
+        campaigns: normalizeCampaignState(source.campaigns)
     };
 }
 
@@ -828,7 +831,8 @@ export function getMilitarySnapshot() {
         trained: military.recruitsTrained,
         losses: military.losses,
         desertions: military.desertions,
-        recruitCost: RECRUIT_COST
+        recruitCost: RECRUIT_COST,
+        campaigns: getCampaignSnapshot()
     };
 }
 
@@ -846,5 +850,6 @@ export function validateMilitaryState(value) {
     if (value.recentCasualties !== undefined && (!Array.isArray(value.recentCasualties) || value.recentCasualties.length > 12)) {
         throw new Error("Save data contains an invalid casualty record.");
     }
+    validateCampaignState(value.campaigns);
     return true;
 }

@@ -5,6 +5,7 @@ import { BUILDING_COSTS, CONSTRUCTION_SHARE, costShare, isHousingType, housingCa
 import { ROAD_TYPES } from "../systems/roads.js";
 import { getAmbitionSnapshot } from "../systems/ambitions.js";
 import { getScenarioSnapshot } from "../systems/scenario.js";
+import { WAR_AIMS, CAMPAIGN_GOAL } from "../systems/feudal-campaigns.js";
 
 function canAfford(state, cost) {
     return Object.entries(cost || {}).every(([resource, amount]) =>
@@ -325,6 +326,33 @@ export function getCoreCounsel(state) {
             }
         }
     } catch { /* the counsel must remain available during early loading */ }
+    // Once the opening milestones are closed, a live theatre campaign is the
+    // clearest strategic step: settle a ready war band before starting another,
+    // otherwise commit the open aim. This reads the same bounded military state
+    // as the panel instead of adding a second checklist or a new campaign.
+    const activeCampaigns = Array.isArray(state?.military?.campaigns?.active)
+        ? state.military.campaigns.active.slice(0, 2) : [];
+    const readyCampaign = activeCampaigns.find(campaign => campaign?.stage === "committed" &&
+        Number(campaign.progress) >= CAMPAIGN_GOAL);
+    const openAim = activeCampaigns.find(campaign => campaign?.stage === "aim");
+    const campaign = readyCampaign || openAim;
+    if (campaign) {
+        const aimLabel = WAR_AIMS[campaign.aim]?.label || "WAR AIM";
+        const theatre = campaign.theatreName || campaign.theatre || "theatre";
+        return {
+            id: "campaign",
+            stepId: null,
+            text: readyCampaign
+                ? "Settle the " + theatre + " war band in Military."
+                : "Commit the " + aimLabel + " aim in Military.",
+            evidence: theatre + " · " + aimLabel + " · " + String(campaign.stage || "aim").toUpperCase() +
+                " · " + Math.round(Number(campaign.progress) || 0) + "/" + CAMPAIGN_GOAL + " progress",
+            actionLabel: "OPEN MILITARY",
+            panel: "military",
+            buildCategory: null,
+            buildType: null
+        };
+    }
     return {
         id: "steady",
         stepId: null,
