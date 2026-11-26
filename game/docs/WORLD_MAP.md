@@ -1,6 +1,6 @@
 # World map, trade routes and frontiers
 
-**Status:** implemented in 3.50.0 (roadmap 4.0.2); provinces added in 3.68.0
+**Status:** implemented in 3.50.0 (roadmap 4.0.2); provinces added in 3.69.0
 (roadmap 4.0.1)
 **System:** `js/systems/world-map.js`
 **Province catalog:** `js/world/world-regions.js`
@@ -12,7 +12,7 @@
 A WORLD tab sits beside DIPLOMACY in the normal management deck. It opens a
 schematic compass map of the four neighbouring regions (Northern Marches,
 Eastern Highlands, Southern Coast, Western Frontier), the real settlement seats
-the realm already owns, and every standing caravan between them. Since 3.68.0
+the realm already owns, and every standing caravan between them. Since 3.69.0
 the same map also carries **ten provinces held by five crowns** (the player's
 crown and the four diplomatic realms), with ownership, control, loyalty,
 garrison and a yearly resource yield. See [WORLD_KINGDOMS.md](WORLD_KINGDOMS.md).
@@ -103,5 +103,5 @@ province ownership and the claim lock survive an exact save/load round-trip.
   and reloads, and repeats the panel at 390 × 844 with no horizontal overflow and
   no page or console errors.
 - The deterministic 25-year campaign remains green and keeps its bounded tick
-  cost: 10,040 ticks at 1.365 ms/tick, no stalled sites, 3,507 forest tiles and
+  cost: 10,040 ticks at 1.007 ms/tick, no stalled sites, 3,507 forest tiles and
   0 untyped tiles. The generated audit is 1,648/1,648 with no open points.

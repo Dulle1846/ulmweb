@@ -1189,6 +1189,12 @@ kbd {padding:4px 6px;border:1px solid rgba(221,190,126,.2);border-radius:5px;bac
 .item-lexicon__badges b{padding:2px 4px;border:1px solid rgba(83,59,34,.28);border-radius:3px;color:#725733;font-family:monospace;font-size:6px;letter-spacing:.04em}
 .item-lexicon__entry.is-crafted .item-lexicon__badges b{border-color:rgba(61,104,80,.4);color:#356b52}
 .item-lexicon__badges em{color:#6f5a43;font-size:6px;font-style:normal;font-weight:800;letter-spacing:.06em;text-align:right}
+.item-lexicon__status{padding:2px 4px;border:1px solid rgba(61,104,80,.3);border-radius:3px;color:#356b52;font-size:6px;font-style:normal;font-weight:800;letter-spacing:.05em}
+.item-lexicon__status:not(:empty){white-space:nowrap}
+.item-lexicon__uses{display:flex;flex-wrap:wrap;gap:4px;padding-top:3px}
+.item-lexicon__use{min-height:24px;padding:0 7px;border:1px solid rgba(83,59,34,.3);border-radius:4px;background:rgba(255,251,239,.5);color:#5b4329;font-size:7px;font-weight:800;letter-spacing:.05em;cursor:pointer}
+.item-lexicon__use:hover{border-color:#8b6b3e;background:rgba(112,82,48,.1);color:#35271a}
+.item-lexicon__use-notice{margin:0;padding:5px 7px;border:1px solid rgba(61,104,80,.28);border-radius:4px;background:rgba(61,104,80,.07);color:#356b52;font-size:7px;font-weight:800;letter-spacing:.05em}
 .item-lexicon__entry[open]>summary{background:rgba(112,82,48,.06)}
 .item-lexicon__detail{display:flex;flex-direction:column;gap:6px;padding:0 9px 9px 22px}
 .item-lexicon__summary{margin:0;color:#493828;font-size:9px;line-height:1.45}

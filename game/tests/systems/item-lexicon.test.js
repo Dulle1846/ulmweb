@@ -3,8 +3,10 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import {
     BASE_ITEMS, buildItemCatalog, createCraftedItem, appendCraftedItem,
-    normalizeCraftedItem, validateCraftedItems, ITEM_CATEGORIES, MAX_CRAFTED_ITEMS
+    normalizeCraftedItem, validateCraftedItems, ITEM_CATEGORIES, MAX_CRAFTED_ITEMS,
+    CRAFTED_ITEM_STATUSES, normalizeCraftedStatus, craftedUseAmount, craftedUseOptions
 } from "../../js/systems/item-lexicon.js";
+import { CRAFTED_ITEM_USES } from "../../js/systems/city-config.js";
 import { normalizeSaveSnapshot, validateSaveSnapshot, SAVE_SCHEMA_VERSION } from "../../js/core/save-validation.js";
 
 function forgedOptions(overrides = {}) {
@@ -101,11 +103,77 @@ test("crafted archives are idempotent, bounded and reject malformed saves", () =
     );
 });
 
+test("crafted status defaults to owned for legacy archives and survives save normalization", () => {
+    const item = createCraftedItem(forgedOptions());
+    assert.equal(item.status, "owned");
+    assert.deepEqual(CRAFTED_ITEM_STATUSES, ["owned", "used", "sold"]);
+    assert.equal(normalizeCraftedStatus(undefined), "owned");
+    assert.equal(normalizeCraftedStatus("USED"), "used");
+    assert.equal(normalizeCraftedStatus("sold"), "sold");
+    assert.equal(normalizeCraftedStatus("banished"), "owned");
+
+    const legacy = JSON.parse(JSON.stringify(item));
+    delete legacy.status;
+    assert.equal(normalizeCraftedItem(legacy).status, "owned", "an older save without status still works");
+    const used = normalizeCraftedItem({ ...legacy, status: "used" });
+    assert.equal(used.status, "used");
+    assert.equal(used.id, item.id, "a status change must not rewrite the deterministic record id");
+    assert.equal(normalizeCraftedItem({ ...legacy, status: "used" }).source, item.source);
+
+    const snapshot = {
+        saveSchemaVersion: SAVE_SCHEMA_VERSION,
+        worldSeed: 9917,
+        entities: [],
+        resources: { wood: 1, stone: 2, gold: 3, food: 4 },
+        incomeThisTick: { wood: 0, stone: 0, gold: 0, food: 0 },
+        craftedItems: [used],
+    };
+    assert.equal(validateSaveSnapshot(snapshot), true);
+    assert.equal(normalizeSaveSnapshot(snapshot).craftedItems[0].status, "used");
+    assert.equal(SAVE_SCHEMA_VERSION, 15, "item 19 adds no schema version");
+});
+
+test("crafted use options are declared, quality-scaled and deterministic", () => {
+    const weapon = createCraftedItem(forgedOptions());
+    const options = craftedUseOptions(weapon);
+    assert.deepEqual(options.map(option => option.id), ["use", "sell"]);
+    assert.equal(options[0].status, "used");
+    assert.equal(options[0].resource, "food");
+    assert.equal(options[1].status, "sold");
+    assert.equal(options[1].resource, "gold");
+    assert.deepEqual(craftedUseOptions(createCraftedItem(forgedOptions())), options);
+    assert.equal(options[0].amount, craftedUseAmount(CRAFTED_ITEM_USES.weapon.use, weapon.quality));
+    assert.ok(options[0].amount >= CRAFTED_ITEM_USES.weapon.use.minimum);
+    assert.ok(options[0].amount <= CRAFTED_ITEM_USES.weapon.use.maximum);
+    assert.equal(craftedUseAmount(CRAFTED_ITEM_USES.weapon.use, 0), CRAFTED_ITEM_USES.weapon.use.minimum);
+    assert.equal(craftedUseAmount(CRAFTED_ITEM_USES.weapon.use, 100), CRAFTED_ITEM_USES.weapon.use.maximum);
+    assert.deepEqual(craftedUseOptions({ kind: "weapon" }), []);
+    for (const kind of ["weapon", "armour", "tool", "book", "jewellery", "relic"]) {
+        const item = createCraftedItem(forgedOptions({ kind }));
+        assert.equal(craftedUseOptions(item).length, 2, "missing declared uses for " + kind);
+    }
+});
+
 test("base item records stay frozen and do not depend on node locale formatting", () => {
     assert.ok(Object.isFrozen(BASE_ITEMS));
     assert.ok(BASE_ITEMS.every(item => Object.isFrozen(item) && Object.isFrozen(item.tags)));
     const catalog = buildItemCatalog();
     assert.ok(catalog.rows.every(row => row.label === row.label.trim()));
+});
+
+test("the lexicon panel really wires status-aware commit controls", async () => {
+    const [panel, production, config] = await Promise.all([
+        readFile(new URL("../../js/presentation/item-lexicon-panel.js", import.meta.url), "utf8"),
+        readFile(new URL("../../js/systems/craft-production.js", import.meta.url), "utf8"),
+        readFile(new URL("../../js/systems/city-config.js", import.meta.url), "utf8"),
+    ]);
+    assert.ok(panel.includes("data-crafted-use"), "the dossier must render real commit buttons");
+    assert.ok(panel.includes("useCraftedItem("), "the panel must call the single write path");
+    assert.ok(panel.replace(/\s+/g, "").includes('String(item?.status||"owned")'), "the cache key must track statuses");
+    assert.ok(production.includes("export function useCraftedItem(id, use)"));
+    assert.ok(production.includes("addResource(option.resource, amount)"));
+    assert.ok(production.includes("addLog(text,"));
+    assert.ok(config.includes("export const CRAFTED_ITEM_USES"));
 });
 
 test("the save and management contracts actually wire the crafted archive", async () => {

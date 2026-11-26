@@ -1,6 +1,6 @@
 # Five crowns and ten provinces
 
-**Status:** implemented in 3.68.0 (roadmap 4.0.1)
+**Status:** implemented in 3.69.0 (roadmap 4.0.1)
 **Data:** `js/world/world-regions.js`
 **Simulation:** `js/systems/world-map.js`
 **Panel:** WORLD tab in Realm Management

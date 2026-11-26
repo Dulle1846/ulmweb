@@ -1,6 +1,6 @@
 # Local data packs
 
-**Status:** implemented in 3.68.0 (roadmap 4.0.6)
+**Status:** implemented in 3.69.0 (roadmap 4.0.6)
 **Loader and validator:** `js/core/data-packs.js`
 **Start-screen UI:** DATA PACKS · LOCAL CONTENT in `index.html`
 **World-map consumer:** province label overrides in `world-map.js`
@@ -22,7 +22,7 @@ The contract is deliberately closed:
   "name": "Northern Lore",
   "author": "Open Hearth",
   "version": "1.0.0",
-  "gameVersion": "3.68.0",
+  "gameVersion": "3.69.0",
   "description": "A small northern content pack.",
   "scenarios": [
     {
