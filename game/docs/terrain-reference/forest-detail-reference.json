@@ -10,7 +10,7 @@
   },
   "renderer": "WebKit WebGL",
   "maxTextureSize": 8192,
-  "generatedAt": "2026-11-25T23:54:12.168Z",
+  "generatedAt": "2026-11-26T01:05:23.760Z",
   "world": {
     "width": 176,
     "height": 176,
@@ -96,8 +96,14 @@
             "x": 87.2995,
             "y": 42.694199999999995
           },
-          "sha256": "fefd7c234a296cf0915b57d4d974b2cde9613e8ab7765d5d7d6db644b485d21c",
-          "animal": null
+          "sha256": "d5fe8fba971969683ebef304fb629e92ffdade1c33ab8b7a686e97c030aebfac",
+          "animal": null,
+          "insects": [],
+          "faunaDrawn": {
+            "drawnTiles": 0,
+            "closeFaunaTiles": 8,
+            "herds": []
+          }
         }
       ]
     },
@@ -163,8 +169,14 @@
             "x": 86.35,
             "y": 44.6528
           },
-          "sha256": "254180bc65ea70abb43b6b6edf3b906a79d8659cefe5037053924778b91d7afa",
-          "animal": null
+          "sha256": "c89fcbc80fe27f093ee49911b32aa97e5f86e0a415e8072b487dd9e495c4f63f",
+          "animal": null,
+          "insects": [],
+          "faunaDrawn": {
+            "drawnTiles": 0,
+            "closeFaunaTiles": 7,
+            "herds": []
+          }
         }
       ]
     },
@@ -230,8 +242,14 @@
             "x": 114.7495,
             "y": 24.5083
           },
-          "sha256": "2da0ac2eddc6a8392b6747ac5624d6983bfbf6d5b89321c52cfe824bcd9eca32",
-          "animal": null
+          "sha256": "b12f85b2bcfca16bafcf3d90eddf946083060d5ba6d2aaf773ccd986216893a3",
+          "animal": null,
+          "insects": [],
+          "faunaDrawn": {
+            "drawnTiles": 0,
+            "closeFaunaTiles": 1,
+            "herds": []
+          }
         }
       ]
     },
@@ -297,8 +315,14 @@
             "x": 85.663,
             "y": 122.41114999999999
           },
-          "sha256": "8b3e32dee78408f0e19dfecb061fd778381d987ee0fc1c2a9158596d4cd7c4c3",
-          "animal": null
+          "sha256": "dbd7d7c0ca7899bfca823016ebabf1e0808d2c341710fdf45380ceb1c1a7422f",
+          "animal": null,
+          "insects": [],
+          "faunaDrawn": {
+            "drawnTiles": 0,
+            "closeFaunaTiles": 2,
+            "herds": []
+          }
         },
         {
           "label": "LOAM · WELL-DRAINED",
@@ -357,8 +381,14 @@
             "x": 65.326,
             "y": 109.7158
           },
-          "sha256": "79367cf7cf14734ad7f3f263cdbd85f71225f3ffbe9053cb718c5d8131f5aa2b",
-          "animal": null
+          "sha256": "dafbc09bd40fd84ff2801af19e970cbddccb674506aa755cedf6d7b17ad0731c",
+          "animal": null,
+          "insects": [],
+          "faunaDrawn": {
+            "drawnTiles": 0,
+            "closeFaunaTiles": 6,
+            "herds": []
+          }
         }
       ]
     },
@@ -424,8 +454,14 @@
             "x": 97.3625,
             "y": 38.70719999999999
           },
-          "sha256": "3c14398cdab58759824ec71106fdd752df5fe83816d5860d08d70587bcdfb645",
-          "animal": null
+          "sha256": "fb11b58739d3e4480d2d1d7ba1554e6d0dae4fe6fc6e1652db2d97244b5d4490",
+          "animal": null,
+          "insects": [],
+          "faunaDrawn": {
+            "drawnTiles": 0,
+            "closeFaunaTiles": 2,
+            "herds": []
+          }
         },
         {
           "label": "STONES",
@@ -484,8 +520,14 @@
             "x": 91.589,
             "y": 55.466049999999996
           },
-          "sha256": "a4c76fb6be70227ee2561edd9d1de89aa4898b6929c91d739b0b2198b1687323",
-          "animal": null
+          "sha256": "ed9a3c98d5dc1bab7997ecaaba2993da9072f1b22728bb28001e8cfaeece5e14",
+          "animal": null,
+          "insects": [],
+          "faunaDrawn": {
+            "drawnTiles": 0,
+            "closeFaunaTiles": 4,
+            "herds": []
+          }
         },
         {
           "label": "FALLEN LOG",
@@ -544,8 +586,14 @@
             "x": 126.609,
             "y": 133.43910000000002
           },
-          "sha256": "c7bf3462a6789de6a7057d5a974e5941716dfe315f6d376dba08b6ea6405032c",
-          "animal": null
+          "sha256": "af7dfa7c4acacdbfd806bfa1dceb058bbf11751ffde8b64845f07e305410cee9",
+          "animal": null,
+          "insects": [],
+          "faunaDrawn": {
+            "drawnTiles": 0,
+            "closeFaunaTiles": 3,
+            "herds": []
+          }
         }
       ]
     },
@@ -611,8 +659,14 @@
             "x": 128.738,
             "y": 133.48225000000002
           },
-          "sha256": "b54fe9bf49202aef9d75b077a3415d20edaeb01db0b705519d51d2b457b2f89b",
-          "animal": null
+          "sha256": "cdf6edbbc97220dc1af89626081fcdf7ff06beecfbfd3d2d7d7285303f407a59",
+          "animal": null,
+          "insects": [],
+          "faunaDrawn": {
+            "drawnTiles": 0,
+            "closeFaunaTiles": 5,
+            "herds": []
+          }
         },
         {
           "label": "FLOOR",
@@ -671,8 +725,14 @@
             "x": 90.686,
             "y": 40.720749999999995
           },
-          "sha256": "7081a9683e7421cef1b47466a1e94f271a35f3fc9a1af75c93c8d61c8c7648bf",
-          "animal": null
+          "sha256": "241bd44106f76020adf6f74be469bd3daef4597ef146a26e34c56416e249f57c",
+          "animal": null,
+          "insects": [],
+          "faunaDrawn": {
+            "drawnTiles": 1,
+            "closeFaunaTiles": 2,
+            "herds": []
+          }
         }
       ]
     },
@@ -738,8 +798,14 @@
             "x": 88.7795,
             "y": 42.78615
           },
-          "sha256": "9ed621ea4996dc9c377796dd964075c29ebd5601862f812225255196c0e4f1f1",
-          "animal": null
+          "sha256": "79265c9b33dc4604513246ab5bf920be67be18e7ec4bc771eeb8791fd6929b47",
+          "animal": null,
+          "insects": [],
+          "faunaDrawn": {
+            "drawnTiles": 0,
+            "closeFaunaTiles": 2,
+            "herds": []
+          }
         },
         {
           "label": "AUTUMN MAST",
@@ -798,8 +864,14 @@
             "x": 39.2705,
             "y": 37.45855
           },
-          "sha256": "f0b88faa9deb7ac9be1a664570e012ddc05877cea26394dbf83663a3b90e116f",
-          "animal": null
+          "sha256": "c7984c03f88d8a428aa4c73003cb0262e0b6220530cbbec840aaa3bda460c13a",
+          "animal": null,
+          "insects": [],
+          "faunaDrawn": {
+            "drawnTiles": 0,
+            "closeFaunaTiles": 2,
+            "herds": []
+          }
         }
       ]
     },
@@ -865,7 +937,7 @@
             "x": 87.4535,
             "y": 20.7176
           },
-          "sha256": "073b308c87a70a32d026e94b4be0024ad961ef649d441528163e12867ccf3b42",
+          "sha256": "f2ce8b41033e85760b9fb1fa78866b8421c78fe01231453831becc22fddd5350",
           "animal": {
             "id": "squirrel",
             "label": "Squirrel",
@@ -873,6 +945,12 @@
             "activity": "caching nuts in the canopy",
             "simulatedHerd": false,
             "population": null
+          },
+          "insects": [],
+          "faunaDrawn": {
+            "drawnTiles": 0,
+            "closeFaunaTiles": 3,
+            "herds": []
           }
         },
         {
@@ -932,7 +1010,7 @@
             "x": 87.44021428571429,
             "y": 20.7176
           },
-          "sha256": "8e03ab15596b8421a5344192d5d34289948540aee752ba2337d2175e661b6199",
+          "sha256": "31376615aaa53bffc3d18d8a442dfd5d0442f2707e52688b2408f0cfa48344e4",
           "animal": {
             "id": "squirrel",
             "label": "Squirrel",
@@ -940,6 +1018,12 @@
             "activity": "caching nuts in the canopy",
             "simulatedHerd": false,
             "population": null
+          },
+          "insects": [],
+          "faunaDrawn": {
+            "drawnTiles": 0,
+            "closeFaunaTiles": 1,
+            "herds": []
           }
         }
       ]
@@ -1006,13 +1090,21 @@
             "x": 126.578,
             "y": 93.31125
           },
-          "sha256": "f4ad915961a23e901cf831afd4d83810634ec500eb717b2e33e9e25f1c19bf46",
+          "sha256": "b345a6f359fc55670bd7d69f78193add8014d096cc37d28921c26a085315e72e",
           "animal": {
             "id": "woodpecker",
             "label": "Woodpecker",
             "group": "bird",
             "simulatedHerd": true,
             "population": 3.2
+          },
+          "insects": [],
+          "faunaDrawn": {
+            "drawnTiles": 1,
+            "closeFaunaTiles": 7,
+            "herds": [
+              "woodpecker:3.2"
+            ]
           }
         },
         {
@@ -1072,13 +1164,21 @@
             "x": 126.51014285714287,
             "y": 93.31125
           },
-          "sha256": "eb6c62f5f6680a9ccce6ef9023d8cc03afe57086eab9459989d7377d0f90b633",
+          "sha256": "62802127ba6b3c475c850c5b32b3fd2cf662c9c6015e1b31e6253c52e91bf4af",
           "animal": {
             "id": "woodpecker",
             "label": "Woodpecker",
             "group": "bird",
             "simulatedHerd": true,
             "population": 3.2
+          },
+          "insects": [],
+          "faunaDrawn": {
+            "drawnTiles": 1,
+            "closeFaunaTiles": 5,
+            "herds": [
+              "woodpecker:3.2"
+            ]
           }
         }
       ]
@@ -1086,55 +1186,55 @@
     {
       "id": "1.2.1.35",
       "title": "Insects, beetles, butterflies and ants",
-      "note": "A habitat insect mark on a forest tile; it is deliberately small, so the second frame is a native 4.2× close-up.",
+      "note": "A resident animal herd, wood ants and beetles on one densely wooded tile. The close-up is a native 6.4× render, not an upscaled crop.",
       "frames": [
         {
           "label": "TILE",
           "tile": {
-            "x": 90,
-            "y": 17,
+            "x": 60,
+            "y": 60,
             "tree": false,
-            "s1": 0.997,
-            "s2": 0.812,
-            "s3": 0.997,
-            "moisture": 0.513,
-            "temperature": 0.463,
-            "height": 0.352,
+            "s1": 0.992,
+            "s2": 0.953,
+            "s3": 0.843,
+            "moisture": 0.608,
+            "temperature": 0.504,
+            "height": 0.637,
             "stockRatio": 1,
-            "type": "mixed-young",
-            "label": "Young Mixed Plantation",
-            "age": "young",
-            "soil": "loam",
+            "type": "mixed-ancient",
+            "label": "Ancient Mixed Wood",
+            "age": "ancient",
+            "soil": "humus",
             "clearing": 0,
-            "treeChance": 0.362,
-            "light": 0.769,
+            "treeChance": 0.623,
+            "light": 0.457,
             "compaction": 0,
             "huntingPressure": 0,
             "flowers": 0.06,
-            "roots": 0.08,
-            "stones": 0,
-            "mushrooms": 0.234,
+            "roots": 0.4,
+            "stones": 0.107,
+            "mushrooms": 0.262,
             "stumps": 0,
-            "logs": 0,
+            "logs": 0.14,
             "trail": false,
             "goods": [
               "acorns",
               "bark",
               "beech-timber",
               "beechnuts",
-              "berries",
-              "birch-sap",
-              "birch-timber",
-              "blueberries",
-              "chanterelle",
+              "beeswax",
+              "charcoal",
               "crab-apples",
-              "firewood",
-              "herbs"
+              "elm-seeds",
+              "elm-timber",
+              "fir-cones",
+              "fir-timber",
+              "firewood"
             ],
             "species": [
-              "Birch",
-              "Larch",
-              "Spruce"
+              "Oak",
+              "Beech",
+              "Linden"
             ]
           },
           "day": 150,
@@ -1142,84 +1242,108 @@
           "crop": 700,
           "mark": null,
           "focus": {
-            "x": 90.656,
-            "y": 17.74865
+            "x": 60.7265,
+            "y": 60.67935
           },
-          "sha256": "161a6bb3fe7094aa4ea23868b50352bbe32d40f60f0b389d17488b78ce41d3f2",
+          "sha256": "ea7c721775a3e92336eec308c22312d5803e20c11c8af2f96ff3f5600e031f6c",
           "animal": {
-            "id": "bee",
-            "label": "Wild bee",
-            "group": "insect",
-            "activity": "visiting the flowering edge",
-            "simulatedHerd": false,
-            "population": null
+            "id": "deer",
+            "label": "Red deer",
+            "group": "large",
+            "simulatedHerd": true,
+            "population": 12.6
+          },
+          "insects": [
+            "ant",
+            "beetle",
+            "bark-beetle",
+            "bee"
+          ],
+          "faunaDrawn": {
+            "drawnTiles": 2,
+            "closeFaunaTiles": 9,
+            "herds": [
+              "deer:12.6"
+            ]
           }
         },
         {
           "label": "CLOSE-UP",
           "tile": {
-            "x": 90,
-            "y": 17,
+            "x": 60,
+            "y": 60,
             "tree": false,
-            "s1": 0.997,
-            "s2": 0.812,
-            "s3": 0.997,
-            "moisture": 0.513,
-            "temperature": 0.463,
-            "height": 0.352,
+            "s1": 0.992,
+            "s2": 0.953,
+            "s3": 0.843,
+            "moisture": 0.608,
+            "temperature": 0.504,
+            "height": 0.637,
             "stockRatio": 1,
-            "type": "mixed-young",
-            "label": "Young Mixed Plantation",
-            "age": "young",
-            "soil": "loam",
+            "type": "mixed-ancient",
+            "label": "Ancient Mixed Wood",
+            "age": "ancient",
+            "soil": "humus",
             "clearing": 0,
-            "treeChance": 0.362,
-            "light": 0.769,
+            "treeChance": 0.623,
+            "light": 0.457,
             "compaction": 0,
             "huntingPressure": 0,
             "flowers": 0.06,
-            "roots": 0.08,
-            "stones": 0,
-            "mushrooms": 0.234,
+            "roots": 0.4,
+            "stones": 0.107,
+            "mushrooms": 0.262,
             "stumps": 0,
-            "logs": 0,
+            "logs": 0.14,
             "trail": false,
             "goods": [
               "acorns",
               "bark",
               "beech-timber",
               "beechnuts",
-              "berries",
-              "birch-sap",
-              "birch-timber",
-              "blueberries",
-              "chanterelle",
+              "beeswax",
+              "charcoal",
               "crab-apples",
-              "firewood",
-              "herbs"
+              "elm-seeds",
+              "elm-timber",
+              "fir-cones",
+              "fir-timber",
+              "firewood"
             ],
             "species": [
-              "Birch",
-              "Larch",
-              "Spruce"
+              "Oak",
+              "Beech",
+              "Linden"
             ]
           },
           "day": 150,
           "zoom": 6.4,
-          "crop": 320,
-          "mark": "Wild bee",
+          "crop": 640,
+          "mark": "Red deer + ANTS",
           "focus": {
-            "x": 90.727,
-            "y": 17.74865
+            "x": 60.7755,
+            "y": 60.67935
           },
-          "sha256": "2e1b74c0c78c0b534d7a5debde2bb4ff8546e51d8c669421d2c04b4c97843daa",
+          "sha256": "2c3a24ccdb0a0f4dc95d16395297a229c94bae66903b7f2720f9f940f1b77465",
           "animal": {
-            "id": "bee",
-            "label": "Wild bee",
-            "group": "insect",
-            "activity": "visiting the flowering edge",
-            "simulatedHerd": false,
-            "population": null
+            "id": "deer",
+            "label": "Red deer",
+            "group": "large",
+            "simulatedHerd": true,
+            "population": 12.6
+          },
+          "insects": [
+            "ant",
+            "beetle",
+            "bark-beetle",
+            "bee"
+          ],
+          "faunaDrawn": {
+            "drawnTiles": 2,
+            "closeFaunaTiles": 2,
+            "herds": [
+              "deer:12.6"
+            ]
           }
         }
       ]
@@ -1286,8 +1410,14 @@
             "x": 59.7475,
             "y": 46.3279
           },
-          "sha256": "ef75aff3f3ca06e9408621d7f5b031f4dda3b06b610fd13dc9a9dca3a0e41ed4",
-          "animal": null
+          "sha256": "e622b3301b4eb34af653e95cfd34bd92d36402c817c84b3e1cb2fde2cf216f6f",
+          "animal": null,
+          "insects": [],
+          "faunaDrawn": {
+            "drawnTiles": 0,
+            "closeFaunaTiles": 3,
+            "herds": []
+          }
         },
         {
           "label": "NEST",
@@ -1346,8 +1476,14 @@
             "x": 59.7275,
             "y": 45.9979
           },
-          "sha256": "2180aaf17ffc0bfadadf20de5740e0ad105c042fa9dd813e43a66f32462df7ec",
-          "animal": null
+          "sha256": "50db5242f38cb928d89086cf1b71df02ea57e476ed266cf0efc8294ce52c0911",
+          "animal": null,
+          "insects": [],
+          "faunaDrawn": {
+            "drawnTiles": 0,
+            "closeFaunaTiles": 2,
+            "herds": []
+          }
         },
         {
           "label": "HOLLOW",
@@ -1406,8 +1542,14 @@
             "x": 59.6575,
             "y": 46.237899999999996
           },
-          "sha256": "f533066d7c8faa846240829b8002a8f8535bf8027bee8d7fbb708dd2906b1261",
-          "animal": null
+          "sha256": "e682a6d4154d0cdaf877c416f10a92f48811c4b21c5e5e10407ab9a0d55b048c",
+          "animal": null,
+          "insects": [],
+          "faunaDrawn": {
+            "drawnTiles": 0,
+            "closeFaunaTiles": 2,
+            "herds": []
+          }
         }
       ]
     },
@@ -1473,8 +1615,14 @@
             "x": 108.6285,
             "y": 74.41745
           },
-          "sha256": "f180c5cc7fdd1d959f90378669b65f39b360790230b049f73ae2361c269f87cb",
-          "animal": null
+          "sha256": "49d74b99c63b4c0a458a3e0316cf8a75e07884b0e35e8f71bccfbd2e0e20228f",
+          "animal": null,
+          "insects": [],
+          "faunaDrawn": {
+            "drawnTiles": 0,
+            "closeFaunaTiles": 0,
+            "herds": []
+          }
         }
       ]
     },
@@ -1540,8 +1688,14 @@
             "x": 87.737,
             "y": 40.520799999999994
           },
-          "sha256": "c45f74d5adf24d9cd1fdd7fae0982b5f62b7b8fa69f46f7ec358848701957fe6",
-          "animal": null
+          "sha256": "fbbf21504ce05404e92fd77b4a26f5b3ef72e6bbb88c8aa8f7fbaee320649f31",
+          "animal": null,
+          "insects": [],
+          "faunaDrawn": {
+            "drawnTiles": 0,
+            "closeFaunaTiles": 6,
+            "herds": []
+          }
         }
       ]
     }

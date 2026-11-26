@@ -4,47 +4,47 @@
     "width": 1000,
     "height": 700
   },
-  "generatedAt": "2026-11-11T16:12:21.152Z",
+  "generatedAt": "2026-11-26T01:19:46.208Z",
   "levels": [
     {
       "level": 1,
       "zoom": 0.09,
-      "treeDraws": 1497,
-      "peakDrawMs": 234.80000001192093,
-      "cacheMisses": 2
+      "treeDraws": 1203,
+      "peakDrawMs": 9.5,
+      "cacheMisses": 1
     },
     {
       "level": 2,
       "zoom": 0.3,
-      "treeDraws": 707,
-      "peakDrawMs": 64.69999998807907,
-      "cacheMisses": 3
+      "treeDraws": 737,
+      "peakDrawMs": 7.5999999940395355,
+      "cacheMisses": 2
     },
     {
       "level": 3,
       "zoom": 0.95,
-      "treeDraws": 98,
-      "peakDrawMs": 17.100000023841858,
-      "cacheMisses": 4
+      "treeDraws": 308,
+      "peakDrawMs": 10.900000005960464,
+      "cacheMisses": 3
     },
     {
       "level": 4,
       "zoom": 2.4,
-      "treeDraws": 33,
-      "peakDrawMs": 11.299999982118607,
-      "cacheMisses": 5
+      "treeDraws": 104,
+      "peakDrawMs": 3.9000000059604645,
+      "cacheMisses": 4
     }
   ],
   "pan": {
-    "beforeMisses": 6,
-    "duringMisses": 6,
-    "afterMisses": 7,
-    "duringTransform": "translate(0px, 0px) scale(1)"
+    "beforeMisses": 5,
+    "duringMisses": 5,
+    "afterMisses": 6,
+    "duringTransform": "translate(-208px, 0px) scale(1)"
   },
   "zoom": {
     "beforeZoom": 0.3,
     "afterZoom": 0.354,
-    "duringTransform": "translate(0px, 0px) scale(1)"
+    "duringTransform": "translate(37.383px, 39.3976px) scale(1.03837)"
   },
   "note": "Chromium in this container uses software rendering. Peak draw times are diagnostic, not device FPS claims."
 }

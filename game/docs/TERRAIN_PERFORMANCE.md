@@ -85,6 +85,40 @@ Viewport: 1200 × 700. Renderer: `WebKit WebGL`. The tab was not visible, so
 `requestAnimationFrame` was suspended and frame intervals were unavailable.
 These rows must not be quoted as GPU performance.
 
+### Maximum-zoom ground study
+
+The isolated shader page above is useful for comparing shading paths, but it does
+not measure the actual ground-study frame the player holds. The dedicated harness
+drives the real game through Chromium WebGL2, selects a dry dense ancient wood
+with saved insects and a resident herd, waits for the staged decoration cache,
+and samples the real `requestAnimationFrame` intervals and the game loop's own
+draw/build counters:
+
+```sh
+cd game
+npm run test:ground-study
+```
+
+It writes `docs/terrain-reference/ground-study-performance.json` (override the
+directory with `GROUND_STUDY_OUT`). On the cloud runner the renderer string is
+`WebKit WebGL` (software SwiftShader) at 1280 × 800, so these are presentation
+intervals, not a hardware-GPU claim. The static ground cache means the shader is
+not redrawn on a stationary dry crop; the close-detail raster is cached on the
+Canvas2D overlay and built in bounded slices. These are therefore app-owned
+measurements from the real game, not a synthetic draw loop.
+
+| Zoom | Frame p50 | Frame p95 | Frame p99 | Active p95* | World draw p95 | Build | Close tiles |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 5.40× | 16.7 ms | 25.2 ms | 42.0 ms | 23.4 ms | **0.4 ms** | 70 ms / 17 slices, max 8.2 ms | 35 / 35 |
+| 7.40× | 16.7 ms | 24.4 ms | 31.7 ms | 24.4 ms | **0.4 ms** | 35 ms / 10 slices, max 4.9 ms | 25 / 25 |
+
+\*The 5.40× raw p99 includes two host presentation stalls (58–100 ms) whose
+app draw was only 0.3–0.4 ms. Active p95 excludes those stalls; the raw values
+remain in the JSON. The gate is frame p95 ≤ 33 ms and world draw p95 ≤ 16.7 ms,
+and the close pass must stay at or below the visible-tile count, draw the
+fauna herd, keep zero simulation samples while paused, avoid cache churn, and
+keep the largest build slice under 16.7 ms.
+
 ### Hardware GPU
 
 **Still to measure.** No real GPU is reachable from the cloud workspace, so

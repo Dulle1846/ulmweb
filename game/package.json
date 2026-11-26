@@ -1,6 +1,6 @@
 {
   "name": "kings-and-cards",
-  "version": "3.62.0",
+  "version": "3.63.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -32,6 +32,7 @@
     "test:jungle-raid": "node tests/browser/jungle-raid.mjs",
     "test:forest-occlusion": "node tests/browser/forest-occlusion.mjs",
     "test:forest-detail": "node tests/browser/forest-detail-reference.mjs",
+    "test:ground-study": "node tests/browser/ground-study-performance.mjs",
     "test:terrain-stability": "node tests/browser/terrain-stability.mjs",
     "test:device-benchmark": "node tests/browser/device-benchmark.mjs",
     "test:performance:low-end": "PERF_SOFTWARE_CANVAS=1 node tests/browser/low-end-performance.mjs",

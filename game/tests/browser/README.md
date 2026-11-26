@@ -39,6 +39,7 @@ npm run test:conifer-reference
 npm run test:mixed-reference
 npm run test:forest-occlusion
 npm run test:forest-detail
+npm run test:ground-study
 npm run test:terrain-stability
 npm run test:device-benchmark
 npm run test:atmosphere-reference
@@ -95,7 +96,16 @@ mixed formations; they write `conifer-reference.png` / `conifer-seasons.png` /
 `forest-detail-reference.png` with the thirteen native close-ups for the
 formerly open checklist items, plus `forest-detail-reference.json`. Small
 motifs carry a review ring; every frame is a real terrain render, and the
-script waits for the decoration cache to rebuild before each capture.
+script waits for the decoration cache to rebuild before each capture. The
+deepest close-up is selected from a tile with saved insects and a resident
+simulated herd; its metadata records the rendered herd and the `faunaDrawn`
+counters. `test:ground-study` is the maximum-zoom performance proof: it starts
+the real fixed realm in Chromium WebGL2, picks a dry dense forest tile with
+saved insects and a resident herd, measures the 5.40× and 7.40× ground views
+with the close-detail cache active, and writes
+`docs/terrain-reference/ground-study-performance.json`. It fails on visible
+tile counts, missing fauna, cache churn, off-tick simulation work, an unsliced
+build, or a p95 frame/draw above the low-end budget.
 `test:terrain-stability` drives the live
 Canvas2D cache through all four zoom levels, a long pan and a zoom, and asserts
 that the decoration layer stays visible and rebuilds only after the view has
@@ -170,6 +180,11 @@ The GitHub workflow uses that command through the shared
   `docs/terrain-reference`.
 - `FOREST_DETAIL_FRAMES` - optional directory for the individual uncropped
   detail frames; useful when reviewing a single motif.
+- `GROUND_STUDY_OUT` - output directory for the maximum-zoom performance
+  report, default `docs/terrain-reference`. `GROUND_STUDY_SAMPLE_MS`, `GROUND_STUDY_SETTLE_MS`,
+  `GROUND_STUDY_SEED` and the `GROUND_STUDY_*_MS` budget overrides are available
+  for local diagnosis; the release gate uses the documented defaults (5.4×/7.4×,
+  33 ms frame p95, 16.7 ms draw p95).
 - `DEVICE_BENCHMARK_OUT` - benchmark artifact directory, default
   `docs/terrain-reference`.
 
