@@ -160,6 +160,38 @@ export const CRAFT_RECIPES = Object.freeze({
     })
 });
 
+// A unique record only becomes useful when the player commits it. Every kind
+// offers one active use and one sale; both pay out through the ordinary royal
+// resource ledger, scale with the recorded quality, and are idempotent because
+// the archive stores the resulting status. Nothing here runs on a tick.
+export const CRAFTED_ITEM_USES = Object.freeze({
+    weapon: Object.freeze({
+        use: Object.freeze({ label: "ISSUE TO THE HUNT", status: "used", resource: "food", minimum: 2, maximum: 6, note: "Armed hunters bring game back to the royal larder." }),
+        sell: Object.freeze({ label: "SELL TO AN ARMS DEALER", status: "sold", resource: "gold", minimum: 4, maximum: 10, note: "A travelling dealer pays in coin." })
+    }),
+    armour: Object.freeze({
+        use: Object.freeze({ label: "EQUIP THE WATCH", status: "used", resource: "stone", minimum: 2, maximum: 5, note: "The equipped watch repairs the wall while on duty." }),
+        sell: Object.freeze({ label: "SELL TO A MERCHANT", status: "sold", resource: "gold", minimum: 5, maximum: 12, note: "A merchant buys old armour for resale." })
+    }),
+    tool: Object.freeze({
+        use: Object.freeze({ label: "SEND TO THE WORKSHOPS", status: "used", resource: "wood", minimum: 3, maximum: 8, note: "Better tools raise the saw pit's yield." }),
+        sell: Object.freeze({ label: "SELL TO A CRAFTSMAN", status: "sold", resource: "gold", minimum: 3, maximum: 8, note: "A craftsman pays for a named tool." })
+    }),
+    book: Object.freeze({
+        use: Object.freeze({ label: "COPY FOR THE COURT", status: "used", resource: "gold", minimum: 2, maximum: 6, note: "The chancery sells copies and takes tuition." }),
+        sell: Object.freeze({ label: "SELL TO A SCHOLAR", status: "sold", resource: "gold", minimum: 4, maximum: 10, note: "A scholar buys a unique volume." })
+    }),
+    jewellery: Object.freeze({
+        use: Object.freeze({ label: "MELT INTO THE TREASURY", status: "used", resource: "gold", minimum: 3, maximum: 8, note: "The mint recovers the metal." }),
+        sell: Object.freeze({ label: "SELL TO A GOLDSMITH", status: "sold", resource: "gold", minimum: 6, maximum: 14, note: "A goldsmith pays for a named piece." })
+    }),
+    relic: Object.freeze({
+        use: Object.freeze({ label: "PLACE IN THE SHRINE", status: "used", resource: "gold", minimum: 3, maximum: 9, note: "Pilgrims leave offerings at the shrine." }),
+        sell: Object.freeze({ label: "SELL TO A COLLECTOR", status: "sold", resource: "gold", minimum: 8, maximum: 18, note: "A distant collector pays a premium." })
+    })
+});
+export const CRAFTED_ITEM_USE_IDS = Object.freeze(["use", "sell"]);
+
 // The ten original goods keep their order and meaning. Regional timbers are
 // appended after them, so older inventories, jobs and saves gain empty slots
 // instead of a changed key. Each timber is a real hauled good: it can sit in a

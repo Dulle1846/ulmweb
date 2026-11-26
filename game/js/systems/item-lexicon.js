@@ -2,7 +2,7 @@
 // resource, workshop, furniture and ecology tables; crafted items are stable,
 // deterministic records written by future forges, workshops and scriptoria.
 import { RESOURCE_KEYS } from "./resources.js";
-import { GOODS } from "./city-config.js";
+import { GOODS, CRAFTED_ITEM_USES, CRAFTED_ITEM_USE_IDS } from "./city-config.js";
 import { FURNITURE_ITEM_IDS, FURNITURE_COSTS, FURNITURE_UPKEEP } from "./furniture.js";
 import { FOREST_GOODS } from "../world/forest-ecology.js";
 import { TROPICAL_GOODS } from "../world/tropical-ecology.js";
@@ -13,6 +13,9 @@ import { COAST_GOODS } from "../world/coast-ecology.js";
 import { TAIGA_GOODS } from "../world/taiga-ecology.js";
 
 export const MAX_CRAFTED_ITEMS = 500;
+// Legacy archives have no status field; reading them as "owned" keeps every
+// older save usable without a schema bump or a one-time migration.
+export const CRAFTED_ITEM_STATUSES = Object.freeze(["owned", "used", "sold"]);
 const MAX_MATERIALS = 8;
 const MAX_NAME = 80;
 const MAX_TEXT = 420;
@@ -418,6 +421,11 @@ function generatedDescription(kind, quality, band, materials, crafterName, sourc
     );
 }
 
+export function normalizeCraftedStatus(value) {
+    const status = String(value || "").trim().toLowerCase();
+    return CRAFTED_ITEM_STATUSES.includes(status) ? status : "owned";
+}
+
 export function normalizeCraftedItem(value) {
     if (!value || typeof value !== "object" || Array.isArray(value)) return null;
     const kind = String(value.kind || "");
@@ -436,6 +444,7 @@ export function normalizeCraftedItem(value) {
     const workshop = value.workshop ? cleanText(value.workshop, "").slice(0, 100) : null;
     const source = cleanText(value.source, craftedSource(kind, workshop, year)).slice(0, 120);
     const storedDetail = cleanText(value.detail, "").slice(0, MAX_TEXT);
+    const status = normalizeCraftedStatus(value.status);
     // Older archives stored the detail prose with "Recorded in 1". Normalise
     // that label on read; the archived record itself stays untouched.
     const detail = storedDetail
@@ -448,7 +457,7 @@ export function normalizeCraftedItem(value) {
         detail,
         quality, qualityBand: qualityBand(quality),
         materials: Object.freeze(materials.map(entry => Object.freeze({ ...entry }))),
-        crafterId, crafterName, workshop, year, tick,
+        crafterId, crafterName, workshop, year, tick, status,
         tags: Object.freeze((Array.isArray(value.tags) ? value.tags : [kind, "player-made", qualitySlug(quality)])
             .map(tag => String(tag).trim().slice(0, 40)).filter(Boolean).slice(0, 12)),
         availability: "Unique · recorded once",
@@ -524,11 +533,40 @@ export function appendCraftedItem(archive, record) {
     return [...current, item].slice(-MAX_CRAFTED_ITEMS);
 }
 
+// Use payouts are derived from the stored quality and the declared bounds.
+// There is no RNG, no state scan and no tick work: the same archive record
+// always offers the same two numbers.
+export function craftedUseAmount(option, quality) {
+    if (!option) return 0;
+    const minimum = clampInteger(option.minimum, 0, 100000, 0);
+    const maximum = Math.max(minimum, clampInteger(option.maximum, 0, 100000, minimum));
+    return minimum + Math.round((clampInteger(quality, 0, 100, 0) / 100) * (maximum - minimum));
+}
+
+export function craftedUseOptions(item) {
+    if (!item || item.origin !== "crafted") return [];
+    const table = CRAFTED_ITEM_USES[item.kind];
+    if (!table) return [];
+    return CRAFTED_ITEM_USE_IDS.map(id => {
+        const option = table[id];
+        if (!option) return null;
+        return Object.freeze({
+            id,
+            label: String(option.label || ""),
+            status: String(option.status || "used"),
+            resource: String(option.resource || ""),
+            note: String(option.note || ""),
+            amount: craftedUseAmount(option, item.quality)
+        });
+    }).filter(Boolean);
+}
+
 function searchText(item) {
     return [
         item.label, item.source, item.summary, item.detail, item.category,
         ITEM_CATEGORY_LABELS[item.category] || item.category,
         item.qualityBand || "", item.crafterName || "", item.workshop || "",
+        item.origin === "crafted" ? String(item.status || "owned") : "",
         ...(item.tags || []),
         ...(item.materials || []).map(entry => materialDescriptor(entry.id).label),
     ].join(" ").toLowerCase();

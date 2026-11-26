@@ -5,8 +5,9 @@ import { resetState, state } from "../../js/core/state.js";
 import { TYPE } from "../../js/core/types.js";
 import { initStartingKingdom } from "../../js/world/entities.js";
 import { initializeCityForRealm, ensureInventory } from "../../js/systems/logistics.js";
-import { updateCraftProduction, CRAFT_INTERVAL } from "../../js/systems/craft-production.js";
-import { normalizeCraftedItems, validateCraftedItems, MAX_CRAFTED_ITEMS } from "../../js/systems/item-lexicon.js";
+import { updateCraftProduction, useCraftedItem, CRAFT_INTERVAL, CRAFT_SUPPLY_INTERVAL, CRAFT_SUPPLY_TARGET } from "../../js/systems/craft-production.js";
+import { normalizeCraftedItems, validateCraftedItems, craftedUseAmount, MAX_CRAFTED_ITEMS } from "../../js/systems/item-lexicon.js";
+import { CRAFTED_ITEM_USES } from "../../js/systems/city-config.js";
 
 function setup({ inputs = true, workers = true, gold = 100 } = {}) {
     resetState();
@@ -137,4 +138,62 @@ test("the simulation and UI contracts expose the real craft loop", async () => {
     assert.ok(simulation.includes("updateCraftProduction("));
     assert.ok(craft.includes("CRAFT_INTERVAL") && craft.includes("appendCraftedItem"));
     assert.ok(source.includes("TYPE.SMITHY") && source.includes("TYPE.SCRIPTORIUM"));
+});
+
+test("committing a crafted weapon pays once and records a durable used status", () => {
+    setup();
+    updateCraftProduction();
+    const weapon = state.craftedItems.find(item => item.kind === "weapon");
+    const expected = craftedUseAmount(CRAFTED_ITEM_USES.weapon.use, weapon.quality);
+    const foodBefore = state.resources.food;
+    const result = useCraftedItem(weapon.id, "use");
+    assert.equal(result.ok, true);
+    assert.equal(result.status, "used");
+    assert.equal(result.resource, "food");
+    assert.equal(result.amount, expected);
+    assert.equal(state.resources.food, foodBefore + expected);
+    assert.equal(state.craftedItems.find(item => item.id === weapon.id).status, "used");
+    assert.equal(state.economy.crafting.itemsUsed, 1);
+    const log = state.eventLog.find(entry => entry.kind === "craft" && entry.text.includes(weapon.label.toUpperCase()));
+    assert.ok(log && log.text.includes("PUT TO WORK") && log.text.includes("+" + expected + " FOOD"));
+
+    const again = useCraftedItem(weapon.id, "use");
+    assert.equal(again.ok, false);
+    assert.match(again.reason, /ALREADY USED/);
+    assert.equal(state.resources.food, foodBefore + expected, "a repeated commit must not pay twice");
+    assert.equal(state.economy.crafting.itemsUsed, 1);
+    const savedArchive = normalizeCraftedItems(JSON.parse(JSON.stringify(state.craftedItems)));
+    assert.equal(savedArchive.find(item => item.id === weapon.id).status, "used");
+    assert.equal(CRAFT_INTERVAL, 90);
+    assert.equal(CRAFT_SUPPLY_INTERVAL, 30);
+    assert.equal(CRAFT_SUPPLY_TARGET, 8);
+});
+
+test("selling a book pays gold once, rejects invalid uses and preserves the bounded archive", () => {
+    setup();
+    updateCraftProduction();
+    const book = state.craftedItems.find(item => item.kind === "book");
+    const expected = craftedUseAmount(CRAFTED_ITEM_USES.book.sell, book.quality);
+    const goldBefore = state.resources.gold;
+
+    const unknownUse = useCraftedItem(book.id, "equip");
+    assert.equal(unknownUse.ok, false);
+    assert.match(unknownUse.reason, /NOT AVAILABLE/);
+    assert.equal(useCraftedItem("crafted-weapon-nope", "use").ok, false);
+    assert.equal(state.resources.gold, goldBefore);
+
+    const result = useCraftedItem(book.id, "sell");
+    assert.equal(result.ok, true);
+    assert.equal(result.status, "sold");
+    assert.equal(result.resource, "gold");
+    assert.equal(result.amount, expected);
+    assert.equal(state.resources.gold, goldBefore + expected);
+    assert.equal(state.economy.crafting.itemsSold, 1);
+    assert.equal(useCraftedItem(book.id, "use").ok, false);
+    assert.equal(state.resources.gold, goldBefore + expected);
+    assert.ok(state.craftedItems.length <= MAX_CRAFTED_ITEMS);
+    assert.doesNotThrow(() => validateCraftedItems(state.craftedItems));
+    const restored = normalizeCraftedItems(JSON.parse(JSON.stringify(state.craftedItems)));
+    assert.deepEqual(restored, state.craftedItems);
+    assert.equal(restored.find(item => item.id === book.id).status, "sold");
 });
