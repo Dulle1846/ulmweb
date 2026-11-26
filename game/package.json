@@ -1,6 +1,6 @@
 {
   "name": "kings-and-cards",
-  "version": "3.70.0",
+  "version": "3.71.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -43,6 +43,7 @@
     "test:forester-stewardship": "node tests/browser/forester-stewardship.mjs",
     "test:forester-stewardship-longrun": "node tests/browser/forester-stewardship-longrun.mjs",
     "test:forest-stewardship-ui": "node tests/browser/forest-stewardship-ui.mjs",
+    "test:forest-stewardship-actions": "node tests/browser/forest-stewardship-actions.mjs",
     "test:playability": "node tests/browser/playability-audit.mjs",
     "test:core-loop": "node tests/browser/core-loop-audit.mjs",
     "test:first-session-guidance": "node tests/browser/first-session-guidance.mjs",

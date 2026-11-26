@@ -19,14 +19,23 @@ import {
     queryForestSpatialIndex,
 } from "../world/forest-model.js";
 
-const VERSION = 1;
+// Version 2 adds player stewardship: firebreak belts, drainage decisions and
+// a bounded order ledger. Version 1 snapshots load unchanged and are migrated
+// in memory; the disturbance tiles themselves never need to be rewritten.
+const VERSION = 2;
 const MAX_TILES = 4096;
 const MAX_HISTORY = 24;
+const MAX_STEWARDSHIP = 24;
+const MAX_BREAKS = 512;
+const MAX_DRAINED = 512;
 const MAX_STEP_DAYS = 30;
 const EVENT_INTERVAL_DAYS = 140;
 const SPREAD_INTERVAL_DAYS = 12;
 const MAX_SPREAD_PER_PASS = 4;
 const CONTROL_DAYS = 90;
+const FIREBREAK_DAYS = 1200;
+const FIREBREAK_RADIUS = 1;
+const STEWARDSHIP_RADIUS = 9;
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 const clamp01 = value => clamp(value, 0, 1);
@@ -63,12 +72,21 @@ function emptyModel(seed) {
         daysSinceSpread: 0,
         spreadings: 0,
         suppressed: 0,
+        planted: 0,
+        stewardshipActions: 0,
+        lastActionDay: 0,
+        revision: 0,
+        // Saveable player decisions. A break is a protected strip for a bounded
+        // time; drainage is a permanent site decision until explicitly restored.
+        breaks: {},
+        drainage: {},
         tiles: {},
         // Internal work list: recovered records stay in tiles so the renderer
         // keeps their history, but they no longer need a daily age update.
         activeKeys: [],
         history: [],
         spreadHistory: [],
+        stewardshipHistory: [],
     };
 }
 
@@ -99,6 +117,8 @@ function standAtTile(geo, x, y) {
     const capacity = Number(geo.forestCapacity?.[index]) || 0;
     if (!capacity) return null;
     const sample = mapSample(x, y);
+    const model = state.forestSuccession;
+    const drained = validModel(model) && Boolean(model.drainage?.[tileKey(x, y)]);
     return forestStandAt(x + 0.5, y + 0.5, {
         seed: Number(state.worldSeed) || 1,
         moisture: sample.moisture,
@@ -108,6 +128,7 @@ function standAtTile(geo, x, y) {
         forests: state.worldOptions?.forests ?? 52,
         stockRatio: Number(geo.forestStock?.[index] || 0) / capacity,
         rockLine: 0.92,
+        drainage: drained ? 1 : 0,
     });
 }
 
@@ -150,7 +171,11 @@ export function ensureForestSuccession() {
             const stand = standAtTile(geo, x, y);
             if (!stand?.forest) continue;
             if (!FOREST_DISTURBANCE_KINDS.includes(stand.disturbance)) continue;
-            model.tiles[tileKey(x, y)] = { kind: stand.disturbance, age: 0, containedUntil: 0 };
+            model.tiles[tileKey(x, y)] = {
+                kind: stand.disturbance, age: 0, containedUntil: 0,
+                typeId: stand.regionalTypeId || null, typeLabel: stand.regionalLabel || null,
+                year: Math.max(1, Math.floor(number(state.year, 1))), area: 1,
+            };
             count++;
         }
     }
@@ -163,15 +188,42 @@ export function resetForestSuccession() {
     state.forestSuccession = null;
 }
 
+// The stewardship record exists even when no disturbance tile does. Drainage
+// and a firebreak therefore remain visible in the inspector and atlas without
+// inventing a second woodland state.
+export function forestStewardshipAt(x, y) {
+    const model = state.forestSuccession;
+    const tx = Math.floor(number(x)), ty = Math.floor(number(y));
+    const key = tileKey(tx, ty);
+    if (!validModel(model)) {
+        return { available: false, x: tx, y: ty, drained: false, drainage: 0, drainDay: 0, firebreak: false, firebreakUntil: 0 };
+    }
+    const drainDay = Math.max(0, Math.floor(number(model.drainage?.[key])));
+    const firebreakUntil = Math.max(0, Math.floor(number(model.breaks?.[key])));
+    const record = model.tiles[key];
+    return {
+        available: true, x: tx, y: ty, key,
+        drained: drainDay > 0,
+        drainage: drainDay > 0 ? 1 : 0,
+        drainDay,
+        firebreak: firebreakUntil > model.day,
+        firebreakUntil,
+        restoredDay: Math.max(0, Math.floor(number(record?.restoredDay))),
+    };
+}
+
 export function forestSuccessionAt(x, y) {
     const model = state.forestSuccession;
     if (!validModel(model)) return null;
-    const record = model.tiles[tileKey(x, y)];
+    const key = tileKey(x, y);
+    const record = model.tiles[key];
     if (!record) return null;
     const stage = forestSuccessionStage(record.kind, record.age);
     if (!stage) return null;
     const profile = forestSuccessionProfile(record.kind);
     const containedUntil = Math.max(0, Math.floor(number(record.containedUntil)));
+    const drainDay = Math.max(0, Math.floor(number(model.drainage?.[key])));
+    const firebreakUntil = Math.max(0, Math.floor(number(model.breaks?.[key])));
     return {
         kind: record.kind,
         age: Math.max(0, Math.floor(number(record.age))),
@@ -181,7 +233,30 @@ export function forestSuccessionAt(x, y) {
         contained: containedUntil > model.day,
         containedUntil,
         progress: profile ? clamp(number(record.age) / profile.recoveredDays, 0, 1) : 0,
+        typeId: record.typeId || null,
+        typeLabel: record.typeLabel || null,
+        restoredDay: Math.max(0, Math.floor(number(record.restoredDay))),
+        drained: drainDay > 0,
+        drainage: drainDay > 0 ? 1 : 0,
+        firebreak: firebreakUntil > model.day,
+        firebreakUntil,
     };
+}
+
+// A firebreak is a saved strip, not a global modifier. This helper is shared by
+// the spread pass, the spawn pass and the focused tests so the visible order and
+// the simulated protection cannot drift apart.
+export function forestFirebreakAt(x, y) {
+    const model = state.forestSuccession;
+    if (!validModel(model)) return 0;
+    const until = Math.max(0, Math.floor(number(model.breaks?.[tileKey(x, y)])));
+    return until > model.day ? until : 0;
+}
+
+// Shared gate for both ignition and spread. Keeping the rule here means a
+// protected strip cannot be bypassed by one of the two fire paths.
+export function forestFireMayEnter(x, y) {
+    return forestFirebreakAt(x, y) === 0;
 }
 
 export function forestSuccessionSummary(limit = 3) {
@@ -205,13 +280,29 @@ export function forestSuccessionSummary(limit = 3) {
 export function forestSuccessionStats() {
     const model = state.forestSuccession;
     if (!validModel(model)) {
-        return { available: false, active: 0, contained: 0, recovered: 0, byKind: {}, events: 0, spreadings: 0, suppressed: 0, day: 0 };
+        return {
+            available: false, active: 0, contained: 0, recovered: 0, byKind: {},
+            events: 0, spreadings: 0, suppressed: 0, day: 0, firebreaks: 0,
+            drained: 0, planted: 0, stewardshipActions: 0, regions: {},
+        };
     }
     const byKind = {};
+    const regions = {};
     let active = 0, contained = 0, recovered = 0;
     for (const record of Object.values(model.tiles)) {
         const stage = forestSuccessionStage(record.kind, record.age);
         if (!stage) continue;
+        const regionId = record.typeId || null;
+        if (regionId) {
+            const region = regions[regionId] || (regions[regionId] = { active: 0, contained: 0, recovered: 0, byKind: {}, area: 0 });
+            if (stage.id === "recovered") region.recovered++;
+            else {
+                region.active++;
+                region.area++;
+                region.byKind[record.kind] = (region.byKind[record.kind] || 0) + 1;
+                if (Math.max(0, number(record.containedUntil)) > model.day) region.contained++;
+            }
+        }
         if (stage.id === "recovered") {
             recovered++;
             continue;
@@ -220,13 +311,22 @@ export function forestSuccessionStats() {
         byKind[record.kind] = (byKind[record.kind] || 0) + 1;
         if (Math.max(0, number(record.containedUntil)) > model.day) contained++;
     }
+    let firebreaks = 0;
+    for (const until of Object.values(model.breaks || {})) {
+        if (Math.max(0, number(until)) > model.day) firebreaks++;
+    }
     return {
         available: true,
-        active, contained, recovered, byKind,
+        active, contained, recovered, byKind, regions,
         events: Math.max(0, Math.floor(number(model.events))),
         spreadings: Math.max(0, Math.floor(number(model.spreadings))),
         suppressed: Math.max(0, Math.floor(number(model.suppressed))),
         day: Math.max(0, Math.floor(number(model.day))),
+        firebreaks,
+        drained: Object.keys(model.drainage || {}).length,
+        planted: Math.max(0, Math.floor(number(model.planted))),
+        stewardshipActions: Math.max(0, Math.floor(number(model.stewardshipActions))),
+        lastActionDay: Math.max(0, Math.floor(number(model.lastActionDay))),
     };
 }
 
@@ -390,6 +490,9 @@ function spawnDisturbance(model) {
         const kind = chooseKind(model, model.day, stand, forestBarkBeetlePressureAt(x, y));
         const profile = forestSuccessionProfile(kind);
         if (!profile) continue;
+        // A maintained firebreak keeps a fire from starting inside the cleared
+        // strip. Other disturbances may still reach the protected woodland.
+        if (kind === "burned" && !forestFireMayEnter(x, y)) continue;
         const before = Math.max(1, Math.floor(number(geo.forestStock[index], 1)));
         // A severe regime removes more of the stand in the same event; refugia
         // leave a little more standing stock for seed and habitat. The shared
@@ -404,11 +507,20 @@ function spawnDisturbance(model) {
             - erosion.risk * 0.08 + biodiversity.index * 0.03, 0.18, 0.95);
         const after = Math.max(1, Math.min(before, Math.floor(before * retained)));
         geo.forestStock[index] = after;
-        model.tiles[key] = { kind, age: 0, containedUntil: 0 };
+        model.tiles[key] = {
+            kind, age: 0, containedUntil: 0,
+            typeId: stand.regionalTypeId || null, typeLabel: stand.regionalLabel || null,
+            year: Math.max(1, Math.floor(number(state.year, 1))), area: 1,
+        };
         activateKey(model, key);
         model.events++;
         model.lastEventDay = model.day;
-        model.history.push({ day: model.day, kind, x, y, stockBefore: before, stockAfter: after });
+        model.history.push({
+            day: model.day, year: Math.max(1, Math.floor(number(state.year, 1))),
+            kind, x, y, area: 1,
+            typeId: stand.regionalTypeId || null, typeLabel: stand.regionalLabel || null,
+            stockBefore: before, stockAfter: after,
+        });
         if (model.history.length > MAX_HISTORY) model.history.splice(0, model.history.length - MAX_HISTORY);
         return { x, y, kind, age: 0 };
     }
@@ -583,6 +695,7 @@ function spreadDisturbances(model) {
             const existing = model.tiles[nkey];
             if (existing && activeSuccessionRecord(existing)) continue;
             if (!existing && tileCount >= MAX_TILES) break;
+            if (record.kind === "burned" && !forestFireMayEnter(nx, ny)) continue;
             const index = ny * width + nx;
             const before = Math.max(0, Math.floor(number(geo.forestStock?.[index])));
             if (!geo.forestCapacity?.[index] || before < 12) continue;
@@ -605,12 +718,18 @@ function spreadDisturbances(model) {
             const loss = clamp(0.18 + erosion.risk * 0.16 - biodiversity.index * 0.05, 0.1, 0.45);
             const after = Math.max(1, Math.floor(before * (1 - loss)));
             geo.forestStock[index] = after;
-            model.tiles[nkey] = { kind: record.kind, age: 0, containedUntil: 0 };
+            model.tiles[nkey] = {
+                kind: record.kind, age: 0, containedUntil: 0,
+                typeId: stand.regionalTypeId || null, typeLabel: stand.regionalLabel || null,
+                year: Math.max(1, Math.floor(number(state.year, 1))), area: 1,
+            };
             activateKey(model, nkey);
             tileCount++;
             model.spreadings = Math.max(0, Math.floor(number(model.spreadings))) + 1;
             model.spreadHistory.push({
-                day: model.day, kind: record.kind, from: [x, y], to: [nx, ny],
+                day: model.day, year: Math.max(1, Math.floor(number(state.year, 1))),
+                kind: record.kind, from: [x, y], to: [nx, ny], area: 1,
+                typeId: stand.regionalTypeId || null, typeLabel: stand.regionalLabel || null,
                 stockBefore: before, stockAfter: after,
             });
             if (model.spreadHistory.length > MAX_HISTORY) model.spreadHistory.splice(0, model.spreadHistory.length - MAX_HISTORY);
@@ -619,6 +738,390 @@ function spreadDisturbances(model) {
         }
     }
     return spreads;
+}
+
+const STEWARDSHIP_LABELS = Object.freeze({
+    reforest: "Reforestation",
+    firebreak: "Firebreak belt",
+    burn: "Controlled burn",
+    drain: "Wetland drainage",
+    restore: "Wetland restoration",
+    control: "Disturbance control",
+});
+
+function affordable(cost) {
+    for (const [key, amount] of Object.entries(cost)) {
+        if ((Number(state.resources?.[key]) || 0) < amount) return key;
+    }
+    return null;
+}
+
+function pay(cost) {
+    for (const [key, amount] of Object.entries(cost)) {
+        state.resources[key] = Math.max(0, Math.round(((Number(state.resources[key]) || 0) - amount) * 100) / 100);
+    }
+}
+
+function addStewardship(model, entry) {
+    if (!Array.isArray(model.stewardshipHistory)) model.stewardshipHistory = [];
+    model.stewardshipActions = Math.max(0, Math.floor(number(model.stewardshipActions))) + 1;
+    model.lastActionDay = Math.max(0, Math.floor(number(model.day)));
+    model.revision = Math.max(0, Math.floor(number(model.revision))) + 1;
+    model.stewardshipHistory.push({
+        ...entry,
+        day: Math.max(0, Math.floor(number(model.day))),
+        year: Math.max(1, Math.floor(number(entry.year ?? state.year, 1))),
+        area: Math.max(1, Math.floor(number(entry.area, 1))),
+    });
+    if (model.stewardshipHistory.length > MAX_STEWARDSHIP) {
+        model.stewardshipHistory.splice(0, model.stewardshipHistory.length - MAX_STEWARDSHIP);
+    }
+}
+
+function nearestForestTarget(geo, originX, originY, radius, predicate) {
+    const width = Number(state.worldW) || 0;
+    const height = Number(state.worldH) || 0;
+    if (!geo || !width || !height) return null;
+    const cx = Math.floor(number(originX));
+    const cy = Math.floor(number(originY));
+    const limit = clamp(Math.floor(number(radius, STEWARDSHIP_RADIUS)), 1, 14);
+    const x0 = Math.max(0, cx - limit), x1 = Math.min(width - 1, cx + limit);
+    const y0 = Math.max(0, cy - limit), y1 = Math.min(height - 1, cy + limit);
+    let best = null;
+    for (let y = y0; y <= y1; y++) {
+        for (let x = x0; x <= x1; x++) {
+            const distance = Math.abs(x - cx) + Math.abs(y - cy);
+            if (distance > limit || (best && distance > best.distance)) continue;
+            const index = y * width + x;
+            if (!Number(geo.forestCapacity?.[index])) continue;
+            const stand = standAtTile(geo, x, y);
+            if (!stand?.forest) continue;
+            if (!predicate(stand, x, y, index)) continue;
+            if (!best || distance < best.distance || (distance === best.distance && index < best.index)) {
+                best = { stand, x, y, index, distance };
+            }
+        }
+    }
+    return best;
+}
+
+function sitePlantingFactor(stand) {
+    const biodiversity = forestBiodiversityFor(stand);
+    const erosion = forestErosionFor(stand);
+    return clamp(
+        0.48 + biodiversity.index * 0.30 + (1 - erosion.risk) * 0.18
+        + clamp01(number(stand.regionalEffects?.regrowth, 1)) * 0.10
+        + (stand.ageClass === "young" ? 0.05 : 0)
+        - (clamp01(number(stand.height)) > 0.8 ? 0.12 : 0),
+        0.35, 1.12,
+    );
+}
+
+function recordStewardedTile(model, x, y, stand) {
+    const key = tileKey(x, y);
+    const record = model.tiles[key];
+    if (!record) return;
+    record.restoredDay = Math.max(0, Math.floor(number(model.day)));
+    record.typeId = record.typeId || stand?.regionalTypeId || null;
+    record.typeLabel = record.typeLabel || stand?.regionalLabel || null;
+}
+
+// Plant a real clearing. The action restores stock inside a compact 3×3 patch;
+// survival and the number of planted units come from the same site, age,
+// biodiversity and erosion readings the regrowth loop uses.
+export function reforestNearestForestTile(originX, originY, radius = STEWARDSHIP_RADIUS) {
+    const model = ensureForestSuccession();
+    const geo = state.resourceGeography;
+    if (!model || !geo) return { ok: false, reason: "No active forest geography" };
+    const target = nearestForestTarget(geo, originX, originY, radius, (stand, x, y, index) => {
+        const capacity = Number(geo.forestCapacity[index]) || 0;
+        return capacity >= 20 && Number(geo.forestStock[index]) < capacity * 0.82;
+    });
+    if (!target) return { ok: false, reason: "No restorable clearing within " + radius + " tiles" };
+    const cost = { gold: 8, food: 5 };
+    const missing = affordable(cost);
+    if (missing) return { ok: false, reason: "Not enough " + missing + " for a planting crew" };
+    let tiles = 0, planted = 0, factorTotal = 0, stockBeforeTotal = 0, stockAfterTotal = 0;
+    for (let y = target.y - 1; y <= target.y + 1; y++) {
+        for (let x = target.x - 1; x <= target.x + 1; x++) {
+            if (x < 0 || y < 0 || x >= (Number(state.worldW) || 0) || y >= (Number(state.worldH) || 0)) continue;
+            const index = y * (Number(state.worldW) || 0) + x;
+            const capacity = Number(geo.forestCapacity[index]) || 0;
+            const before = Number(geo.forestStock[index]) || 0;
+            if (capacity < 20 || before >= capacity * 0.86) continue;
+            const stand = standAtTile(geo, x, y);
+            if (!stand?.forest) continue;
+            const factor = sitePlantingFactor(stand);
+            const amount = Math.min(capacity - before,
+                Math.max(1, Math.round(capacity * (0.13 + factor * 0.11))));
+            if (amount <= 0) continue;
+            geo.forestStock[index] = before + amount;
+            stockBeforeTotal += before;
+            stockAfterTotal += before + amount;
+            planted += amount;
+            tiles++;
+            factorTotal += factor;
+            recordStewardedTile(model, x, y, stand);
+        }
+    }
+    if (!tiles) return { ok: false, reason: "The clearing has no plantable forest tiles" };
+    pay(cost);
+    model.planted = Math.max(0, Math.floor(number(model.planted))) + planted;
+    addStewardship(model, {
+        kind: "reforest", x: target.x, y: target.y, area: tiles, amount: planted,
+        stockBefore: stockBeforeTotal, stockAfter: stockAfterTotal,
+        typeId: target.stand.regionalTypeId || null, typeLabel: target.stand.regionalLabel || null,
+        siteFactor: Math.round((factorTotal / tiles) * 100) / 100, cost,
+    });
+    return {
+        ok: true, action: "reforest", x: target.x, y: target.y, tiles, planted, amount: planted,
+        stockBefore: stockBeforeTotal, stockAfter: stockAfterTotal,
+        siteFactor: Math.round((factorTotal / tiles) * 100) / 100, cost,
+        typeId: target.stand.regionalTypeId || null, typeLabel: target.stand.regionalLabel || null,
+    };
+}
+
+// Clear a protected 3×3 belt. The break is stored per tile and read by both the
+// natural ignition and the spread pass, so it is a real island of protection
+// rather than a one-off event modifier.
+export function buildNearestForestFirebreak(originX, originY, radius = STEWARDSHIP_RADIUS) {
+    const model = ensureForestSuccession();
+    const geo = state.resourceGeography;
+    if (!model || !geo) return { ok: false, reason: "No active forest geography" };
+    const target = nearestForestTarget(geo, originX, originY, radius, (stand, x, y) =>
+        !forestFirebreakAt(x, y) && Number(stand.stockRatio) > 0.05);
+    if (!target) return { ok: false, reason: "No unprotected forest within " + radius + " tiles" };
+    const keys = [];
+    for (let y = target.y - FIREBREAK_RADIUS; y <= target.y + FIREBREAK_RADIUS; y++) {
+        for (let x = target.x - FIREBREAK_RADIUS; x <= target.x + FIREBREAK_RADIUS; x++) {
+            if (x < 0 || y < 0 || x >= (Number(state.worldW) || 0) || y >= (Number(state.worldH) || 0)) continue;
+            const index = y * (Number(state.worldW) || 0) + x;
+            if (!Number(geo.forestCapacity?.[index])) continue;
+            keys.push(tileKey(x, y));
+        }
+    }
+    if (!keys.length) return { ok: false, reason: "No woodland can be cleared for a firebreak here" };
+    const cost = { wood: Math.max(3, Math.ceil(keys.length * 0.55)), gold: Math.max(2, Math.ceil(keys.length * 0.35)) };
+    const missing = affordable(cost);
+    if (missing) return { ok: false, reason: "Not enough " + missing + " for a firebreak crew" };
+    if (!model.breaks || typeof model.breaks !== "object") model.breaks = {};
+    // Keep the saved strip bounded. Expired strips are discarded first.
+    for (const [key, until] of Object.entries(model.breaks)) {
+        if (Math.max(0, number(until)) <= model.day) delete model.breaks[key];
+    }
+    if (Object.keys(model.breaks).length + keys.length > MAX_BREAKS) {
+        return { ok: false, reason: "The realm already maintains too many firebreak strips" };
+    }
+    const until = model.day + FIREBREAK_DAYS;
+    for (const key of keys) model.breaks[key] = until;
+    pay(cost);
+    addStewardship(model, {
+        kind: "firebreak", x: target.x, y: target.y, area: keys.length, untilDays: FIREBREAK_DAYS,
+        typeId: target.stand.regionalTypeId || null, typeLabel: target.stand.regionalLabel || null, cost,
+    });
+    return {
+        ok: true, action: "firebreak", x: target.x, y: target.y, tiles: keys.length,
+        until, days: FIREBREAK_DAYS, cost, typeId: target.stand.regionalTypeId || null,
+        typeLabel: target.stand.regionalLabel || null,
+    };
+}
+
+// A controlled burn is a deliberate disturbance with a real salvage yield and a
+// real escape risk. It uses the stewardship RNG stream, never the vegetation or
+// natural-event stream, so planting a wood cannot reroll the fire.
+export function controlledBurnNearestForestTile(originX, originY, radius = STEWARDSHIP_RADIUS) {
+    const model = ensureForestSuccession();
+    const geo = state.resourceGeography;
+    if (!model || !geo) return { ok: false, reason: "No active forest geography" };
+    const target = nearestForestTarget(geo, originX, originY, radius, (stand, x, y, index) => {
+        if (forestFirebreakAt(x, y)) return false;
+        const record = model.tiles[tileKey(x, y)];
+        const stage = record ? forestSuccessionStage(record.kind, record.age) : null;
+        if (stage && stage.id !== "recovered") return false;
+        if (stand.ageClass === "young") return false;
+        return Number(geo.forestStock[index]) >= Math.max(18, Number(geo.forestCapacity[index]) * 0.28);
+    });
+    if (!target) return { ok: false, reason: "No mature, unbroken stand within " + radius + " tiles" };
+    const cost = { gold: 6, food: 3 };
+    const missing = affordable(cost);
+    if (missing) return { ok: false, reason: "Not enough " + missing + " for a burn crew" };
+    const index = target.index;
+    const before = Math.max(1, Number(geo.forestStock[index]) || 1);
+    const biodiversity = forestBiodiversityFor(target.stand);
+    const weather = String(state.weather || "clear").toLowerCase();
+    const dry = weather === "clear" || weather === "heat" || weather === "drought";
+    const escapeChance = clamp(0.04 + clamp01(number(target.stand.fireRisk)) * 0.28
+        + (dry ? 0.10 : 0) + (1 - biodiversity.index) * 0.08
+        - clamp01(number(target.stand.wetness)) * 0.10, 0.03, 0.50);
+    const roll = forestRngSeedFor("stewardship", model.seed,
+        target.x + model.day * 131, target.y + model.events * 17) / 0x100000000;
+    const escaped = roll < escapeChance;
+    const retained = clamp(0.84 - clamp01(number(target.stand.fireRisk)) * 0.08
+        + biodiversity.index * 0.02, 0.68, 0.90);
+    const after = Math.max(1, Math.floor(before * retained));
+    const wood = Math.max(1, Math.round((before - after) * 0.45));
+    geo.forestStock[index] = after;
+    model.tiles[tileKey(target.x, target.y)] = {
+        kind: "burned", age: 0,
+        containedUntil: escaped ? 0 : model.day + CONTROL_DAYS,
+        typeId: target.stand.regionalTypeId || null,
+        typeLabel: target.stand.regionalLabel || null,
+        year: Math.max(1, Math.floor(number(state.year, 1))),
+        area: 1, origin: "controlled-burn",
+    };
+    activateKey(model, tileKey(target.x, target.y));
+    model.events = Math.max(0, Math.floor(number(model.events))) + 1;
+    model.lastEventDay = model.day;
+    model.daysSinceEvent = 0;
+    if (escaped) model.daysSinceSpread = SPREAD_INTERVAL_DAYS;
+    state.resources.wood = Math.max(0, Math.round(((Number(state.resources.wood) || 0) + wood) * 100) / 100);
+    pay(cost);
+    model.history.push({
+        day: model.day, year: Math.max(1, Math.floor(number(state.year, 1))),
+        kind: "burned", x: target.x, y: target.y, area: 1, cause: "controlled-burn",
+        typeId: target.stand.regionalTypeId || null, typeLabel: target.stand.regionalLabel || null,
+        stockBefore: before, stockAfter: after,
+    });
+    if (model.history.length > MAX_HISTORY) model.history.splice(0, model.history.length - MAX_HISTORY);
+    addStewardship(model, {
+        kind: "burn", x: target.x, y: target.y, area: 1, escaped,
+        escapeChance: Math.round(escapeChance * 100) / 100, wood,
+        stockBefore: before, stockAfter: after,
+        typeId: target.stand.regionalTypeId || null, typeLabel: target.stand.regionalLabel || null, cost,
+    });
+    return {
+        ok: true, action: "burn", x: target.x, y: target.y, escaped, wood,
+        stockBefore: before, stockAfter: after, cost,
+        containedUntil: escaped ? 0 : model.day + CONTROL_DAYS,
+        escapeChance: Math.round(escapeChance * 100) / 100,
+        typeId: target.stand.regionalTypeId || null, typeLabel: target.stand.regionalLabel || null,
+    };
+}
+
+// Drain the nearest undrained wet stand, or restore the nearest drained one.
+// The toggle is one decision with two directions: flood pressure and habitat
+// respond immediately and the site carries the choice through every later save.
+export function toggleNearestWetlandDrainage(originX, originY, radius = STEWARDSHIP_RADIUS) {
+    const model = ensureForestSuccession();
+    const geo = state.resourceGeography;
+    if (!model || !geo) return { ok: false, reason: "No active forest geography" };
+    const season = Math.floor(number(state.seasonIndex, 0)) % 4;
+    const target = nearestForestTarget(geo, originX, originY, radius, (stand, x, y, index) => {
+        const key = tileKey(x, y);
+        if (model.drainage?.[key]) return true;
+        const wet = clamp01(number(stand.wetness));
+        if (wet < 0.52) return false;
+        const typeKey = String(stand.regionalType?.key || "");
+        return forestFloodPressureFor(stand, { season, weather: state.weather }).pressure >= 0.40
+            || /floodplain|carr|mire|swamp|bog|alder|willow|mangrove|alluvial/.test(typeKey);
+    });
+    if (!target) return { ok: false, reason: "No wetland stand within " + radius + " tiles" };
+    const key = tileKey(target.x, target.y);
+    const restoring = Boolean(model.drainage?.[key]);
+    const cost = restoring ? { gold: 6, food: 4 } : { gold: 10, wood: 6 };
+    const missing = affordable(cost);
+    if (missing) return { ok: false, reason: "Not enough " + missing + " for a wetland crew" };
+    if (!restoring && Object.keys(model.drainage || {}).length >= MAX_DRAINED) {
+        return { ok: false, reason: "The realm already maintains too many drained sites" };
+    }
+    const beforeWater = forestFloodPressureFor(target.stand, { season, weather: state.weather });
+    const beforeBio = forestBiodiversityFor(target.stand);
+    if (!model.drainage || typeof model.drainage !== "object") model.drainage = {};
+    if (restoring) delete model.drainage[key];
+    else model.drainage[key] = model.day + 1;
+    const afterStand = standAtTile(geo, target.x, target.y);
+    const afterWater = forestFloodPressureFor(afterStand, { season, weather: state.weather });
+    const afterBio = forestBiodiversityFor(afterStand);
+    const record = model.tiles[key];
+    if (record) record.restoredDay = model.day;
+    pay(cost);
+    addStewardship(model, {
+        kind: restoring ? "restore" : "drain", x: target.x, y: target.y, area: 1,
+        beforeFlood: beforeWater.pressure, afterFlood: afterWater.pressure,
+        beforeBiodiversity: beforeBio.index, afterBiodiversity: afterBio.index,
+        typeId: target.stand.regionalTypeId || null, typeLabel: target.stand.regionalLabel || null, cost,
+    });
+    return {
+        ok: true, action: restoring ? "restore" : "drain", x: target.x, y: target.y,
+        drained: !restoring, beforeFlood: beforeWater.pressure, afterFlood: afterWater.pressure,
+        beforeBiodiversity: beforeBio.index, afterBiodiversity: afterBio.index,
+        cost, typeId: target.stand.regionalTypeId || null, typeLabel: target.stand.regionalLabel || null,
+    };
+}
+
+function chronicleYear(model, entry) {
+    const recorded = Math.floor(number(entry.year));
+    if (recorded > 0) return recorded;
+    const elapsed = Math.max(0, Math.floor(number(model.day)) - Math.max(0, Math.floor(number(entry.day))));
+    return Math.max(1, Math.floor(number(state.year, 1)) - Math.floor(elapsed / 400));
+}
+
+function chronicleEvent(model, source, entry, override = {}) {
+    const kind = entry.kind;
+    const x = Math.floor(number(override.x ?? entry.x));
+    const y = Math.floor(number(override.y ?? entry.y));
+    const live = forestSuccessionAt(x, y);
+    const action = source === "stewardship";
+    return {
+        source, kind, x, y,
+        day: Math.max(0, Math.floor(number(entry.day))),
+        year: chronicleYear(model, entry),
+        area: Math.max(1, Math.floor(number(entry.area, 1))),
+        typeId: entry.typeId || null,
+        typeLabel: entry.typeLabel || null,
+        label: action ? (STEWARDSHIP_LABELS[kind] || String(kind)) : (forestSuccessionProfile(kind)?.freshLabel || String(kind)),
+        progress: !action && live ? live.progress : null,
+        recovered: !action && live ? live.recovered : null,
+        stockBefore: Number.isFinite(Number(entry.stockBefore)) ? Number(entry.stockBefore) : null,
+        stockAfter: Number.isFinite(Number(entry.stockAfter)) ? Number(entry.stockAfter) : null,
+        amount: Number.isFinite(Number(entry.amount)) ? Number(entry.amount) : null,
+        escaped: Boolean(entry.escaped),
+        spread: source === "spread",
+        cost: entry.cost && typeof entry.cost === "object" ? { ...entry.cost } : null,
+        beforeFlood: Number.isFinite(Number(entry.beforeFlood)) ? Number(entry.beforeFlood) : null,
+        afterFlood: Number.isFinite(Number(entry.afterFlood)) ? Number(entry.afterFlood) : null,
+        beforeBiodiversity: Number.isFinite(Number(entry.beforeBiodiversity)) ? Number(entry.beforeBiodiversity) : null,
+        afterBiodiversity: Number.isFinite(Number(entry.afterBiodiversity)) ? Number(entry.afterBiodiversity) : null,
+    };
+}
+
+// Bounded region chronicle for the atlas. It reads only the saved capped
+// ledgers plus the disturbance record at the event's own coordinates, never a
+// per-tile scan. Every entry keeps its regional type when one was known.
+export function forestSuccessionChronicle(limit = 24) {
+    const model = state.forestSuccession;
+    if (!validModel(model)) return { available: false, day: 0, entries: [], byRegion: {}, total: 0 };
+    const entries = [];
+    for (const entry of Array.isArray(model.history) ? model.history : []) {
+        if (!entry || !FOREST_DISTURBANCE_KINDS.includes(entry.kind)) continue;
+        if (entry.cause === "controlled-burn") continue;
+        entries.push(chronicleEvent(model, "disturbance", entry));
+    }
+    for (const entry of Array.isArray(model.spreadHistory) ? model.spreadHistory : []) {
+        if (!entry || !FOREST_DISTURBANCE_KINDS.includes(entry.kind)) continue;
+        const to = Array.isArray(entry.to) ? entry.to : [entry.x, entry.y];
+        entries.push(chronicleEvent(model, "spread", entry, { x: to[0], y: to[1] }));
+    }
+    for (const entry of Array.isArray(model.stewardshipHistory) ? model.stewardshipHistory : []) {
+        if (!entry || !STEWARDSHIP_LABELS[entry.kind]) continue;
+        entries.push(chronicleEvent(model, "stewardship", entry));
+    }
+    entries.sort((a, b) => b.day - a.day || String(a.kind).localeCompare(String(b.kind)) || a.x - b.x || a.y - b.y);
+    const byRegion = {};
+    for (const entry of entries) {
+        const id = entry.typeId || "legacy";
+        (byRegion[id] || (byRegion[id] = [])).push(entry);
+    }
+    // Keep every bounded entry. The UI decides how many recent events to show;
+    // dropping old entries here could hide a player order that sits behind two
+    // years of natural disturbances.
+    return {
+        available: true,
+        day: Math.max(0, Math.floor(number(model.day))),
+        total: entries.length,
+        entries: entries.slice(0, Math.max(1, Math.min(60, Math.floor(number(limit, 24))))),
+        byRegion,
+    };
 }
 
 export function suppressForestDisturbance(x, y) {
@@ -636,6 +1139,11 @@ export function suppressForestDisturbance(x, y) {
     for (const [key, amount] of Object.entries(cost)) state.resources[key] = Math.max(0, (Number(state.resources[key]) || 0) - amount);
     record.containedUntil = model.day + CONTROL_DAYS;
     model.suppressed = Math.max(0, Math.floor(number(model.suppressed))) + 1;
+    addStewardship(model, {
+        kind: "control", x: Math.floor(x), y: Math.floor(y), area: 1,
+        disturbance: record.kind, days: CONTROL_DAYS,
+        typeId: record.typeId || null, typeLabel: record.typeLabel || null, cost,
+    });
     return { ok: true, x: Math.floor(x), y: Math.floor(y), kind: record.kind, days: CONTROL_DAYS, cost, containedUntil: record.containedUntil };
 }
 
@@ -674,7 +1182,25 @@ export function serializeForestSuccession() {
             kind: record.kind,
             age: Math.max(0, Math.min(100000, Math.floor(number(record.age)))),
             containedUntil: Math.max(0, Math.floor(number(record.containedUntil))),
+            typeId: typeof record.typeId === "string" ? record.typeId.slice(0, 48) : null,
+            typeLabel: typeof record.typeLabel === "string" ? record.typeLabel.slice(0, 80) : null,
+            year: Math.max(0, Math.floor(number(record.year))),
+            area: Math.max(1, Math.floor(number(record.area, 1))),
+            restoredDay: Math.max(0, Math.floor(number(record.restoredDay))),
+            origin: record.origin === "controlled-burn" ? "controlled-burn" : null,
         };
+    }
+    const breaks = {};
+    for (const [key, until] of Object.entries(model.breaks || {})) {
+        if (!validKey(key) || !Number.isFinite(Number(until))) continue;
+        if (Object.keys(breaks).length >= MAX_BREAKS) break;
+        breaks[key] = Math.max(0, Math.floor(number(until)));
+    }
+    const drainage = {};
+    for (const [key, day] of Object.entries(model.drainage || {})) {
+        if (!validKey(key) || !Number.isFinite(Number(day))) continue;
+        if (Object.keys(drainage).length >= MAX_DRAINED) break;
+        drainage[key] = Math.max(1, Math.floor(number(day)));
     }
     return {
         version: VERSION,
@@ -686,12 +1212,19 @@ export function serializeForestSuccession() {
         daysSinceSpread: Math.max(0, Math.floor(number(model.daysSinceSpread))),
         spreadings: Math.max(0, Math.floor(number(model.spreadings))),
         suppressed: Math.max(0, Math.floor(number(model.suppressed))),
-        tiles,
+        planted: Math.max(0, Math.floor(number(model.planted))),
+        stewardshipActions: Math.max(0, Math.floor(number(model.stewardshipActions))),
+        lastActionDay: Math.max(0, Math.floor(number(model.lastActionDay))),
+        tiles, breaks, drainage,
         spreadHistory: (Array.isArray(model.spreadHistory) ? model.spreadHistory : [])
             .filter(entry => entry && FOREST_DISTURBANCE_KINDS.includes(entry.kind))
             .slice(-MAX_HISTORY)
             .map(entry => ({
                 day: Math.max(0, Math.floor(number(entry.day))), kind: entry.kind,
+                year: Math.max(0, Math.floor(number(entry.year))),
+                area: Math.max(1, Math.floor(number(entry.area, 1))),
+                typeId: typeof entry.typeId === "string" ? entry.typeId.slice(0, 48) : null,
+                typeLabel: typeof entry.typeLabel === "string" ? entry.typeLabel.slice(0, 80) : null,
                 from: Array.isArray(entry.from) ? entry.from.map(value => Math.floor(number(value))) : [0, 0],
                 to: Array.isArray(entry.to) ? entry.to.map(value => Math.floor(number(value))) : [0, 0],
                 stockBefore: Math.max(0, Math.floor(number(entry.stockBefore))),
@@ -703,17 +1236,46 @@ export function serializeForestSuccession() {
             .map(entry => ({
                 day: Math.max(0, Math.floor(number(entry.day))),
                 kind: entry.kind,
+                year: Math.max(0, Math.floor(number(entry.year))),
+                area: Math.max(1, Math.floor(number(entry.area, 1))),
+                cause: entry.cause === "controlled-burn" ? "controlled-burn" : null,
+                typeId: typeof entry.typeId === "string" ? entry.typeId.slice(0, 48) : null,
+                typeLabel: typeof entry.typeLabel === "string" ? entry.typeLabel.slice(0, 80) : null,
                 x: Math.floor(number(entry.x)),
                 y: Math.floor(number(entry.y)),
                 stockBefore: Math.max(0, Math.floor(number(entry.stockBefore))),
                 stockAfter: Math.max(0, Math.floor(number(entry.stockAfter))),
+            })),
+        stewardshipHistory: (Array.isArray(model.stewardshipHistory) ? model.stewardshipHistory : [])
+            .filter(entry => entry && STEWARDSHIP_LABELS[entry.kind])
+            .slice(-MAX_STEWARDSHIP)
+            .map(entry => ({
+                kind: entry.kind,
+                day: Math.max(0, Math.floor(number(entry.day))),
+                year: Math.max(0, Math.floor(number(entry.year))),
+                x: Math.floor(number(entry.x)), y: Math.floor(number(entry.y)),
+                area: Math.max(1, Math.floor(number(entry.area, 1))),
+                amount: Math.max(0, Math.floor(number(entry.amount))),
+                typeId: typeof entry.typeId === "string" ? entry.typeId.slice(0, 48) : null,
+                typeLabel: typeof entry.typeLabel === "string" ? entry.typeLabel.slice(0, 80) : null,
+                stockBefore: Math.max(0, Math.floor(number(entry.stockBefore))),
+                stockAfter: Math.max(0, Math.floor(number(entry.stockAfter))),
+                beforeFlood: Math.max(0, Math.min(1, number(entry.beforeFlood))),
+                afterFlood: Math.max(0, Math.min(1, number(entry.afterFlood))),
+                beforeBiodiversity: Math.max(0, Math.min(1, number(entry.beforeBiodiversity))),
+                afterBiodiversity: Math.max(0, Math.min(1, number(entry.afterBiodiversity))),
+                escaped: Boolean(entry.escaped),
+                wood: Math.max(0, Math.floor(number(entry.wood))),
+                cost: entry.cost && typeof entry.cost === "object" ? { ...entry.cost } : null,
             })),
     };
 }
 
 export function validateForestSuccessionSnapshot(snapshot) {
     if (snapshot === undefined || snapshot === null) return true;
-    if (!snapshot || typeof snapshot !== "object" || Array.isArray(snapshot) || snapshot.version !== VERSION) {
+    const version = Number(snapshot?.version);
+    if (!snapshot || typeof snapshot !== "object" || Array.isArray(snapshot)
+        || (version !== 1 && version !== VERSION)) {
         throw new Error("Save data contains an invalid forest-succession state.");
     }
     if (!Number.isFinite(Number(snapshot.seed)) || Number(snapshot.seed) <= 0) {
@@ -733,6 +1295,49 @@ export function validateForestSuccessionSnapshot(snapshot) {
         }
         if (record.containedUntil !== undefined && (!Number.isFinite(Number(record.containedUntil)) || Number(record.containedUntil) < 0)) {
             throw new Error("Save data contains an invalid forest-succession control date.");
+        }
+        if (record.typeId !== undefined && record.typeId !== null && typeof record.typeId !== "string") {
+            throw new Error("Save data contains an invalid forest-succession region id.");
+        }
+        if (record.typeLabel !== undefined && record.typeLabel !== null && typeof record.typeLabel !== "string") {
+            throw new Error("Save data contains an invalid forest-succession region label.");
+        }
+    }
+    if (snapshot.breaks !== undefined) {
+        if (!snapshot.breaks || typeof snapshot.breaks !== "object" || Array.isArray(snapshot.breaks)) {
+            throw new Error("Save data contains an invalid forest firebreak register.");
+        }
+        const entries = Object.entries(snapshot.breaks);
+        if (entries.length > MAX_BREAKS) throw new Error("Save data contains too many forest firebreaks.");
+        for (const [key, until] of entries) {
+            if (!validKey(key) || !Number.isFinite(Number(until)) || Number(until) < 0) {
+                throw new Error("Save data contains an invalid forest firebreak.");
+            }
+        }
+    }
+    if (snapshot.drainage !== undefined) {
+        if (!snapshot.drainage || typeof snapshot.drainage !== "object" || Array.isArray(snapshot.drainage)) {
+            throw new Error("Save data contains an invalid forest drainage register.");
+        }
+        const entries = Object.entries(snapshot.drainage);
+        if (entries.length > MAX_DRAINED) throw new Error("Save data contains too many drained forest sites.");
+        for (const [key, day] of entries) {
+            if (!validKey(key) || !Number.isFinite(Number(day)) || Number(day) < 1) {
+                throw new Error("Save data contains an invalid drained forest site.");
+            }
+        }
+    }
+    if (snapshot.stewardshipHistory !== undefined) {
+        if (!Array.isArray(snapshot.stewardshipHistory) || snapshot.stewardshipHistory.length > MAX_STEWARDSHIP) {
+            throw new Error("Save data contains an invalid forest stewardship history.");
+        }
+        for (const entry of snapshot.stewardshipHistory) {
+            if (!entry || !STEWARDSHIP_LABELS[entry.kind]) {
+                throw new Error("Save data contains an invalid forest stewardship order.");
+            }
+            if (!Number.isFinite(Number(entry.day)) || Number(entry.day) < 0) {
+                throw new Error("Save data contains an invalid forest stewardship date.");
+            }
         }
     }
     if (snapshot.history !== undefined) {
@@ -768,7 +1373,23 @@ export function restoreForestSuccession(snapshot) {
             kind: record.kind,
             age: Math.max(0, Math.floor(number(record.age))),
             containedUntil: Math.max(0, Math.floor(number(record.containedUntil))),
+            typeId: typeof record.typeId === "string" ? record.typeId : null,
+            typeLabel: typeof record.typeLabel === "string" ? record.typeLabel : null,
+            year: Math.max(0, Math.floor(number(record.year))),
+            area: Math.max(1, Math.floor(number(record.area, 1))),
+            restoredDay: Math.max(0, Math.floor(number(record.restoredDay))),
+            origin: record.origin === "controlled-burn" ? "controlled-burn" : null,
         };
+    }
+    const breaks = {};
+    for (const [key, until] of Object.entries(snapshot.breaks || {})) {
+        if (!validKey(key) || !Number.isFinite(Number(until))) continue;
+        breaks[key] = Math.max(0, Math.floor(number(until)));
+    }
+    const drainage = {};
+    for (const [key, day] of Object.entries(snapshot.drainage || {})) {
+        if (!validKey(key) || !Number.isFinite(Number(day))) continue;
+        drainage[key] = Math.max(1, Math.floor(number(day)));
     }
     state.forestSuccession = {
         version: VERSION,
@@ -780,10 +1401,20 @@ export function restoreForestSuccession(snapshot) {
         daysSinceSpread: Math.max(0, Math.floor(number(snapshot.daysSinceSpread))),
         spreadings: Math.max(0, Math.floor(number(snapshot.spreadings))),
         suppressed: Math.max(0, Math.floor(number(snapshot.suppressed))),
+        planted: Math.max(0, Math.floor(number(snapshot.planted))),
+        stewardshipActions: Math.max(0, Math.floor(number(snapshot.stewardshipActions))),
+        lastActionDay: Math.max(0, Math.floor(number(snapshot.lastActionDay))),
+        // Version 1 snapshots simply get empty registers; every disturbance
+        // tile and every unit of forest stock is preserved exactly.
+        breaks, drainage,
         tiles,
         history: (Array.isArray(snapshot.history) ? snapshot.history : []).slice(-MAX_HISTORY),
         spreadHistory: (Array.isArray(snapshot.spreadHistory) ? snapshot.spreadHistory : []).slice(-MAX_HISTORY),
+        stewardshipHistory: (Array.isArray(snapshot.stewardshipHistory) ? snapshot.stewardshipHistory : [])
+            .filter(entry => entry && STEWARDSHIP_LABELS[entry.kind])
+            .slice(-MAX_STEWARDSHIP),
         activeKeys: [],
+        revision: 0,
     };
     rebuildActiveKeys(state.forestSuccession);
     return Object.keys(tiles).length;

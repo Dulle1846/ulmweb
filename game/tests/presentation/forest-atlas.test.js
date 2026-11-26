@@ -6,6 +6,11 @@ import {
     forestAtlasSurvey, renderForestAtlasPanel, invalidateForestAtlasSurvey,
 } from "../../js/presentation/forest-atlas-panel.js";
 import { REGIONAL_FOREST_TYPES } from "../../js/world/regional-forests.js";
+import { getResourceNodeAt } from "../../js/systems/resource-geography.js";
+import {
+    controlledBurnNearestForestTile, forestSuccessionChronicle,
+    forestSuccessionStats,
+} from "../../js/systems/forest-succession.js";
 
 function setup(seed = 20261123) {
     resetState();
@@ -151,6 +156,44 @@ test("the rendered atlas lists all 60 types, their effects and their signature t
         assert.ok(Number(match[2]) <= 100,
             "fauna " + match[1] + " must render as a percent, not " + match[2]);
     }
+});
+
+test("the atlas exposes region history and the live stewardship registers", () => {
+    setup(20261125);
+    state.resources = { wood: 500, stone: 500, gold: 500, food: 500 };
+    let target = null;
+    for (let y = 2; y < 46 && !target; y++) {
+        for (let x = 2; x < 46; x++) {
+            const node = getResourceNodeAt(x, y);
+            if (!node?.forestCapacity || node.forestStock < node.forestCapacity * 0.55) continue;
+            target = { x, y, node };
+            break;
+        }
+    }
+    assert.ok(target, "the atlas fixture needs a mature forest stand");
+    const burn = controlledBurnNearestForestTile(target.x, target.y, 6);
+    assert.equal(burn.ok, true, burn.reason);
+    invalidateForestAtlasSurvey();
+    const survey = forestAtlasSurvey(60);
+    assert.ok(survey.regions.length >= survey.present,
+        "every present regional forest type needs one region history row, including unsampled history");
+    const region = survey.regions.find(row => row.id === burn.typeId);
+    assert.ok(region, "the burned region must be present in the survey");
+    assert.ok(region.sample.biodiversity >= 0 && region.sample.flood >= 0);
+    assert.ok(region.history.some(entry => entry.kind === "burn"),
+        "the controlled burn must be grouped into its own region history");
+    assert.ok(forestSuccessionChronicle().entries.some(entry => entry.kind === "burn"));
+    assert.ok(forestSuccessionStats().stewardshipActions >= 1);
+    const markup = renderForestAtlasPanel();
+    assert.match(markup, /FOREST STEWARDSHIP &amp; REGION HISTORY/);
+    assert.match(markup, /PLAYER ORDERS/);
+    assert.match(markup, /FIREBREAKS/);
+    assert.match(markup, /DRAINED SITES/);
+    assert.match(markup, /No disturbance event|Controlled burn/);
+    assert.equal((markup.match(/data-forest-region="/g) || []).length, survey.regions.length);
+    assert.match(markup, /data-forest-stewardship="\d+"/);
+    assert.match(markup, /data-forest-firebreaks="\d+"/);
+    assert.match(markup, /data-forest-drained="\d+"/);
 });
 
 test("a realm without resource geography shows an honest empty atlas", () => {

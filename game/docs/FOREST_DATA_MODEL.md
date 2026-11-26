@@ -1,6 +1,6 @@
 # Wald-Datenmodell, Performance und Modding — 1.2.23.1.121–150
 
-> **Status: implementiert (v3.70.0).** Die dreißig Punkte aus **E. Simulation,
+> **Status: implementiert (v3.71.0).** Die dreißig Punkte aus **E. Simulation,
 > Datenmodell und Performance** liegen in `js/world/forest-model.js`. Das Modul
 > baut keine zweite Simulation: Es liest die vorhandenen regionalen Typen,
 > Stände, Böden, Sukzessionsprofile und RNG-Ströme und stellt daraus die
@@ -295,3 +295,41 @@ lesen. Sie zeigen keine erfundenen Zahlen und keine `NaN`-Platzhalter.
 | Biodiversität | Anzeige | puffert Verlust, erhöht Nichtholz-Ernte |
 | Regeneration | globaler Faktor | `forestRegenerationFor` in `regrowForests` |
 | Spieleransicht | vier Modellzeilen | acht Zeilen plus Live-Puls, Chunk und Cache |
+
+## 13. Was 3.71.0 neu verdrahtet: Bewirtschaftung und Regionsgeschichte
+
+Die Sukzession ist jetzt auch der Ort für echte forstliche Entscheidungen.
+`forest-succession.js` führt Version 2 des gespeicherten Modells:
+
+| Feld | Bedeutung |
+|---|---|
+| `breaks` | begrenzte Brandschneisen je Kachel mit Ablaufdatum; `forestFireMayEnter()` wird von Zündung und Ausbreitung gemeinsam gelesen |
+| `drainage` | dauerhafte Entwässerungsentscheidung je Feuchtkachel; `forestStewardshipAt()` liest sie auch ohne Störung |
+| `stewardshipHistory` | begrenzte Spieleraufträge mit Jahr, Fläche, Kosten, Stock vor/nach, Flut- und Biodiversitätswirkung |
+| `revision` | invalidiert Habitat- und Atlas-Caches, wenn ein Auftrag einen Stand verändert |
+
+Die vier Aktionen sind keine parallele Ökologie:
+
+- **Aufforstung** erhöht den echten `forestStock` eines 3×3-Kahlflecks. Die
+  Menge kommt aus `forestBiodiversityFor`, `forestErosionFor`,
+  `forestRegenerationFor`, Bestandsalter und Standortmatrix.
+- **Brandschneise** speichert einen 3×3-Schutzgürtel. Feuer kann ihn weder
+  natürlich zünden noch überspringen; andere Störungen bleiben möglich.
+- **Kontrolliertes Brennen** erzeugt ein echtes `burned`-Sukzessionsereignis,
+  entnimmt Stock, liefert Schadholz in die Wirtschaft und kann bei hohem
+  Feuerrisiko entkommen. Der Wurf kommt aus dem eigenen
+  `forest-stewardship`-RNG-Stream.
+- **Entwässerung/Rückbau** verändert `wetness`, `forestFloodPressureFor`,
+  `forestWaterFlowFor`, `forestBiodiversityFor` und die Habitatnote. Die
+  Entscheidung überlebt Speichern, Laden und den Jahreswechsel; Rückbau stellt
+  den natürlichen Wasserstand wieder her.
+
+Der Atlas zeigt pro vorhandener Region eine aufklappbare Chronik mit
+Biodiversität, Erosion, Flut, Feuchte und Regeneration in echten Prozenten,
+akuten Störungen, Flächen und Erholungsfortschritt sowie den Aufträgen des
+Spielers. Alte Version-1-Spielstände behalten jede Störungskachel und jeden
+Waldstock; die neuen Register starten leer.
+
+Die relevanten Nachweise sind `tests/systems/forest-succession.test.js`,
+`tests/presentation/forest-atlas.test.js` und
+`tests/browser/forest-stewardship-actions.mjs`.

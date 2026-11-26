@@ -11,12 +11,16 @@ import { FOREST_GOODS, forestStandAt } from "../world/forest-ecology.js";
 import { FOREST_MANAGEMENT_SYSTEMS } from "../world/forest-dynamics.js";
 import { forestFaunaEcologyFor, forestFaunaFieldGuide } from "../world/forest-fauna-ecology.js";
 import {
+    forestBiodiversityFor, forestErosionFor, forestFloodPressureFor,
     forestModelCacheStats, forestModelFor, forestModelTelemetrySnapshot,
-    precomputeForestChunk,
+    forestRegenerationFor, forestWaterFlowFor, precomputeForestChunk,
 } from "../world/forest-model.js";
 import { timberQuote } from "../systems/regional-timber-market.js";
 import { forestGoodUseLabel } from "../systems/forest-gathering.js";
-import { forestSuccessionStats } from "../systems/forest-succession.js";
+import {
+    forestStewardshipAt, forestSuccessionAt, forestSuccessionChronicle,
+    forestSuccessionStats,
+} from "../systems/forest-succession.js";
 
 const esc = value => String(value ?? "").replace(/[&<>"']/g, character => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
@@ -65,20 +69,27 @@ export function forestAtlasSurvey(limit = SURVEY_LIMIT) {
             transitionSamples: 0, present: 0, types: [],
         };
     }
-    const key = [geo.seed, width, height, state.year, Math.floor((Number(state.tick) || 0) / 30)].join(":");
+    const key = [geo.seed, width, height, state.year,
+        Math.floor((Number(state.tick) || 0) / 30),
+        Number(state.forestSuccession?.day) || 0,
+        Number(state.forestSuccession?.revision) || 0,
+        Number(state.forestSuccession?.stewardshipActions) || 0].join(":");
     if (surveyCache.key === key) return surveyCache.value;
     const total = Math.min(geo.forestStock.length, width * height);
     const indices = [];
     for (let index = 0; index < total; index++) if (geo.forestStock[index] > 0) indices.push(index);
     const stride = Math.max(1, Math.ceil(indices.length / Math.max(1, limit)));
     const counts = {}, transitions = {}, samples = {}, faunaSamples = {}, modelSamples = {}, systemCounts = {};
+    const regionSamples = {};
     let sampled = 0, transitionSamples = 0;
     const climate = state.worldOptions?.climate || "temperate";
     const zoom = Number(state.zoom) || 1;
+    const season = Math.max(0, Math.min(3, Number(state.seasonIndex) || 0));
     const sampleStandAt = (sx, sy) => {
         const x = Math.floor(sx), y = Math.floor(sy);
         if (x < 0 || y < 0 || x >= width || y >= height) return null;
         const terrain = terrainAt(x, y);
+        const stewardship = forestStewardshipAt(x, y);
         return forestStandAt(sx, sy, {
             seed: Number(geo.seed) || 1,
             moisture: terrain.moisture,
@@ -89,6 +100,8 @@ export function forestAtlasSurvey(limit = SURVEY_LIMIT) {
             stockRatio: geo.forestCapacity[y * width + x]
                 ? geo.forestStock[y * width + x] / geo.forestCapacity[y * width + x] : 1,
             rockLine: 0.92,
+            succession: forestSuccessionAt(x, y),
+            drainage: stewardship.drainage,
         });
     };
     for (let slot = 0; slot < indices.length; slot += stride) {
@@ -99,6 +112,27 @@ export function forestAtlasSurvey(limit = SURVEY_LIMIT) {
         if (!id) continue;
         counts[id] = (counts[id] || 0) + 1;
         if (!samples[id] && stand.dynamics) samples[id] = stand.dynamics;
+        if (!regionSamples[id]) {
+            const biodiversity = forestBiodiversityFor(stand);
+            const erosion = forestErosionFor(stand);
+            const flood = forestFloodPressureFor(stand, { season, weather: state.weather });
+            const regeneration = forestRegenerationFor(stand);
+            const water = forestWaterFlowFor(stand);
+            const stewardship = forestStewardshipAt(x, y);
+            regionSamples[id] = {
+                x, y,
+                typeId: id, typeLabel: stand.regionalLabel || null,
+                ageClass: stand.ageClass || null,
+                biodiversity: biodiversity.index,
+                biodiversityClass: biodiversity.class,
+                erosion: erosion.risk, erosionClass: erosion.class,
+                flood: flood.pressure, wetness: Number(stand.wetness) || 0,
+                regeneration: regeneration.factor, yearsToCanopy: regeneration.yearsToCanopy,
+                flow: water.flow, drained: stewardship.drained,
+                firebreak: stewardship.firebreak, firebreakUntil: stewardship.firebreakUntil,
+                succession: forestSuccessionAt(x, y),
+            };
+        }
         if (!modelSamples[id] && stand.dynamics) {
             modelSamples[id] = forestModelFor(stand, {
                 day: state.dayOfYear, climate, zoom, seed: geo.seed,
@@ -139,6 +173,28 @@ export function forestAtlasSurvey(limit = SURVEY_LIMIT) {
             standAt: sampleStandAt,
         });
     }
+    const successionStats = forestSuccessionStats();
+    const chronicle = forestSuccessionChronicle(60);
+    // A region with active history must stay visible even when this window's
+    // stride does not happen to sample one of its tiles. Use the catalog id as
+    // the label source and keep the live sample optional.
+    const regionIds = new Set([
+        ...types.filter(type => type.count > 0).map(type => type.id),
+        ...Object.keys(successionStats.regions || {}),
+        ...Object.keys(chronicle.byRegion || {}),
+    ]);
+    const regions = [...regionIds].filter(id => id !== "legacy")
+        .map(id => {
+            const type = REGIONAL_FOREST_TYPES.find(entry => entry.id === id);
+            const sampled = types.find(entry => entry.id === id);
+            return {
+                id, key: type?.key || null, label: type?.label || id,
+                count: sampled?.count || 0,
+                sample: regionSamples[id] || null,
+                disturbances: successionStats.regions?.[id] || null,
+                history: chronicle.byRegion?.[id] || [],
+            };
+        });
     const value = {
         available: true,
         forestTiles: indices.length,
@@ -148,8 +204,10 @@ export function forestAtlasSurvey(limit = SURVEY_LIMIT) {
         transitionSamples,
         present: types.filter(type => type.count > 0).length,
         types,
+        regions,
+        chronicle,
         chunk,
-        succession: forestSuccessionStats(),
+        succession: successionStats,
         telemetry: forestModelTelemetrySnapshot(),
         cache: forestModelCacheStats(),
         // The card sample keeps one dynamics record per regional type. A type
@@ -393,6 +451,71 @@ function faunaFieldGuide(survey) {
         + '</details>';
 }
 
+function stewardshipEventLine(entry) {
+    const year = entry.year ? 'Year ' + number(entry.year) : 'Day ' + number(entry.day);
+    const area = number(entry.area) + (entry.area === 1 ? ' tile' : ' tiles');
+    const progress = entry.progress !== null && entry.progress !== undefined
+        ? ' · ' + pct(entry.progress) + '% recovered' : '';
+    const stock = entry.stockBefore !== null && entry.stockAfter !== null
+        ? ' · stock ' + number(entry.stockBefore) + ' → ' + number(entry.stockAfter) : '';
+    const amount = entry.amount ? ' · +' + number(entry.amount) + ' stand units' : '';
+    const escaped = entry.escaped ? ' · ESCAPED' : '';
+    const flood = entry.beforeFlood !== null && entry.afterFlood !== null
+        ? ' · flood ' + pct(entry.beforeFlood) + '% → ' + pct(entry.afterFlood) + '%' : '';
+    return '<li data-forest-chronicle="' + esc(entry.kind) + '"><b>' + esc(year) + '</b> · '
+        + esc(entry.label) + ' · ' + area + progress + stock + amount + flood + escaped + '</li>';
+}
+
+function regionHistoryBlock(survey) {
+    const pulse = survey.succession || {};
+    const regions = Array.isArray(survey.regions) ? survey.regions : [];
+    const rows = regions.map(region => {
+        const sample = region.sample || {};
+        const disturbances = region.disturbances || {};
+        const kinds = Object.entries(disturbances.byKind || {})
+            .map(([kind, count]) => String(kind).replace(/-/g, ' ') + ' ' + number(count)).join(' · ');
+        // Player orders must not be crowded out by later natural events. Show
+        // the latest orders first, then the latest disturbance/spread records.
+        const allHistory = region.history || [];
+        const history = [
+            ...allHistory.filter(entry => entry.source === "stewardship").slice(0, 4),
+            ...allHistory.filter(entry => entry.source !== "stewardship").slice(0, 3),
+        ];
+        const status = sample.biodiversity !== undefined
+            ? 'Biodiversity ' + pct(sample.biodiversity) + '% · Erosion '
+                + pct(sample.erosion) + '% · Flood ' + pct(sample.flood)
+                + '% · Wetness ' + pct(sample.wetness) + '% · Regrowth '
+                + pct(sample.regeneration) + '%'
+            : 'No live ecology sample at this survey window';
+        return '<details class="forest-atlas__region" data-forest-region="' + esc(region.id)
+            + '" data-forest-region-biodiversity="' + pct(sample.biodiversity)
+            + '" data-forest-region-flood="' + pct(sample.flood) + '">'
+            + '<summary><span>' + esc(region.label) + '</span><small>' + number(region.count)
+            + ' sampled stands · ' + esc(status) + '</small></summary>'
+            + '<div class="command-note"><b>CURRENT</b> ' + esc(status)
+            + (sample.erosionClass ? ' · erosion ' + esc(sample.erosionClass) : '')
+            + (sample.biodiversityClass ? ' · habitat ' + esc(sample.biodiversityClass) : '')
+            + (sample.drained ? ' · DRAINED WETLAND' : '')
+            + (sample.firebreak ? ' · FIREBREAK ACTIVE TO DAY ' + number(sample.firebreakUntil) : '')
+            + ' · ' + number(disturbances.active || 0) + ' active disturbance tiles'
+            + (kinds ? ' (' + esc(kinds) + ')' : '') + '.</div>'
+            + '<ul class="forest-atlas__chronicle">'
+            + (history.length ? history.map(stewardshipEventLine).join('')
+                : '<li data-forest-chronicle="none">No disturbance event or stewardship order is recorded in this region yet.</li>')
+            + '</ul></details>';
+    }).join('');
+    return '<div class="command-section-title">FOREST STEWARDSHIP &amp; REGION HISTORY</div>'
+        + '<div class="command-summary" data-forest-stewardship="' + number(pulse.stewardshipActions) + '" data-forest-firebreaks="'
+        + number(pulse.firebreaks) + '" data-forest-drained="' + number(pulse.drained) + '">'
+        + '<div><small>PLAYER ORDERS</small><strong>' + number(pulse.stewardshipActions) + '</strong></div>'
+        + '<div><small>FIREBREAKS</small><strong>' + number(pulse.firebreaks) + ' TILES</strong></div>'
+        + '<div><small>DRAINED SITES</small><strong>' + number(pulse.drained) + '</strong></div>'
+        + '<div><small>REPLANTED</small><strong>' + number(pulse.planted) + ' UNITS</strong></div>'
+        + '<div><small>REGIONS CHRONICLED</small><strong>' + number(regions.length) + '</strong></div></div>'
+        + '<p class="command-note">Orders are issued from a Lumber Yard or Forester\'s Lodge: reforest a clearing, clear a firebreak belt, set a controlled burn, or drain/restore a wet stand. Every order costs real stores, is saved with the realm and writes into the region history below; disturbance area, recovery and current biodiversity, erosion, flood and wetness are read from the same stand model the simulation uses.</p>'
+        + '<div class="forest-atlas__regions">' + rows + '</div>';
+}
+
 export function renderForestAtlasPanel() {
     const survey = forestAtlasSurvey();
     if (!survey.available) {
@@ -441,6 +564,7 @@ export function renderForestAtlasPanel() {
         + '<div><small>TRANSITION EDGES</small><strong>' + number(survey.transitionSamples) + '</strong></div>'
         + '<div><small>SEASON</small><strong>' + esc(survey.season.toUpperCase()) + '</strong></div></div>'
         + processBlock
+        + regionHistoryBlock(survey)
         + faunaFieldGuide(survey)
         + '<div class="forest-atlas">' + cards + '</div>'
         + '<p class="command-note">The realm count comes from a bounded deterministic sample of up to ' + number(SURVEY_LIMIT)

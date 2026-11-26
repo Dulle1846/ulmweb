@@ -1193,6 +1193,10 @@ export function forestStandAt(x, y, context = {}) {
     const forests = Number.isFinite(Number(context.forests)) ? Number(context.forests) : 52;
     const stockRatio = clamp01(Number(context.stockRatio ?? 1));
     const rockLine = Number.isFinite(Number(context.rockLine)) ? Number(context.rockLine) : 0.92;
+    // Player drainage is a persisted stewardship decision, not a second site
+    // matrix. It lowers the water table and habitat value of an existing wet
+    // stand while leaving its regional type and timber identity intact.
+    const drainage = clamp01(Number(context.drainage ?? context.succession?.drainage) || 0);
 
     const forestPressure = clamp01((moisture - 0.34) / 0.46 + (forests - 50) * 0.0018 - 0.04);
     // Keep the cheap gate and the full stand in agreement: zero forest cover
@@ -1648,6 +1652,8 @@ export function forestStandAt(x, y, context = {}) {
         successionProgress,
         disturbance,
         succession,
+        drainage,
+        drained: drainage > 0,
         regionalType,
         tropical,
         pureIsland,
@@ -1659,8 +1665,10 @@ export function forestStandAt(x, y, context = {}) {
     fireRisk = clamp01(fireRisk + dynamics.hazard.fireRiskDelta);
     pestRisk = clamp01(pestRisk * dynamics.health.pestFactor);
     windExposure = clamp01(windExposure * dynamics.hazard.windFactor);
-    wetness = clamp01(wetness - dynamics.soil.waterUptake * 0.03);
+    wetness = clamp01(wetness - dynamics.soil.waterUptake * 0.03 - drainage * 0.30);
+    fireRisk = clamp01(fireRisk + drainage * 0.08);
     browsingPressure = clamp01(browsingPressure + dynamics.silviculture.browsePressure);
+    if (drainage > 0) habitat.score = clamp01(habitat.score - drainage * 0.12);
     habitat.layers = Math.max(habitat.layers, dynamics.structure.layers);
     habitat.score = clamp01(habitat.score + (dynamics.soil.mycorrhiza * 0.04
         + dynamics.structure.edgeDiversity * 0.04 + dynamics.structure.deadwoodProfile.habitat * 0.05)
@@ -1752,6 +1760,9 @@ export function forestStandAt(x, y, context = {}) {
         subtype: lindenElm,
         note: formation.note,
         succession,
+        drainage,
+        drained: drainage > 0,
+        stockRatio,
         dominantSpecies,
         species: speciesList,
         ageClass,

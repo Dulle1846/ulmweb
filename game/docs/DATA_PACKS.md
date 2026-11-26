@@ -22,7 +22,7 @@ The contract is deliberately closed:
   "name": "Northern Lore",
   "author": "Open Hearth",
   "version": "1.0.0",
-  "gameVersion": "3.70.0",
+  "gameVersion": "3.71.0",
   "description": "A small northern content pack.",
   "scenarios": [
     {

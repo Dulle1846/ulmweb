@@ -1,13 +1,61 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.70.0`
-**Next development line:** `3.71.0-dev`
+**Current production version:** `3.71.0`
+**Next development line:** `3.72.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
 **Last repository verification:** 2026-11-26 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.71.0 — The player becomes a forester
+
+The woodland can now be worked as a real, interlocking system. Four player
+orders run through the existing stands, resource stores, succession clock,
+renderer and save, and every regional woodland writes a bounded history of
+what happened to it and what the player did about it.
+
+- **Aufforstung.** A planting crew restores a compact clearing from a Lumber
+  Yard or Forester's Lodge. Stock growth is derived from the same site model as
+  natural regeneration: regional type, age class, biodiversity, erosion, water
+  and regrowth. The order costs gold and food, is refused when the stores are
+  short, and records the planted units, area, stock before/after and site
+  factor.
+- **Brandschneise.** A saved 3×3 protection belt is cleared for a bounded
+  1,200-day life. The shared `forestFireMayEnter()` gate is used by both
+  natural ignition and the spread pass, so fire cannot bypass the belt. The
+  atlas reports the protected tiles and the order history.
+- **Kontrolliertes Brennen.** A mature stand can be burned deliberately for a
+  real salvage yield. The burn consumes stock, creates a `burned` succession
+  record and can escape when fire risk, dry weather and low biodiversity
+  outweigh the wetness of the site. Escape uses the separate
+  `forest-stewardship` RNG stream, so planting can never reroll it.
+- **Feuchtgebiets-Entwässerung und Rückbau.** One contextual decision drains
+  the nearest wet stand or restores a drained one. Drainage lowers wetness,
+  flood pressure, biodiversity, habitat value and flood-driven succession while
+  raising fire exposure; restoration reverses it. The decision is saved per
+  tile and survives the annual cycle.
+- `forest-succession.js` moves to **version 2**. Old version 1 snapshots still
+  load unchanged, keep every disturbance tile and forest unit, and receive
+  empty stewardship registers. The new `breaks`, `drainage` and
+  `stewardshipHistory` fields are validated, bounded and serialized with the
+  realm. A separate `revision` invalidates the habitat and atlas caches when an
+  order changes a stand.
+- The FORESTS atlas gains **FOREST STEWARDSHIP & REGION HISTORY**: player
+  orders, active firebreaks, drained sites, replanted units, and one expandable
+  history per regional woodland. Each region shows its current biodiversity,
+  erosion, flood, wetness and regrowth in player percentages, plus the events,
+  area, recovery progress and player orders that produced them.
+- The Lumber Yard / Forester's Lodge inspector exposes the four new buttons and
+  the current firebreak/drainage state. The browser reference starts a real
+  swamp realm, presses all four buttons, advances the real simulation for two
+  full years, and reads the same stands and regional histories in the atlas.
+- **Proof.** Focused forest/save tests are green, the deterministic 25-year
+  campaign completes **10,040 ticks** at **0.971 ms/tick** with all 21
+  requirements, no stalls, **3,507 forest tiles** and **0 untyped**. The new
+  browser reference passes with 4 player orders, 3 firebreak tiles, 1 drained
+  site, 59 replanted units, 3 regional histories and 0 console errors.
 
 ## 3.70.0 — The forest data model starts to govern the wood
 

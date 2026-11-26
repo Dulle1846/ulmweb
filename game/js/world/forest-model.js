@@ -804,7 +804,9 @@ export function forestWaterFlowFor(stand = {}) {
     const wetness = clamp01(stand.wetness);
     const moisture = clamp01(stand.moisture);
     const slope = clamp01(stand.height);
-    const flow = clamp01(wetness * 0.4 + moisture * 0.2 + flood * 0.22 + (1 - slope) * 0.18);
+    const drainage = clamp01(stand.drainage);
+    const flow = clamp01(wetness * 0.4 + moisture * 0.2 + flood * 0.22 + (1 - slope) * 0.18
+        - drainage * 0.10);
     const key = String(type?.key || "");
     const floodplain = flood >= 0.55 || /floodplain|carr|willow|mangrove|gallery|alluvial/.test(key);
     const mire = /bog|moor|peat|carr|mire|swamp|alder/.test(key) && wetness >= 0.55;
@@ -815,6 +817,7 @@ export function forestWaterFlowFor(stand = {}) {
         mire,
         retention: round(clamp01(1 - flow * 0.62), 3),
         flood: round(flood, 3),
+        drainage: round(drainage, 3),
     });
 }
 
@@ -831,9 +834,11 @@ export function forestFloodPressureFor(stand = {}, options = {}) {
     // Spring snowmelt and autumn rain are the two real flood windows. A
     // floodplain remains capable outside them, but it is much less likely.
     const seasonal = season === 0 ? 0.16 : season === 2 ? 0.12 : season === 1 ? -0.12 : -0.02;
+    const drainage = clamp01(stand.drainage);
     const pressure = clamp01(water.flow * 0.55 + water.flood * 0.2
         + (water.floodplain ? 0.18 : 0) + (water.mire ? 0.12 : 0)
-        + (wetWeather ? 0.2 : 0) - (dryWeather ? 0.16 : 0) + seasonal);
+        + (wetWeather ? 0.2 : 0) - (dryWeather ? 0.16 : 0) + seasonal
+        - drainage * 0.16);
     return freeze({
         pressure: round(pressure, 3),
         flow: water.flow,
@@ -842,6 +847,7 @@ export function forestFloodPressureFor(stand = {}, options = {}) {
         mire: water.mire,
         seasonal,
         wetWeather,
+        drainage: round(drainage, 3),
     });
 }
 
@@ -862,7 +868,8 @@ export function forestErosionFor(stand = {}) {
 }
 
 export function forestRegenerationFor(stand = {}) {
-    const factor = clamp01(forestRegrowthFactor(stand));
+    const drainage = clamp01(stand.drainage);
+    const factor = clamp01(forestRegrowthFactor(stand) + drainage * 0.05);
     const seedBank = clamp01(stand.dynamics?.regeneration?.seedBank ?? stand.structure?.seedBank ?? 0.55);
     const motherTrees = clamp01(stand.dynamics?.regeneration?.motherTreesPerHa
         ? stand.dynamics.regeneration.motherTreesPerHa / 40 : 0.5);
@@ -875,6 +882,7 @@ export function forestRegenerationFor(stand = {}) {
         yearsToCanopy: Math.max(6, years),
         trajectory: factor >= 0.8 ? "fast" : factor >= 0.55 ? "steady" : "slow",
         erosionPenalty: round(erosion.risk, 3),
+        drainage: round(drainage, 3),
     });
 }
 
@@ -887,10 +895,12 @@ export function forestBiodiversityFor(stand = {}) {
     const fauna = Number(stand.faunaEcology?.speciesRichness ?? stand.faunaEcology?.richness
         ?? stand.faunaEcology?.guilds?.length ?? stand.fauna?.length ?? 0) || 0;
     const age = stand.ageClass === "ancient" ? 1 : stand.ageClass === "mature" ? 0.72 : stand.ageClass === "young" ? 0.42 : 0.3;
+    const drainage = clamp01(stand.drainage);
     const index = clamp01(diversity * 0.32 + deadwood * 0.2 + (layers / 5) * 0.16
-        + Math.min(1, fauna / 10) * 0.18 + age * 0.14);
+        + Math.min(1, fauna / 10) * 0.18 + age * 0.14 - drainage * 0.12);
     return freeze({
         index: round(index, 3),
+        drainage: round(drainage, 3),
         percent: Math.round(index * 100),
         class: index < 0.34 ? "low" : index < 0.56 ? "moderate" : index < 0.76 ? "high" : "very-high",
         layers,

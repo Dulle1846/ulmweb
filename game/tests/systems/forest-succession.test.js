@@ -3,12 +3,16 @@ import assert from "node:assert/strict";
 import { resetState, state } from "../../js/core/state.js";
 import {
     coniferDisturbanceKind, coniferDisturbanceWeights, spreadRiskFactor,
-    ensureForestSuccession, forestSuccessionAt, forestSuccessionStats,
+    ensureForestSuccession, forestFireMayEnter, forestFirebreakAt,
+    forestSuccessionAt, forestSuccessionChronicle, forestSuccessionStats,
     forestDisturbanceKindFor, resetForestSuccession,
     restoreForestSuccession, serializeForestSuccession, suppressForestDisturbance,
     suppressNearestForestDisturbance, updateForestSuccession,
-    validateForestSuccessionSnapshot,
+    validateForestSuccessionSnapshot, buildNearestForestFirebreak,
+    controlledBurnNearestForestTile, reforestNearestForestTile,
+    toggleNearestWetlandDrainage, forestStewardshipAt,
 } from "../../js/systems/forest-succession.js";
+import { forestBiodiversityFor, forestFloodPressureFor } from "../../js/world/forest-model.js";
 import {
     forestStandAt, forestSuccessionStage, FOREST_SUCCESSION_PROFILES,
 } from "../../js/world/forest-ecology.js";
@@ -349,6 +353,142 @@ test("regime severity and refugia change disturbance spread", () => {
     };
     assert.ok(spreadRiskFactor("burned", sheltered) < spreadRiskFactor("burned", dry),
         "a real refugium must resist a crossing fire");
+});
+
+test("player forestry orders act on the real stand, stores and region chronicle", () => {
+    const model = setupWet(20261121);
+    state.resources = { wood: 500, stone: 500, gold: 500, food: 500 };
+    const geo = state.resourceGeography;
+    let centre = null;
+    for (let y = 3; y < 45 && !centre; y++) {
+        for (let x = 3; x < 45; x++) {
+            const node = getResourceNodeAt(x, y);
+            if (!node?.forestCapacity || node.forestStock < node.forestCapacity * 0.8) continue;
+            centre = { x, y, node };
+            break;
+        }
+    }
+    assert.ok(centre, "the wetland fixture needs a stocked forest tile");
+    const ci = centre.y * state.worldW + centre.x;
+    geo.forestStock[ci] = Math.max(1, Math.floor(geo.forestCapacity[ci] * 0.12));
+    const beforePlanting = geo.forestStock[ci];
+    const goldBefore = state.resources.gold, foodBefore = state.resources.food;
+    const planted = reforestNearestForestTile(centre.x, centre.y, 6);
+    assert.equal(planted.ok, true, planted.reason);
+    assert.equal(planted.action, "reforest");
+    assert.ok(planted.tiles >= 1);
+    assert.ok(geo.forestStock[ci] > beforePlanting, "reforestation must add real stand stock");
+    assert.equal(state.resources.gold, goldBefore - 8);
+    assert.equal(state.resources.food, foodBefore - 5);
+    assert.ok(forestSuccessionStats().planted >= planted.planted);
+
+    const breakResult = buildNearestForestFirebreak(centre.x, centre.y, 6);
+    assert.equal(breakResult.ok, true, breakResult.reason);
+    assert.equal(breakResult.action, "firebreak");
+    assert.ok(forestFirebreakAt(breakResult.x, breakResult.y) > model.day,
+        "the firebreak must be saved as a real protected strip");
+    assert.equal(forestFireMayEnter(breakResult.x, breakResult.y), false,
+        "the same gate used by ignition and spread must reject the protected tile");
+
+    let burnTarget = null;
+    for (let y = 2; y < 46 && !burnTarget; y++) {
+        for (let x = 2; x < 46; x++) {
+            if (forestFirebreakAt(x, y)) continue;
+            const node = getResourceNodeAt(x, y);
+            if (!node?.forestCapacity || node.forestStock < node.forestCapacity * 0.55) continue;
+            if (node.forestAge === "young") continue;
+            if (forestSuccessionAt(x, y)?.recovered === false) continue;
+            burnTarget = { x, y, stock: node.forestStock };
+            break;
+        }
+    }
+    assert.ok(burnTarget, "the fixture needs a mature unbroken stand for a controlled burn");
+    state.resources.wood = 500;
+    const woodBefore = state.resources.wood;
+    const burned = controlledBurnNearestForestTile(burnTarget.x, burnTarget.y, 6);
+    assert.equal(burned.ok, true, burned.reason);
+    assert.equal(burned.action, "burn");
+    assert.ok(burned.stockAfter < burned.stockBefore, "a controlled burn must consume real stock");
+    assert.ok(state.resources.wood > woodBefore, "salvage from the burn must reach the stores");
+    const burnedKey = burned.x + ":" + burned.y;
+    assert.equal(model.tiles[burnedKey].kind, "burned");
+    assert.equal(forestSuccessionAt(burned.x, burned.y).stage, "fresh");
+
+    let wet = null;
+    for (let y = 2; y < 46 && !wet; y++) {
+        for (let x = 2; x < 46; x++) {
+            const node = getResourceNodeAt(x, y);
+            if (node?.forestCapacity && node.forestWetness >= 0.52) {
+                wet = { x, y, node };
+                break;
+            }
+        }
+    }
+    assert.ok(wet, "the wetland fixture needs a wet stand");
+    const beforeFlood = forestFloodPressureFor(wet.node.forestStand, { season: 0, weather: "rain" });
+    const beforeBio = forestBiodiversityFor(wet.node.forestStand);
+    const drained = toggleNearestWetlandDrainage(wet.x, wet.y, 6);
+    assert.equal(drained.ok, true, drained.reason);
+    assert.equal(drained.action, "drain");
+    const drainedNode = getResourceNodeAt(drained.x, drained.y);
+    assert.equal(drainedNode.forestDrained, true);
+    assert.equal(drainedNode.forestStand.drainage, 1);
+    assert.ok(drainedNode.forestWetness < wet.node.forestWetness, "drainage must lower the water table");
+    const afterFlood = forestFloodPressureFor(drainedNode.forestStand, { season: 0, weather: "rain" });
+    const afterBio = forestBiodiversityFor(drainedNode.forestStand);
+    assert.ok(afterFlood.pressure < beforeFlood.pressure, "drainage must lower real flood pressure");
+    assert.ok(afterBio.index < beforeBio.index, "drainage must lower habitat biodiversity");
+    assert.equal(forestStewardshipAt(drained.x, drained.y).drained, true);
+
+    const restored = toggleNearestWetlandDrainage(drained.x, drained.y, 1);
+    assert.equal(restored.ok, true, restored.reason);
+    assert.equal(restored.action, "restore");
+    assert.equal(getResourceNodeAt(drained.x, drained.y).forestDrained, false);
+    assert.equal(toggleNearestWetlandDrainage(drained.x, drained.y, 1).action, "drain",
+        "the wetland decision must be reversible again");
+
+    const stats = forestSuccessionStats();
+    assert.ok(stats.firebreaks >= breakResult.tiles);
+    assert.equal(stats.drained, 1);
+    assert.ok(stats.stewardshipActions >= 6);
+    assert.ok(stats.regions[breakResult.typeId]?.area >= 1);
+    const chronicle = forestSuccessionChronicle();
+    for (const kind of ["reforest", "firebreak", "burn", "drain", "restore"]) {
+        assert.ok(chronicle.entries.some(entry => entry.kind === kind), "the chronicle must show " + kind);
+    }
+    assert.ok(chronicle.byRegion[breakResult.typeId].length > 0);
+});
+
+test("stewardship decisions survive version 2 saves and version 1 snapshots still load", () => {
+    const model = setupWet(20261122);
+    state.resources = { wood: 500, stone: 500, gold: 500, food: 500 };
+    const breakResult = buildNearestForestFirebreak(20, 20, 8);
+    assert.equal(breakResult.ok, true, breakResult.reason);
+    const drainResult = toggleNearestWetlandDrainage(20, 20, 8);
+    assert.equal(drainResult.ok, true, drainResult.reason);
+    const snapshot = serializeForestSuccession();
+    assert.equal(snapshot.version, 2);
+    assert.ok(Object.keys(snapshot.breaks).length >= 1);
+    assert.ok(Object.keys(snapshot.drainage).length >= 1);
+    assert.ok(snapshot.stewardshipHistory.length >= 2);
+    assert.equal(validateForestSuccessionSnapshot(snapshot), true);
+    resetForestSuccession();
+    assert.ok(restoreForestSuccession(snapshot) >= 1);
+    assert.ok(forestFirebreakAt(breakResult.x, breakResult.y) > 0);
+    assert.equal(forestStewardshipAt(drainResult.x, drainResult.y).drained, true);
+    assert.equal(state.forestSuccession.stewardshipHistory.length, snapshot.stewardshipHistory.length);
+    assert.equal(state.forestSuccession.planted, snapshot.planted);
+
+    const legacy = {
+        version: 1, seed: 7, day: 0, events: 0, lastEventDay: 0, daysSinceEvent: 0,
+        tiles: { "4:4": { kind: "burned", age: 0 } }, history: [],
+    };
+    resetForestSuccession();
+    assert.equal(restoreForestSuccession(legacy), 1);
+    assert.equal(state.forestSuccession.version, 2);
+    assert.deepEqual(state.forestSuccession.breaks, {});
+    assert.deepEqual(state.forestSuccession.drainage, {});
+    assert.equal(forestSuccessionStats().active, 1, "a version 1 snapshot must keep its forest disturbance");
 });
 
 test("succession saves validate and restore without inventing tiles", () => {

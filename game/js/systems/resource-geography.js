@@ -5,7 +5,7 @@ import { WORLD_W,WORLD_H,BIOME } from "../core/config.js";
 import {
     FOREST_TYPES, forestSightProfile, forestSnowDepthAt, forestStandAt, forestTypeFromIndex, forestTypeIndex,
 } from "../world/forest-ecology.js";
-import { forestSuccessionAt } from "./forest-succession.js";
+import { forestStewardshipAt, forestSuccessionAt } from "./forest-succession.js";
 import { seasonalState } from "../world/season.js";
 import { swampWorkUseAt } from "../world/swamp-works.js";
 import { mountainWorkUseAt, mountainWorkAt } from "../world/mountain-works.js";
@@ -391,6 +391,7 @@ export function generateResourceGeography(seed=state.worldSeed){
 const HABITAT_CACHE_LIMIT = 20000;
 let habitatCacheGeography = null;
 let habitatCacheSuccession = null;
+let habitatCacheRevision = -1;
 let habitatCacheClimate = null;
 let habitatCacheForests = null;
 const habitatCache = new Map();
@@ -405,6 +406,7 @@ export function clearForestHabitatCache() {
     habitatCache.clear();
     habitatCacheGeography = null;
     habitatCacheSuccession = null;
+    habitatCacheRevision = -1;
     habitatCacheClimate = null;
     habitatCacheForests = null;
 }
@@ -417,13 +419,16 @@ export function getForestHabitatAt(x, y) {
     const capacity = geo.forestCapacity[i];
     if (!capacity) return null;
     const succession = forestSuccessionAt(point.x, point.y);
+    const revision = Math.max(0, Math.floor(Number(state.forestSuccession?.revision) || 0));
     const climate = state.worldOptions?.climate || "temperate";
     const forests = state.worldOptions?.forests ?? 52;
     if (habitatCacheGeography !== geo || habitatCacheSuccession !== state.forestSuccession
+        || habitatCacheRevision !== revision
         || habitatCacheClimate !== climate || habitatCacheForests !== forests) {
         habitatCache.clear();
         habitatCacheGeography = geo;
         habitatCacheSuccession = state.forestSuccession;
+        habitatCacheRevision = revision;
         habitatCacheClimate = climate;
         habitatCacheForests = forests;
     }
@@ -742,6 +747,7 @@ export function getResourceNodeAt(x,y){
     const forestDefinition=forestType?FOREST_TYPES[forestType]:null;
     const forestAgeIndex=Number(geo.forestAge?.[i]||0);
     const succession=forestSuccessionAt(point.x,point.y);
+    const stewardship=forestStewardshipAt(point.x,point.y);
     let snowDepth=0,snowDepthCm=0,exposure=0,fireRisk=0,pestRisk=0,monoculture=0;
     let visibility=0,sightStrength=0,workFactor=0,browsingPressure=0,predatorPressure=0,structure=null;
     let diversity=0,sightRadius=0,windExposure=0,wetness=0,deadwood=0,treeline=false;
@@ -756,7 +762,7 @@ export function getResourceNodeAt(x,y){
             seed:geo.seed,moisture:terrain.moisture,temperature:terrain.temperature,height:terrain.height,
             climate,forests:state.worldOptions?.forests??52,
             stockRatio:geo.forestCapacity[i]?geo.forestStock[i]/geo.forestCapacity[i]:0,
-            rockLine:BIOME.ROCK,succession,
+            rockLine:BIOME.ROCK,succession,drainage:stewardship.drainage,
         });
         const snow=forestSnowDepthAt(stand,Number(state.dayOfYear)||0,climate);
         const sight=forestSightProfile(stand);
@@ -796,6 +802,9 @@ export function getResourceNodeAt(x,y){
         forestRegionalTransitionShare:forestStand?.regionalTransitionShare||0,
         forestSuccession:succession,forestDisturbance:succession&&!succession.recovered?succession.kind:null,
         forestSuccessionStage:succession?.stage||null,forestSuccessionAge:succession?.age??null,
+        forestStewardship:stewardship,forestDrained:Boolean(stewardship.drained),forestDrainDay:stewardship.drainDay,
+        forestDrainage:stewardship.drainage,forestFirebreak:Boolean(stewardship.firebreak),
+        forestFirebreakUntil:stewardship.firebreakUntil,forestRestoredDay:stewardship.restoredDay,
         forestAge:forestAgeIndex?["young","mature","ancient"][forestAgeIndex-1]||null:null,
         forestSpecies:forestStand?forestStand.species.map(entry=>entry.id)
             :forestDefinition?Object.keys(forestDefinition.species):[],
@@ -984,13 +993,14 @@ export function regrowForests(days=1,options={}){
         const px=mapW?clamp(Math.floor((x+0.5)*resolution),0,mapW-1):0;
         const py=mapH?clamp(Math.floor((y+0.5)*resolution),0,mapH-1):0;
         const mapIndex=py*mapW+px;
+        const stewardship=forestStewardshipAt(x,y);
         const stand=forestStandAt(x+0.5,y+0.5,{
             seed:Number(state.worldSeed)||1,
             moisture:Number(state.moistureMap?.[mapIndex])||0.55,
             temperature:Number(state.temperatureMap?.[mapIndex])||0.55,
             height:Number(state.heightMap?.[mapIndex])||0.55,
             climate,forests,stockRatio:geo.forestStock[i]/Math.max(1,geo.forestCapacity[i]),rockLine:0.92,
-            succession:forestSuccessionAt(x,y),
+            succession:forestSuccessionAt(x,y),drainage:stewardship.drainage,
         });
         // Regrowth uses the shared model's regeneration envelope, including
         // its erosion penalty. A closed, species-rich stand still recovers

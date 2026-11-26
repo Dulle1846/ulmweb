@@ -159,6 +159,42 @@ The Forester's catalogue entry keeps `site: "forest"` for placement, but `produc
 
 The browser audit `tests/browser/forester-stewardship-longrun.mjs` runs three seeds (`20261108`, `7` and `99`) for ten game years each: 30 years and 12,000 real simulated days. Every year starts with a fresh cut of one to three stands, thins two to four stands every twenty days and receives one annual clear-cut on a rotating day between 80 and 140; the starting Lumber Yard also harvests on its normal cadence. The schedule rotates independently for each seed, so heavy and light years, and their marker counts, are visibly different. In seed `20261108` the 60-tile range holds 6,975 stock; seed `7` has 72 tiles and 9,857 stock; seed `99` has 81 tiles and 11,969 stock. Across the 30 years the audit removed 14,256 stock while the Forester planted 13,473 saplings. Every one of the 30 years ended at full stock (6,975/6,975, 9,857/9,857 and 11,969/11,969), 0 restorable stands and `Forest is fully grown`. The lowest fill after a cut was 95.8 % (seed `20261108`), 96.8 % (seed `7`) and 97.2 % (seed `99`); annual harvest varied from 238–632, 257–651 and 267–676 stock respectively. Neither `Forest stand is depleted` nor `Waiting for planting space` appeared. Each cut frame carried exactly the scheduled one to three red markers, each recovered frame carried none, and the terrain raster changed on every cut/recovery pair. The rendered stock, capacity, restorable count and status matched the live simulation every year. The full three-seed run completed in 162.7 s against an explicit 240 s CI budget; `FORESTER_TIME_BUDGET_MS` can override it. The run writes a `seeds` report plus seed-prefixed cut, grown, stewardship and final-panel captures under [`docs/forester-stewardship-longrun/`](forester-stewardship-longrun/); it is not part of `npm test`. The deterministic companion `tests/systems/forester-stewardship-longrun.test.js` runs three seeds × ten years (12,000 simulated days) on a 64 × 64 realm, with the same rotating one-to-three clear-cuts, two-to-four thinned stands, variable clear-cut days and no extra recovery days. It fails if any year ends below full stock, the range falls below 60 %, the status is wrong, the annual harvest does not vary, the schedule stops rotating or the visual revision stops advancing.
 
+### Player forestry orders and region history (3.71.0)
+
+The management actions extend this same stewardship rather than opening a second
+forest economy. A Lumber Yard or Forester's Lodge now exposes four orders:
+
+- **REFOREST NEAREST CLEARING** plants a compact 3×3 clearing. The amount is
+  scaled by the shared site model (biodiversity, erosion, regrowth and age),
+  costs gold and food, and raises the real `forestStock` that the Forester,
+  gatherer and renderer already read.
+- **BUILD FOREST FIREBREAK** stores a 3×3 protection belt for 1,200 days. The
+  spread pass and the natural ignition pass both call `forestFireMayEnter()`;
+  the belt blocks fire, not windthrow, disease or flood.
+- **CONTROLLED BURN** creates a real `burned` succession record, removes stock,
+  pays salvage wood into the stores and can escape based on fire risk, dry
+  weather and low biodiversity. Its roll belongs to the separate
+  `forest-stewardship` RNG stream, so a planting order cannot reroll it.
+- **DRAIN / RESTORE NEAREST WETLAND** stores one permanent decision. Drainage
+  lowers wetness, flood pressure, biodiversity and habitat value and raises fire
+  exposure; restoration reverses it. `forestStewardshipAt()` keeps this state
+  readable even on a tile with no disturbance record.
+
+The FORESTS atlas now adds a **FOREST STEWARDSHIP & REGION HISTORY** section.
+Every present or historically active regional type has an expandable row with
+current biodiversity, erosion, flood, wetness and regrowth, active disturbance
+area and kinds, and the latest natural events and player orders. Orders are
+shown with year, area, stock change, planted units and the measured flood or
+biodiversity change.
+
+`forest-succession.js` stores `breaks`, `drainage` and `stewardshipHistory` in
+version 2. A version-1 snapshot is accepted and migrated in memory with empty
+registers while every existing disturbance tile and forest unit is retained.
+The focused save test covers both versions; the browser reference
+`tests/browser/forest-stewardship-actions.mjs` clicks all four buttons in a real
+swamp realm, advances the real simulation for two years, and reads the same
+stands and region chronicles in the atlas.
+
 ## Long-run audit
 
 A deterministic audit ran three seeds (`20261108`, `7`, `99`) for four calendar years (1,600 daily steps per seed) on a flat 64 × 64 temperate test world with the forest setting at 70 and full forest stock. The measured values below are from the final model, not hand-written targets.

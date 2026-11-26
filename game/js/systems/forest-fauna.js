@@ -200,6 +200,7 @@ function standAt(x, y, node = null) {
             stockRatio: h,
             rockLine: 0.92,
             succession: node?.forestSuccession || null,
+            drainage: node?.forestDrainage || 0,
         });
     } catch {
         return null;

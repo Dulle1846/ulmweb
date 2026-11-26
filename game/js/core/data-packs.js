@@ -9,7 +9,7 @@ import { WORLD_REGION_IDS, regionIsKnown } from "../world/world-regions.js";
 
 export const DATA_PACK_FORMAT = "kings-and-cards-data-pack";
 export const DATA_PACK_VERSION = 1;
-export const DATA_PACK_GAME_VERSION = "3.70.0";
+export const DATA_PACK_GAME_VERSION = "3.71.0";
 export const DATA_PACK_KEY = "kings-and-cards:data-packs:v1";
 export const DATA_PACK_LIMIT = 3;
 export const DATA_PACK_SCENARIO_LIMIT = 6;

@@ -879,14 +879,16 @@ function forestVisibilityProfile(canvas, camera, zoom) {
     if (forestPotentialAt({ moisture: m, temperature: temp, height: h, forests, rockLine: 0.92 })) {
         let stockRatio = 1;
         let succession = null;
+        let drainage = 0;
         try {
             const node = getResourceNodeAt(tx, ty);
             if (node?.forestCapacity > 0) stockRatio = node.forestStock / node.forestCapacity;
             succession = node?.forestSuccession || null;
+            drainage = Number(node?.forestDrainage) || 0;
         } catch { /* a preview can render before resource geography exists */ }
         const stand = forestStandAt(wx, wy, {
             seed: Number(state.worldSeed) || 1, moisture: m, temperature: temp,
-            height: h, climate, forests, stockRatio, rockLine: 0.92, succession,
+            height: h, climate, forests, stockRatio, rockLine: 0.92, succession, drainage,
         });
         profile = forestSightProfile(stand, { tileSize: cellPx, viewportWidth: canvas.width, viewportHeight: canvas.height });
     }
@@ -1800,15 +1802,17 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas, cursor = null, deadline 
             if (potentialForest) {
                 let stockRatio = 1;
                 let succession = null;
+                let drainage = 0;
                 try {
                     const node = getResourceNodeAt(x, y);
                     if (node?.forestCapacity > 0) stockRatio = node.forestStock / node.forestCapacity;
                     succession = node?.forestSuccession || null;
+                    drainage = Number(node?.forestDrainage) || 0;
                 } catch { /* a preview can render before resource geography exists */ }
                 stand = forestStandAt(x + 0.5, y + 0.5, {
                     seed: Number(state.worldSeed) || 1, moisture: m, temperature: temp,
                     height: h, climate: climateKey, forests, stockRatio, rockLine: 0.92,
-                    succession,
+                    succession,drainage,
                 });
             }
             const clearingMeadow = Boolean(stand?.forest && stand.clearing > 0.22);

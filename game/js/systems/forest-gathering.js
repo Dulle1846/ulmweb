@@ -250,6 +250,7 @@ export function forestProductsAt(x, y, dayOfYear = state.dayOfYear) {
         stockRatio: node.forestStock / Math.max(1, node.forestCapacity),
         rockLine: 0.92,
         succession: node.forestSuccession,
+        drainage: node.forestDrainage || 0,
     });
     if (!stand.forest) return null;
     const day = number(dayOfYear, 150);
