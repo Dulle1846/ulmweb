@@ -222,6 +222,31 @@ test("core counsel continues a free realm with the next measured ambition", () =
     }
 });
 
+test("core counsel extends a completed opening into a live council bill", () => {
+    resetState();
+    try {
+        for (const ambition of AMBITIONS) state.ambitions.completed[ambition.id] = 1;
+        const docket = [{
+            id: "bill-1-1", billId: "bread-ordinance", stage: "proposed",
+            support: 53, threshold: 50, proposedYear: 1
+        }];
+        const counsel = getCoreCounsel(realm({ year: 1, government: { council: { docket } } }));
+        assert.equal(counsel.id, "council");
+        assert.equal(counsel.stepId, null);
+        assert.equal(counsel.panel, "government");
+        assert.equal(counsel.actionLabel, "OPEN GOVERNMENT");
+        assert.match(counsel.text, /Pay the BREAD ORDINANCE lobby in Government/);
+        assert.match(counsel.evidence, /SUPPORT 53\/50/);
+
+        docket[0].stage = "lobbied";
+        const ready = getCoreCounsel(realm({ year: 2, government: { council: { docket } } }));
+        assert.equal(ready.id, "council");
+        assert.match(ready.text, /Call the BREAD ORDINANCE council vote in Government/);
+    } finally {
+        resetState();
+    }
+});
+
 test("core counsel extends a completed opening into the live theatre campaign", () => {
     resetState();
     try {

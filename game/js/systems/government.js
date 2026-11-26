@@ -3,6 +3,7 @@ import {applyPoliticalEffects,getPoliticalSnapshot} from "./politics.js";
 import {recordResourceMovement} from "./goods-book.js";
 import {addResource} from "./resources.js";
 import {recordReform} from "./legacy.js";
+import {normalizeCouncilState} from "./council-laws.js";
 
 // Each form carries the old tax baseline plus explicit additive modifiers.
 // `tax` here is a yield bonus, not the assessed percentage; `taxRate` remains
@@ -32,7 +33,11 @@ export const TAX_RATE_MAX=30;
 export const TAX_RATE_STEP=5;
 export function normalizeGovernment(input=state.government){
  const s=input&&typeof input==="object"?input:{},form=Object.hasOwn(GOVERNMENT_FORMS,s.form)?s.form:"feudal";
- state.government={form,taxRate:clamp(s.taxRate??GOVERNMENT_FORMS[form].tax,TAX_RATE_MIN,TAX_RATE_MAX),councilSeats:Math.max(1,Math.min(12,Math.floor(Number(s.councilSeats)||3))),succession:["primogeniture","elective","designated"].includes(s.succession)?s.succession:"primogeniture",decrees:Math.max(0,Math.min(100000,Math.floor(Number(s.decrees)||0))),lastDecisionYear:Math.max(0,Math.floor(Number(s.lastDecisionYear)||0)),lastTaxChangeYear:Math.max(0,Math.floor(Number(s.lastTaxChangeYear)||0)),history:Array.isArray(s.history)?s.history.filter(x=>x&&typeof x==="object").slice(-40):[]};
+ // Reuse an existing council DTO by reference. Deep normalizing on every
+ // government read would add avoidable per-tick work; council actions, save
+ // restore and import validation normalize the optional DTO fully.
+ const council=s.council||normalizeCouncilState();
+ state.government={form,taxRate:clamp(s.taxRate??GOVERNMENT_FORMS[form].tax,TAX_RATE_MIN,TAX_RATE_MAX),councilSeats:Math.max(1,Math.min(12,Math.floor(Number(s.councilSeats)||3))),succession:["primogeniture","elective","designated"].includes(s.succession)?s.succession:"primogeniture",decrees:Math.max(0,Math.min(100000,Math.floor(Number(s.decrees)||0))),lastDecisionYear:Math.max(0,Math.floor(Number(s.lastDecisionYear)||0)),lastTaxChangeYear:Math.max(0,Math.floor(Number(s.lastTaxChangeYear)||0)),history:Array.isArray(s.history)?s.history.filter(x=>x&&typeof x==="object").slice(-40):[],council};
  return state.government;
 }
 export function getGovernmentModifiers(){

@@ -125,6 +125,34 @@ test("a completed first session continues into a live theatre campaign", () => {
     }
 });
 
+test("a completed first session continues into a live council docket", () => {
+    resetState();
+    try {
+        for (const ambition of AMBITIONS) state.ambitions.completed[ambition.id] = 1;
+        state.hasStarted = true;
+        state.entities = [{ dead: false, type: TYPE.HOUSE }];
+        state.statistics.totalHousesBuilt = 1;
+        state.statistics.totalRoadTilesBuilt = 1;
+        state.statistics.totalCardsDrawn = 1;
+        state.year = 2;
+        state.government = {
+            council: {
+                docket: [{
+                    id: "bill-1-1", billId: "bread-ordinance", stage: "lobbied",
+                    support: 58, threshold: 50, proposedYear: 1
+                }]
+            }
+        };
+        const snapshot = getFirstSessionSnapshot();
+        assert.equal(snapshot.allComplete, true);
+        assert.equal(snapshot.counselId, "council");
+        assert.match(snapshot.continuationText, /Call the BREAD ORDINANCE council vote in Government/);
+        assert.match(snapshot.continuationText, /SUPPORT 58\/50/);
+    } finally {
+        resetState();
+    }
+});
+
 test("the first-session HUD carries the real latest twenty-day ledger in plain language", () => {
     resetState();
     state.hasStarted = true;

@@ -34,6 +34,7 @@ import { validateEventTimelineState } from "./event-timeline.js";
 import { validateScenarioState } from "../systems/scenario.js";
 import { validateWorldMapSnapshot } from "../systems/world-map.js";
 import { validateCraftedItems } from "../systems/item-lexicon.js";
+import { COUNCIL_DOCKET_LIMIT, COUNCIL_HISTORY_LIMIT } from "../systems/council-laws.js";
 import { resolveWorldDimensions } from "../world/terrain-model.js";
 
 export const SAVE_SCHEMA_VERSION = 15;
@@ -314,6 +315,22 @@ export function validateSaveSnapshot(snapshot) {
         }
         if (court.demand !== undefined && court.demand !== null && (typeof court.demand !== "object" || Array.isArray(court.demand))) {
             fail("Save data contains an invalid court petition.", { code:"INVALID_COURT_DEMAND", field:"court.demand", valueType:typeOf(court.demand), phase:"court" });
+        }
+    }
+    // The council docket is optional inside the government DTO. Older saves
+    // arrive without it and are rebuilt by normalizeGovernment; malformed or
+    // oversized dockets are rejected instead of being silently truncated.
+    if (snapshot.government !== undefined && snapshot.government !== null &&
+        typeof snapshot.government === "object" && !Array.isArray(snapshot.government) &&
+        snapshot.government.council !== undefined && snapshot.government.council !== null) {
+        const council = snapshot.government.council;
+        if (typeof council !== "object" || Array.isArray(council) ||
+            !Array.isArray(council.docket) || council.docket.length > COUNCIL_DOCKET_LIMIT ||
+            !Array.isArray(council.history) || council.history.length > COUNCIL_HISTORY_LIMIT) {
+            fail("Save data contains an invalid council docket.", { code:"INVALID_COUNCIL_DOCKET", field:"government.council", valueType:typeOf(council), phase:"government" });
+        }
+        if (council.counters !== undefined && (typeof council.counters !== "object" || Array.isArray(council.counters))) {
+            fail("Save data contains invalid council counters.", { code:"INVALID_COUNCIL_COUNTERS", field:"government.council.counters", valueType:typeOf(council.counters), phase:"government" });
         }
     }
 

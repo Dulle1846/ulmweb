@@ -716,13 +716,23 @@ const SYSTEM_SPECS = [
         { id: "3.9.5", label: "Neighbouring realms have rulers, economies and military strength", evidence: [{ file: "js/systems/diplomacy.js", symbol: "getDiplomacySnapshot" }, { file: "js/systems/diplomacy-config.js", symbol: "DIPLOMATIC_REALMS" }], tests: ["tests/systems/diplomacy.test.js"] },
         { id: "3.9.6", label: "Treaties, alliances, trade and wars have durable state", evidence: [{ file: "js/systems/diplomacy.js", symbol: "proposeAlliance" }, { file: "js/systems/diplomacy.js", symbol: "declareWar" }], tests: ["tests/systems/diplomacy.test.js"] },
         { id: "3.9.7", label: "Guarantees and long-term diplomatic consequences", evidence: [{ file: "js/systems/diplomacy.js", symbol: "grantGuarantee" }, { file: "js/systems/diplomacy.js", symbol: "honorGuaranteeCall" }, { file: "js/systems/diplomacy.js", symbol: "refuseGuaranteeCall" }, { file: "js/systems/diplomacy.js", symbol: "updateGuarantees" }, { file: "js/presentation/management-ui.js", symbol: "diplomacy" }], tests: ["tests/systems/diplomacy-guarantees.test.js"] },
-        { id: "3.9.8", label: "Dynastic marriage, heir designation and succession record", evidence: [{ file: "js/systems/royal-dynasty.js", symbol: "designateHeir" }, { file: "js/systems/royal-dynasty.js", symbol: "updateRoyalSuccession" }], tests: ["tests/systems/families.test.js"] }
+        { id: "3.9.8", label: "Dynastic marriage, heir designation and succession record", evidence: [{ file: "js/systems/royal-dynasty.js", symbol: "designateHeir" }, { file: "js/systems/royal-dynasty.js", symbol: "updateRoyalSuccession" }], tests: ["tests/systems/families.test.js"] },
+        { id: "3.9.9", label: "Council docket with law debate, votes and enforcement", evidence: [
+            { file: "js/systems/council-laws.js", symbol: "COUNCIL_BILLS" },
+            { file: "js/systems/council-laws.js", symbol: "proposeCouncilBill" },
+            { file: "js/systems/council-laws.js", symbol: "lobbyCouncilBill" },
+            { file: "js/systems/council-laws.js", symbol: "callCouncilVote" },
+            { file: "js/systems/council-laws.js", symbol: "updateCouncilDocket" },
+            { file: "js/simulation/simulation.js", symbol: "councilDocket" },
+            { file: "js/presentation/management-ui.js", symbol: "councilSection" }
+        ], tests: ["tests/systems/council-laws.test.js", "tests/browser/council-docket-ui.mjs"] }
     ], {
         consumers: [
             { file: "js/systems/diplomacy.js", symbol: "getDiplomacySnapshot", role: "diplomacy" },
             { file: "js/systems/royal-dynasty.js", symbol: "updateRoyalSuccession", role: "dynasty" },
             { file: "js/systems/royal-crisis.js", symbol: "updateRoyalCrisis", role: "dynasty-crisis" },
-            { file: "js/presentation/management-ui.js", symbol: "royalCrisisPanel", role: "gameplay" }
+            { file: "js/presentation/management-ui.js", symbol: "royalCrisisPanel", role: "gameplay" },
+            { file: "js/presentation/management-ui.js", symbol: "councilSection", role: "gameplay" }
         ],
         tests: ["tests/systems/diplomacy.test.js"]
     }),
