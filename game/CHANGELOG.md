@@ -34,6 +34,10 @@ calendar stay compatible.
   one flat percentage. A layered stand keeps more seed and shade; an erodible
   open slope loses more. `forestSuccessionStats()` exposes active, contained
   and recovered records for the player view without copying the tile map.
+- The spread pass now builds a source stand only for a windthrow or flood that
+  already passed its roll, and fire reads only its target neighbours. A dense
+  swamp no longer pays hundreds of eager model constructions per spread pass;
+  this removes the two cold-start long tasks found by the swamp gate.
 - `regrowForests` now uses `forestRegenerationFor` and its erosion penalty.
   `forest-gathering.js` applies a bounded biodiversity factor to non-wood
   products, so a species-rich wood yields more berries, mushrooms and other

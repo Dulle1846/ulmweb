@@ -519,7 +519,6 @@ function spreadDisturbances(model) {
         if (!stage || stage.id === "recovered") continue;
         const [x, y] = key.split(":").map(Number);
         const season = Math.floor(number(state.seasonIndex, 0)) % 4;
-        const sourceStand = standAtTile(geo, x, y);
         let chance = profile.spreadChance;
         if (record.kind === "burned") chance *= season === 1 ? 1.35 : state.weather === "rain" || state.weather === "storm" ? 0.35 : 0.85;
         if (record.kind === "windthrow") chance *= state.weather === "storm" ? 1.5 : season === 2 ? 1.15 : 0.8;
@@ -538,23 +537,32 @@ function spreadDisturbances(model) {
             x, y, width, height, wind: state.weather, seed: model.seed,
         });
         let gust = null;
-        if (record.kind === "windthrow" && sourceStand) {
-            // The storm direction and stand age now choose the downwind edge
-            // instead of leaving the four equally likely neighbours in charge.
-            gust = forestWindthrowFor(sourceStand, sourceStand.standAge ?? sourceStand.age);
-            chance *= 0.72 + gust.risk * 0.55;
-            neighbourOrder = [...neighbourOrder].sort((a, b) =>
-                a.id === gust.direction ? -1 : b.id === gust.direction ? 1 : 0);
+        if (record.kind === "windthrow") {
+            // The storm direction and stand age choose the downwind edge. Only
+            // a windthrow that survived its roll builds one source stand; the
+            // earlier eager build for every active tile caused avoidable
+            // cold-start long tasks in dense swamp realms.
+            const sourceStand = standAtTile(geo, x, y);
+            if (sourceStand) {
+                gust = forestWindthrowFor(sourceStand, sourceStand.standAge ?? sourceStand.age);
+                chance *= 0.72 + gust.risk * 0.55;
+                neighbourOrder = [...neighbourOrder].sort((a, b) =>
+                    a.id === gust.direction ? -1 : b.id === gust.direction ? 1 : 0);
+            }
         }
-        if (record.kind === "flooded" && sourceStand) {
-            const sourceWater = forestWaterFlowFor(sourceStand);
-            chance *= 0.6 + sourceWater.flow * 0.7;
+        if (record.kind === "flooded") {
+            const sourceStand = standAtTile(geo, x, y);
+            if (sourceStand) {
+                const sourceWater = forestWaterFlowFor(sourceStand);
+                chance *= 0.6 + sourceWater.flow * 0.7;
+            }
         }
-        if (record.kind === "burned" && sourceStand) {
+        if (record.kind === "burned") {
             // Fire uses the eight-neighbour risk record, including the wind
             // alignment and the target's actual fireRisk. The list is already
             // sorted by crossing risk, so start at the top and let the shared
-            // threshold decide whether that edge ignites.
+            // threshold decide whether that edge ignites. No source stand is
+            // needed; the neighbour walk reads only the targets.
             neighbourOrder = forestFireSpreadFor({
                 x, y, width, height, wind: state.weather,
                 season: ["spring", "summer", "autumn", "winter"][season],
