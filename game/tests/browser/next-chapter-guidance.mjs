@@ -93,14 +93,16 @@ try {
     await page.locator("#start-screen").waitFor({ state: "hidden", timeout: 30000 });
     await page.waitForFunction(async () => (await import("./js/core/state.js")).state.hasStarted, null, { timeout: 15000 });
     await page.evaluate(async () => {
-        const [{ state }, { TYPE }] = await Promise.all([
+        const [{ state }, { TYPE, Entity }] = await Promise.all([
             import("./js/core/state.js"),
             import("./js/core/types.js")
         ]);
         state.isPaused = true;
         if (state.activeEvent) state.activeEvent.dismissed = true;
         state.resources = { food: 300, wood: 300, stone: 200, gold: 200 };
-        state.entities = [{ dead: false, type: TYPE.HOUSE }];
+        // Use a real Entity so the live minimap and renderer see the same
+        // isEnemy/isBuilding contract as a founded realm.
+        state.entities = [new Entity(0, 0, TYPE.HOUSE)];
         state.statistics.totalRoadTilesBuilt = 1;
         state.statistics.totalCardsDrawn = 0;
         state.hand = [];

@@ -146,6 +146,10 @@ the ten visible in a sample.
   scenario objective with its progress and deadline, or the next measured royal
   ambition in a free realm. It is the same bounded counsel read model; no new
   progression track or save field was added.
+- **The next-chapter proof uses a real entity.** Its fixture was a bare object,
+  which broke the live minimap's `isEnemy()` contract; it now constructs the
+  game's `Entity` class. The zero-page-error and zero-console-error assertions
+  are unchanged and pass again.
 
 ## 3.60.0 — Every forest profile now has a job
 
