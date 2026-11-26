@@ -151,6 +151,10 @@ test("the field guide expands all thirty points with live facts and field notes"
         assert.ok(entry.facts.every(fact => fact && !/undefined|NaN/.test(fact)),
             entry.id + " must not leak missing values");
     }
+    const byId = Object.fromEntries(guide.map(entry => [entry.id, entry]));
+    assert.match(byId["1.2.23.1.117"].facts.join(" "), /capacity brake/i);
+    assert.match(byId["1.2.23.1.118"].facts.join(" "), /parasite relief/i);
+    assert.match(byId["1.2.23.1.120"].facts.join(" "), /migration \d+%/i);
     assert.equal(forestFaunaFieldGuide(null).length, 0);
 });
 
@@ -454,6 +458,9 @@ test("117 parasites name their hosts and track herd density", () => {
     assert.ok(dense.parasites.load >= sparse.parasites.load);
     assert.ok(dense.parasites.ticksPerDeer >= 0);
     assert.ok(dense.parasites.herdCondition > 0 && dense.parasites.herdCondition <= 100);
+    assert.ok(dense.parasites.capacityBrake > 0 && dense.parasites.capacityBrake <= 30,
+        "the parasite load must expose a bounded capacity brake");
+    assert.ok(dense.parasites.meatQuality > 0 && dense.parasites.meatQuality <= 100);
 });
 
 test("118 scavengers remove carcasses and return nutrients", () => {
@@ -463,6 +470,8 @@ test("118 scavengers remove carcasses and return nutrients", () => {
     assert.ok(summer.scavengers.nutrientReturnKgHaYear > 0);
     assert.ok(summer.scavengers.species.includes("Raven"));
     assert.ok(summer.scavengers.abundance > 0);
+    assert.ok(summer.scavengers.parasiteRelief > 0);
+    assert.ok(summer.scavengers.carcassSites >= 0);
     assert.ok(winter.scavengers.winterReliance > 0);
 });
 
@@ -487,6 +496,9 @@ test("120 corridors connect woods through edge, water and transition belts", () 
     assert.ok(linked.corridors.connectivity > isolated.corridors.connectivity);
     assert.ok(linked.corridors.links >= isolated.corridors.links);
     assert.ok(linked.corridors.nearestWoodKm <= isolated.corridors.nearestWoodKm);
+    assert.ok(linked.corridors.migration > isolated.corridors.migration,
+        "a linked wood must move more readily than an isolated one");
+    assert.ok(linked.corridors.migration > 0 && linked.corridors.migration <= 100);
     assert.ok(["north", "east", "south", "west"].includes(linked.corridors.direction));
     assert.equal(linked.corridors.targetRegionalType, "Auenwald");
 });

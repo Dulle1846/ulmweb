@@ -1,6 +1,6 @@
 # Fauna, Ökologie und Nahrungsnetze · 1.2.23.1.091–120
 
-> **Status: implementiert, vertieft und als Spielmechanik verdrahtet (v3.65.0).**
+> **Status: implementiert, vertieft und als Spielmechanik verdrahtet (v3.66.0).**
 > Die 30 Punkte laufen als eine reine, abgeleitete `forest-fauna-ecology`-Schicht
 > über dem bestehenden `forestStandAt()`-Vertrag. Es gibt keine zweite Karte,
 > keinen zweiten Waldsimulator, keinen neuen Save-Typ und keine zusätzliche
@@ -88,10 +88,77 @@ belasten. Deshalb gilt:
 | **114** Krebse und Muscheln als Wasserqualitätsanzeiger | `waterFilters {crayfish, mussels, waterQuality, indicator, sensitive}` | Krebse und Muscheln haben getrennte Dichten; Muscheln filtern eine berechnete Menge Wasser pro Tag. Test: sauber > schlammig |
 | **115** Pilze als Nahrung, Medizin und Zersetzer | `fungi {speciesRichness, edible, medicinal, decomposers, mycorrhizal, fruiting, yieldKgHa}` | Mykorrhiza, Zersetzung und Totholz trennen Speisepilz-, Medizin- und Zersetzeranteil; der Hauptertrag liegt im Herbst. Test: Herbst > Frühjahr |
 | **116** Moose und Flechten als Feuchtigkeitsanzeiger | `mossLichen {mossCover, lichenCover, humidityIndicator, oldGrowthIndicator, speciesRichness, airQuality, desiccationRisk}` | Feuchte und Epiphyten heben die Zeigerwerte; Trockenheit erhöht das Austrocknungsrisiko. Test: feucht > trocken |
-| **117** Parasiten mit regionalen Wirtsbindungen | `parasites {load, hosts[4], ticksPerDeer, liverFlukeRisk, mangeRisk, herdCondition, biodiversityBrake}` | Vier echte Wirt-Parasit-Paare: Deer Tick, Liver Fluke (Boar), Sarcoptic Mange (Fox), Feather Mite (Songbird). Dichte und Feuchte erhöhen die Last, Vielfalt bremst sie. Test: vier Hosts, dicht > dünn |
-| **118** Aasfresser als Teil des Stoffkreislaufs | `scavengers {species, abundance, carcassRemovalDays, nutrientReturnKgHaYear, carcassSites, diseaseCleanup, winterReliance}` | Fuchs, Rabe, Käfer und Wildschwein entfernen Aas; wärmerer Wald entfernt schneller, Winter langsamer. Test: Sommer ≤ Winter bei den Tagen |
-| **119** Räuber-Beute-Zyklen | `cycles {hareLynx, voleOwl, mast, predationPressure, herbivorePressure}` mit Phase, Label, Periode, Amplitude und Indizes | Neunjähriger Luchs-Hase-, vierjähriger Eulen-Maus- und 5–7-jähriger Mastzyklus; die Phase kommt deterministisch aus Seed, Kachel und Simulationsjahr. Test: deterministisch, begrenzt, nächstes Jahr anders |
-| **120** Wanderkorridore | `corridors {quality, connectivity, nearestWoodKm, links, pinchPoints, direction, targetRegionalType, migration, roadBarrier}` | Rand, Kronenschluss, Totholz, Wasser und regionale Übergangszone bilden den Korridor; Siedlung, Lücke und Bach sind Engpässe. Test: Übergangswald > isolierter Bestand |
+| **117** Parasiten mit regionalen Wirtsbindungen | `parasites {load, hosts[4], ticksPerDeer, liverFlukeRisk, mangeRisk, herdCondition, capacityBrake, meatQuality, biodiversityBrake}` | Vier echte Wirt-Parasit-Paare: Deer Tick, Liver Fluke (Boar), Sarcoptic Mange (Fox), Feather Mite (Songbird). Die Wirtsbindung ist ein Faktor im Herdenmodell; die Dichte oberhalb von 45 % Fill ist der Bremsfaktor. `capacityBrake` senkt die Tragfähigkeit, `meatQuality` die Wildbret-Qualität. Test: dicht > dünn, Owl < Deer, kein konstanter Malus |
+| **118** Aasfresser als Teil des Stoffkreislaufs | `scavengers {species, abundance, carcassRemovalDays, nutrientReturnKgHaYear, carcassSites, diseaseCleanup, parasiteRelief, winterReliance}` | Fuchs, Rabe, Käfer und Wildschwein entfernen Aas; wärmerer Wald entfernt schneller, Winter langsamer. Das Herdenmodell führt ein begrenztes, nicht gespeichertes Aas-Register aus echten Todesfällen und Jagdresten. `scavenging` senkt den Parasitendruck; ein kleiner `bone`-Fund erscheint nur bei tatsächlichen `carcassSites`. Test: Aas > kein Aas, Knochenfund nur mit Carcass Sites |
+| **119** Räuber-Beute-Zyklen | `cycles {hareLynx, voleOwl, mast, predationPressure, herbivorePressure}` mit Phase, Label, Periode, Amplitude und Indizes | Neunjähriger Luchs-Hase-, vierjähriger Eulen-Maus- und 5–7-jähriger Mastzyklus; die Phase kommt deterministisch aus Seed, Kachel und Simulationsjahr. `forestProcessFactorsFor()` macht daraus einen begrenzten Faktor auf Reproduktion und Tragfähigkeit. Beuterückgang bremst Räuber, Prädatordruck bremst Beute, Überrieselung wird gedämpft. Test: deterministisch, begrenzt, nächstes Jahr anders, reciprocal coupling |
+| **120** Wanderkorridore | `corridors {quality, connectivity, nearestWoodKm, links, pinchPoints, direction, targetRegionalType, migration, roadBarrier}` | Rand, Kronenschluss, Totholz, Wasser und regionale Übergangszone bilden den Korridor; Siedlung, Lücke und Bach sind Engpässe. `maybeMigrate()` prüft Korridorqualität des Ausgangs- und Zielwaldes, Bestandsdruck und einen deterministischen Move-Gate. Test: Übergangswald > isolierter Bestand, Migration nur über tragfähige Korridore |
+
+### Prozesspunkte 117–120: vom Messwert zur Mechanik (3.66.0)
+
+Die vier Prozesspunkte waren bis 3.65.0 vor allem Diagnose. Seit **3.66.0**
+lesen sie dieselben gespeicherten Herden und dieselbe Ökologiequelle, greifen
+aber in vier bereits vorhandene Pfade ein:
+
+- **117 Parasiten** wirken über `forestProcessFactorsFor()` auf
+  `carryingCapacity()` und `harvestForestGameAt()`. Die Wirtsbindung wählt den
+  passenden Parasiten-Load (Deer/Roe/Moose/Reindeer, Boar, Fox, Songbird, sonst
+  ein kleiner Restfaktor). Unter 45 % Fill ist der Dichte-Brake null; darüber
+  wächst er linear. Der resultierende `parasiteBrake` senkt die Tragfähigkeit
+  um höchstens 26 %, der `meatQualityFactor` die Fleischqualität um höchstens
+  30 %. Ein dichter Deer-Bestand verliert also Wildbret-Qualität und Range,
+  ein leerer Bestand zahlt keinen konstanten Malus.
+- **118 Aasfresser** hängen an echten Todesfällen: Prädation, Winterverluste
+  und Jagdreste erzeugen ein begrenztes Aas-Register pro Kachel. Die tägliche
+  Herdenauflösung liest `carrionAt()`, multipliziert mit dem vorhandenen
+  `scavenging`-Signal und reduziert damit den Parasitendruck. Das Register ist
+  **kein Save-Feld**: Es wird aus dem laufenden Geschehen aufgebaut, beim Laden
+  aus `huntingPressure` neu geseedet und nach wenigen Tagen abgebaut. Zusätzlich
+  erscheint bei echten `carcassSites` ein kleiner, begrenzter `bone`-Fund im
+  bestehenden Sammel-Ledger.
+- **119 Räuber-Beute-Zyklen** liefern nicht mehr nur einen Atlaswert. Der
+  deterministische `cycleAt()`-Wert wird über `forestProcessFactorsFor()` zu
+  einem Faktor auf Reproduktion und effektive Tragfähigkeit. Räuber reagieren
+  auf lokale Beute, Beute auf lokalen Prädationsdruck; ein Beute-Überschuss
+  wird gedeckelt und leicht zurückgenommen. Die bestehende dichteabhängige
+  Wachstumsbremse bleibt der dominante Dämpfer, daher schaukelt sich der Zyklus
+  nicht auf.
+- **120 Wanderkorridore** bestimmen jetzt die Migration selbst. `maybeMigrate()`
+  liest die Korridorqualität des aktuellen und der Nachbarwälder, filtert
+  unerreichbare Ziele, gewichtet erreichbare Ziele stärker und verlangt einen
+  deterministischen Move-Gate, der mit Korridorqualität und Bestandsdruck
+  steigt. Ein isolierter Wald kann eine due Herde halten; ein gut vernetzter
+  Wald lässt sie ziehen. Die Migrationshistorie trägt den tatsächlichen
+  Korridorwert.
+
+Der gemeinsame, reine Rekord ist `forestProcessFactorsFor()` in
+`js/systems/forest-fauna.js`. Er liest nur `forestFaunaQuickSignalsFor()` und
+bereits gespeicherte Herdenfelder. Es gibt keine neuen Save-Felder,
+keine Per-Frame-Arbeit und keinen zweiten Ökologiesimulator.
+
+#### 25-Jahres-Nachweis (Seed 20261108, 10.000 Tage)
+
+`npm run test:forest-process` führt denselben deterministischen Lauf vor und
+nach 3.66.0 aus. Beide Läufe jagen alle 40 Tage ein Tier aus der größten
+jagdbaren Herde; der Vergleich ist daher echte Spielentnahme, keine
+Testmutation.
+
+| Messgröße | 3.65.0 (vorher) | 3.66.0 (nachher) |
+|---|---:|---:|
+| Herden / Population | 79 / 281,5 | 78 / 266,7 |
+| Deer/Boar-Population | 134,7 | 126,3 |
+| Füllrate | 0,495 | 0,486 |
+| Migrationen (25 Jahre) | 573 | 2.511 |
+| Ernte: prime / good / lean | 26 / 224 / 0 | 8 / 218 / 24 |
+| Parasiten-Capacity-Brake (Mittel) | 0 % | 9,30 % |
+| Fleischqualität (Mittel) | 0 % | 89,28 % |
+| Korridor-Migrationswert (Mittel) | 0 % | 34,90 % |
+
+Der Lauf endet mit 78 Herden, endlicher Population und ohne NaN. Die
+Erntequalität zeigt die Wirkung von 117 direkt: 24 von 250 erlegten Tieren
+waren unter Parasitendruck „lean“, vorher keines. Die Migrationen steigen, weil
+erreichbare Korridore jetzt echte Ziele sind und der Gate nur unerreichbare
+oder schlecht vernetzte Moves blockiert. Die Population sinkt leicht, weil
+Parasitenkapazität und Zyklusdämpfung echte Kosten sind; sie kollabiert nicht.
 
 ## 3. Regionale Hirscharten (091)
 
@@ -144,11 +211,11 @@ Die Werte sind keine Parallelökologie. Sie fließen in vorhandene Systeme:
 | System | Gelesene Werte | Konkrete Wirkung |
 |---|---|---|
 | **Tägliches Herdenmodell** (`js/systems/forest-fauna.js`) | `forestFaunaQuickSignalsFor()`: `deer`, `boar`, `bear`, `wolf`, `lynx`, `beaver`, `otter`, `fish`, `rabbit`, `predation`, `waterQuality` | Neue reale Herden für Elch, Rentier, Bär, Biber und Otter; Präferenz und Kapazität der bestehenden Deer/Roe/Boar/Wolf/Lynx-Herden reagieren auf dieselben Signale. Bär ist ein echter Prädator mit Deer/Boar/Elch/Rentier als Beute. Biber und Otter siedeln nur an echten Gewässern. |
-| **Jagd** (`harvestForestGameAt`) | Herdenzustand, `products.venisonKgHa`, `products.boarKgHa` | Der Abschuss entnimmt weiterhin echte Tiere aus einer konkreten Herde; Qualität und Bestand reagieren auf die neue Habitat- und Prädationslage. |
-| **Sammeln** (`forestGoodsFor`) | `signals.gameYield`, `fishYield`, `mushroomYield`, `honeyYield`, `seedDispersal`, `biodiversity` | Wildbret, Fisch, Pilze, Honig, Beeren, Kräuter/Medizin und Felle ändern ihre Abundanz. Der Test `the shared stand and goods path consume the fauna record` isoliert jeden Kanal. |
+| **Jagd** (`harvestForestGameAt`) | Herdenzustand, `parasiteLoad`, `meatQualityFactor`, `products.venisonKgHa`, `products.boarKgHa` | Der Abschuss entnimmt weiterhin echte Tiere aus einer konkreten Herde; die Qualität sinkt mit dem wirksamen Parasitendruck, und der Kill hinterlässt Aas für 118. |
+| **Sammeln** (`forestGoodsFor`) | `signals.gameYield`, `fishYield`, `mushroomYield`, `honeyYield`, `seedDispersal`, `biodiversity`, `scavenging` | Wildbret, Fisch, Pilze, Honig, Beeren, Kräuter/Medizin und Felle ändern ihre Abundanz. Bei echten Carcass Sites kommt ein kleiner `bone`-Fund hinzu. Der Test `the shared stand and goods path consume the fauna record` isoliert jeden Kanal. |
 | **Nachwachsen** (`forestRegrowthFactor`, Sukzession) | `stand.browsingPressure`, Verbiss-/Wühlwerte, `pressures.barkBeetle` | Rehe und Wildschweine bremsen die Verjüngung; der Käferdruck bleibt an die bestehende Störungssukzession gekoppelt. |
 | **Wasser und Boden** | `mossLichen.humidityIndicator`, `waterFilters.indicator`, `beavers.waterStorageM3`, `fungi.mycorrhizal` | Wasserqualität, Wasserrückhalt, Pilzertrag und die Feuchtezeiger sind im Inspektor lesbar; Biberteiche erhöhen den Wasserspeicher. |
-| **Atlas** (`forest-atlas-panel.js`) | Acht neue Zellen: WILDLIFE, PREDATORS, WATER FAUNA, INSECTS, DEADWOOD LIFE, CYCLE, CORRIDOR, HARVEST | Jede der 60 regionalen Karten zeigt die echte Lebensgemeinschaft ihres ersten Bestands, ohne einen zweiten Survey. |
+| **Atlas** (`forest-atlas-panel.js`) | Acht neue Zellen: WILDLIFE, PREDATORS, WATER FAUNA, INSECTS, DEADWOOD LIFE, CYCLE, CORRIDOR, HARVEST | Jede der 60 regionalen Karten zeigt die echte Lebensgemeinschaft ihres ersten Bestands, ohne einen zweiten Survey. CYCLE nennt jetzt Parasitenlast und Cleanup, CORRIDOR die echte Migrationsneigung. |
 | **Inspektor** (`management-ui.js`) | `forestFaunaEcologySummary()` plus `FAUNA ECOLOGY`, `FOOD WEB`, `INDICATORS` | Der Lumberyard/Forester zeigt regionale Deer-Art, Browse, Wühlen, Wolf/Bär, Biber/Otter, Fisch, Bestäuber, Schädlinge, Wasser, Zyklus, Korridor, Gesundheits-/Altwald-/Vielfaltsindizes und die Größe des Nahrungsnetzes. |
 | **Karte** (`forestFaunaFor`) | `stand.fauna`, regionale Key, `wetness`, `mastCrop`, Alter | Bär, Biber, Otter, Elch und Rentier erscheinen als echte Marker, wenn ihr Habitat sie trägt. Die Auswahl bleibt begrenzt und nutzt die vorhandenen Renderer-Formen. |
 
@@ -191,7 +258,9 @@ einen bestehenden Bestand injiziert; neue Reiche seeden sie aus `stand.fauna`.
 ## 6. Save- und Performance-Vertrag
 
 - **Kein neues Save-Feld für die Ökologie.** Der 30-Punkte-Rekord wird bei
-  jedem Lesen neu berechnet.
+  jedem Lesen neu berechnet. Das Aas-Register für 118 ist kurzlebig und wird
+  nicht serialisiert; beim Laden wird es aus dem gespeicherten
+  `huntingPressure` neu geseedet.
 - **Fünf neue Herdenarten** nutzen das vorhandene, validierte Herden-Schema.
   `validateForestFaunaSnapshot()` akzeptiert sie über `SIMULATED_SPECIES`;
   alte Saves ohne sie bleiben ohne Migration gültig.
@@ -201,10 +270,15 @@ einen bestehenden Bestand injiziert; neue Reiche seeden sie aus `stand.fauna`.
   beim Sammeln (einmal pro Aktion).
 - **Begrenzte Simulation.** Das Herdenmodell bleibt bei 48 Auflösungen/Tag,
   acht Insekten-Batches und 240 Herden. Die schnelle Signalprojektion kostet
-  25 Zahlen statt 30 Guild-Objekte.
+  25 Zahlen statt 30 Guild-Objekte. Das Aas-Register ist auf 12 Einheiten pro
+  Kachel und 512 Kacheln begrenzt und zerfällt täglich auf 55 %.
+- **Gebundene Prozessfaktoren.** Parasiten-Brake ≤ 26 %, Fleischqualität ≥ 70 %,
+  Zyklusfaktor 0,86–1,06, Korridor-Move-Gate 0,15–0,68. Alle Werte werden
+  geklemmt, bevor sie in Wachstum oder Migration eingehen.
 - **Determinismus.** Gleicher Stand, gleicher Tag, gleicher Seed und gleiche
   Koordinaten liefern denselben Rekord. Die Zyklen hängen nur von Seed, Kachel
-  und Jahr ab, nicht von der Frame-Zeit.
+  und Jahr ab, nicht von der Frame-Zeit. Der Migrations-Gate ist ein stabiler
+  Hash aus Herde, Ziel und Tag; ein Reload wiederholt dieselbe Entscheidung.
 
 ## 7. Tests
 
@@ -220,6 +294,14 @@ einen bestehenden Bestand injiziert; neue Reiche seeden sie aus `stand.fauna`.
   und Habitat-Gates.
 - `tests/systems/forest-fauna-longrun.test.js` — vier simulierte Jahre mit drei
   Seeds, Migration, Dispersion, Jagddruck und begrenzter Füllrate.
+- `tests/systems/forest-process-effects.test.js` — die vier Prozesspunkte:
+  dichteabhängige, wirtsgebundene Parasiten; Aas-Cleanup und Knochenfund;
+  gedämpfte Zyklen mit reciprocal coupling; Korridorunterschied; Jagd-Qualität
+  und Aas auf der echten Kachel.
+- `scripts/forest-process-audit.mjs` — der reproduzierbare 25-Jahres-Vergleich
+  (`npm run test:forest-process`). Er jagt alle 40 Tage eine echte Herde und
+  meldet Population, Kapazität, Migrationen, Erntequalität, Parasiten-Brake,
+  Fleischqualität und Korridor-Migrationswert.
 - `tests/world/forest-ecology.test.js` — Stand, Formationen, Güter und Fauna
   bleiben konsistent.
 - `tests/presentation/forest-atlas.test.js` und

@@ -585,7 +585,8 @@ try {
     const fieldGuidePoints = await fieldGuide.locator("[data-fauna-point]").count();
     assert.equal(fieldGuidePoints, 30, "the player field guide must expose all thirty fauna points");
     const fieldGuideText = (await fieldGuide.innerText()).replace(/\s+/g, " ").trim();
-    for (const label of ["Regionale Hirscharten", "Wildschweine und Bodenschäden", "Wanderkorridore", "FIELD GUIDE · 30 POINTS"]) {
+    for (const label of ["Regionale Hirscharten", "Wildschweine und Bodenschäden", "Wanderkorridore", "FIELD GUIDE · 30 POINTS",
+        "capacity brake", "parasite relief", "migration"]) {
         assert.ok(fieldGuideText.includes(label), "the field guide must name " + label);
     }
     for (const match of fieldGuideText.matchAll(/(\d+)%/g)) {
@@ -635,6 +636,8 @@ try {
     assert.match(atlasCorpus, /pests \d+%/);
     assert.match(atlasCorpus, /ants \d+\/ha/);
     assert.match(atlasCorpus, /game \d+ kg\/ha/);
+    assert.match(atlasCorpus, /parasites \d{1,3}%/);
+    assert.match(atlasCorpus, /migration \d{1,3}%/);
     assert.match(atlasCorpus, /(trough|building|peak|decline)/);
     for (const card of cardTexts) {
         for (const match of card.matchAll(/\b(browse|health|water|pollinators|pests|hare|lynx|corridor) (\d+)/g)) {
@@ -693,7 +696,11 @@ try {
             faunaFungiYield: type.fauna?.fungi.yieldKgHa || 0,
             faunaMossHumidity: type.fauna?.mossLichen.humidityIndicator || 0,
             faunaParasiteLoad: type.fauna?.parasites.load || 0,
+            faunaParasiteBrake: type.fauna?.parasites.capacityBrake || 0,
+            faunaMeatQuality: type.fauna?.parasites.meatQuality || 0,
             faunaScavengerDays: type.fauna?.scavengers.carcassRemovalDays || 0,
+            faunaParasiteRelief: type.fauna?.scavengers.parasiteRelief || 0,
+            faunaCorridorMigration: type.fauna?.corridors.migration || 0,
             faunaAntMounds: type.fauna?.ants.moundsPerHa || 0,
             faunaBeeRichness: type.fauna?.wildBees.speciesRichness || 0,
             faunaButterflyWeeks: type.fauna?.butterflies.flightWeeks || 0,
@@ -889,10 +896,10 @@ try {
         "114": { observed: "water-filter indicator " + highest("faunaWaterFilters") + "%", effect: "crayfish and mussel quality" },
         "115": { observed: highest("faunaFungiYield") + " kg/ha fungi", effect: "food, medicine and decomposition" },
         "116": { observed: "moss humidity " + highest("faunaMossHumidity") + "%", effect: "moisture and old-growth indicator" },
-        "117": { observed: "parasite load " + highest("faunaParasiteLoad") + "%", effect: "four host-specific parasites" },
-        "118": { observed: highest("faunaScavengerDays") + " days to remove a carcass", effect: "nutrient return" },
-        "119": { observed: "cycle " + faunaRows.map(row => row.faunaCycle).filter(Boolean).slice(0, 3).join(" / "), effect: "hare/lynx, vole/owl and mast cycles" },
-        "120": { observed: "corridor " + highest("faunaCorridor") + "%", effect: "links, pinch points and nearest wood" },
+        "117": { observed: "parasite load " + highest("faunaParasiteLoad") + "% · capacity brake " + highest("faunaParasiteBrake") + "% · meat " + highest("faunaMeatQuality") + "%", effect: "host-bound density brake on capacity and meat quality" },
+        "118": { observed: highest("faunaScavengerDays") + " days to remove a carcass · relief " + highest("faunaParasiteRelief") + "%", effect: "carcass cleanup, parasite relief and bone finds" },
+        "119": { observed: "cycle " + faunaRows.map(row => row.faunaCycle).filter(Boolean).slice(0, 3).join(" / "), effect: "damped hare/lynx, vole/owl and mast swings" },
+        "120": { observed: "corridor " + highest("faunaCorridor") + "% · migration " + highest("faunaCorridorMigration") + "%", effect: "corridor quality decides real herd movement" },
     };
     for (const [id, row] of Object.entries(faunaPoints)) {
         assert.ok(row.observed && row.effect, "fauna point " + id + " must have player evidence");

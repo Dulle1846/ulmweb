@@ -90,6 +90,29 @@ const SIMULATED_SPECIES = Object.freeze({
 
 export const SIMULATED_FAUNA_IDS = Object.freeze(Object.keys(SIMULATED_SPECIES));
 
+// 117 — host binding. A tick load on deer must not become an identical tax on
+// every bird and fish. The factors are ecological exposure, not a second health
+// model; the density brake is applied separately below.
+const PARASITE_HOST_FACTORS = Object.freeze({
+    deer: 1, "roe-deer": 1, moose: 1, reindeer: 1, boar: 0.72, fox: 0.55,
+    wolf: 0.38, bear: 0.3, lynx: 0.32, hare: 0.42, squirrel: 0.22, mouse: 0.2,
+    owl: 0.16, woodpecker: 0.14, songbird: 0.18, crossbill: 0.14, capercaillie: 0.2,
+    beaver: 0.18, otter: 0.16, "howler-monkey": 0.2, "spider-monkey": 0.2,
+    tapir: 0.3, agouti: 0.2, paca: 0.2, toucan: 0.14, macaw: 0.14,
+    jaguar: 0.3, ocelot: 0.3,
+});
+
+// 119 — which real saved guild follows which deterministic cycle. The cycle
+// supplies a bounded swing; local prey and predator pressure supply the damped
+// coupling, so the swing cannot run away on its own.
+const CYCLE_GUILD = Object.freeze({
+    hare: "hare", lynx: "lynx", mouse: "vole", owl: "owl", fox: "vole",
+    squirrel: "mast", deer: "mast", "roe-deer": "mast", moose: "mast",
+    reindeer: "mast", boar: "mast", bear: "mast", crossbill: "mast",
+    capercaillie: "mast", songbird: "mast", woodpecker: "mast", wolf: "hare",
+});
+const PREDATOR_SPECIES = Object.freeze(new Set(["wolf", "lynx", "bear", "jaguar", "ocelot"]));
+
 // Insect populations use the same tile/home model as herds, but their capacity
 // and stress terms come from the stand. Ants need a litter-rich, shady floor and
 // suffer from drought and pure stands. Bark beetles need conifer hosts and do
@@ -342,6 +365,92 @@ function ecologyFor(stand, day) {
     return value;
 }
 
+function carrionAt(model, x, y) {
+    const value = model?.carrion instanceof Map ? model.carrion.get(x + ":" + y) : 0;
+    return clamp(number(value), 0, 12);
+}
+
+function addCarrion(model, x, y, amount) {
+    const value = Math.max(0, number(amount));
+    if (!model || value <= 0) return 0;
+    if (!(model.carrion instanceof Map)) model.carrion = new Map();
+    const key = x + ":" + y;
+    const next = clamp(carrionAt(model, x, y) + value, 0, 12);
+    model.carrion.set(key, Math.round(next * 1000) / 1000);
+    return next;
+}
+
+// The four process points share one bounded record. It is derived from the
+// existing quick ecology projection and the existing saved herd fields, so a
+// reload needs no new save field: carrion is short-lived state rebuilt from
+// recent hunting/death events, while condition and corridor are pure reads.
+export function forestProcessFactorsFor({
+    herd = {}, stand = null, day = state.dayOfYear, ecology = null,
+    carrion = 0, predatorPressure = 0, preyBiomass = 0,
+} = {}) {
+    const signals = ecology || ecologyFor(stand, day) || {};
+    const species = String(herd.species || "");
+    const hostFactor = number(PARASITE_HOST_FACTORS[species], 0.18);
+    let parasiteBase;
+    if (["deer", "roe-deer", "moose", "reindeer"].includes(species)) {
+        parasiteBase = signals.parasiteDeer ?? signals.parasiteLoad ?? 0;
+    } else if (species === "boar") {
+        parasiteBase = signals.parasiteBoar ?? number(signals.parasiteLoad) * 0.72;
+    } else if (species === "fox") {
+        parasiteBase = signals.parasiteFox ?? number(signals.parasiteLoad) * 0.55;
+    } else if (["owl", "woodpecker", "songbird", "crossbill", "capercaillie"].includes(species)) {
+        parasiteBase = signals.parasiteSongbird ?? number(signals.parasiteLoad) * hostFactor;
+    } else {
+        parasiteBase = number(signals.parasiteLoad) * hostFactor;
+    }
+    parasiteBase = clamp(parasiteBase, 0, 1);
+    const capacity = Math.max(1, number(herd.capacity, 1));
+    const crowding = Math.max(0, number(herd.population, 0)) / capacity;
+    // Below 45% fill the herd is not concentrated enough for a meaningful
+    // parasite brake. Above it the brake rises linearly to its full value.
+    const densityBrake = clamp((crowding - 0.45) / 0.55, 0, 1);
+    const load = clamp(parasiteBase * densityBrake, 0, 1);
+    const scavenging = clamp(number(signals.scavenging), 0, 1);
+    const scavengerRelief = clamp(number(carrion) * scavenging * 0.075, 0, 0.35);
+    const effectiveLoad = clamp(load * (1 - scavengerRelief), 0, 1);
+
+    const guild = CYCLE_GUILD[species] || "mast";
+    const cycleValue = guild === "hare" ? number(signals.cycleHare, 0.5)
+        : guild === "lynx" ? number(signals.cycleLynx, 0.5)
+            : guild === "vole" ? number(signals.cycleVole, 0.5)
+                : guild === "owl" ? number(signals.cycleOwl, 0.5)
+                    : number(signals.cycleMast, 0.5);
+    // The swing is centred a little below replacement so the new coupling
+    // settles into a damped band instead of ratcheting the whole metapopulation
+    // upward. Amplitude remains ±6%, which is enough to read in a 25-year run.
+    let cycleFactor = 0.92 + clamp(cycleValue, 0, 1) * 0.12;
+    if (PREDATOR_SPECIES.has(species)) {
+        // Predator capacity follows local prey; an empty range lowers it, a
+        // full prey base restores it. An overshoot above the range's support
+        // level is capped and then eased back, so a prey spike cannot turn into
+        // an unbounded predator boom.
+        const preyLoad = clamp(number(preyBiomass) / 24, 0, 2);
+        const preyCoupling = preyLoad <= 1
+            ? 0.9 + preyLoad * 0.1
+            : 1 - Math.min(0.06, (preyLoad - 1) * 0.06);
+        cycleFactor *= preyCoupling;
+    } else {
+        // Reciprocal coupling: predator pressure lowers prey capacity a little,
+        // while density-dependent growth remains the dominant damping term.
+        cycleFactor *= 1 - clamp(number(predatorPressure), 0, 1) * 0.05;
+    }
+    return {
+        parasiteBase: Math.round(parasiteBase * 1000) / 1000,
+        densityBrake: Math.round(densityBrake * 1000) / 1000,
+        parasiteLoad: Math.round(effectiveLoad * 1000) / 1000,
+        scavengerRelief: Math.round(scavengerRelief * 1000) / 1000,
+        parasiteBrake: Math.round(effectiveLoad * 0.26 * 1000) / 1000,
+        meatQualityFactor: Math.round((1 - effectiveLoad * 0.3) * 1000) / 1000,
+        cycleFactor: Math.round(clamp(cycleFactor, 0.86, 1.06) * 1000) / 1000,
+        corridorQuality: Math.round(clamp(number(signals.corridor), 0, 1) * 1000) / 1000,
+    };
+}
+
 function preferenceScore(stand, species, day) {
     const season = seasonFor(day);
     let score = 0.32 + (stand?.density || 0.55) * 0.2
@@ -469,9 +578,15 @@ function carryingCapacity(herd, stand, node, day) {
     const seasonal = season === "winter" ? 0.62 : season === "spring" ? 0.94 : season === "autumn" ? 1.06 : 1;
     const score = preferenceScore(stand, herd.species, day);
     // Drought, frost and lost pasture lower the browse the wood can carry. The
-    // factor is exactly 1 when no hazard is active.
+    // factor is exactly 1 when no hazard is active. Parasite load is part of the
+    // same capacity, not a separate health bar: a crowded host loses range,
+    // while scavenger cleanup of recent carcasses returns some of it.
+    const process = forestProcessFactorsFor({
+        herd, stand, day,
+        carrion: carrionAt(state.forestFauna, herd.x, herd.y),
+    });
     const capacity = spec.base * (0.52 + score * 0.88) * (0.72 + stock * 0.28) * seasonal
-        * getHazardPastureCapacityFactor();
+        * getHazardPastureCapacityFactor() * (1 - process.parasiteBrake);
     return Math.max(1, capacity);
 }
 
@@ -541,6 +656,10 @@ function buildModel() {
         herds,
         insects,
         insectIndex: buildInsectIndex(insects),
+        // Short-lived carcass pressure. It is deliberately not serialized:
+        // recent carrion is rebuilt by the next hunt or natural-loss event and
+        // must never become a new save schema field.
+        carrion: new Map(),
         stats: {
             births: 0, deaths: 0, migrations: 0, splits: 0, hunts: 0,
             insectBirths: 0, insectDeaths: 0,
@@ -553,6 +672,7 @@ export function ensureForestFauna() {
     const existing = state.forestFauna;
     if (existing?.version === VERSION && Array.isArray(existing.herds)) {
         ensureInsectCollection(existing);
+        if (!(existing.carrion instanceof Map)) existing.carrion = new Map();
         return existing;
     }
     const model = buildModel();
@@ -618,25 +738,57 @@ function maybeMigrate(model, herd, current, day, occupied) {
     // This keeps ordinary herds in their home wood and reserves roaming for
     // spring dispersal and autumn range shifts.
     if (!crowded && season !== "spring" && season !== "autumn") return false;
+    const currentStand = current.stand || standAt(herd.x, herd.y);
+    const currentCorridor = forestProcessFactorsFor({
+        herd, stand: currentStand, day: model.day,
+    }).corridorQuality;
+    // A severely fragmented home range pins even a due herd unless it is truly
+    // crowded. This is the difference between a corridor report and a corridor.
+    if (!crowded && currentCorridor < 0.16) return false;
     const candidates = neighbourCandidates(herd, spec.mobility)
-        .filter(candidate => !occupied.get(candidate.x + ":" + candidate.y));
+        .filter(candidate => !occupied.get(candidate.x + ":" + candidate.y))
+        .filter(candidate => {
+            const corridor = forestProcessFactorsFor({
+                herd, stand: candidate.stand, day: model.day,
+            }).corridorQuality;
+            return crowded ? corridor >= 0.08 : corridor >= 0.2;
+        });
     if (!candidates.length) return false;
-    const currentScore = preferenceScore(current.stand, herd.species, model.day);
+    const currentScore = preferenceScore(currentStand, herd.species, model.day);
     let best = null;
+    let bestCorridor = 0;
     // An empty wood may be better, but a herd must gain a meaningful amount of
     // habitat quality to leave. Without this margin the random tie-breaker made
-    // almost every due herd move every season.
+    // almost every due herd move every season. Corridor quality is a real part
+    // of the destination score, so a linked wood beats an isolated one at the
+    // same habitat value.
     let bestScore = currentScore + (crowded ? 0.015 : 0.08);
     for (const candidate of candidates) {
+        const corridor = forestProcessFactorsFor({
+            herd, stand: candidate.stand, day: model.day,
+        }).corridorQuality;
         const score = preferenceScore(candidate.stand, herd.species, model.day)
+            + corridor * 0.18
             + unit(model.seed, candidate.x + herd.x, candidate.y + herd.y, day + hash32(model.seed, herd.x, herd.y, 0x4d494752)) * 0.02;
         if (score > bestScore) {
             best = candidate;
             bestScore = score;
+            bestCorridor = corridor;
         }
     }
     if (!best) return false;
-    addHistory(model, { day: model.day, kind: "migration", species: herd.species, from: [herd.x, herd.y], to: [best.x, best.y], population: Math.round(herd.population * 10) / 10 });
+    // Corridor quality and crowding decide whether the move actually happens.
+    // The roll is a stable hash, so a save reload repeats the same decision.
+    const moveChance = clamp(0.16 + bestCorridor * 0.4 + (crowded ? 0.12 : 0), 0.15, 0.68);
+    const gate = unit(model.seed, herd.x + best.x, herd.y + best.y,
+        day + hash32(model.seed, herd.x, herd.y, 0x434f5252));
+    if (gate > moveChance) return false;
+    addHistory(model, {
+        day: model.day, kind: "migration", species: herd.species,
+        from: [herd.x, herd.y], to: [best.x, best.y],
+        population: Math.round(herd.population * 10) / 10,
+        corridor: bestCorridor,
+    });
     herd.x = best.x;
     herd.y = best.y;
     herd.lastMoved = model.day;
@@ -647,9 +799,11 @@ function maybeMigrate(model, herd, current, day, occupied) {
 // The daily population step is pure so the over-hunting model can be tested
 // without advancing a whole realm. `mortality` is the already season-adjusted
 // rate; hunting pressure adds a loss proportional to the herd.
-export function forestHerdGrowth({ population, capacity, reproduction, mortality, huntingPressure = 0, predationPressure = 0 }) {
-    const crowding = population / Math.max(1, capacity);
-    const gain = reproduction * population * Math.max(-0.2, 1 - crowding);
+// The loss side is exported separately so the daily step can feed the actual
+// carrion produced by natural mortality, predation and hunting back into the
+// scavenger path. It is exactly the loss used by forestHerdGrowth().
+export function forestHerdLoss({ population, mortality, huntingPressure = 0, predationPressure = 0 }) {
+    const current = Math.max(0, number(population));
     // Hunting pressure has diminishing returns: the first hunters take the
     // easiest animals, while a whole village in the same wood cannot keep
     // removing the same share forever. Without this curve sustained heavy
@@ -657,14 +811,20 @@ export function forestHerdGrowth({ population, capacity, reproduction, mortality
     // the forest still had habitat capacity.
     const pressure = Math.max(0, Number(huntingPressure) || 0);
     const effectiveHunting = pressure / (1 + pressure * 0.35);
-    const loss = mortality * population
-        + effectiveHunting * population * 0.025
+    return Math.max(0, number(mortality)) * current
+        + effectiveHunting * current * 0.025
         // Predation is a real loss term, but it must not double-count hunting
         // or turn a heavily hunted wood into an empty one. The bounded 0.008
         // coefficient keeps wolf/lynx pressure visible without collapsing the
         // herbivore base that feeds them.
-        + clamp(number(predationPressure), 0, 1) * population * 0.008;
-    return gain - loss;
+        + clamp(number(predationPressure), 0, 1) * current * 0.008;
+}
+
+export function forestHerdGrowth({ population, capacity, reproduction, mortality, huntingPressure = 0, predationPressure = 0 }) {
+    const current = Math.max(0, number(population));
+    const crowding = current / Math.max(1, capacity);
+    const gain = number(reproduction) * current * Math.max(-0.2, 1 - crowding);
+    return gain - forestHerdLoss({ population: current, mortality, huntingPressure, predationPressure });
 }
 
 // Player hunting removes animals from one concrete herd. The returned quality
@@ -693,21 +853,36 @@ export function harvestForestGameAt(x, y, requested = 1) {
     if (taken <= 0) return null;
     const after = Math.round((before - taken) * 10) / 10;
     const share = taken / before;
+    const node = nodeAt(tx, ty);
+    const stand = node?.forestCapacity ? standAt(tx, ty, node) : null;
+    const process = forestProcessFactorsFor({
+        herd, stand, day: model.day,
+        carrion: carrionAt(model, tx, ty),
+    });
     herd.population = after;
     herd.huntingPressure = Math.min(2, Math.max(0, number(herd.huntingPressure)) + share * 2);
     herd.lastHuntedDay = model.day;
     herd.trend = "declining";
     model.stats.hunts = Math.max(0, Math.floor(number(model.stats.hunts))) + 1;
-    const condition = before / Math.max(1, Number(herd.capacity) || before);
+    // A parasitised animal is leaner even when the wood is full. The condition
+    // is still driven by local fill, but the meat-quality factor is a real
+    // penalty from the host-bound load, not a cosmetic label.
+    const condition = (before / Math.max(1, Number(herd.capacity) || before))
+        * process.meatQualityFactor;
     const quality = condition >= 0.72 && herd.huntingPressure < 0.85 ? "prime"
         : condition >= 0.4 ? "good" : "lean";
+    // The kill leaves a carcass for the scavenger guild. This is the same
+    // bounded short-lived map natural mortality feeds below.
+    addCarrion(model, tx, ty, taken * 0.65);
     addHistory(model, {
         day: model.day, kind: "hunt", species: herd.species,
         at: [tx, ty], taken, populationBefore: before, populationAfter: after, quality,
+        parasiteLoad: process.parasiteLoad,
     });
     return {
         ok: true, herdId: herd.id, species: herd.species, label: speciesMeta(herd.species).label,
         taken, populationBefore: before, populationAfter: after, quality,
+        parasiteLoad: process.parasiteLoad, meatQualityFactor: process.meatQualityFactor,
     };
 }
 
@@ -794,6 +969,28 @@ function preyBiomassAt(preyTiles, x, y, species, radius = 4) {
         }
     }
     return total;
+}
+
+function decayCarrion(model) {
+    if (!(model.carrion instanceof Map)) {
+        model.carrion = new Map();
+        return;
+    }
+    for (const [key, value] of model.carrion) {
+        const next = number(value) * 0.55;
+        if (next < 0.04) model.carrion.delete(key);
+        else model.carrion.set(key, Math.round(next * 1000) / 1000);
+    }
+    // The map is fed by at most the capped herd list plus player hunts. This
+    // guard keeps a pathological old save from growing without bound.
+    if (model.carrion.size > 512) {
+        const excess = model.carrion.size - 512;
+        let removed = 0;
+        for (const key of model.carrion.keys()) {
+            model.carrion.delete(key);
+            if (++removed >= excess) break;
+        }
+    }
 }
 
 function updateInsectPopulations(model) {
@@ -920,13 +1117,28 @@ export function updateForestFauna(days = 1) {
                 * (spec.predator && preyBiomass < 2 ? 1.7 : 1);
             const effectiveCapacity = Math.max(1, capacity * predatorCondition);
             const before = herd.population;
+            const predationPressure = spec.predator ? 0 : (pressureMaps.predatorPressure.get(herd.x + ":" + herd.y) || 0);
+            // 117/118/119 act on the same daily step as the existing herd
+            // model. The record is pure; carrion is the only short-lived input
+            // and it is bounded to the current tile.
+            const process = resolved?.stand ? forestProcessFactorsFor({
+                herd, stand: resolved.stand, day: model.day,
+                carrion: carrionAt(model, herd.x, herd.y),
+                predatorPressure: predationPressure, preyBiomass,
+            }) : null;
+            const cycleFactor = process?.cycleFactor || 1;
             const next = clamp(before + forestHerdGrowth({
-                population: before, capacity: effectiveCapacity,
-                reproduction: reproduction * predatorCondition, mortality, huntingPressure: hunting,
-                predationPressure: spec.predator ? 0 : (pressureMaps.predatorPressure.get(herd.x + ":" + herd.y) || 0),
-            }), 0, effectiveCapacity * 1.35);
+                population: before, capacity: effectiveCapacity * cycleFactor,
+                reproduction: reproduction * predatorCondition * cycleFactor, mortality, huntingPressure: hunting,
+                predationPressure,
+            }), 0, effectiveCapacity * cycleFactor * 1.35);
             if (next > before + 0.05) model.stats.births++;
             if (next < before - 0.05) model.stats.deaths++;
+            // Actual loss, not net growth, feeds scavengers. A herd that
+            // births and dies in the same day still leaves the winter/predation
+            // carcasses the guild cleans up.
+            const losses = forestHerdLoss({ population: before, mortality, huntingPressure: hunting, predationPressure });
+            addCarrion(model, herd.x, herd.y, Math.min(before, losses) * 0.55);
             herd.population = Math.round(next * 10) / 10;
             herd.huntingPressure = Math.max(0, Math.round(hunting * 0.985 * 1000) / 1000);
             herd.trend = herd.population > before + 0.2 ? "growing" : herd.population < before - 0.2 ? "declining" : "stable";
@@ -942,7 +1154,13 @@ export function updateForestFauna(days = 1) {
 
             // A crowded herd disperses a small satellite group into a
             // neighbouring wood. The cap is a hard save/performance bound.
-            if (herd.population > capacity * 1.18 && model.herds.length + additions.length < MAX_HERDS) {
+            // A realm that has never dispersed gets one bootstrap opportunity
+            // at a lower overshoot, so a quiet seed still founds a second
+            // range. After that the normal 1.26 threshold prevents the annual
+            // fragmentation that the old 1.18 rule allowed under the new
+            // cycle coupling.
+            const splitThreshold = Number(model.stats.splits) === 0 ? 1.1 : 1.26;
+            if (herd.population > effectiveCapacity * cycleFactor * splitThreshold && model.herds.length + additions.length < MAX_HERDS) {
                 const candidates = neighbourCandidates(herd, 1);
                 const target = candidates.find(candidate =>
                     !model.herds.some(other => other.x === candidate.x && other.y === candidate.y)
@@ -969,6 +1187,7 @@ export function updateForestFauna(days = 1) {
         if (additions.length) model.herds.push(...additions);
         model.herds = model.herds.filter(herd => herd.population >= 0.4);
         updateInsectPopulations(model);
+        decayCarrion(model);
     }
     model.herds = model.herds.slice(0, MAX_HERDS);
     return model;
@@ -1157,6 +1376,12 @@ export function restoreForestFauna(snapshot) {
             huntingPressure: Math.max(0, Math.min(2, Number(herd.huntingPressure) || 0)),
             lastHuntedDay: Math.max(0, Math.floor(Number(herd.lastHuntedDay) || 0)),
         })),
+        carrion: new Map(snapshot.herds
+            .filter(herd => Number(herd.huntingPressure) > 0)
+            .map(herd => [
+                Math.floor(Number(herd.x)) + ":" + Math.floor(Number(herd.y)),
+                Math.min(5, Number(herd.huntingPressure) * 0.8),
+            ])),
         // Older snapshots predate insect colonies. Leave the field absent so
         // ensureForestFauna() can seed the normal bounded colony set instead
         // of mistaking an empty compatibility array for a deliberately

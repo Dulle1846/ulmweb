@@ -125,6 +125,8 @@ test("the rendered atlas lists all 60 types, their effects and their signature t
     assert.match(markup, /health \d{1,3}%/);
     assert.match(markup, /pollinators \d{1,3}%/);
     assert.match(markup, /CORRIDOR<\/small><strong>\d{1,3}%/);
+    assert.match(markup, /migration \d{1,3}%/);
+    assert.match(markup, /parasites \d{1,3}%/);
     for (const match of markup.matchAll(/\b(browse|health|water|pollinators|pests|hare|lynx|corridor) (\d+)/g)) {
         assert.ok(Number(match[2]) <= 100,
             "fauna " + match[1] + " must render as a percent, not " + match[2]);

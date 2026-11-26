@@ -171,10 +171,10 @@ export const FOREST_FAUNA_NOTES = Object.freeze({
     '1.2.23.1.114': 'Crayfish and mussels filter the water and are sensitive indicators. Compaction, pollution and lost shade remove them before fish disappear.',
     '1.2.23.1.115': 'Fungi fruit in autumn, decompose deadwood and support mycorrhiza. Edible and medicinal yields follow soil, litter and old-growth structure.',
     '1.2.23.1.116': 'Moss and lichen track humidity, shade and air quality. Desiccation risk rises when a moist stand is opened and the floor dries.',
-    '1.2.23.1.117': 'Parasites follow host density: ticks on deer, liver fluke on wet boar ground, mange in dense fox cover. The load is a condition reading for the herd.',
-    '1.2.23.1.118': 'Scavengers remove carcasses and return nutrients. Open, warm woods clean up faster than closed, cold ones; hunting leaves the carcass sites.',
-    '1.2.23.1.119': 'Hare\u2013lynx, vole\u2013owl and mast cycles swing on fixed periods from seed, tile and year. The phase describes the swing while local habitat still sets the herd ceiling.',
-    '1.2.23.1.120': 'Corridors follow the edge mantle, canopy, water and regional transition belts. The barrier label reports how fragmented the approach to this wood is.',
+    '1.2.23.1.117': 'Parasites are host-bound: ticks follow deer, liver fluke wet boar ground and mange dense fox cover. Load rises with local crowding and lowers herd condition, meat quality and effective carrying capacity; it is a real brake, not a fixed penalty.',
+    '1.2.23.1.118': 'Scavengers clean the carcasses left by predation, hunting and winter loss. Their service lowers parasite pressure and yields a small, bounded bone-and-horn find where the wood has recent carcass sites.',
+    '1.2.23.1.119': 'Hare\u2013lynx, vole\u2013owl and mast cycles now modulate real reproduction and carrying capacity. Predator capacity follows local prey, prey capacity feels predator pressure, and density-dependent growth damps the swing instead of letting it run away.',
+    '1.2.23.1.120': 'Corridors follow the edge mantle, canopy, water and regional transition belts. They decide whether a crowded herd can actually reach a neighbouring wood, so a fragmented road barrier slows migration instead of only lowering a display percentage.',
 });
 
 // A compact signal record. The stand, the herd model and the renderer read
@@ -258,6 +258,28 @@ export function forestFaunaQuickSignalsFor(stand, options = {}) {
     const pest = clamp01(conifer * 0.2 + (1 - moisture) * 0.22 + clamp01(stand.density ?? 0.6) * 0.18
         + clamp01(health.droughtStress) * 0.16 + (stand.disturbance === "bark-beetle" ? 0.24 : 0)
         - clamp01(health.diseaseResistance) * 0.16);
+    // The daily herd model needs the same cycle phase the detailed record
+    // shows in the atlas. Three hashes per cached stand-day are cheap; a fixed
+    // 0.5 placeholder would make the field guide describe a cycle the herd
+    // never felt. `cycleAt` is a hoisted declaration below.
+    const cycleSeed = Number(options.seed ?? stand.seed ?? 1) >>> 0;
+    const cycleX = Math.floor(number(options.x ?? stand.x, 0));
+    const cycleY = Math.floor(number(options.y ?? stand.y, 0));
+    const cycleDay = number(options.day ?? options.dayOfYear ?? stand.dayOfYear ?? 150, 150);
+    const cycleYear = Math.floor(cycleDay / 400);
+    const quickLynx = cycleAt(cycleSeed, cycleX, cycleY, cycleYear, 9, 0x4c594e58);
+    const quickVole = cycleAt(cycleSeed, cycleX, cycleY, cycleYear, 4, 0x564f4c45);
+    const quickMast = cycleAt(cycleSeed, cycleX, cycleY, cycleYear,
+        5 + hash32(cycleSeed, cycleX, cycleY, 0x4d415354) % 3, 0x4d415354);
+    const hareIndex = clamp01(0.3 + quickLynx.value * 0.6);
+    const lynxIndex = clamp01(0.2 + (1 - Math.abs(quickLynx.value - 0.55) * 2) * 0.6);
+    const voleIndex = clamp01(0.25 + quickVole.value * 0.65);
+    const owlIndex = clamp01(0.25 + (1 - Math.abs(quickVole.value - 0.6) * 2) * 0.6);
+    const mastIndex = clamp01(mast * 0.5 + quickMast.value * 0.5);
+    const parasiteDeer = clamp01(deer * 0.6 + shrub * 0.15 + moisture * 0.1);
+    const parasiteBoar = clamp01(wetness * 0.5 + boar * 0.25);
+    const parasiteFox = clamp01(raccoon * 0.4 + clamp01(stand.density ?? 0.6) * 0.2);
+    const parasiteSongbird = clamp01(0.18 + flowering * 0.12 + open * 0.08);
     return {
         browsing: round(deer),
         rooting: round(boar),
@@ -273,8 +295,17 @@ export function forestFaunaQuickSignalsFor(stand, options = {}) {
         gameYield: round(clamp01(deer * 0.7 + boar * 0.2)),
         corridor: round(clamp01(edgeMantle * 0.18 + canopy * 0.12 + deadwood * 0.12
             + moisture * 0.1 + transition * 0.24 + (1 - human) * 0.14 + gap * 0.1)),
-        cyclePhase: 0.5,
-        parasiteLoad: round(clamp01(deer * 0.6 + shrub * 0.15 + moisture * 0.1)),
+        cyclePhase: round(quickLynx.value),
+        cycleHare: round(hareIndex),
+        cycleLynx: round(lynxIndex),
+        cycleVole: round(voleIndex),
+        cycleOwl: round(owlIndex),
+        cycleMast: round(mastIndex),
+        parasiteLoad: round(parasiteDeer),
+        parasiteDeer: round(parasiteDeer),
+        parasiteBoar: round(parasiteBoar),
+        parasiteFox: round(parasiteFox),
+        parasiteSongbird: round(parasiteSongbird),
         scavenging: round(clamp01(0.2 + open * 0.18 + edgeMantle * 0.14 + human * 0.1)),
         biodiversity: round(clamp01(0.2 + edgeMantle * 0.18 + flowering * 0.14
             + deadwood * 0.18 + ancient * 0.12 + (1 - pest) * 0.1 + preyBase * 0.08)),
@@ -799,6 +830,8 @@ export function forestFaunaEcologyFor(stand, options = {}) {
         liverFlukeRisk: pct(clamp01(wetness * 0.55 + pools * 0.2)),
         mangeRisk: pct(clamp01(smallPredatorBase * 0.5 + (1 - siteFitness) * 0.2)),
         herdCondition: pct(clamp01(1 - tickLoad * 0.35 - (1 - siteFitness) * 0.2)),
+        capacityBrake: pct(clamp01(tickLoad * 0.26)),
+        meatQuality: pct(clamp01(1 - tickLoad * 0.3)),
         biodiversityBrake: pct(clamp01((1 - tickLoad) * 0.5 + preyBase * 0.3)),
     };
 
@@ -814,6 +847,7 @@ export function forestFaunaEcologyFor(stand, options = {}) {
         nutrientReturnKgHaYear: round(0.4 + scavengerScore * 4.6, 1),
         carcassSites: Math.max(0, Math.round(huntingPressure * 5)),
         diseaseCleanup: pct(clamp01(scavengerScore * 0.7)),
+        parasiteRelief: pct(clamp01(scavengerScore * 0.18 + huntingPressure * 0.08)),
         winterReliance: season.name === 'winter' ? pct(clamp01(scavengerScore * 0.6 + 0.2)) : 0,
     };
 
@@ -871,7 +905,8 @@ export function forestFaunaEcologyFor(stand, options = {}) {
         ],
         direction: ['north', 'east', 'south', 'west'][hash32(seed, tx, ty, 0x434f5252) % 4],
         targetRegionalType: stand.regionalTransitionLabel || stand.regionalLabel || null,
-        migration: pct(clamp01(corridorQuality * 0.6 + season.name === 'spring' ? 0.15 : season.name === 'autumn' ? 0.12 : 0)),
+        migration: pct(clamp01(corridorQuality * 0.6
+            + (season.name === 'spring' ? 0.15 : season.name === 'autumn' ? 0.12 : 0))),
         roadBarrier: human > 0.5 ? 'fragmented' : human > 0.3 ? 'filtered' : 'permeable',
     };
 
@@ -929,7 +964,16 @@ export function forestFaunaEcologyFor(stand, options = {}) {
         gameYield: round(clamp01(deerPreyBase * 0.7 + boarScore * 0.2)),
         corridor: round(corridorQuality),
         cyclePhase: round(lynxCycle.value),
+        cycleHare: round(clamp01(0.3 + lynxCycle.value * 0.6)),
+        cycleLynx: round(clamp01(0.2 + (1 - Math.abs(lynxCycle.value - 0.55) * 2) * 0.6)),
+        cycleVole: round(clamp01(0.25 + voleCycle.value * 0.65)),
+        cycleOwl: round(clamp01(0.25 + (1 - Math.abs(voleCycle.value - 0.6) * 2) * 0.6)),
+        cycleMast: round(clamp01(mast * 0.5 + mastCycle.value * 0.5)),
         parasiteLoad: round(tickLoad),
+        parasiteDeer: round(clamp01(deerPreyBase * 0.6 + shrub * 0.15 + moisture * 0.1)),
+        parasiteBoar: round(clamp01(wetness * 0.5 + boarScore * 0.25)),
+        parasiteFox: round(clamp01(smallPredatorBase * 0.4 + density * 0.2)),
+        parasiteSongbird: round(clamp01(0.18 + flowering * 0.12 + open * 0.08)),
         scavenging: round(scavengerScore),
         biodiversity: round(biodiversityIndex()),
         beaver: round(beaverScore),
@@ -1274,20 +1318,20 @@ const FIELD_GUIDE_FACTS = Object.freeze({
         'humidity ' + r.mossLichen.humidityIndicator + '% · desiccation ' + r.mossLichen.desiccationRisk + '%',
     ],
     parasites: r => [
-        'load ' + r.parasites.load + '% · ' + r.parasites.ticksPerDeer + ' ticks/deer',
-        'herd condition ' + r.parasites.herdCondition + '% · ' + r.parasites.hosts.length + ' host links',
+        'load ' + r.parasites.load + '% · herd condition ' + r.parasites.herdCondition + '%',
+        'capacity brake ' + r.parasites.capacityBrake + '% · meat quality ' + r.parasites.meatQuality + '%',
     ],
     scavengers: r => [
         'abundance ' + r.scavengers.abundance + '% · ' + r.scavengers.diseaseCleanup + '% cleanup',
-        r.scavengers.carcassRemovalDays + ' days removal · ' + r.scavengers.nutrientReturnKgHaYear + ' kg/ha·y',
+        r.scavengers.carcassSites + ' carcass sites · ' + r.scavengers.parasiteRelief + '% parasite relief',
     ],
     cycles: r => [
         'hare ' + r.cycles.hareLynx.hareIndex + '% · lynx ' + r.cycles.hareLynx.lynxIndex + '% · ' + r.cycles.hareLynx.label,
-        'mast ' + r.cycles.mast.label + ' · predation ' + r.cycles.predationPressure + '%',
+        'mast ' + r.cycles.mast.label + ' · predation ' + r.cycles.predationPressure + '% · ' + r.cycles.hareLynx.periodYears + 'y period',
     ],
     corridors: r => [
-        r.corridors.quality + '% quality · ' + r.corridors.links + ' links',
-        r.corridors.nearestWoodKm + ' km · ' + r.corridors.roadBarrier + ' · ' + r.corridors.direction,
+        r.corridors.quality + '% quality · migration ' + r.corridors.migration + '%',
+        r.corridors.links + ' links · ' + r.corridors.nearestWoodKm + ' km · ' + r.corridors.roadBarrier + ' · ' + r.corridors.direction,
     ],
 });
 
@@ -1323,6 +1367,8 @@ export function forestFaunaEcologySummary(record) {
         'pollinators ' + record.insects.pollinators + '%',
         'pests ' + record.insects.pests + '%',
         'water ' + record.indicators.waterQuality + '%',
+        'parasites ' + record.parasites.load + '%',
+        'scavengers ' + record.scavengers.abundance + '%',
         'cycle ' + record.cycles.hareLynx.phase + ' ' + record.cycles.hareLynx.label,
         'corridor ' + record.corridors.quality + '%',
     ].join(' · ');

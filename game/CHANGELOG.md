@@ -1,13 +1,49 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.65.0`
-**Next development line:** `3.66.0-dev`
+**Current production version:** `3.66.0`
+**Next development line:** `3.67.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
 **Last repository verification:** 2026-11-26 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.66.0 — The four process points become real mechanics
+
+The field guide was complete in 3.65.0, but points **117–120** still described
+processes rather than changing the running realm. This release wires parasites,
+scavengers, predator–prey cycles and corridors into the existing herd, harvest
+and migration paths. No second ecology model, no new save field and no
+per-frame work were added.
+
+- **117 Parasites** are host-bound and density-dependent. `forestProcessFactorsFor()`
+  selects the deer, boar, fox or songbird load, applies a density brake above
+  45 % herd fill and feeds a bounded capacity loss (max 26 %) and meat-quality
+  loss (max 30 %) into `carryingCapacity()` and `harvestForestGameAt()`.
+- **118 Scavengers** read a short-lived carrion register fed by actual natural
+  deaths, predation and hunt residue. `scavenging` reduces parasite pressure,
+  and a real carcass site can add a small `bone` find to the existing gather
+  ledger. The register is not serialized; it is reseeded from saved hunting
+  pressure on load.
+- **119 Cycles** now modulate real reproduction and effective carrying capacity.
+  The deterministic hare–lynx, vole–owl and mast phases are coupled to local
+  prey and predator pressure, with a cap on prey overshoot and density-dependent
+  growth as the dominant damper.
+- **120 Corridors** decide migration. `maybeMigrate()` reads the corridor quality
+  of the current and candidate woods, filters unreachable destinations, weights
+  linked woods more strongly and applies a deterministic move gate driven by
+  corridor quality and crowding.
+- **Player view.** Field-guide facts for 117–120 name the active values
+  (`capacity brake`, `meat quality`, `parasite relief`, `migration`); the atlas
+  CYCLE and CORRIDOR cells expose the same process values; the inspector summary
+  names parasites and scavengers.
+- **Proof.** `npm run test:forest-process` runs the same 25-year seed before and
+  after this release. Population moves from **281.5 to 266.7**, deer/boar from
+  **134.7 to 126.3**, migrations from **573 to 2,511**, mean parasite capacity
+  brake from **0 % to 9.30 %**, mean meat quality from **0 % to 89.28 %**, and
+  prime/good/lean harvests from **26/224/0 to 8/218/24** over 250 hunts. The run
+  ends finite, with 78 herds and no NaN.
 
 ## 3.65.0 — Every fauna point gets a field guide
 

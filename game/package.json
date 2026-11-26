@@ -1,6 +1,6 @@
 {
   "name": "kings-and-cards",
-  "version": "3.65.0",
+  "version": "3.66.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -60,6 +60,7 @@
     "test:road-owners": "node tests/browser/road-owners.mjs",
     "test:chronicles": "node tests/browser/chronicle-audit.mjs",
     "test:campaign": "node scripts/long-campaign.mjs",
+    "test:forest-process": "node scripts/forest-process-audit.mjs",
     "test:endless": "node scripts/endless-campaign.mjs",
     "test:campaign:volcano": "node scripts/volcano-campaign.mjs",
     "test:campaign:sweep": "CAMPAIGN_CLIMATE=savanna CAMPAIGN_SEEDS=20261106,20261143,20261152 node scripts/long-campaign.mjs",

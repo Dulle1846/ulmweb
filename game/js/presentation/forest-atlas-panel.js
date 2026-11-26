@@ -230,8 +230,8 @@ function dynamicsBlock(dynamics, fauna = null) {
             ['WATER FAUNA', fauna.beavers.present ? 'beaver ' + number(fauna.beavers.colonies) : 'no beaver', 'otter ' + number(fauna.otters.individuals) + ' · fish ' + number(fauna.fish.biomassKgHa) + ' kg/ha · water ' + percent(fauna.indicators.waterQuality) + '%'],
             ['INSECTS', 'pollinators ' + percent(fauna.insects.pollinators) + '%', 'pests ' + percent(fauna.insects.pests) + '% · bees ' + number(fauna.wildBees.speciesRichness) + ' · butterflies ' + number(fauna.butterflies.speciesRichness)],
             ['DEADWOOD LIFE', 'ants ' + number(fauna.ants.moundsPerHa) + '/ha', 'woodpeckers ' + number(fauna.woodpeckers.pairs) + ' · beetles ' + number(fauna.deadwoodBeetles.speciesRichness) + ' · owls ' + number(fauna.owls.pairs)],
-            ['CYCLE', fauna.cycles.hareLynx.label, 'hare ' + percent(fauna.cycles.hareLynx.hareIndex) + '% · lynx ' + percent(fauna.cycles.hareLynx.lynxIndex) + '% · mast ' + fauna.cycles.mast.label],
-            ['CORRIDOR', percent(fauna.corridors.quality) + '%', number(fauna.corridors.links) + ' links · ' + number(fauna.corridors.nearestWoodKm) + 'km · ' + (fauna.corridors.targetRegionalType || 'local matrix')],
+            ['CYCLE', fauna.cycles.hareLynx.label, 'hare ' + percent(fauna.cycles.hareLynx.hareIndex) + '% · lynx ' + percent(fauna.cycles.hareLynx.lynxIndex) + '% · parasites ' + percent(fauna.parasites.load) + '% · cleanup ' + percent(fauna.scavengers.diseaseCleanup) + '%'],
+            ['CORRIDOR', percent(fauna.corridors.quality) + '%', 'migration ' + percent(fauna.corridors.migration) + '% · ' + number(fauna.corridors.links) + ' links · ' + number(fauna.corridors.nearestWoodKm) + 'km · ' + (fauna.corridors.targetRegionalType || 'local matrix')],
             ['HARVEST', 'game ' + number(fauna.products.venisonKgHa) + ' kg/ha', 'fish ' + number(fauna.products.fishKgHa) + ' · honey ' + number(fauna.products.honeyKgHa) + ' · mushrooms ' + number(fauna.products.mushroomsKgHa) + ' kg/ha'],
         );
     }

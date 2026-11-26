@@ -2195,6 +2195,17 @@ export function forestGoodsFor(stand, dayOfYear, climate = 'temperate') {
             if (abundance > 0.08) goods.push({ ...FOREST_GOODS[id], abundance });
         }
     }
+    // Scavenger service leaves a small, bounded bone-and-horn find where the
+    // wood has actual carcass sites from hunting. It is not a second loot table:
+    // the same creatures that lower parasite pressure clean the kill, and the
+    // find scales with cleanup rather than with a generic forest roll.
+    const scavengers = fauna?.scavengers;
+    if (scavengers?.carcassSites > 0 && Number(fauna?.signals?.scavenging) > 0.18
+        && FOREST_GOODS.bone && !goods.some(good => good.id === 'bone')) {
+        const abundance = clamp01(0.09 + Number(fauna.signals.scavenging) * 0.12
+            + Math.min(0.06, Number(scavengers.carcassSites) * 0.015));
+        if (abundance > 0.08) goods.push({ ...FOREST_GOODS.bone, abundance });
+    }
     return goods.sort((a, b) => b.abundance - a.abundance);
 }
 
