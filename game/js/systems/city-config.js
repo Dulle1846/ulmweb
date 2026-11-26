@@ -3,6 +3,7 @@
 // from drifting into different versions of the same rules.
 import { TYPE } from "../core/types.js";
 import { REGIONAL_TIMBER_KEYS, REGIONAL_TIMBERS } from "../world/regional-forests.js";
+import { FOREST_WORKS_MODES, INDUSTRY_GOODS } from "../world/forest-industries.js";
 
 export const CITY_VERSION = 1;
 
@@ -13,7 +14,7 @@ export const NEW_BUILDING_TYPES = Object.freeze([
     TYPE.TOWN_HALL, TYPE.SCHOOL, TYPE.BATHHOUSE, TYPE.BREWERY, TYPE.GUILDHALL, TYPE.WATCHHOUSE,
     TYPE.SMITHY, TYPE.SCRIPTORIUM,
     TYPE.DAM, TYPE.AVALANCHE_BARRIER, TYPE.DRAINAGE, TYPE.FIREBREAK,
-    TYPE.WEATHER_HOUSE, TYPE.QUARANTINE, TYPE.GRANARY, TYPE.WARD
+    TYPE.WEATHER_HOUSE, TYPE.QUARANTINE, TYPE.GRANARY, TYPE.WARD, TYPE.FOREST_WORKS
 ]);
 
 export const BUILDING_LABELS = Object.freeze({
@@ -60,7 +61,8 @@ export const BUILDING_LABELS = Object.freeze({
     [TYPE.WEATHER_HOUSE]: "Weatherproof House",
     [TYPE.QUARANTINE]: "Quarantine House",
     [TYPE.GRANARY]: "Granary",
-    [TYPE.WARD]: "Warding Stone"
+    [TYPE.WARD]: "Warding Stone",
+    [TYPE.FOREST_WORKS]: "Forest Works"
 });
 
 // Direct construction uses the same material language as the card catalogue.
@@ -109,13 +111,15 @@ export const BUILDING_COSTS = Object.freeze({
     [TYPE.WEATHER_HOUSE]: Object.freeze({ wood: 26, stone: 22, gold: 4 }),
     [TYPE.QUARANTINE]: Object.freeze({ wood: 24, stone: 20, gold: 8 }),
     [TYPE.GRANARY]: Object.freeze({ wood: 30, stone: 20, gold: 4 }),
-    [TYPE.WARD]: Object.freeze({ stone: 24, gold: 14 })
+    [TYPE.WARD]: Object.freeze({ stone: 24, gold: 14 }),
+    [TYPE.FOREST_WORKS]: Object.freeze({ wood: 38, stone: 18, gold: 10 })
 });
 
 export const BUILD_MENU = Object.freeze([
     Object.freeze({ id: "roads", label: "ROADS", note: "Dirt, gravel and paved routes. Roads change real travel speed and upkeep." }),
     Object.freeze({ id: "housing", label: "HOUSING", types: Object.freeze([TYPE.TENT, TYPE.HOUSE, TYPE.STONE_HOUSE]) }),
-    Object.freeze({ id: "production", label: "PRODUCTION", types: Object.freeze([TYPE.LUMBER, TYPE.SAWMILL, TYPE.FARM, TYPE.MILL, TYPE.BAKERY, TYPE.BREWERY, TYPE.QUARRY, TYPE.MASON, TYPE.GOLDMINE, TYPE.STABLE, TYPE.SMITHY, TYPE.SCRIPTORIUM]) }),
+    Object.freeze({ id: "forest", label: "FOREST INDUSTRY", types: Object.freeze([TYPE.FORESTER, TYPE.SAWMILL, TYPE.FOREST_WORKS]) }),
+    Object.freeze({ id: "production", label: "PRODUCTION", types: Object.freeze([TYPE.LUMBER, TYPE.FARM, TYPE.MILL, TYPE.BAKERY, TYPE.BREWERY, TYPE.QUARRY, TYPE.MASON, TYPE.GOLDMINE, TYPE.STABLE, TYPE.SMITHY, TYPE.SCRIPTORIUM]) }),
     Object.freeze({ id: "storage", label: "STORAGE", types: Object.freeze([TYPE.WAREHOUSE]) }),
     Object.freeze({ id: "services", label: "SERVICES", types: Object.freeze([TYPE.WELL, TYPE.TAVERN, TYPE.TEMPLE, TYPE.MARKET, TYPE.CLINIC]) }),
     Object.freeze({ id: "civic", label: "CIVIC", types: Object.freeze([TYPE.TOWN_HALL, TYPE.SCHOOL, TYPE.BATHHOUSE, TYPE.GUILDHALL, TYPE.WATCHHOUSE]) }),
@@ -199,6 +203,12 @@ export const CRAFTED_ITEM_USE_IDS = Object.freeze(["use", "sell"]);
 const REGIONAL_TIMBER_GOODS = Object.freeze(Object.fromEntries(REGIONAL_TIMBERS.map(timber => [
     timber.id, Object.freeze({ label: timber.label, plural: timber.label.toLowerCase() })
 ])));
+// Finished forest-industry goods use the same physical warehouse ledger as
+// planks and bread. There is no parallel inventory for pitch, furniture or dye.
+const INDUSTRY_WAREHOUSE_GOODS = Object.freeze(Object.fromEntries(Object.entries(INDUSTRY_GOODS)
+    .map(([id, def]) => [id, Object.freeze({ label: def.label, plural: def.plural })])));
+const FOREST_WORKS_INPUTS = Object.freeze([...new Set(Object.values(FOREST_WORKS_MODES)
+    .flatMap(mode => Object.keys(mode.standard || {})))]);
 export const GOODS = Object.freeze({
     logs: Object.freeze({ label: "Logs", plural: "logs" }),
     planks: Object.freeze({ label: "Planks", plural: "planks" }),
@@ -210,7 +220,8 @@ export const GOODS = Object.freeze({
     water: Object.freeze({ label: "Water", plural: "water" }),
     firewood: Object.freeze({ label: "Firewood", plural: "firewood" }),
     ale: Object.freeze({ label: "Ale", plural: "ale" }),
-    ...REGIONAL_TIMBER_GOODS
+    ...REGIONAL_TIMBER_GOODS,
+    ...INDUSTRY_WAREHOUSE_GOODS
 });
 
 export const GOOD_KEYS = Object.freeze(Object.keys(GOODS));
@@ -223,6 +234,7 @@ export { REGIONAL_TIMBER_KEYS };
 export const WAREHOUSE_PROFILES = Object.freeze({
     general: Object.freeze({ id: "general", label: "General store", capacity: 180, filters: GOOD_KEYS, description: "Accepts every hauled good." }),
     timber: Object.freeze({ id: "timber", label: "Timber yard", capacity: 220, filters: Object.freeze(["logs", "planks", "firewood", ...REGIONAL_TIMBER_KEYS]), description: "Logs, planks, firewood and every regional timber." }),
+    industry: Object.freeze({ id: "industry", label: "Forest works store", capacity: 240, filters: Object.freeze(["planks", "firewood", "water", "tannin", ...Object.keys(INDUSTRY_GOODS)]), description: "Workshop inputs and finished forest-industry goods." }),
     stone: Object.freeze({ id: "stone", label: "Stone depot", capacity: 220, filters: Object.freeze(["stoneBlocks", "cutStone"]), description: "Rough and dressed stone only." }),
     food: Object.freeze({ id: "food", label: "Granary", capacity: 210, filters: Object.freeze(["grain", "flour", "bread"]), description: "Grain, flour and bread only." }),
     water: Object.freeze({ id: "water", label: "Cistern", capacity: 160, filters: Object.freeze(["water"]), description: "Drawn water only." }),
@@ -253,7 +265,15 @@ export const RECIPES = Object.freeze({
     // capacity and delivery rules for these workshops. Their unique output is
     // written by craft-production.js, never as a bulk warehouse good.
     [TYPE.SMITHY]: Object.freeze({ label: CRAFT_RECIPES[TYPE.SMITHY].label, workers: 1, input: CRAFT_RECIPES[TYPE.SMITHY].inputs, output: Object.freeze({}), inputCapacity: 18, outputCapacity: 0, batch: 0, unique: true }),
-    [TYPE.SCRIPTORIUM]: Object.freeze({ label: CRAFT_RECIPES[TYPE.SCRIPTORIUM].label, workers: 1, input: CRAFT_RECIPES[TYPE.SCRIPTORIUM].inputs, output: Object.freeze({}), inputCapacity: 18, outputCapacity: 0, batch: 0, unique: true })
+    [TYPE.SCRIPTORIUM]: Object.freeze({ label: CRAFT_RECIPES[TYPE.SCRIPTORIUM].label, workers: 1, input: CRAFT_RECIPES[TYPE.SCRIPTORIUM].inputs, output: Object.freeze({}), inputCapacity: 18, outputCapacity: 0, batch: 0, unique: true }),
+    // Forest Works chooses its batch from the selected regional industry. The
+    // ordinary producer loop skips this custom recipe; the forest-industry
+    // system reads the same capacity record and deposits ordinary goods.
+    [TYPE.FOREST_WORKS]: Object.freeze({
+        label: "Run a regional forest industry", workers: 2, input: Object.freeze({}), regionalTimber: true,
+        acceptedInputs: FOREST_WORKS_INPUTS, output: Object.freeze({}),
+        inputCapacity: 48, outputCapacity: 48, batch: 0, custom: true
+    })
 });
 
 export const HOUSING_TIERS = Object.freeze({

@@ -14,6 +14,7 @@ import {
     findLocalWarehouse, consumeFromWarehouse
 } from "../systems/logistics.js";
 import { regionalTimberGood, signatureTimberForRegionalType } from "../world/regional-forests.js";
+import { sawBatchFor, sawProfileAccepts, sawProfileFor } from "../world/forest-industries.js";
 import { findNearestResourceNode, getForestHabitatAt, harvestForest, extractStone } from "../systems/resource-geography.js";
 import { getHazardExtractionFactor } from "../systems/hazard-modifiers.js";
 
@@ -45,7 +46,14 @@ function entriesFor(recipe) {
 // not a second bulk timber economy.
 const stockTargetList = {
     logs: 80, planks: 60, firewood: 50, stoneBlocks: 60, cutStone: 60,
-    water: 40, grain: 120, flour: 40, ale: 40
+    water: 40, grain: 120, flour: 40, ale: 40,
+    // Finished forest-industry goods use the same ceiling language as planks.
+    // The values match INDUSTRY_STOCK_TARGETS; keeping them local avoids a
+    // runtime import in the ordinary production hot path.
+    charcoal: 60, potash: 28, furniture: 24, pitch: 30, tar: 30, tannin: 30,
+    dye: 30, medicine: 24, paper: 30, silk: 18, rubber: 20, bambooFibre: 24,
+    palmOil: 24, palmFrond: 24, spices: 20, cork: 24, smokedFish: 30,
+    preserves: 30, shipTimber: 20, bowStaves: 20
 };
 // A regional type and its effects depend on the tile, seed, climate and base
 // formation, never on the current stock. Cache that immutable subset so a
@@ -99,8 +107,16 @@ function ledger() {
 // duplicate jobs (requestHaul refuses a second job for the same good).
 function requestStoredHauls(building) {
     const recipe = RECIPES[building.type];
-    if (!recipe?.output) return;
-    for (const good of Object.keys(recipe.output)) {
+    if (!recipe) return;
+    const goods = new Set(Object.keys(recipe.output || {}));
+    // A retooled saw bench can leave ship timber or bow staves behind after its
+    // plank rack is full. Sweep those outputs too, or the speciality stock
+    // dead-ends inside the mill.
+    if (building.type === TYPE.SAWMILL) {
+        goods.add("shipTimber");
+        goods.add("bowStaves");
+    }
+    for (const good of goods) {
         const available = getAvailableOutput(building, good);
         if (available > 0) requestHaul(building, good, available);
     }
@@ -167,10 +183,11 @@ function finishOutput(building, output, production) {
 // The sawmill has two real recipes. Logs keep their shipped yield byte for
 // byte; a named regional timber is sawn by its own density. The plan is read
 // only from the mill's own input store, so no warehouse is scanned per tick.
-function bestStoredTimber(inventory) {
+function bestStoredTimber(inventory, profileId = "general") {
     let best = null, bestPlanks = 0;
     for (const good of REGIONAL_TIMBER_KEYS) {
         if (Math.max(0, Number(inventory?.input?.[good]) || 0) < 2) continue;
+        if (!sawProfileAccepts(profileId, good)) continue;
         const def = regionalTimberGood(good);
         const planks = def?.planks || 1;
         if (planks <= bestPlanks) continue;
@@ -179,22 +196,25 @@ function bestStoredTimber(inventory) {
     return best;
 }
 
-function planSawBatch(building) {
+export function planSawBatch(building) {
     const inventory = ensureInventory(building);
+    const profile = sawProfileFor(building?.sawProfile);
     // A regional timber already delivered to the bench is sawn first: it is
     // the specialty product the player asked for, and every regional board
     // yields at least the ordinary plank batch. Logs remain the fallback for
-    // every realm and every old save that has no regional timber at all.
-    const good = bestStoredTimber(inventory);
+    // general and softwood mills; a hardwood, ship or bow bench deliberately
+    // refuses a generic log and reports why in the dossier.
+    const good = bestStoredTimber(inventory, profile.id);
     if (good) {
         const def = regionalTimberGood(good);
-        return {
-            good, amount: 2,
-            output: { planks: def.planks, firewood: def.firewoodYield },
-        };
+        const batch = sawBatchFor({ id: good, planks: def.planks, firewood: def.firewoodYield }, profile.id);
+        if (!batch || !Object.keys(batch.output).length) return null;
+        return { good, amount: 2, output: batch.output, quality: batch.quality, profile: profile.id };
     }
-    if (Math.max(0, Number(inventory?.input?.logs) || 0) >= 2) {
-        return { good: "logs", amount: 2, output: { planks: 2, firewood: 1 } };
+    if (sawProfileAccepts(profile.id, "logs") && Math.max(0, Number(inventory?.input?.logs) || 0) >= 2) {
+        const batch = sawBatchFor({ id: "logs", planks: 2, firewood: 1 }, profile.id);
+        if (!batch || !Object.keys(batch.output).length) return null;
+        return { good: "logs", amount: 2, output: batch.output, quality: batch.quality, profile: profile.id };
     }
     return null;
 }
@@ -211,9 +231,12 @@ function sawSupplyPhase(building) {
 // without starving the ordinary log chain. If no timber is stored, the order
 // falls back to logs in the same tick.
 function requestSawInputs(building) {
-    if (sawSupplyPhase(building) === 0 && requestTimberSupply(building, REGIONAL_TIMBER_KEYS)) return false;
-    if (requestSupply(building, "logs", SUPPLY_BATCH)) return false;
-    requestTimberSupply(building, REGIONAL_TIMBER_KEYS);
+    const profile = sawProfileFor(building?.sawProfile);
+    const accepted = REGIONAL_TIMBER_KEYS.filter(good => sawProfileAccepts(profile.id, good));
+    const acceptsLogs = sawProfileAccepts(profile.id, "logs");
+    if (sawSupplyPhase(building) === 0 && requestTimberSupply(building, accepted)) return false;
+    if (acceptsLogs && requestSupply(building, "logs", SUPPLY_BATCH)) return false;
+    requestTimberSupply(building, accepted);
     return false;
 }
 
@@ -371,6 +394,7 @@ function produceRecipe(building, workforce, production, knownEfficiency = null, 
     }
     if (sawBatch && !consumeSawInput(building, sawBatch)) return;
     if (!sawBatch && !consumeInputs(building)) return;
+    if (sawBatch?.quality) building.lastSawQuality = { ...sawBatch.quality, timber: sawBatch.good, tick: state.tick };
     finishOutput(building, output, production);
     // Grain used to exist only inside the mill -> bakery -> carrier chain. A
     // realm with active farms and no spare carrier could starve beside a full
@@ -421,11 +445,12 @@ export function updateBuildingIncome() {
     const civicTick = tick % CIVIC_INTERVAL === 0;
     if (!productionTick && !civicTick) return;
     // A handful of producers is cheaper than the scheduling itself. Only a
-    // full settlement splits its batches across the stable phases.
+    // full settlement splits its batches across the stable phases. Custom
+    // workshops such as Forest Works own their own bounded batch clock.
     let producerCount = 0;
     if (productionTick) {
         for (const entity of state.entities) {
-            if (!entity.dead && entity.isBuilding() && RECIPES[entity.type]) producerCount++;
+            if (!entity.dead && entity.isBuilding() && RECIPES[entity.type] && !RECIPES[entity.type].custom) producerCount++;
         }
     }
     const staggerProduction = producerCount > 10;
@@ -434,7 +459,7 @@ export function updateBuildingIncome() {
     const production = ledger();
     if (productionTick) {
         for (const building of state.entities) {
-            if (!building.dead && building.isBuilding() && RECIPES[building.type] && productionDue(tick, building, staggerProduction)) {
+            if (!building.dead && building.isBuilding() && RECIPES[building.type] && !RECIPES[building.type].custom && productionDue(tick, building, staggerProduction)) {
                 const efficiency = getBuildingEfficiency(building, workforce);
                 produceRecipe(building, workforce, production, efficiency, extraction);
                 requestStoredHauls(building);

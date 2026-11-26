@@ -1,15 +1,15 @@
 {
   "version": 2,
   "generatedBy": "scripts/spec-audit.mjs",
-  "scope": "All numbered 1.1 and 1.2.1–1.2.18 requirements, plus the documented 2.x phases and 3.3–4.0 roadmap points.",
-  "commit": "5c1f85f5d112ed35975c0682a77a26434e136c5b",
-  "sourceHash": "4cdb296010269b1842bf59e5c8c6179e288774d4d9fac3463699c5652c721d7b",
-  "generatedAt": "2026-11-26T15:33:34Z",
+  "scope": "All numbered 1.1 and 1.2.1–1.2.18 requirements, including the 1.2.23.1.151–180 forest economy, plus the documented 2.x phases and 3.3–4.0 roadmap points.",
+  "commit": "393b021e2eb45f2f9d91756b1da2734db4297dd4",
+  "sourceHash": "d37342f96d7e96b33926c2638001b5f403906d494d36a8462831d78f135be37e",
+  "generatedAt": "2026-11-26T17:56:37+00:00",
   "totals": {
-    "total": 1649,
-    "implemented": 1649,
+    "total": 1679,
+    "implemented": 1679,
     "open": 0,
-    "sections": 39
+    "sections": 40
   },
   "collisions": [
     {
@@ -40176,6 +40176,760 @@
       ],
       "source": "js/world/forest-model.js",
       "note": "30 runtime requirements from FOREST_MODEL_REQUIREMENTS; 30 carry point-specific coupling tests.",
+      "probeFunction": null,
+      "probeClimate": "temperate",
+      "probeExtra": {},
+      "probeAvailable": false,
+      "probeObserved": 0,
+      "implemented": 30,
+      "open": 0,
+      "total": 30
+    },
+    {
+      "id": "1.2.23.1.151-180",
+      "title": "Regional forest economy and workshops",
+      "points": [
+        {
+          "id": "1.2.23.1.151",
+          "label": "Regional wood species with their own properties",
+          "key": 151,
+          "group": "FOREST ECONOMY",
+          "status": "implemented",
+          "docEvidence": "FOREST_INDUSTRY_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-industries.test.js",
+            "tests/browser/forest-industry-ui.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-industries.js#FOREST_INDUSTRY_REQUIREMENTS (catalog)",
+            "js/world/forest-industries.js#FOREST_WORKS_MODES (workshops)",
+            "js/systems/forest-industries.js#runForestWorks (simulation)",
+            "js/presentation/forest-atlas-panel.js#renderForestAtlasPanel (ui)",
+            "js/presentation/management-ui.js#forestWorksStatus (ui)",
+            "js/core/save-runtime.js#createSaveSnapshot (persistence)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.152",
+          "label": "Wood quality classes for construction, furniture and export",
+          "key": 152,
+          "group": "FOREST ECONOMY",
+          "status": "implemented",
+          "docEvidence": "FOREST_INDUSTRY_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-industries.test.js",
+            "tests/browser/forest-industry-ui.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-industries.js#FOREST_INDUSTRY_REQUIREMENTS (catalog)",
+            "js/world/forest-industries.js#FOREST_WORKS_MODES (workshops)",
+            "js/systems/forest-industries.js#runForestWorks (simulation)",
+            "js/presentation/forest-atlas-panel.js#renderForestAtlasPanel (ui)",
+            "js/presentation/management-ui.js#forestWorksStatus (ui)",
+            "js/core/save-runtime.js#createSaveSnapshot (persistence)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.153",
+          "label": "Specialised sawmills for hardwood and softwood",
+          "key": 153,
+          "group": "FOREST ECONOMY",
+          "status": "implemented",
+          "docEvidence": "FOREST_INDUSTRY_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-industries.test.js",
+            "tests/browser/forest-industry-ui.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-industries.js#FOREST_INDUSTRY_REQUIREMENTS (catalog)",
+            "js/world/forest-industries.js#FOREST_WORKS_MODES (workshops)",
+            "js/systems/forest-industries.js#runForestWorks (simulation)",
+            "js/presentation/forest-atlas-panel.js#renderForestAtlasPanel (ui)",
+            "js/presentation/management-ui.js#forestWorksStatus (ui)",
+            "js/core/save-runtime.js#createSaveSnapshot (persistence)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.154",
+          "label": "Furniture manufactories with regional styles",
+          "key": 154,
+          "group": "FOREST ECONOMY",
+          "status": "implemented",
+          "docEvidence": "FOREST_INDUSTRY_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-industries.test.js",
+            "tests/browser/forest-industry-ui.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-industries.js#FOREST_INDUSTRY_REQUIREMENTS (catalog)",
+            "js/world/forest-industries.js#FOREST_WORKS_MODES (workshops)",
+            "js/systems/forest-industries.js#runForestWorks (simulation)",
+            "js/presentation/forest-atlas-panel.js#renderForestAtlasPanel (ui)",
+            "js/presentation/management-ui.js#forestWorksStatus (ui)",
+            "js/core/save-runtime.js#createSaveSnapshot (persistence)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.155",
+          "label": "Resin as a raw material for pitch, glue and medicine",
+          "key": 155,
+          "group": "FOREST ECONOMY",
+          "status": "implemented",
+          "docEvidence": "FOREST_INDUSTRY_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-industries.test.js",
+            "tests/browser/forest-industry-ui.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-industries.js#FOREST_INDUSTRY_REQUIREMENTS (catalog)",
+            "js/world/forest-industries.js#FOREST_WORKS_MODES (workshops)",
+            "js/systems/forest-industries.js#runForestWorks (simulation)",
+            "js/presentation/forest-atlas-panel.js#renderForestAtlasPanel (ui)",
+            "js/presentation/management-ui.js#forestWorksStatus (ui)",
+            "js/core/save-runtime.js#createSaveSnapshot (persistence)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.156",
+          "label": "Pitch and tar for shipbuilding and sieges",
+          "key": 156,
+          "group": "FOREST ECONOMY",
+          "status": "implemented",
+          "docEvidence": "FOREST_INDUSTRY_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-industries.test.js",
+            "tests/browser/forest-industry-ui.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-industries.js#FOREST_INDUSTRY_REQUIREMENTS (catalog)",
+            "js/world/forest-industries.js#FOREST_WORKS_MODES (workshops)",
+            "js/systems/forest-industries.js#runForestWorks (simulation)",
+            "js/presentation/forest-atlas-panel.js#renderForestAtlasPanel (ui)",
+            "js/presentation/management-ui.js#forestWorksStatus (ui)",
+            "js/core/save-runtime.js#createSaveSnapshot (persistence)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.157",
+          "label": "Cork from Mediterranean cork oaks",
+          "key": 157,
+          "group": "FOREST ECONOMY",
+          "status": "implemented",
+          "docEvidence": "FOREST_INDUSTRY_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-industries.test.js",
+            "tests/browser/forest-industry-ui.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-industries.js#FOREST_INDUSTRY_REQUIREMENTS (catalog)",
+            "js/world/forest-industries.js#FOREST_WORKS_MODES (workshops)",
+            "js/systems/forest-industries.js#runForestWorks (simulation)",
+            "js/presentation/forest-atlas-panel.js#renderForestAtlasPanel (ui)",
+            "js/presentation/management-ui.js#forestWorksStatus (ui)",
+            "js/core/save-runtime.js#createSaveSnapshot (persistence)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.158",
+          "label": "Tannins for tanneries and dyeworks",
+          "key": 158,
+          "group": "FOREST ECONOMY",
+          "status": "implemented",
+          "docEvidence": "FOREST_INDUSTRY_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-industries.test.js",
+            "tests/browser/forest-industry-ui.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-industries.js#FOREST_INDUSTRY_REQUIREMENTS (catalog)",
+            "js/world/forest-industries.js#FOREST_WORKS_MODES (workshops)",
+            "js/systems/forest-industries.js#runForestWorks (simulation)",
+            "js/presentation/forest-atlas-panel.js#renderForestAtlasPanel (ui)",
+            "js/presentation/management-ui.js#forestWorksStatus (ui)",
+            "js/core/save-runtime.js#createSaveSnapshot (persistence)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.159",
+          "label": "Natural dyes from bark, leaves and berries",
+          "key": 159,
+          "group": "FOREST ECONOMY",
+          "status": "implemented",
+          "docEvidence": "FOREST_INDUSTRY_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-industries.test.js",
+            "tests/browser/forest-industry-ui.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-industries.js#FOREST_INDUSTRY_REQUIREMENTS (catalog)",
+            "js/world/forest-industries.js#FOREST_WORKS_MODES (workshops)",
+            "js/systems/forest-industries.js#runForestWorks (simulation)",
+            "js/presentation/forest-atlas-panel.js#renderForestAtlasPanel (ui)",
+            "js/presentation/management-ui.js#forestWorksStatus (ui)",
+            "js/core/save-runtime.js#createSaveSnapshot (persistence)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.160",
+          "label": "Medicinal barks, resins and herbs",
+          "key": 160,
+          "group": "FOREST ECONOMY",
+          "status": "implemented",
+          "docEvidence": "FOREST_INDUSTRY_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-industries.test.js",
+            "tests/browser/forest-industry-ui.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-industries.js#FOREST_INDUSTRY_REQUIREMENTS (catalog)",
+            "js/world/forest-industries.js#FOREST_WORKS_MODES (workshops)",
+            "js/systems/forest-industries.js#runForestWorks (simulation)",
+            "js/presentation/forest-atlas-panel.js#renderForestAtlasPanel (ui)",
+            "js/presentation/management-ui.js#forestWorksStatus (ui)",
+            "js/core/save-runtime.js#createSaveSnapshot (persistence)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.161",
+          "label": "Regional fruits and berries as food",
+          "key": 161,
+          "group": "FOREST ECONOMY",
+          "status": "implemented",
+          "docEvidence": "FOREST_INDUSTRY_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-industries.test.js",
+            "tests/browser/forest-industry-ui.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-industries.js#FOREST_INDUSTRY_REQUIREMENTS (catalog)",
+            "js/world/forest-industries.js#FOREST_WORKS_MODES (workshops)",
+            "js/systems/forest-industries.js#runForestWorks (simulation)",
+            "js/presentation/forest-atlas-panel.js#renderForestAtlasPanel (ui)",
+            "js/presentation/management-ui.js#forestWorksStatus (ui)",
+            "js/core/save-runtime.js#createSaveSnapshot (persistence)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.162",
+          "label": "Nuts and seeds as durable stores",
+          "key": 162,
+          "group": "FOREST ECONOMY",
+          "status": "implemented",
+          "docEvidence": "FOREST_INDUSTRY_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-industries.test.js",
+            "tests/browser/forest-industry-ui.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-industries.js#FOREST_INDUSTRY_REQUIREMENTS (catalog)",
+            "js/world/forest-industries.js#FOREST_WORKS_MODES (workshops)",
+            "js/systems/forest-industries.js#runForestWorks (simulation)",
+            "js/presentation/forest-atlas-panel.js#renderForestAtlasPanel (ui)",
+            "js/presentation/management-ui.js#forestWorksStatus (ui)",
+            "js/core/save-runtime.js#createSaveSnapshot (persistence)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.163",
+          "label": "Mushrooms as seasonal food and trade",
+          "key": 163,
+          "group": "FOREST ECONOMY",
+          "status": "implemented",
+          "docEvidence": "FOREST_INDUSTRY_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-industries.test.js",
+            "tests/browser/forest-industry-ui.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-industries.js#FOREST_INDUSTRY_REQUIREMENTS (catalog)",
+            "js/world/forest-industries.js#FOREST_WORKS_MODES (workshops)",
+            "js/systems/forest-industries.js#runForestWorks (simulation)",
+            "js/presentation/forest-atlas-panel.js#renderForestAtlasPanel (ui)",
+            "js/presentation/management-ui.js#forestWorksStatus (ui)",
+            "js/core/save-runtime.js#createSaveSnapshot (persistence)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.164",
+          "label": "Hunting regional wildlife",
+          "key": 164,
+          "group": "FOREST ECONOMY",
+          "status": "implemented",
+          "docEvidence": "FOREST_INDUSTRY_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-industries.test.js",
+            "tests/browser/forest-industry-ui.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-industries.js#FOREST_INDUSTRY_REQUIREMENTS (catalog)",
+            "js/world/forest-industries.js#FOREST_WORKS_MODES (workshops)",
+            "js/systems/forest-industries.js#runForestWorks (simulation)",
+            "js/presentation/forest-atlas-panel.js#renderForestAtlasPanel (ui)",
+            "js/presentation/management-ui.js#forestWorksStatus (ui)",
+            "js/core/save-runtime.js#createSaveSnapshot (persistence)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.165",
+          "label": "Honey and wax from woodland beekeeping",
+          "key": 165,
+          "group": "FOREST ECONOMY",
+          "status": "implemented",
+          "docEvidence": "FOREST_INDUSTRY_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-industries.test.js",
+            "tests/browser/forest-industry-ui.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-industries.js#FOREST_INDUSTRY_REQUIREMENTS (catalog)",
+            "js/world/forest-industries.js#FOREST_WORKS_MODES (workshops)",
+            "js/systems/forest-industries.js#runForestWorks (simulation)",
+            "js/presentation/forest-atlas-panel.js#renderForestAtlasPanel (ui)",
+            "js/presentation/management-ui.js#forestWorksStatus (ui)",
+            "js/core/save-runtime.js#createSaveSnapshot (persistence)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.166",
+          "label": "Fishing in forest streams and floodplains",
+          "key": 166,
+          "group": "FOREST ECONOMY",
+          "status": "implemented",
+          "docEvidence": "FOREST_INDUSTRY_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-industries.test.js",
+            "tests/browser/forest-industry-ui.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-industries.js#FOREST_INDUSTRY_REQUIREMENTS (catalog)",
+            "js/world/forest-industries.js#FOREST_WORKS_MODES (workshops)",
+            "js/systems/forest-industries.js#runForestWorks (simulation)",
+            "js/presentation/forest-atlas-panel.js#renderForestAtlasPanel (ui)",
+            "js/presentation/management-ui.js#forestWorksStatus (ui)",
+            "js/core/save-runtime.js#createSaveSnapshot (persistence)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.167",
+          "label": "Wood pasture for cattle, sheep and goats",
+          "key": 167,
+          "group": "FOREST ECONOMY",
+          "status": "implemented",
+          "docEvidence": "FOREST_INDUSTRY_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-industries.test.js",
+            "tests/browser/forest-industry-ui.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-industries.js#FOREST_INDUSTRY_REQUIREMENTS (catalog)",
+            "js/world/forest-industries.js#FOREST_WORKS_MODES (workshops)",
+            "js/systems/forest-industries.js#runForestWorks (simulation)",
+            "js/presentation/forest-atlas-panel.js#renderForestAtlasPanel (ui)",
+            "js/presentation/management-ui.js#forestWorksStatus (ui)",
+            "js/core/save-runtime.js#createSaveSnapshot (persistence)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.168",
+          "label": "Charcoal burning for metallurgy",
+          "key": 168,
+          "group": "FOREST ECONOMY",
+          "status": "implemented",
+          "docEvidence": "FOREST_INDUSTRY_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-industries.test.js",
+            "tests/browser/forest-industry-ui.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-industries.js#FOREST_INDUSTRY_REQUIREMENTS (catalog)",
+            "js/world/forest-industries.js#FOREST_WORKS_MODES (workshops)",
+            "js/systems/forest-industries.js#runForestWorks (simulation)",
+            "js/presentation/forest-atlas-panel.js#renderForestAtlasPanel (ui)",
+            "js/presentation/management-ui.js#forestWorksStatus (ui)",
+            "js/core/save-runtime.js#createSaveSnapshot (persistence)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.169",
+          "label": "Tar ovens for pitch and shipbuilding",
+          "key": 169,
+          "group": "FOREST ECONOMY",
+          "status": "implemented",
+          "docEvidence": "FOREST_INDUSTRY_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-industries.test.js",
+            "tests/browser/forest-industry-ui.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-industries.js#FOREST_INDUSTRY_REQUIREMENTS (catalog)",
+            "js/world/forest-industries.js#FOREST_WORKS_MODES (workshops)",
+            "js/systems/forest-industries.js#runForestWorks (simulation)",
+            "js/presentation/forest-atlas-panel.js#renderForestAtlasPanel (ui)",
+            "js/presentation/management-ui.js#forestWorksStatus (ui)",
+            "js/core/save-runtime.js#createSaveSnapshot (persistence)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.170",
+          "label": "Potash from wood ash for glass and soap",
+          "key": 170,
+          "group": "FOREST ECONOMY",
+          "status": "implemented",
+          "docEvidence": "FOREST_INDUSTRY_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-industries.test.js",
+            "tests/browser/forest-industry-ui.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-industries.js#FOREST_INDUSTRY_REQUIREMENTS (catalog)",
+            "js/world/forest-industries.js#FOREST_WORKS_MODES (workshops)",
+            "js/systems/forest-industries.js#runForestWorks (simulation)",
+            "js/presentation/forest-atlas-panel.js#renderForestAtlasPanel (ui)",
+            "js/presentation/management-ui.js#forestWorksStatus (ui)",
+            "js/core/save-runtime.js#createSaveSnapshot (persistence)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.171",
+          "label": "Separation of construction timber and firewood",
+          "key": 171,
+          "group": "FOREST ECONOMY",
+          "status": "implemented",
+          "docEvidence": "FOREST_INDUSTRY_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-industries.test.js",
+            "tests/browser/forest-industry-ui.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-industries.js#FOREST_INDUSTRY_REQUIREMENTS (catalog)",
+            "js/world/forest-industries.js#FOREST_WORKS_MODES (workshops)",
+            "js/systems/forest-industries.js#runForestWorks (simulation)",
+            "js/presentation/forest-atlas-panel.js#renderForestAtlasPanel (ui)",
+            "js/presentation/management-ui.js#forestWorksStatus (ui)",
+            "js/core/save-runtime.js#createSaveSnapshot (persistence)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.172",
+          "label": "Firewood demand from households and workshops",
+          "key": 172,
+          "group": "FOREST ECONOMY",
+          "status": "implemented",
+          "docEvidence": "FOREST_INDUSTRY_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-industries.test.js",
+            "tests/browser/forest-industry-ui.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-industries.js#FOREST_INDUSTRY_REQUIREMENTS (catalog)",
+            "js/world/forest-industries.js#FOREST_WORKS_MODES (workshops)",
+            "js/systems/forest-industries.js#runForestWorks (simulation)",
+            "js/presentation/forest-atlas-panel.js#renderForestAtlasPanel (ui)",
+            "js/presentation/management-ui.js#forestWorksStatus (ui)",
+            "js/core/save-runtime.js#createSaveSnapshot (persistence)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.173",
+          "label": "Shipbuilding timber from long, straight stems",
+          "key": 173,
+          "group": "FOREST ECONOMY",
+          "status": "implemented",
+          "docEvidence": "FOREST_INDUSTRY_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-industries.test.js",
+            "tests/browser/forest-industry-ui.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-industries.js#FOREST_INDUSTRY_REQUIREMENTS (catalog)",
+            "js/world/forest-industries.js#FOREST_WORKS_MODES (workshops)",
+            "js/systems/forest-industries.js#runForestWorks (simulation)",
+            "js/presentation/forest-atlas-panel.js#renderForestAtlasPanel (ui)",
+            "js/presentation/management-ui.js#forestWorksStatus (ui)",
+            "js/core/save-runtime.js#createSaveSnapshot (persistence)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.174",
+          "label": "Bow wood from elastic timbers",
+          "key": 174,
+          "group": "FOREST ECONOMY",
+          "status": "implemented",
+          "docEvidence": "FOREST_INDUSTRY_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-industries.test.js",
+            "tests/browser/forest-industry-ui.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-industries.js#FOREST_INDUSTRY_REQUIREMENTS (catalog)",
+            "js/world/forest-industries.js#FOREST_WORKS_MODES (workshops)",
+            "js/systems/forest-industries.js#runForestWorks (simulation)",
+            "js/presentation/forest-atlas-panel.js#renderForestAtlasPanel (ui)",
+            "js/presentation/management-ui.js#forestWorksStatus (ui)",
+            "js/core/save-runtime.js#createSaveSnapshot (persistence)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.175",
+          "label": "Paper from fibres and bark",
+          "key": 175,
+          "group": "FOREST ECONOMY",
+          "status": "implemented",
+          "docEvidence": "FOREST_INDUSTRY_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-industries.test.js",
+            "tests/browser/forest-industry-ui.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-industries.js#FOREST_INDUSTRY_REQUIREMENTS (catalog)",
+            "js/world/forest-industries.js#FOREST_WORKS_MODES (workshops)",
+            "js/systems/forest-industries.js#runForestWorks (simulation)",
+            "js/presentation/forest-atlas-panel.js#renderForestAtlasPanel (ui)",
+            "js/presentation/management-ui.js#forestWorksStatus (ui)",
+            "js/core/save-runtime.js#createSaveSnapshot (persistence)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.176",
+          "label": "Silk from mulberry woods",
+          "key": 176,
+          "group": "FOREST ECONOMY",
+          "status": "implemented",
+          "docEvidence": "FOREST_INDUSTRY_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-industries.test.js",
+            "tests/browser/forest-industry-ui.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-industries.js#FOREST_INDUSTRY_REQUIREMENTS (catalog)",
+            "js/world/forest-industries.js#FOREST_WORKS_MODES (workshops)",
+            "js/systems/forest-industries.js#runForestWorks (simulation)",
+            "js/presentation/forest-atlas-panel.js#renderForestAtlasPanel (ui)",
+            "js/presentation/management-ui.js#forestWorksStatus (ui)",
+            "js/core/save-runtime.js#createSaveSnapshot (persistence)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.177",
+          "label": "Rubber from tropical tree species",
+          "key": 177,
+          "group": "FOREST ECONOMY",
+          "status": "implemented",
+          "docEvidence": "FOREST_INDUSTRY_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-industries.test.js",
+            "tests/browser/forest-industry-ui.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-industries.js#FOREST_INDUSTRY_REQUIREMENTS (catalog)",
+            "js/world/forest-industries.js#FOREST_WORKS_MODES (workshops)",
+            "js/systems/forest-industries.js#runForestWorks (simulation)",
+            "js/presentation/forest-atlas-panel.js#renderForestAtlasPanel (ui)",
+            "js/presentation/management-ui.js#forestWorksStatus (ui)",
+            "js/core/save-runtime.js#createSaveSnapshot (persistence)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.178",
+          "label": "Bamboo fibres for light construction",
+          "key": 178,
+          "group": "FOREST ECONOMY",
+          "status": "implemented",
+          "docEvidence": "FOREST_INDUSTRY_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-industries.test.js",
+            "tests/browser/forest-industry-ui.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-industries.js#FOREST_INDUSTRY_REQUIREMENTS (catalog)",
+            "js/world/forest-industries.js#FOREST_WORKS_MODES (workshops)",
+            "js/systems/forest-industries.js#runForestWorks (simulation)",
+            "js/presentation/forest-atlas-panel.js#renderForestAtlasPanel (ui)",
+            "js/presentation/management-ui.js#forestWorksStatus (ui)",
+            "js/core/save-runtime.js#createSaveSnapshot (persistence)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.179",
+          "label": "Palm oil and palm fronds as regional goods",
+          "key": 179,
+          "group": "FOREST ECONOMY",
+          "status": "implemented",
+          "docEvidence": "FOREST_INDUSTRY_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-industries.test.js",
+            "tests/browser/forest-industry-ui.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-industries.js#FOREST_INDUSTRY_REQUIREMENTS (catalog)",
+            "js/world/forest-industries.js#FOREST_WORKS_MODES (workshops)",
+            "js/systems/forest-industries.js#runForestWorks (simulation)",
+            "js/presentation/forest-atlas-panel.js#renderForestAtlasPanel (ui)",
+            "js/presentation/management-ui.js#forestWorksStatus (ui)",
+            "js/core/save-runtime.js#createSaveSnapshot (persistence)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.180",
+          "label": "Spices from forest plants for long-distance trade",
+          "key": 180,
+          "group": "FOREST ECONOMY",
+          "status": "implemented",
+          "docEvidence": "FOREST_INDUSTRY_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-industries.test.js",
+            "tests/browser/forest-industry-ui.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-industries.js#FOREST_INDUSTRY_REQUIREMENTS (catalog)",
+            "js/world/forest-industries.js#FOREST_WORKS_MODES (workshops)",
+            "js/systems/forest-industries.js#runForestWorks (simulation)",
+            "js/presentation/forest-atlas-panel.js#renderForestAtlasPanel (ui)",
+            "js/presentation/management-ui.js#forestWorksStatus (ui)",
+            "js/core/save-runtime.js#createSaveSnapshot (persistence)"
+          ],
+          "probe": null
+        }
+      ],
+      "consumers": [
+        {
+          "file": "js/world/forest-industries.js",
+          "symbol": "FOREST_INDUSTRY_REQUIREMENTS",
+          "role": "catalog",
+          "valid": true
+        },
+        {
+          "file": "js/world/forest-industries.js",
+          "symbol": "FOREST_WORKS_MODES",
+          "role": "workshops",
+          "valid": true
+        },
+        {
+          "file": "js/systems/forest-industries.js",
+          "symbol": "runForestWorks",
+          "role": "simulation",
+          "valid": true
+        },
+        {
+          "file": "js/presentation/forest-atlas-panel.js",
+          "symbol": "renderForestAtlasPanel",
+          "role": "ui",
+          "valid": true
+        },
+        {
+          "file": "js/presentation/management-ui.js",
+          "symbol": "forestWorksStatus",
+          "role": "ui",
+          "valid": true
+        },
+        {
+          "file": "js/core/save-runtime.js",
+          "symbol": "createSaveSnapshot",
+          "role": "persistence",
+          "valid": true
+        }
+      ],
+      "tests": [
+        {
+          "file": "tests/systems/forest-industries.test.js",
+          "valid": true
+        },
+        {
+          "file": "tests/browser/forest-industry-ui.mjs",
+          "valid": true
+        }
+      ],
+      "source": "js/world/forest-industries.js",
+      "note": "30 player-facing forest-economy requirements from FOREST_INDUSTRY_REQUIREMENTS; each names its live consumer in the atlas.",
       "probeFunction": null,
       "probeClimate": "temperate",
       "probeExtra": {},

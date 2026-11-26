@@ -123,9 +123,16 @@ export function forestGoodMarketPrice(id) {
 }
 
 /** What the player can do with a forest good today. */
+const INDUSTRY_RAW_GOODS = new Set([
+    "cork-bark", "mulberry-leaf", "resin", "bark", "herbs", "berries", "lichen",
+    "natural-rubber", "bamboo", "palm-oil", "palm-fibre", "black-pepper", "cinnamon-bark",
+    "river-fish", "mushrooms",
+]);
+
 export function forestGoodUseLabel(id) {
     const good = FOREST_GOODS[id];
     if (!good) return "";
+    if (INDUSTRY_RAW_GOODS.has(id)) return "forest works / market";
     const channel = forestDeliveryChannel(id);
     if (channel === "wood") return id === "firewood" || id === "charcoal" ? "fuel / hearths" : "logs → planks";
     if (channel === "food") return "food / market";

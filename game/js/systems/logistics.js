@@ -752,6 +752,7 @@ export function requestSupply(building, good, quantity) {
     // alternative input. Every other building still asks only for its declared
     // recipe goods.
     const accepts = Boolean(recipe && (recipe.input?.[good]
+        || recipe.acceptedInputs?.includes(good)
         || (recipe.regionalTimber && REGIONAL_TIMBER_SET.has(good))));
     if (!building || building.dead || !accepts) return null;
     ensureInventory(building);

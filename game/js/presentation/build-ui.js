@@ -73,7 +73,7 @@ const BUILDING_SYMBOLS={
     65:"windmill",66:"quarry",67:"lumber-yard",68:"temple",69:"tavern",
     70:"temple",71:"keep",72:"storehouse",
     73:"keep",74:"temple",75:"temple",76:"tavern",77:"keep",78:"watchtower",
-    79:"windmill",80:"temple"
+    79:"windmill",80:"temple",89:"lumber-yard"
 };
 function formatCost(cost){
     return Object.entries(cost||{}).filter(([,amount])=>amount>0).map(([resource,amount])=>amount+" "+resource).join(" · ")||"No material cost";
@@ -93,6 +93,7 @@ function showCancel(show){
 function closeModal(){document.getElementById("build-modal")?.classList.add("hidden");}
 function buildingDetail(type){
     if(isHousingType(type))return HOUSING_TIERS[type].capacity+" residents · comfort "+Math.round(HOUSING_TIERS[type].comfort*100)+"% · warmth "+Math.round(HOUSING_TIERS[type].warmth*100)+"%";
+    if(type===89)return "2 workers · 17 regional industries · resin, cork, tannin, charcoal, furniture, paper, silk and more · must stand near a working forest";
     const recipe=RECIPES[type];
     if(recipe){
         const input=recipe.input?Object.entries(recipe.input).map(([good,amount])=>amount+" "+good).join(" + ")+" → ":"";

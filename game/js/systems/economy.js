@@ -57,7 +57,8 @@ export const BUILDING_WORKFORCE = Object.freeze({
     [TYPE.GUILDHALL]: 2,
     [TYPE.WATCHHOUSE]: 1,
     [TYPE.SMITHY]: 1,
-    [TYPE.SCRIPTORIUM]: 1
+    [TYPE.SCRIPTORIUM]: 1,
+    [TYPE.FOREST_WORKS]: 2
 });
 
 const clampNonNegative = value => Math.max(0, Number.isFinite(value) ? value : 0);

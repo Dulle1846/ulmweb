@@ -89,9 +89,9 @@ export function updateMinimap() {
     state.entities.forEach(e => {
         if (e.dead) return;
         let color = '#eab308';
-        if (e.isEnemy()) color = '#e11d48';
+        if (typeof e.isEnemy === 'function' && e.isEnemy()) color = '#e11d48';
         if (e.type === TYPE.KEEP) color = '#f2c744';
-        if (e.isBuilding() && e.type !== TYPE.KEEP) color = '#b8a37a';
+        if (typeof e.isBuilding === 'function' && e.isBuilding() && e.type !== TYPE.KEEP) color = '#b8a37a';
 
         mctx.fillStyle = color;
         mctx.fillRect(

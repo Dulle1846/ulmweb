@@ -14,6 +14,7 @@ import { updateNobleHosts } from "../systems/noble-host.js";
 import { updateEspionage } from "../systems/espionage.js";
 import { updateCivic } from "../systems/civic.js";
 import { updateEconomy } from "../systems/economy.js";
+import { updateForestIndustry } from "../systems/forest-industries.js";
 import { updateEdicts } from "../systems/edicts.js";
 import { updateHealth } from "../systems/health.js";
 import { updateMilitary } from "../systems/military.js";
@@ -406,6 +407,10 @@ function finishDailyLand() {
 
 function finishDailyEconomy() {
     updateBuildingIncome();
+    // Regional forest workshops run at their own bounded cadence. The call is
+    // a tick guard on every other day and at most eight batches per pass, so it
+    // never competes with the ordinary producer settlement.
+    updateForestIndustry();
     updateCraftProduction(annualSlicingEnabled ? { supply: 5, craft: 1 } : 0);
     updateLogistics();
     updateConstruction();

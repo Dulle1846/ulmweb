@@ -87,6 +87,7 @@ export const JOB_MAP = [
     { building: TYPE.BREWERY,  job: "brewer" },
     { building: TYPE.SMITHY,   job: "smith" },
     { building: TYPE.SCRIPTORIUM, job: "scribe" },
+    { building: TYPE.FOREST_WORKS, job: "woodwright" },
 ];
 
 // ═══════════════════════════════════════════════════════════════

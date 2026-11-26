@@ -162,6 +162,7 @@ export const BUILDING_SIZE = {
     86: { w: 2, h: 1.8 },   // QUARANTINE HOUSE
     87: { w: 2.4, h: 2 },   // GRANARY
     88: { w: 1.4, h: 1.4 }, // WARDING STONE
+    89: { w: 2.4, h: 2.1 }, // FOREST WORKS — yard, kiln and benches
 };
 
 // Gebäude-Dachfarben (für Level-1-Icons und Level-2-Top-Down)
@@ -210,6 +211,7 @@ export const BUILDING_ROOF_COLOR = {
     86: "#7c6a67",  // QUARANTINE — clay and lime
     87: "#a0834f",  // GRANARY — dry timber
     88: "#75628c",  // WARDING STONE — ward light
+    89: "#5f5a39",  // FOREST WORKS — tar, sawdust and bark
 };
 
 // Gebäude-Icons für Level 1
@@ -225,7 +227,7 @@ export const BUILDING_ICON = {
     73: "🏛️", 74: "📚", 75: "🛁", 76: "🍺", 77: "⚖️", 78: "🛡️",
     79: "⚒️", 80: "✒️",
     81: "🌊", 82: "⛰️", 83: "🕳️", 84: "🔥",
-    85: "🏠", 86: "⛺", 87: "🌾", 88: "🔮",
+    85: "🏠", 86: "⛺", 87: "🌾", 88: "🔮", 89: "🪵",
 };
 
 // ═══════════════════════════════════════════════════════════════

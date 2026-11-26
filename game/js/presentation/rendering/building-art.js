@@ -56,6 +56,7 @@ export const REBUILD_COST = {
     [TYPE.QUARANTINE]: { wood: 24, stone: 20, gold: 8 },
     [TYPE.GRANARY]: { wood: 30, stone: 20, gold: 4 },
     [TYPE.WARD]: { stone: 24, gold: 14 },
+    [TYPE.FOREST_WORKS]: { wood: 38, stone: 18, gold: 10 },
 };
 
 export const INTERIOR_ITEM_IDS = ['bed', 'table', 'chair', 'shelf', 'hearth', 'rug', 'statue', 'candle'];
@@ -105,6 +106,7 @@ const DEFAULT_INTERIOR = {
     [TYPE.WATCHHOUSE]: { bed: 2, table: 1, chair: 2, shelf: 2, hearth: 1, rug: 0, statue: 0, candle: 2 },
     [TYPE.SMITHY]: { bed: 0, table: 2, chair: 1, shelf: 3, hearth: 2, rug: 0, statue: 0, candle: 2 },
     [TYPE.SCRIPTORIUM]: { bed: 0, table: 4, chair: 4, shelf: 6, hearth: 1, rug: 1, statue: 0, candle: 3 },
+    [TYPE.FOREST_WORKS]: { bed: 0, table: 2, chair: 2, shelf: 5, hearth: 2, rug: 0, statue: 0, candle: 2 },
 };
 
 export function defaultInterior(type) {
@@ -169,6 +171,7 @@ const TYPE_NAMES = {
     [TYPE.QUARANTINE]: 'QUARANTINE HOUSE',
     [TYPE.GRANARY]: 'GRANARY',
     [TYPE.WARD]: 'WARDING STONE',
+    [TYPE.FOREST_WORKS]: 'FOREST WORKS',
 };
 
 const ROOF_STYLES = {
@@ -216,6 +219,7 @@ const ROOF_STYLES = {
     [TYPE.QUARANTINE]: { roof: '#7c6a67', wall: '#e0d3c2', trim: '#9a6d7e' },
     [TYPE.GRANARY]:  { roof: '#a0834f', wall: '#d8c59a', trim: '#6f5732' },
     [TYPE.WARD]:     { roof: '#75628c', wall: '#c8bed4', trim: '#b08cc4' },
+    [TYPE.FOREST_WORKS]: { roof: '#5f5a39', wall: '#c2ad83', trim: '#6f4e2f' },
 };
 
 function sizeOf(e) {
@@ -420,6 +424,7 @@ function drawRooftopPlan(ctx, box) {
         case TYPE.WATCHHOUSE: drawTower(ctx, box); break;
         case TYPE.SMITHY: drawSmithy(ctx, box); break;
         case TYPE.SCRIPTORIUM: drawScriptorium(ctx, box); break;
+        case TYPE.FOREST_WORKS: drawSawmill(ctx, box); break;
         default: drawCottage(ctx, box); break;
     }
     drawDoor(ctx, box);

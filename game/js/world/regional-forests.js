@@ -35,6 +35,10 @@ export const REGIONAL_GOODS = Object.freeze({
     crab: Object.freeze({ id: 'crab', label: 'Crabs', category: 'gather' }),
     'serpentine-stone': Object.freeze({ id: 'serpentine-stone', label: 'Serpentine Stone', category: 'gather' }),
     'dune-grass': Object.freeze({ id: 'dune-grass', label: 'Dune Grass', category: 'gather' }),
+    // 1.2.23.1.157 and .176: two regional raw materials whose only honest
+    // source is the living bark/leaf crop, never a generic forest roll.
+    'cork-bark': Object.freeze({ id: 'cork-bark', label: 'Cork bark', category: 'gather' }),
+    'mulberry-leaf': Object.freeze({ id: 'mulberry-leaf', label: 'Mulberry leaf', category: 'gather' }),
 });
 
 export const REGIONAL_SPECIES = Object.freeze({
@@ -104,7 +108,7 @@ export const REGIONAL_SPECIES = Object.freeze({
         summer: ['#3f6138', '#617e4c'], autumn: ['#4a6136', '#6e7c49'],
         form: 'spreading', leafShape: 'oval', height: 0.86, crown: 1.06, trunk: 1.18, lobes: 3,
         timber: 0.9, firewood: 1.04, charcoal: 0.96, wood: 'cork-timber',
-        goods: ['acorns', 'bark', 'honey', 'herbs'], understory: ['herb', 'grass'],
+        goods: ['acorns', 'bark', 'cork-bark', 'honey', 'herbs'], understory: ['herb', 'grass'],
     }),
     'holm-oak': Object.freeze({
         id: 'holm-oak', label: 'Holm Oak', latin: 'Quercus ilex',
@@ -256,7 +260,7 @@ export const REGIONAL_FOREST_TYPES = Object.freeze([
         temp: [0.60, 0.82], moisture: [0.20, 0.54], height: [0, 0.66], priority: 7,
         timber: 0.84, effects: { timber: 0.84, regrowth: 0.72, fire: 0.16, fauna: 0.94, forage: 1.08, work: 0.96 },
         species: { 'cork-oak': 0.3, 'holm-oak': 0.28, 'aleppo-pine': 0.18, juniper: 0.1, oak: 0.14 },
-        goods: ['acorns', 'bark', 'pine-cones', 'resin', 'honey', 'herbs', 'timber', 'firewood'],
+        goods: ['acorns', 'bark', 'cork-bark', 'mulberry-leaf', 'pine-cones', 'resin', 'honey', 'herbs', 'timber', 'firewood'],
         fauna: ['boar', 'roe-deer', 'hare', 'fox', 'raptor', 'butterfly', 'bee'],
         render: { canopy: 0.9, height: 0.86, trunk: 1.04, mist: 0.5, palette: ['#7a6546', '#93764e', '#a88b5e', '#66543d', '#b59b6e'], silhouette: 'gnarled' },
         probe: { climate: 'coastal', temperature: 0.70, moisture: 0.36, height: 0.40, baseFormation: 'oakwood' },
@@ -269,7 +273,7 @@ export const REGIONAL_FOREST_TYPES = Object.freeze([
         temp: [0.44, 0.66], moisture: [0.46, 0.76], height: [0, 0.63], priority: 2,
         timber: 1.0, effects: { timber: 1.0, regrowth: 1.0, fire: 0.0, fauna: 1.05, forage: 1.08, work: 1.0 },
         species: { oak: 0.26, beech: 0.22, ash: 0.12, maple: 0.12, linden: 0.12, elm: 0.08, hornbeam: 0.08 },
-        goods: ['acorns', 'beechnuts', 'mushrooms', 'honey', 'herbs', 'game', 'timber', 'firewood'],
+        goods: ['acorns', 'beechnuts', 'mushrooms', 'mulberry-leaf', 'honey', 'herbs', 'game', 'timber', 'firewood'],
         fauna: ['deer', 'roe-deer', 'boar', 'fox', 'squirrel', 'owl', 'woodpecker', 'songbird', 'butterfly'],
         render: { canopy: 1.0, height: 1.0, trunk: 1.0, mist: 0.8, palette: ['#4d6338', '#6f763d', '#57452e', '#7a5b36', '#647b40'], silhouette: 'dome' },
         probe: { climate: 'temperate', temperature: 0.55, moisture: 0.60, height: 0.35, baseFormation: 'oakwood' },

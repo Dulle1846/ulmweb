@@ -231,7 +231,7 @@ button:focus-visible,[role=button]:focus-visible,input:focus-visible,select:focu
 .forester-stewardship-facts strong{color:#e9dcc0;font-size:10px;font-weight:600;letter-spacing:0}
 .forester-stewardship-facts>span:last-child strong{color:#e4c884}
 .building-detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
-.building-detail-grid>span{display:grid;gap:4px;min-width:0;padding:7px;border:1px solid #b99a5930;border-radius:2px;color:#a89572;font-size:9px}
+.building-detail-grid>span{display:grid;align-content:start;gap:4px;min-width:0;padding:7px;border:1px solid #b99a5930;border-radius:2px;color:#a89572;font-size:9px}
 .building-detail-grid strong{overflow-wrap:anywhere;color:#ead9b5;font-size:10px;font-weight:600}
 .building-detail-grid>span:nth-child(8) strong,.building-detail-grid>span:nth-child(9) strong{color:#d9c49a;line-height:1.45}
 .logistics-overview{display:grid;gap:5px;margin:8px 0 10px}
@@ -245,7 +245,7 @@ button:focus-visible,[role=button]:focus-visible,input:focus-visible,select:focu
 .logistics-movement[data-movement-type="produced"] strong{color:#a9c08c}
 .logistics-movement[data-movement-type="consumed"] strong{color:#d0b184}
 .logistics-movement[data-movement-type="withdrawn"],.logistics-movement[data-movement-type="evacuated"] strong{color:#c9a5a0}
-.warehouse-profile-select{width:100%;min-height:28px;padding:3px 5px;border:1px solid var(--ui-line-strong);border-radius:3px;background:#171512;color:#f0e3c7;font:10px var(--ui-body-font)}
+.warehouse-profile-select,.forest-mode-select,.saw-profile-select{width:100%;min-height:28px;padding:3px 5px;border:1px solid var(--ui-line-strong);border-radius:3px;background:#171512;color:#f0e3c7;font:10px var(--ui-body-font)}
 /* Production-chain and warehouse-profile read models share the dark card
    language of the logistics archive. They are collapsed lists, so a long game
    cannot turn the Stores tab into an unbounded per-frame render. */

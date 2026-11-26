@@ -2,13 +2,13 @@
 export const SPEC_COVERAGE = Object.freeze({
   "version": 2,
   "generatedBy": "scripts/spec-audit.mjs",
-  "commit": "5c1f85f5d112ed35975c0682a77a26434e136c5b",
-  "sourceHash": "4cdb296010269b1842bf59e5c8c6179e288774d4d9fac3463699c5652c721d7b",
+  "commit": "393b021e2eb45f2f9d91756b1da2734db4297dd4",
+  "sourceHash": "d37342f96d7e96b33926c2638001b5f403906d494d36a8462831d78f135be37e",
   "totals": {
-    "total": 1649,
-    "implemented": 1649,
+    "total": 1679,
+    "implemented": 1679,
     "open": 0,
-    "sections": 39
+    "sections": 40
   },
   "nextSection": null,
   "collisions": [
@@ -549,6 +549,14 @@ export const SPEC_COVERAGE = Object.freeze({
       "implemented": 30,
       "open": 0,
       "source": "js/world/forest-model.js"
+    },
+    {
+      "id": "1.2.23.1.151-180",
+      "title": "Regional forest economy and workshops",
+      "total": 30,
+      "implemented": 30,
+      "open": 0,
+      "source": "js/world/forest-industries.js"
     },
     {
       "id": "2.1",

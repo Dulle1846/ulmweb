@@ -55,6 +55,10 @@ export const TYPE = {
     QUARANTINE: 86,
     GRANARY: 87,
     WARD: 88,
+    // 1.2.23.1.153–180. One new workshop type carries the regional forest
+    // industries; its selected mode is saved in the forest-industry ledger.
+    // Keeping a single id preserves every older building id and save.
+    FOREST_WORKS: 89,
 
     VILLAGER: 20,
     GUARD: 21,
@@ -118,6 +122,7 @@ const MAX_HP = {
     [TYPE.QUARANTINE]: 240,
     [TYPE.GRANARY]: 280,
     [TYPE.WARD]: 180,
+    [TYPE.FOREST_WORKS]: 240,
     [TYPE.VILLAGER]: 35,
     [TYPE.GUARD]:    160,
     [TYPE.ARCHER]:   95,
@@ -214,7 +219,7 @@ export class Entity {
     }
 
     isBuilding() {
-        return this.type < 20 || (this.type >= 60 && this.type < 90);
+        return this.type < 20 || (this.type >= 60 && this.type <= 89);
     }
 
     isUnit() {

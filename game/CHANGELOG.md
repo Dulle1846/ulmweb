@@ -1,13 +1,48 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.73.0`
-**Next development line:** `3.74.0-dev`
+**Current production version:** `3.74.0`
+**Next development line:** `3.75.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
 **Last repository verification:** 2026-11-26 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.74.0 — The regional forest economy
+
+The forest now has a second life after the felling. Eighteen regional timbers
+carry real working properties, eight quality classes grade every sawn batch,
+and the sawmill can be retooled for hardwood, softwood, ship timber or bow
+staves. A new Forest Works building turns the gathered wood, bark, resin,
+berries, herbs and tropical crops into twenty finished goods through seventeen
+site-specific workshop paths. Furniture takes its style from the wood around
+the workshop, so a Mediterranean cabinet and a boreal chest are different
+products with different premiums.
+
+- **One integrated chain, not a parallel economy.** Regional logs, sawmill
+  profiles, Forest Works batches, carrier hauls, warehouse stock, the goods
+  audit and the industry exchange all use the existing logistics ledger.
+  Standard inputs arrive by real carrier orders; resin, bark, cork and other
+  raw materials come from the live forest-gathering stock of the managed wood.
+- **Player choices that compound.** The saw profile decides which stems are
+  accepted and whether the batch yields extra planks, firewood, ship timber or
+  bow staves. The workshop mode decides which raw stock and site the building
+  needs, and output is capped by the shared reserve targets so no workshop can
+  flood the stores. Mode and saw profile survive save and load on the entity.
+- **A readable field guide.** The Forest Atlas now shows the 17-path workshop
+  catalogue, a real finished-goods exchange with direct sale from warehouses,
+  the quality and saw-profile strip and all 30 player-facing requirements from
+  1.2.23.1.151–180. Each entry names the live simulation consumer behind it.
+- **New forest goods.** Cork bark and mulberry leaf join the 262-good forest
+  ledger, with seasonal windows and regional stand gating. Charcoal, potash,
+  pitch, tar, tannin, dye, medicine, paper, silk, rubber, bamboo fibre, palm
+  oil, palm fronds, spices, cork, smoked fish, preserves, ship timber, bow
+  staves and furniture all reach the ordinary warehouse and market.
+- **New browser proof.** `npm run test:forest-industry-ui` builds a real Forest
+  Works, opens the atlas and field guide, sells warehouse charcoal, changes the
+  workshop mode and runs a real batch. The full suite remains green at 1,592
+  tests, and the generated spec audit now covers all 1,679 registered points.
 
 ## 3.73.0 — Production chains become readable
 

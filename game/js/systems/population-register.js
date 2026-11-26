@@ -56,7 +56,7 @@ const JOB_LABELS = Object.freeze({
     mason: "Mason", soldier: "Soldier", healer: "Healer", priest: "Cleric",
     scholar: "Scholar", merchant: "Merchant", innkeeper: "Innkeeper", courtier: "Courtier",
     clerk: "Clerk", teacher: "Teacher", bathkeeper: "Bathkeeper", guildmaster: "Guildmaster", watchman: "Watchman", brewer: "Brewer",
-    smith: "Smith", scribe: "Scribe",
+    smith: "Smith", scribe: "Scribe", woodwright: "Woodwright",
     wanderer: "Resident", resident: "Resident"
 });
 const BUILDING_PROFESSIONS = Object.freeze({
@@ -66,7 +66,8 @@ const BUILDING_PROFESSIONS = Object.freeze({
     [TYPE.MASON]: "Mason", [TYPE.FORESTER]: "Forester", [TYPE.CLINIC]: "Healer",
     [TYPE.TOWN_HALL]: "Clerk", [TYPE.SCHOOL]: "Teacher", [TYPE.BATHHOUSE]: "Bathkeeper",
     [TYPE.GUILDHALL]: "Guildmaster", [TYPE.WATCHHOUSE]: "Watchman", [TYPE.BREWERY]: "Brewer",
-    [TYPE.KEEP]: "Courtier", [TYPE.SMITHY]: "Smith", [TYPE.SCRIPTORIUM]: "Scribe"
+    [TYPE.KEEP]: "Courtier", [TYPE.SMITHY]: "Smith", [TYPE.SCRIPTORIUM]: "Scribe",
+    [TYPE.FOREST_WORKS]: "Woodwright"
 });
 const STATUS_LABELS = Object.freeze({
     royal: "Royal", soldier: "Soldier", healer: "Healer", clergy: "Clergy",

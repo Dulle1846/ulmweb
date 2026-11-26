@@ -112,6 +112,11 @@ function serializeEntity(entity, indexByEntity) {
         warehouse: entity.warehouse ? JSON.parse(JSON.stringify(entity.warehouse)) : null,
         field: entity.field ? { ...entity.field } : null,
         pannage: entity.pannage && typeof entity.pannage === "object" ? JSON.parse(JSON.stringify(entity.pannage)) : null,
+        // Forest-industry choices belong to the individual works. Keeping them
+        // on the entity means an old save gains defaults while a new save keeps
+        // each sawmill and workshop exactly as the player left it.
+        ...(entity.sawProfile ? { sawProfile: String(entity.sawProfile).slice(0, 24) } : {}),
+        ...(entity.forestMode ? { forestMode: String(entity.forestMode).slice(0, 32) } : {}),
         anim: entity.anim,
         facing: entity.facing,
         visualState: entity.visualState,
@@ -331,6 +336,8 @@ export function restoreSaveSnapshot(snapshot) {
             warehouse: dto.warehouse && typeof dto.warehouse === "object" ? JSON.parse(JSON.stringify(dto.warehouse)) : null,
             field: dto.field && typeof dto.field === "object" ? { ...dto.field } : null,
             pannage: dto.pannage && typeof dto.pannage === "object" ? JSON.parse(JSON.stringify(dto.pannage)) : null,
+            sawProfile: dto.sawProfile ? String(dto.sawProfile).slice(0, 24) : null,
+            forestMode: dto.forestMode ? String(dto.forestMode).slice(0, 32) : null,
             civicOrigin: dto.civicOrigin || null,
             visualState: dto.visualState,
             anchor: dto.anchor || { x: dto.x, y: dto.y },

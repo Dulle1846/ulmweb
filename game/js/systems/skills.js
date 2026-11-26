@@ -10,7 +10,7 @@ export const SKILL_LABELS = Object.freeze({
 export const JOB_SKILL = Object.freeze({
     farmer: "farming", forester: "farming",
     woodcutter: "labour", miner: "labour", goldminer: "labour", hauler: "labour", wellkeeper: "labour",
-    builder: "crafting", miller: "crafting", sawyer: "crafting", mason: "crafting", baker: "crafting", brewer: "crafting",
+    builder: "crafting", miller: "crafting", sawyer: "crafting", woodwright: "crafting", mason: "crafting", baker: "crafting", brewer: "crafting",
     smith: "crafting", scribe: "learning",
     innkeeper: "trade", merchant: "trade", guildmaster: "trade",
     clerk: "learning", teacher: "learning",
@@ -27,7 +27,7 @@ const BUILDING_SKILL = Object.freeze({
     [TYPE.CLINIC]: "care", [TYPE.STABLE]: "care",
     [TYPE.SCHOOL]: "learning", [TYPE.TEMPLE]: "learning", [TYPE.SHRINE]: "learning",
     [TYPE.BARRACKS]: "command", [TYPE.TOWER]: "command", [TYPE.WATCHHOUSE]: "command",
-    [TYPE.SMITHY]: "crafting", [TYPE.SCRIPTORIUM]: "learning"
+    [TYPE.SMITHY]: "crafting", [TYPE.SCRIPTORIUM]: "learning", [TYPE.FOREST_WORKS]: "crafting"
 });
 const TRAIT_BIAS = Object.freeze({
     farming: { patience: 0.35, discipline: 0.15 },

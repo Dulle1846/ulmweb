@@ -44,7 +44,10 @@ function setup(stock = {}, withGeography = false) {
 test("every catalogued forest good has a real use, a delivery path and a market quote", () => {
     setup();
     const ids = Object.keys(FOREST_GOODS);
-    assert.equal(ids.length, 260, "the forest catalogue is the audit population");
+    // 151–180 add two real raw materials: cork bark and mulberry leaf. Every
+    // other new forest-industry good is a finished warehouse good, not a
+    // second forest-gathering catalogue.
+    assert.equal(ids.length, 262, "the forest catalogue is the audit population");
     for (const id of ids) {
         const good = FOREST_GOODS[id];
         assert.ok(forestDeliveryChannel(id), id + " must not be stranded without a delivery path");

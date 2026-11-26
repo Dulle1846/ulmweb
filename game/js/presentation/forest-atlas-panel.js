@@ -18,6 +18,11 @@ import {
 import { timberQuote } from "../systems/regional-timber-market.js";
 import { forestGoodUseLabel } from "../systems/forest-gathering.js";
 import {
+    FOREST_INDUSTRY_REQUIREMENTS, FOREST_WORKS_MODES, INDUSTRY_GOODS,
+    SAW_PROFILES, WOOD_QUALITY_CLASSES,
+} from "../world/forest-industries.js";
+import { forestIndustrySummary } from "../systems/forest-industries.js";
+import {
     forestStewardshipAt, forestSuccessionAt, forestSuccessionChronicle,
     forestSuccessionStats,
 } from "../systems/forest-succession.js";
@@ -26,6 +31,7 @@ const esc = value => String(value ?? "").replace(/[&<>"']/g, character => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
 }[character]));
 const number = value => String(Math.floor(Number(value) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+const amount = value => { const rounded = Math.round((Number(value) || 0) * 100) / 100; return String(rounded).replace(/\B(?=(\d{3})+(?!\d))/g, ","); };
 const pct = value => Math.round((Number(value) || 0) * 100);
 const percent = value => Math.round(Math.max(0, Math.min(100, Number(value) || 0)));
 const signed = value => {
@@ -520,6 +526,61 @@ function regionHistoryBlock(survey) {
         + '<div class="forest-atlas__regions">' + rows + '</div>';
 }
 
+function industryInputLabel(mode) {
+    const parts = [];
+    for (const [good, amount] of Object.entries(mode.standard || {})) parts.push(amount + " " + (good === "water" ? "water" : good));
+    if (mode.timber) parts.push(mode.timber.amount + " regional timber");
+    for (const [good, amount] of Object.entries(mode.raw || {})) parts.push(amount + " " + (FOREST_GOODS[good]?.label || good));
+    return parts.length ? parts.join(" · ") : "no material input";
+}
+
+function industryBlock() {
+    const summary = forestIndustrySummary();
+    const modeCards = Object.values(FOREST_WORKS_MODES).map(mode => {
+        const outputs = Object.entries(mode.output || {})
+            .map(([good, amount]) => amount + " " + (INDUSTRY_GOODS[good]?.label || good)).join(" + ");
+        return '<article class="forest-atlas__industry-card" data-industry-mode-card="' + esc(mode.id) + '">'
+            + '<header><b>' + esc(mode.short) + '</b><span>' + esc(outputs) + '</span></header>'
+            + '<strong>' + esc(mode.label) + '</strong>'
+            + '<p>' + esc(mode.description) + '</p>'
+            + '<small><b>IN</b> ' + esc(industryInputLabel(mode)) + '</small>'
+            + '<small><b>SITE</b> ' + esc(mode.requiresAny?.length ? mode.requiresAny.join(" · ") : "any managed wood") + '</small>'
+            + '<em>' + esc(mode.longTerm) + '</em></article>';
+    }).join("");
+    const rows = summary.rows.map(row => '<div class="forest-atlas__industry-market-row" data-industry-good="' + esc(row.id) + '">'
+        + '<div><strong>' + esc(row.label) + '</strong><small>' + esc(row.use) + ' · ' + number(row.stock) + ' in store</small></div>'
+        + '<span>' + amount(row.price) + 'G</span>'
+        + '<button type="button" class="command-choice" data-industry-sell="' + esc(row.id) + '" data-industry-quantity="5"' + (row.stock > 0 ? '' : ' disabled') + '>SELL 5</button></div>').join("");
+    const requirementRows = FOREST_INDUSTRY_REQUIREMENTS.map(entry => '<article class="forest-atlas__guide-point" data-industry-requirement="' + esc(entry.id) + '">'
+        + '<div class="forest-atlas__guide-head"><b>' + esc(entry.point) + '</b><span>FOREST ECONOMY</span></div>'
+        + '<h4>' + esc(entry.title) + '</h4>'
+        + '<p><b>IN THE GAME</b> ' + esc(entry.system) + '</p>'
+        + '<p><b>WHAT THE PLAYER DOES</b> ' + esc(entry.playerUse) + '</p>'
+        + '<p><b>WHY IT LASTS</b> ' + esc(entry.longTerm) + '</p>'
+        + '<small><b>LIVE CONSUMER</b> ' + esc(entry.consumer) + '</small></article>').join("");
+    const last = summary.lastBatch;
+    const quality = Object.values(WOOD_QUALITY_CLASSES).map(entry => '<span class="forest-atlas__trait" title="' + esc(entry.note) + '">' + esc(entry.label) + '</span>').join("");
+    const profiles = Object.values(SAW_PROFILES).map(entry => '<span class="forest-atlas__trait" title="' + esc(entry.note) + '">' + esc(entry.label) + '</span>').join("");
+    return '<div class="command-section-title">REGIONAL FOREST INDUSTRIES · 1.2.23.1.151–180</div>'
+        + '<div class="command-summary" data-forest-industry="' + number(summary.works) + '" data-forest-industry-batches="' + number(summary.batches) + '">'
+        + '<div><small>FOREST WORKS</small><strong>' + number(summary.works) + '</strong></div>'
+        + '<div><small>ACTIVE INDUSTRIES</small><strong>' + number(summary.activeModes) + ' / ' + Object.keys(FOREST_WORKS_MODES).length + '</strong></div>'
+        + '<div><small>FINISHED STOCK</small><strong>' + number(summary.stored) + '</strong></div>'
+        + '<div><small>MARKET VALUE</small><strong>' + amount(summary.value) + ' G</strong></div>'
+        + '<div><small>BATCHES RUN</small><strong>' + number(summary.batches) + '</strong></div>'
+        + '<div><small>RAW CONSUMED</small><strong>' + number(summary.rawConsumed) + '</strong></div>'
+        + '<div><small>FURNITURE PRESTIGE</small><strong>+' + Math.round(summary.furniturePremium * 100) + '%</strong></div></div>'
+        + '<p class="command-note">Every Forest Works is a real building with its own selected industry. Standard inputs arrive by carrier from your warehouses; resin, bark, cork and other raw materials come from the live forest-gathering ledger of the wood you actually manage. Output is ordinary physical stock, hauled by the same carriers and sold here from real warehouses. ' + (last ? 'Last batch: ' + esc(last.label) + ' → ' + esc(Object.entries(last.output || {}).map(([good, value]) => value + ' ' + (INDUSTRY_GOODS[good]?.label || good)).join(' + ')) + ' · ' + esc(last.style || 'standard') + ' · ' + esc(last.quality?.grade || 'standard') + '.' : 'No workshop has completed a batch yet.') + '</p>'
+        + '<details class="forest-atlas__field-guide" data-industry-catalogue="' + Object.keys(FOREST_WORKS_MODES).length + '"><summary><span>WORKSHOP CATALOGUE · ' + Object.keys(FOREST_WORKS_MODES).length + ' PATHS</span><strong>From charcoal to silk</strong><em>One building type, one site-specific choice at a time</em></summary>'
+        + '<div class="forest-atlas__industry-grid">' + modeCards + '</div></details>'
+        + '<details class="forest-atlas__field-guide" data-industry-market="' + number(summary.rows.length) + '"><summary><span>FOREST GOODS EXCHANGE</span><strong>Finished wares, real stock</strong><em>Prices move with season and how much you hold</em></summary>'
+        + '<div class="forest-atlas__industry-market">' + (rows || '<p class="command-note">No finished forest-industry good is in a warehouse yet. Build a Forest Works, select a mode and let the woodwright work.</p>') + '</div></details>'
+        + '<details class="forest-atlas__field-guide" data-industry-guide="' + FOREST_INDUSTRY_REQUIREMENTS.length + '"><summary><span>FIELD GUIDE · ' + FOREST_INDUSTRY_REQUIREMENTS.length + ' POINTS</span><strong>Wood, workshops and long-term play</strong><em>1.2.23.1.151–180 · every point has a live consumer</em></summary>'
+        + '<p class="forest-atlas__guide-intro">This is the design and play guide for the whole regional forest economy. Each entry names the simulation system that makes it real, what the player can do with it, why it supports a long campaign, and the concrete consumer that reads it.</p>'
+        + '<div class="forest-atlas__quality-strip"><span><b>QUALITY CLASSES</b>' + quality + '</span><span><b>SAW PROFILES</b>' + profiles + '</span></div>'
+        + '<div class="forest-atlas__guide-grid">' + requirementRows + '</div></details>';
+}
+
 export function renderForestAtlasPanel() {
     const survey = forestAtlasSurvey();
     if (!survey.available) {
@@ -568,6 +629,7 @@ export function renderForestAtlasPanel() {
         + '<div><small>TRANSITION EDGES</small><strong>' + number(survey.transitionSamples) + '</strong></div>'
         + '<div><small>SEASON</small><strong>' + esc(survey.season.toUpperCase()) + '</strong></div></div>'
         + processBlock
+        + industryBlock()
         + regionHistoryBlock(survey)
         + faunaFieldGuide(survey)
         + '<div class="forest-atlas">' + cards + '</div>'
