@@ -9,6 +9,7 @@
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
 
+<<<<<<< HEAD
 ## 3.64.0 — The forest has a food web, not a decoration list
 
 This release adds the complete fauna, ecology and food-web layer for
@@ -64,6 +65,28 @@ model. The layer is deterministic, save-compatible and costs nothing per frame.
   untouched.
 
 ### Also shipping in 3.64.0
+
+#### General goods move through the market
+
+The Trade tab now lists every registered hauled good beside the three royal
+resources. General goods are not invented coin conversions: buying a lot removes
+the units from the trading partner and deposits them into a warehouse that
+accepts that good; selling a lot withdraws only unreserved units from the
+realm's stores and returns them to the partner. Each button shows the exact gold
+that will be settled for that partner, and the goods book records every physical
+deposit and withdrawal so the audit stays balanced.
+
+- **A parallel book, not a rewrite.** All `GOOD_KEYS` have bounded prices, trends
+  and short histories in the saved market. They use a separate seeded stream, so
+  the original wood/stone/food draws, hunger and winter terms, partner resource
+  stock loops, biome frontier readings and the sell-only regional timber exchange
+  keep their existing rules.
+- **Player-visible proof.** The real-browser run starts a realm, checks the HUD
+  and workshop, visits seven management panels, then buys and sells a plank lot
+  through the actual Trade tab buttons. The store and partner stock move in
+  opposite directions, one deposit and one withdrawal are booked, the audit is
+  balanced, and a save/restore keeps the market usable with zero page or console
+  errors.
 
 #### Crown Commissary calls in real stores
 

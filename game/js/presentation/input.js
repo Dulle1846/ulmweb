@@ -4,7 +4,7 @@ import { state } from "../core/state.js";
 import { clampCamera,applyZoomDelta,screenToWorld,setZoomLevel,setZoomTarget } from "./camera.js";
 import { placeCurrentCard,skipCard,getCardPlacementPreview,selectCard } from "../systems/cards.js";
 import { resolveEventChoice } from "../systems/events.js";
-import { executeTrade } from "../systems/market.js";
+import { executeTrade, executeGoodTrade } from "../systems/market.js";
 import { createParticle } from "./rendering/particles.js";
 import { showBigMessage,renderUI } from "./rendering/ui.js";
 import { distance } from "../core/utils.js";
@@ -264,8 +264,10 @@ export function setupInput(){
     document.getElementById("tab-content")?.addEventListener("click",event=>{
         const trade=event.target.closest("[data-trade]");
         if(trade){
-            const result=executeTrade(trade.dataset.partner,trade.dataset.resource,trade.dataset.trade,Number(trade.dataset.quantity));
-            showToast(result.ok?"TRADE COMPLETED":result.reason);
+            const result=trade.dataset.good
+                ? executeGoodTrade(trade.dataset.partner,trade.dataset.good,trade.dataset.trade,Number(trade.dataset.quantity))
+                : executeTrade(trade.dataset.partner,trade.dataset.resource,trade.dataset.trade,Number(trade.dataset.quantity));
+            showToast(result.ok?(trade.dataset.good?"GOODS TRADE COMPLETED":"TRADE COMPLETED"):result.reason);
             renderUI();
         }
     });

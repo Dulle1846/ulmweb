@@ -1028,6 +1028,9 @@ kbd {padding:4px 6px;border:1px solid rgba(221,190,126,.2);border-radius:5px;bac
 .trade-actions {display:flex;gap:5px}
 .trade-actions button {min-height:25px;padding:0 7px;border:1px solid rgba(221,190,126,.2);border-radius:5px;background:rgba(217,184,120,.06);color:#dcc794;font-size:7px;font-weight:900;cursor:pointer}
 .trade-actions button:hover {background:rgba(217,184,120,.18);border-color:#d5b87e}
+.goods-market-head {margin:11px 0 2px;color:#b9a06e;font-size:8px;font-weight:900;letter-spacing:.14em}
+.goods-market-row {padding:5px 0}
+.goods-market-row>div>small {max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media(max-width:1050px) {
     .hand-dock {width:min(700px,calc(100% - 270px))}
 }

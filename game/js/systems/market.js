@@ -16,18 +16,45 @@ import { getDebtMarketFactor, getDebtPressure, getFoodCrisisSnapshot } from "./e
 import { getBiomeFrontierSupply, normalizeBiomeFrontierSupply } from "./biome-market-link.js";
 import { getEspionageMarketTerms } from "./espionage.js";
 import { getHazardTradeBuyFactor, getHazardTradeSellFactor } from "./hazard-modifiers.js";
+import { GOODS, GOOD_KEYS } from "./city-config.js";
+import { REGIONAL_TIMBER_BY_GOOD } from "../world/regional-forests.js";
+import { depositGood, getAvailableWarehouseStock, getWarehouseSpace, getWarehouses, withdrawGood } from "./logistics.js";
 
 export const MARKET_RESOURCES = Object.freeze(["wood","stone","food"]);
 export const BASE_PRICES = Object.freeze({ wood:2, stone:3, food:2 });
+// The general goods exchange is a parallel book beside the three royal
+// resources. It never changes their prices, partner stock loops or ledgers.
+export const MARKET_GOODS = GOOD_KEYS;
+export const GOOD_MARKET_LOT = 5;
+export const GOOD_MARKET_VERSION = 1;
+const BASE_GOOD_PRICES = Object.freeze({
+    logs:2, planks:4, stoneBlocks:3, cutStone:6, grain:2, flour:4,
+    bread:6, water:1, firewood:2, ale:5
+});
+export const GOOD_BASE_PRICES = Object.freeze(Object.fromEntries(GOOD_KEYS.map(good => [
+    good, REGIONAL_TIMBER_BY_GOOD[good]?.basePrice || BASE_GOOD_PRICES[good] || 3
+])));
 export { TRADE_PARTNERS };
+
+// Cheap staples arrive in larger lots than scarce finished goods. This is a
+// starting stock and a restock baseline, never a source of free goods: every
+// purchase still removes the units from the partner and deposits real stock.
+function initialGoodStock(good) {
+    return Math.max(4, Math.round(18 / Math.sqrt(GOOD_BASE_PRICES[good])));
+}
+function goodDepositCapacity(good) {
+    return getWarehouses().reduce((sum, warehouse) => sum + (
+        warehouse.warehouse.filters.includes(good) ? getWarehouseSpace(warehouse) : 0
+    ), 0);
+}
 
 export function createMarketState() {
     return {
-        prices:{...BASE_PRICES},
-        partners:TRADE_PARTNERS.map(partner=>({...partner,stock:{...partner.stock}})),
-        priceTrend:{wood:0,stone:0,food:0},
+        prices:{...BASE_PRICES,...Object.fromEntries(MARKET_GOODS.map(good=>[good,GOOD_BASE_PRICES[good]]))},
+        partners:TRADE_PARTNERS.map(partner=>({...partner,stock:{...partner.stock,...Object.fromEntries(MARKET_GOODS.map(good=>[good,initialGoodStock(good)]))}})),
+        priceTrend:{wood:0,stone:0,food:0,...Object.fromEntries(MARKET_GOODS.map(good=>[good,0]))},
         lastUpdateTick:0,
-        priceHistory:{wood:[BASE_PRICES.wood],stone:[BASE_PRICES.stone],food:[BASE_PRICES.food]},
+        priceHistory:{wood:[BASE_PRICES.wood],stone:[BASE_PRICES.stone],food:[BASE_PRICES.food],...Object.fromEntries(MARKET_GOODS.map(good=>[good,[GOOD_BASE_PRICES[good]]]))},
         // The latest quote is written from the biome atlas. It is saved with
         // the market so a load keeps the same explanation the player saw.
         frontierSupply:getBiomeFrontierSupply(),
@@ -67,6 +94,21 @@ function ensureMarket() {
             state.market.priceHistory[resource].push(state.market.prices[resource]);
         }
     }
+    // Legacy saves gain the general book in place. The resource entries above
+    // are untouched, so an older wood/stone/food quote is exactly preserved.
+    for (const good of MARKET_GOODS) {
+        const price = Number(state.market.prices[good]);
+        state.market.prices[good] = Number.isFinite(price) && price > 0 ? price : GOOD_BASE_PRICES[good];
+        const trend = Number(state.market.priceTrend[good]);
+        state.market.priceTrend[good] = Number.isFinite(trend) ? Math.max(-0.45, Math.min(0.55, trend)) : 0;
+        const history = state.market.priceHistory[good];
+        state.market.priceHistory[good] = Array.isArray(history)
+            ? history.filter(value => Number.isFinite(value) && value > 0).slice(-16)
+            : [];
+        if (state.market.priceHistory[good].length === 0) {
+            state.market.priceHistory[good].push(state.market.prices[good]);
+        }
+    }
 
     state.market.partners = state.market.partners.filter(partner => partner && typeof partner === "object");
     if (state.market.partners.length === 0) {
@@ -78,6 +120,10 @@ function ensureMarket() {
         for (const resource of MARKET_RESOURCES) {
             const stock = Number(partner.stock[resource]);
             partner.stock[resource] = Number.isFinite(stock) ? Math.max(0, stock) : 0;
+        }
+        for (const good of MARKET_GOODS) {
+            const stock = Number(partner.stock[good]);
+            partner.stock[good] = Number.isFinite(stock) ? Math.max(0, stock) : initialGoodStock(good);
         }
         const treasury = Number(partner.treasury);
         partner.treasury = Number.isFinite(treasury) ? Math.max(0, treasury) : 0;
@@ -145,6 +191,27 @@ export function updateMarket() {
         state.market.prices[resource] = Math.max(1,Math.round(BASE_PRICES[resource]*seasonFactor*(1+state.market.priceTrend[resource]+scarcityPressure+hungerPressure+civicPressure+fuelPressure+frontierPressure)*100)/100);
         const history = state.market.priceHistory[resource] || (state.market.priceHistory[resource] = []);
         history.push(state.market.prices[resource]);
+        if (history.length > 16) history.shift();
+    }
+    // General goods use their own RNG stream and a bounded lot-based restock.
+    // The three resource draws above stay exactly three, and the biome frontier
+    // never sees a good it does not model.
+    for (const partner of state.market.partners) {
+        for (const good of MARKET_GOODS) {
+            const base = initialGoodStock(good);
+            const current = Math.max(0, Number(partner.stock[good]) || 0);
+            partner.stock[good] = Math.min(Math.ceil(base * 1.25), current + Math.max(1, Math.round(base * 0.12)));
+        }
+    }
+    for (const good of MARKET_GOODS) {
+        const drift = (random("goods-market") - 0.5) * 0.12;
+        const regionalStock = state.market.partners.reduce((total,partner)=>total+(partner.stock[good]||0),0);
+        const targetStock = 16 * Math.max(1, state.market.partners.length);
+        const scarcityPressure = Math.max(-0.22,Math.min(0.38,(targetStock-regionalStock)/targetStock*0.32));
+        state.market.priceTrend[good] = Math.max(-0.45,Math.min(0.55,(state.market.priceTrend[good]||0)*0.68+drift+scarcityPressure*0.12));
+        state.market.prices[good] = Math.max(1,Math.round(GOOD_BASE_PRICES[good]*seasonFactor*(1+state.market.priceTrend[good]+scarcityPressure)*100)/100);
+        const history = state.market.priceHistory[good] || (state.market.priceHistory[good] = []);
+        history.push(state.market.prices[good]);
         if (history.length > 16) history.shift();
     }
     const warnings = MARKET_RESOURCES.filter(resource => {
@@ -276,4 +343,92 @@ export function executeTrade(partnerId, resource, direction, quantity = 5) {
     recordTradeInfluence(state.diplomacy,partnerId,{year:state.year,tick:state.tick,direction,resource,amount,gold:payout});
     addLog("TRADE: SOLD "+amount+" "+resource.toUpperCase()+" TO "+partner.name,"#e3bd71");
     return {ok:true,amount,gold:payout};
+}
+
+// General goods settle with the same partner factors as the resource exchange
+// but move physical stock through logistics. Quotes and execution therefore use
+// one arithmetic path, and the goods book sees a deposit or withdrawal instead
+// of a fabricated resource grant.
+function quoteGoodSettlement(partner, good, direction, quantity, factors) {
+    if (!partner || !MARKET_GOODS.includes(good) || !["buy","sell"].includes(direction)) {
+        return {ok:false,reason:"INVALID GOODS TRADE"};
+    }
+    const requestedAmount = Math.max(1,Math.min(25,Math.floor(Number(quantity)||GOOD_MARKET_LOT)));
+    const price = state.market.prices[good];
+    const label = String(GOODS[good]?.label || good).toUpperCase();
+    if (factors.terms.blocked) return {ok:false,reason:"AT WAR — THE TRADE ROAD IS CLOSED"};
+    if (direction === "buy") {
+        const capacity = Math.floor(goodDepositCapacity(good));
+        const stock = Math.max(0, Math.floor(Number(partner.stock[good]) || 0));
+        const amount = Math.min(requestedAmount, capacity, stock);
+        if (amount <= 0) return {ok:false,reason:capacity <= 0 ? "NO WAREHOUSE SPACE" : "PARTNER OUT OF STOCK"};
+        return {ok:true,amount,gold:Math.ceil(price*amount*factors.buyFactor),price};
+    }
+    const available = getAvailableWarehouseStock(good);
+    const amount = available > 0 && available < requestedAmount ? available : requestedAmount;
+    if (amount <= 0) return {ok:false,reason:"NOT ENOUGH "+label};
+    const gold = Math.floor(price*amount*0.82*factors.sellFactor);
+    if (Number(partner.treasury) < gold) return {ok:false,reason:"PARTNER TREASURY TOO LOW"};
+    return {ok:true,amount,gold,price};
+}
+
+export function getGoodTradeQuote(partnerId, good, direction, quantity = GOOD_MARKET_LOT) {
+    ensureMarket();
+    const partner = state.market.partners.find(item=>item.id===partnerId);
+    if (!partner) return {ok:false,reason:"INVALID GOODS TRADE"};
+    return quoteGoodSettlement(partner, good, direction, quantity, getTradeFactors(partnerId));
+}
+
+export function getGoodTradeOffers(partnerId) {
+    ensureMarket();
+    const partner = state.market.partners.find(item=>item.id===partnerId);
+    if (!partner) return null;
+    const factors = getTradeFactors(partnerId);
+    return Object.fromEntries(MARKET_GOODS.map(good => [good, {
+        buy: quoteGoodSettlement(partner, good, "buy", GOOD_MARKET_LOT, factors),
+        sell: quoteGoodSettlement(partner, good, "sell", GOOD_MARKET_LOT, factors)
+    }]));
+}
+
+export function executeGoodTrade(partnerId, good, direction, quantity = GOOD_MARKET_LOT) {
+    ensureMarket();
+    updateMarket();
+    const partner = state.market.partners.find(item=>item.id===partnerId);
+    if (!partner || !MARKET_GOODS.includes(good) || !["buy","sell"].includes(direction)) {
+        return {ok:false,reason:"INVALID GOODS TRADE"};
+    }
+    state.market.debtPressure = getDebtPressure();
+    const factors = getTradeFactors(partnerId);
+    const quote = quoteGoodSettlement(partner, good, direction, quantity, factors);
+    if (!quote.ok) return quote;
+    const label = String(GOODS[good]?.label || good).toLowerCase();
+    if (direction === "buy") {
+        if (state.resources.gold < quote.gold) return {ok:false,reason:"NOT ENOUGH GOLD"};
+        addResource("gold",-quote.gold);
+        const moved = depositGood(good, quote.amount, 0, 0);
+        const paid = Math.ceil(quote.price*moved*factors.buyFactor);
+        if (paid < quote.gold) addResource("gold",quote.gold-paid);
+        if (moved <= 0) return {ok:false,reason:"NO WAREHOUSE SPACE"};
+        partner.stock[good] -= moved;
+        partner.treasury += paid;
+        state.market.totalGoldTraded += paid;
+        state.market.totalTrades++;
+        state.statistics.totalTrades++;
+        recordTradeInfluence(state.diplomacy,partnerId,{year:state.year,tick:state.tick,direction,resource:good,amount:moved,gold:paid});
+        addLog("GOODS MARKET: BOUGHT "+moved+" "+label+" FROM "+partner.name,"#e3bd71");
+        return {ok:true,amount:moved,gold:paid,good};
+    }
+    const moved = withdrawGood(good, quote.amount, 0, 0);
+    if (moved <= 0) return {ok:false,reason:"NOT ENOUGH "+label.toUpperCase()};
+    const payout = moved === quote.amount ? quote.gold : Math.floor(quote.price*moved*0.82*factors.sellFactor);
+    if (Number(partner.treasury) < payout) return {ok:false,reason:"PARTNER TREASURY TOO LOW"};
+    addResource("gold",payout);
+    partner.stock[good] = (Number(partner.stock[good]) || 0) + moved;
+    partner.treasury -= payout;
+    state.market.totalGoldTraded += payout;
+    state.market.totalTrades++;
+    state.statistics.totalTrades++;
+    recordTradeInfluence(state.diplomacy,partnerId,{year:state.year,tick:state.tick,direction,resource:good,amount:moved,gold:payout});
+    addLog("GOODS MARKET: SOLD "+moved+" "+label+" TO "+partner.name,"#e3bd71");
+    return {ok:true,amount:moved,gold:payout,good};
 }
