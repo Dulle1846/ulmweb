@@ -67,11 +67,13 @@ import { setupWinterHud } from "../presentation/winter-panel.js";
 import { buildRandomStart } from "./start-randomizer.js";
 import { SCENARIO_CLIMATES, SCENARIO_OBJECTIVES, SCENARIO_PRESETS, SCENARIO_PRESET_LIST, SCENARIO_SEASONS, applyScenarioStart, createCustomScenario, getScenarioStartDayForSeason, refreshScenarioProgress } from "../systems/scenario.js";
 import { addScenarioToLibrary, readScenarioLibrary, removeScenarioFromLibrary } from "../core/scenario-library.js";
+import { getDataPackScenarios, getDataPackSummary, installDataPack, parseDataPackText, removeDataPack } from "../core/data-packs.js";
 
 let loopStarted=false;
 let settings=loadSettings();
 state.timeOfDay=settings.timeOfDay;
 let customScenarios=[];
+let dataPackScenarios=[];
 let selectedScenarioId="free-realm";
 let selectedScenarioDefinition=SCENARIO_PRESETS["free-realm"];
 const scenarioEscape=value=>String(value??"").replace(/[&<>"']/g,character=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[character]));
@@ -90,7 +92,7 @@ function scenarioRewardText(effects={}){
 function scenarioStoreText(definition){
     return ["food","wood","stone","gold"].map(key=>Number(definition?.resources?.[key])>0?Number(definition.resources[key])+" "+key:"").filter(Boolean).join(" · ")||"no starting stores";
 }
-function scenarioById(id){return SCENARIO_PRESETS[id]||customScenarios.find(entry=>entry.id===id)||SCENARIO_PRESETS["free-realm"];}
+function scenarioById(id){return SCENARIO_PRESETS[id]||dataPackScenarios.find(entry=>entry.id===id)||customScenarios.find(entry=>entry.id===id)||SCENARIO_PRESETS["free-realm"];}
 function applyInterfaceSettings(){
     document.body.classList.toggle("hide-resource-deltas",settings.showDeltas===false);
     document.body.classList.toggle("reduce-interface-motion",settings.reduceMotion===true);
@@ -1068,13 +1070,14 @@ async function importRealm(file){
 function renderScenarioPicker(){
     const list=document.getElementById("scenario-preset-list");
     if(!list)return;
-    const all=[...SCENARIO_PRESET_LIST,...customScenarios.filter(entry=>!SCENARIO_PRESETS[entry.id])];
+    const all=[...SCENARIO_PRESET_LIST,...dataPackScenarios,...customScenarios.filter(entry=>!SCENARIO_PRESETS[entry.id]&&!dataPackScenarios.some(pack=>pack.id===entry.id))];
     list.innerHTML=all.map(definition=>{
         const selected=definition.id===selectedScenarioId;
         const target=definition.objective?definition.objective.target+" "+(SCENARIO_OBJECTIVES[definition.objective.type]?.unit||"") : "Standard realm";
         const subtitle=definition.id==="free-realm"?"No deadline. Every world and charter option remains open.":scenarioSeasonLabel(definition.startSeason)+" opening · "+target+" target";
+        const tag=definition.packName?"PACK · "+definition.packName:definition.difficulty;
         return '<button type="button" class="scenario-card'+(selected?' is-selected':'')+'" data-scenario-card="'+scenarioEscape(definition.id)+'" aria-pressed="'+(selected?'true':'false')+'">'+
-            '<span class="scenario-card__tag">'+scenarioEscape(definition.difficulty)+'</span>'+
+            '<span class="scenario-card__tag">'+scenarioEscape(tag)+'</span>'+
             '<strong>'+scenarioEscape(definition.name)+'</strong>'+
             '<em>'+scenarioEscape(definition.description)+'</em>'+
             '<small>'+scenarioEscape(subtitle)+'</small>'+
@@ -1196,8 +1199,51 @@ function deleteSelectedCustomScenario(){
     if(status)status.textContent="Custom scenario deleted. The free realm is selected.";
 }
 
+function renderDataPackList(){
+    const list=document.getElementById("data-pack-list");
+    if(!list)return;
+    const packs=getDataPackSummary();
+    list.innerHTML=packs.length
+        ?packs.map(pack=>'<div class="data-pack-row" data-data-pack="'+scenarioEscape(pack.id)+'"><div><strong>'+scenarioEscape(pack.name)+'</strong><small>'+scenarioEscape(pack.author)+' · v'+scenarioEscape(pack.version)+' · '+pack.scenarios+' scenario'+(pack.scenarios===1?'':'s')+' · '+pack.regions+' province label'+(pack.regions===1?'':'s')+'</small></div><button type="button" data-data-pack-remove="'+scenarioEscape(pack.id)+'">REMOVE</button></div>').join("")
+        :'<p class="data-pack-empty">No local data pack is installed. The base scenarios and province names remain in use.</p>';
+}
+
+function refreshDataPackContent(){
+    dataPackScenarios=getDataPackScenarios();
+    renderDataPackList();
+    renderScenarioPicker();
+}
+
+async function importDataPackFromFile(){
+    const status=document.getElementById("data-pack-status");
+    const input=document.getElementById("data-pack-file");
+    const file=input?.files?.[0];
+    if(!file){if(status)status.textContent="Choose a JSON data pack first.";return;}
+    try{
+        const pack=parseDataPackText(await file.text());
+        const result=installDataPack(pack);
+        if(!result.ok){if(status)status.textContent=result.error;return;}
+        refreshDataPackContent();
+        if(input)input.value="";
+        if(status)status.textContent="Installed · "+pack.name+" · "+pack.scenarios.length+" scenario"+(pack.scenarios.length===1?"":"s")+" and "+pack.regions.length+" province label"+(pack.regions.length===1?"":"s")+".";
+    }catch(error){
+        if(status)status.textContent=String(error?.message||"This data pack could not be installed.");
+    }
+}
+
+function removeInstalledDataPack(id){
+    const status=document.getElementById("data-pack-status");
+    const removedSelected=Boolean(selectedScenarioDefinition?.packName&&selectedScenarioDefinition.packId===id);
+    removeDataPack(id);
+    refreshDataPackContent();
+    if(removedSelected)selectScenario("free-realm",{applyClimate:false});
+    if(status)status.textContent="Data pack removed. Saved realms and their scenario objectives are unchanged.";
+}
+
 function setupScenarioPicker(){
     customScenarios=readScenarioLibrary();
+    dataPackScenarios=getDataPackScenarios();
+    renderDataPackList();
     const climate=document.getElementById("scenario-climate-select");
     if(climate)climate.innerHTML=SCENARIO_CLIMATES.map((id,index)=>'<option value="'+scenarioEscape(id)+'"'+(index===0?' selected':'')+'>'+scenarioEscape(id.replace(/^./,letter=>letter.toUpperCase()))+'</option>').join("");
     const objective=document.getElementById("scenario-objective-select");
@@ -1210,6 +1256,11 @@ function setupScenarioPicker(){
     document.getElementById("scenario-save-custom")?.addEventListener("click",saveCustomScenarioFromEditor);
     document.getElementById("scenario-reset-custom")?.addEventListener("click",resetScenarioEditor);
     document.getElementById("scenario-delete-custom")?.addEventListener("click",deleteSelectedCustomScenario);
+    document.getElementById("data-pack-import")?.addEventListener("click",importDataPackFromFile);
+    document.getElementById("data-pack-list")?.addEventListener("click",event=>{
+        const button=event.target.closest("[data-data-pack-remove]");
+        if(button)removeInstalledDataPack(button.dataset.dataPackRemove);
+    });
     document.getElementById("scenario-objective-select")?.addEventListener("change",event=>{
         const meta=SCENARIO_OBJECTIVES[event.target.value]||SCENARIO_OBJECTIVES.food;
         const target=document.getElementById("scenario-target-input");

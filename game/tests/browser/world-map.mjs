@@ -143,7 +143,7 @@ async function layoutReport(page, selector) {
                 }
             }
         };
-        const targets = [...panel.querySelectorAll(".command-summary, .world-map, .world-map__legend, .world-frontier, .world-route")];
+        const targets = [...panel.querySelectorAll(".command-summary, .world-map, .world-map__legend, .world-map__kingdoms, .world-kingdom, .world-province, .world-frontier, .world-route")];
         for (const target of targets) {
             target.scrollIntoView({ block: "center" });
             await new Promise(done => requestAnimationFrame(() => requestAnimationFrame(done)));
@@ -220,14 +220,25 @@ try {
     await openWorld(desktop);
     const panel = desktop.locator("[data-world-map-panel]");
     const panelText = await panel.innerText();
-    assert.match(panelText, /World map, trade routes & frontiers/);
+    assert.match(panelText, /Kingdoms, provinces, trade routes & frontiers/);
     assert.match(panelText, /FRONTIERS ·/);
     assert.match(panelText, /STANDING CARAVANS · 0 \/ 6/);
+    assert.match(panelText, /KINGDOMS & PROVINCES · 2 \/ 10 HELD BY THE CROWN/);
+    assert.match(panelText, /Crown Heartland/);
+    assert.match(panelText, /Northmere Pines/);
+    assert.match(panelText, /PRESS CLAIM/);
+    assert.match(panelText, /CROWN PROVINCE/);
     assert.match(panelText, /Beyond the realm/i);
     assert.match(panelText, /SCHEMATIC/);
     assert.doesNotMatch(panelText, /undefined|NaN|Lorem ipsum|placeholder/i);
     assert.equal(await desktop.locator(".world-map__realm").count(), 4, "all four neighbouring regions are on the map");
     assert.equal(await desktop.locator(".world-map__seat").count(), initial.seats.length, "the real settlement seats are on the map");
+    assert.equal(await desktop.locator(".world-map__province").count(), 10, "all ten provinces are on the map");
+    assert.equal(await desktop.locator(".world-map__kingdom-chip").count(), 6, "the map explains five owner colours and the contested border");
+    assert.equal(await desktop.locator(".world-kingdom").count(), 5, "all five crowns are in the kingdom overview");
+    assert.equal(await desktop.locator(".world-province").count(), 10, "all ten province cards are in the panel");
+    assert.equal(await desktop.locator('[data-world-province="crown-heartland"] [data-command="world-region-claim"]').count(), 0, "the crown heartland is not claimable");
+    assert.ok(await desktop.locator('[data-world-province="northmere-pines"] [data-command="world-region-claim"]').isVisible(), "a foreign border province offers its claim action");
 
     const northmere = desktop.locator('[data-world-realm="northmere"]');
     const seatValue = await northmere.locator("#world-seat-northmere option").first().getAttribute("value");
@@ -365,7 +376,10 @@ try {
     const narrowText = await narrow.locator("[data-world-map-panel]").innerText();
     assert.doesNotMatch(narrowText, /undefined|NaN|Lorem ipsum|placeholder/i);
     assert.match(narrowText, /STANDING CARAVANS/);
+    assert.match(narrowText, /KINGDOMS & PROVINCES/);
     assert.equal(await narrow.locator("[data-world-realm]").count(), 4);
+    assert.equal(await narrow.locator(".world-map__province").count(), 10);
+    assert.equal(await narrow.locator(".world-province").count(), 10);
     await narrow.screenshot({ path: resolve(outDir, "narrow.png"), animations: "disabled" });
     await narrow.locator(".world-map").scrollIntoViewIfNeeded();
     await narrow.locator(".world-map").screenshot({ path: resolve(outDir, "map-narrow.png"), animations: "disabled" });

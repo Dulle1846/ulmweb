@@ -6,10 +6,11 @@ import { createDiplomacyState } from "../../js/systems/diplomacy.js";
 import { createMarketState } from "../../js/systems/market.js";
 import { getSettlementSeats, initializeSettlementOwners, SETTLEMENT_STORE_LIMIT } from "../../js/systems/settlement-owners.js";
 import {
-    FRONTIER_INCIDENT_PRESSURE, FRONTIER_WATCH_COST, TRADE_ROUTE_COST, TRADE_ROUTE_LIMIT,
+    FRONTIER_INCIDENT_PRESSURE, FRONTIER_WATCH_COST, REGION_CLAIM_COST, TRADE_ROUTE_COST, TRADE_ROUTE_LIMIT,
     closeTradeRoute, createWorldMapState, getWorldMapSnapshot, normalizeWorldMapSnapshot,
-    openTradeRoute, setFrontierWatch, updateWorldMap, validateWorldMapSnapshot
+    openTradeRoute, pressRegionClaim, setFrontierWatch, updateWorldMap, validateWorldMapSnapshot
 } from "../../js/systems/world-map.js";
+import { WORLD_REGION_CATALOG } from "../../js/world/world-regions.js";
 import { migrateSaveSnapshot } from "../../js/core/save-migrations.js";
 import { SAVE_SCHEMA_VERSION } from "../../js/core/save-validation.js";
 
@@ -193,9 +194,11 @@ test("a contested frontier raids a real settlement, raises the border levy and i
 test("the world map normalizes legacy and malformed data without inventing routes", () => {
     setup();
     const quiet = normalizeWorldMapSnapshot(null);
-    assert.equal(quiet.version, 1);
+    assert.equal(quiet.version, 2);
     assert.equal(quiet.routes.length, 0);
     assert.equal(quiet.frontiers.length, 4);
+    assert.equal(quiet.regions.length, 10);
+    assert.equal(quiet.regions.filter(region => region.ownerId === "crown").length, 2);
     assert.equal(quiet.frontiers.every(row => row.watch === 0 && row.incidents === 0), true);
     const malformed = normalizeWorldMapSnapshot({
         version: 1,
@@ -219,6 +222,131 @@ test("the world map normalizes legacy and malformed data without inventing route
         version: 1,
         routes: [{ seatId: "e-keep", realmId: "northmere", resource: "clay", direction: "import" }]
     }), /incomplete trade route/);
+});
+
+test("the world map is a saved ten-province, five-crown map", () => {
+    setup();
+    const snapshot = getWorldMapSnapshot();
+    assert.equal(snapshot.version, 2);
+    assert.equal(snapshot.regions.length, 10);
+    assert.equal(snapshot.regions.length, WORLD_REGION_CATALOG.length);
+    assert.equal(snapshot.totals.crownProvinces, 2);
+    assert.equal(snapshot.kingdoms.length, 5);
+    assert.equal(snapshot.kingdoms.filter(kingdom => kingdom.isCrown).length, 1);
+    assert.equal(snapshot.kingdoms.reduce((sum, kingdom) => sum + kingdom.regionCount, 0), 10);
+    const northmere = snapshot.regions.find(region => region.id === "northmere-pines");
+    assert.equal(northmere.ownerId, "northmere");
+    assert.equal(northmere.ownerName, "Northmere Guild");
+    assert.ok(northmere.yield >= 1);
+    assert.equal(northmere.resource, "wood");
+    const crown = snapshot.regions.find(region => region.id === "crown-heartland");
+    assert.equal(crown.ownerKind, "crown");
+    assert.equal(crown.canClaim, false);
+    assert.equal(crown.claimReason, "crown-province");
+    assert.equal(snapshot.regions.every(region => region.name && Number.isFinite(region.control) && region.control >= 0), true);
+    assert.equal(snapshot.totals.annualYield, crown.yield + snapshot.regions.find(region => region.id === "crown-march").yield);
+});
+
+test("a v1 world map migrates its routes and gets the ten provinces without losing the old watch", () => {
+    const legacy = normalizeWorldMapSnapshot({
+        version: 1,
+        routes: [{ seatId: "e-keep", realmId: "northmere", resource: "wood", direction: "import" }],
+        frontiers: [{ realmId: "northmere", watch: 2, incidents: 1 }]
+    });
+    assert.equal(legacy.version, 2);
+    assert.equal(legacy.routes.length, 1);
+    assert.equal(legacy.frontiers.find(row => row.realmId === "northmere").watch, 2);
+    assert.equal(legacy.frontiers.find(row => row.realmId === "northmere").incidents, 1);
+    assert.equal(legacy.regions.length, 10);
+    validateWorldMapSnapshot(legacy);
+    const saved = normalizeWorldMapSnapshot({
+        ...legacy,
+        regions: legacy.regions.map(region => region.id === "redpass-steppe"
+            ? { ...region, ownerId: "crown", control: 44, changes: 2, lastChangeYear: 7 }
+            : region),
+        lastRegionClaimYear: 7
+    });
+    assert.equal(saved.regions.find(region => region.id === "redpass-steppe").ownerId, "crown");
+    assert.equal(saved.regions.find(region => region.id === "redpass-steppe").control, 44);
+    assert.equal(saved.regions.find(region => region.id === "redpass-steppe").changes, 2);
+    assert.equal(saved.lastRegionClaimYear, 7);
+    assert.equal(saved.routes[0].realmId, "northmere");
+});
+
+test("a province claim spends the treasury, changes hands and locks further claims for the year", () => {
+    let result = null;
+    for (let year = 4; year < 20 && !result?.success; year++) {
+        setup();
+        state.year = year;
+        const target = state.worldMap.regions.find(region => region.id === "redpass-steppe");
+        target.control = 0;
+        target.garrison = 0;
+        target.loyalty = 0;
+        const line = realm("redpass");
+        line.relation = 20;
+        line.trust = 20;
+        const before = { gold: state.resources.gold, food: state.resources.food };
+        result = pressRegionClaim("redpass-steppe");
+        assert.equal(result.ok, true);
+        assert.equal(state.resources.gold, before.gold - REGION_CLAIM_COST.gold);
+        assert.equal(state.resources.food, before.food - REGION_CLAIM_COST.food);
+        assert.equal(state.worldMap.lastRegionClaimYear, year);
+        assert.equal(state.worldMap.totals.provinceClaims, 1);
+        const again = pressRegionClaim("redpass-gorge");
+        assert.equal(again.ok, false);
+        assert.equal(again.reason, "claim-already-pressed");
+    }
+    assert.equal(result?.success, true, "a low-control border province is claimable within the bounded years");
+    assert.equal(state.worldMap.regions.find(region => region.id === "redpass-steppe").ownerId, "crown");
+    assert.ok(realm("redpass").relation < 20, "the former owner remembers the claim");
+    assert.ok(state.worldMap.history.some(entry => entry.kind === "province-claimed"));
+});
+
+test("alliances and trade pacts protect a province from a crown claim", () => {
+    setup();
+    const line = realm("redpass");
+    line.relation = 20;
+    line.trust = 20;
+    line.treaty = "alliance";
+    assert.equal(pressRegionClaim("redpass-steppe").reason, "alliance-holds-the-border");
+    line.treaty = "trade";
+    assert.equal(pressRegionClaim("redpass-steppe").reason, "trade-pact-holds-the-border");
+    line.treaty = "none";
+    line.relation = 60;
+    assert.equal(pressRegionClaim("redpass-steppe").reason, "relation-too-high");
+    assert.equal(pressRegionClaim("ironvale-crags").reason, "no-crown-border");
+});
+
+test("a hostile border erodes control and can change province ownership in the annual pass", () => {
+    setup();
+    const line = realm("northmere");
+    line.treaty = "war";
+    const target = state.worldMap.regions.find(region => region.id === "northmere-pines");
+    target.control = 6;
+    target.garrison = 0;
+    let flipped = false;
+    for (let year = 4; year < 30 && !flipped; year++) {
+        state.year = year;
+        const snapshot = updateWorldMap();
+        const current = snapshot.regions.find(region => region.id === "northmere-pines");
+        assert.ok(current.control >= 0 && current.control <= 100);
+        flipped = current.ownerId === "crown";
+    }
+    assert.equal(flipped, true, "a hostile, low-control border province changes hands in the bounded annual pass");
+    assert.ok(state.worldMap.totals.regionChanges >= 1);
+    assert.ok(state.worldMap.history.some(entry => entry.kind === "province-changed"));
+    assert.equal(state.worldMap.regions.find(region => region.id === "northmere-pines").ownerId, "crown");
+});
+
+test("the annual world pass pays crown province yields and keeps ownership bounded", () => {
+    setup();
+    const before = state.worldMap.totals.regionYield;
+    const snapshot = updateWorldMap();
+    assert.ok(state.worldMap.totals.regionYield > before, "crown provinces paid their annual yield");
+    assert.equal(snapshot.regions.length, 10);
+    assert.equal(snapshot.regions.filter(region => region.ownerId === "crown").length >= 2, true);
+    assert.equal(snapshot.lastUpdateYear, 4);
+    assert.equal(snapshot.regions.every(region => region.control >= 0 && region.control <= 100), true);
 });
 
 test("schema 15 migrates a legacy realm to a quiet world map and keeps it savable", () => {

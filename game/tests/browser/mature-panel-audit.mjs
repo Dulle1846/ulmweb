@@ -8,7 +8,7 @@ export const PANEL_TITLES = Object.freeze({
     kingdom: "Kingdom overview",
     population: "People, households & livelihoods",
     diplomacy: "Diplomacy",
-    worldmap: "World map, trade routes & frontiers",
+    worldmap: "Kingdoms, provinces, trade routes & frontiers",
     explore: "Royal expeditions",
     cards: "Card management",
     economy: "Realm economy",

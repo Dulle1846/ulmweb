@@ -64,8 +64,10 @@ test("a mature realm survives an exact save/load round-trip through schema 8 and
         state.timeOfDay = 19;
         const saved = JSON.parse(JSON.stringify(createSaveSnapshot()));
         assert.equal(saved.timeOfDay, 19, "the chosen hour is part of the saved realm");
-        assert.equal(saved.worldMap.version, 1, "the world survey is part of the saved realm");
+        assert.equal(saved.worldMap.version, 2, "the world survey and province layer are part of the saved realm");
         assert.equal(saved.worldMap.frontiers.length, 4, "all four frontiers are saved");
+        assert.equal(saved.worldMap.regions.length, 10, "all ten provinces are saved");
+        assert.equal(saved.worldMap.regions.filter(region => region.ownerId === "crown").length, 2, "the crown starts with two saved provinces");
         // The browser validates an import before initWorld replaces the current
         // realm. Its initial 160×160 world is smaller than this 176×176 fixture;
         // geography indices above 160×160 used to be rejected even though they

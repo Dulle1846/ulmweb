@@ -707,7 +707,20 @@ const SYSTEM_SPECS = [
         tests: ["tests/systems/depth.test.js"]
     }),
     section("4.0", "Great World and long-running history", [
-        { id: "4.0.1", label: "Multiple kingdoms and map regions", status: "open", missing: "Diplomacy models four abstract neighbouring realms; there is no multi-kingdom world map or region ownership consumer.", tests: ["tests/systems/diplomacy.test.js"] },
+        {
+            id: "4.0.1", label: "Multiple kingdoms and map regions",
+            evidence: [
+                { file: "js/world/world-regions.js", symbol: "WORLD_REGION_CATALOG", role: "province-catalog" },
+                { file: "js/world/world-regions.js", symbol: "WORLD_KINGDOM_IDS", role: "kingdom-catalog" },
+                { file: "js/systems/world-map.js", symbol: "getWorldMapSnapshot", role: "province-state" },
+                { file: "js/systems/world-map.js", symbol: "pressRegionClaim", role: "player-claim" },
+                { file: "js/systems/world-map.js", symbol: "updateRegions", role: "annual-province-simulation" },
+                { file: "js/presentation/world-map-panel.js", symbol: "renderWorldMapPanel", role: "gameplay" },
+                { file: "js/core/save-runtime.js", symbol: "normalizeWorldMapSnapshot", role: "persistence" },
+                { file: "js/simulation/simulation.js", symbol: "worldMap", role: "simulation-cadence" }
+            ],
+            tests: ["tests/systems/world-map.test.js", "tests/browser/world-map.mjs"]
+        },
         {
             id: "4.0.2", label: "World map, trade routes, borders and frontier settlements",
             evidence: [
@@ -738,7 +751,19 @@ const SYSTEM_SPECS = [
             tests: ["tests/systems/scenario.test.js", "tests/browser/scenario-start.mjs"]
         },
         { id: "4.0.5", label: "Save migration and world simulation at long horizons", evidence: [{ file: "js/core/save-migrations.js", symbol: "migrateSaveSnapshot" }, { file: "scripts/endurance-60y.mjs", symbol: "60" }], tests: ["tests/campaign/sweep-results.test.js"] },
-        { id: "4.0.6", label: "Mod/data packs after schema and security boundaries", status: "open", missing: "There is no mod manifest, data-pack loader, sandbox boundary or compatibility validator.", tests: ["tests/systems/card-catalog.test.js"] }
+        {
+            id: "4.0.6", label: "Mod/data packs after schema and security boundaries",
+            evidence: [
+                { file: "js/core/data-packs.js", symbol: "validateDataPack", role: "schema-security" },
+                { file: "js/core/data-packs.js", symbol: "installDataPack", role: "local-library" },
+                { file: "js/core/data-packs.js", symbol: "getDataPackScenarios", role: "scenario-consumer" },
+                { file: "js/core/data-packs.js", symbol: "getDataPackRegionLabel", role: "world-map-consumer" },
+                { file: "js/systems/world-map.js", symbol: "regionDisplayName", role: "province-label-consumer" },
+                { file: "js/app/main.js", symbol: "setupScenarioPicker", role: "start-screen" },
+                { file: "index.html", symbol: "data-pack-forge", role: "start-screen" }
+            ],
+            tests: ["tests/core/data-packs.test.js", "tests/browser/scenario-start.mjs"]
+        }
     ], {
         consumers: [{ file: "js/presentation/ai-chronicle-panel.js", symbol: "renderAiChroniclePanel", role: "history" }, { file: "js/core/save-migrations.js", symbol: "migrateSaveSnapshot", role: "persistence" }],
         tests: ["tests/systems/ai-chronicle.test.js"]

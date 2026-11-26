@@ -162,6 +162,52 @@ try {
     await desktop.reload({ waitUntil: "domcontentloaded" });
     await desktop.locator("#start-screen").waitFor({ state: "visible", timeout: 15000 });
     await desktop.waitForFunction(() => !document.querySelector("#continue-game-btn")?.disabled, null, { timeout: 10000 });
+
+    // Install a real local data pack through the start-screen file input,
+    // select its scenario and remove it again before continuing the realm.
+    const beforePack = await desktop.locator("[data-scenario-card]").count();
+    await desktop.locator("#data-pack-forge summary").click();
+    const browserPack = {
+        format: "kings-and-cards-data-pack",
+        formatVersion: 1,
+        id: "browser-pack",
+        name: "Browser Pack",
+        author: "Gate Keeper",
+        version: "1.0.0",
+        gameVersion: "3.68.0",
+        description: "A local browser fixture pack with one authored opening.",
+        scenarios: [{
+            id: "harvest-watch",
+            name: "Harvest Watch",
+            description: "A packed harvest opening that must be visible before a realm is founded.",
+            difficulty: "NORMAL",
+            recommendedClimate: "temperate",
+            startDay: 0,
+            resources: { food: 111, wood: 80, stone: 40, gold: 60 },
+            morale: 55,
+            legitimacy: 50,
+            objective: { type: "food", target: 140, deadlineYear: 2, deadlineDay: 0 }
+        }],
+        regions: [{ id: "northmere-pines", name: "Browser Pines" }]
+    };
+    await desktop.locator("#data-pack-file").setInputFiles({
+        name: "browser-pack.json",
+        mimeType: "application/json",
+        buffer: Buffer.from(JSON.stringify(browserPack))
+    });
+    await desktop.locator("#data-pack-import").click();
+    await desktop.waitForFunction(() => (document.querySelector("#data-pack-status")?.textContent || "").includes("Installed"));
+    assert.equal(await desktop.locator("[data-scenario-card]").count(), beforePack + 1, "the installed pack adds one visible scenario card");
+    assert.equal(await desktop.locator("[data-data-pack=\"browser-pack\"]").count(), 1, "the installed pack is listed by name");
+    await desktop.locator("[data-scenario-card=\"browser-pack-harvest-watch\"]").click();
+    assert.match(await desktop.locator("#scenario-briefing").innerText(), /Harvest Watch/);
+    assert.match(await desktop.locator("#scenario-briefing").innerText(), /140 food/);
+    await desktop.locator("[data-data-pack-remove=\"browser-pack\"]").click();
+    await desktop.waitForFunction(() => document.querySelectorAll("[data-scenario-card=\"browser-pack-harvest-watch\"]").length === 0);
+    assert.equal(await desktop.locator("[data-scenario-card]").count(), beforePack, "removing the pack removes its scenario card");
+    assert.equal(await desktop.locator("#scenario-preset-list [data-scenario-card=\"free-realm\"]").getAttribute("aria-pressed"), "true", "removing the selected pack returns the picker to the free realm");
+    assert.doesNotMatch(await desktop.locator("#start-screen").innerText(), /undefined|\bNaN\b|Lorem ipsum/);
+
     await desktop.locator("#continue-game-btn").click();
     await desktop.waitForFunction(async () => (await import("./js/core/state.js")).state.hasStarted, null, { timeout: 60000 });
     const loaded = await desktop.evaluate(async () => {

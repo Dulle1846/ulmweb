@@ -2,13 +2,13 @@
   "version": 2,
   "generatedBy": "scripts/spec-audit.mjs",
   "scope": "All numbered 1.1 and 1.2.1–1.2.18 requirements, plus the documented 2.x phases and 3.3–4.0 roadmap points.",
-  "commit": "da8dd8c42a18f98968d5d3313d95f14ee6f370d1",
-  "sourceHash": "19fdb5717ac54cb43fa5d841ec6d513bb4d79f69bc015d7d490d001679800f1a",
-  "generatedAt": "2026-11-26T10:16:44+00:00",
+  "commit": "5c9cf76f74eea7ad2855ddd4c38227eb82e96354",
+  "sourceHash": "8e00ce12a8663d503225bf2ccd67b0b539dd057753504e2f803e57f719596e3a",
+  "generatedAt": "2026-11-26T10:29:17+00:00",
   "totals": {
     "total": 1648,
-    "implemented": 1646,
-    "open": 2,
+    "implemented": 1648,
+    "open": 0,
     "sections": 39
   },
   "collisions": [
@@ -349,33 +349,8 @@
       ]
     }
   ],
-  "nextSection": {
-    "id": "4.0",
-    "title": "Great World and long-running history",
-    "open": 2,
-    "total": 6,
-    "firstOpen": "4.0.1"
-  },
-  "openPoints": [
-    {
-      "id": "4.0.1",
-      "section": "4.0",
-      "title": "Great World and long-running history",
-      "label": "Multiple kingdoms and map regions",
-      "missing": [
-        "Diplomacy models four abstract neighbouring realms; there is no multi-kingdom world map or region ownership consumer."
-      ]
-    },
-    {
-      "id": "4.0.6",
-      "section": "4.0",
-      "title": "Great World and long-running history",
-      "label": "Mod/data packs after schema and security boundaries",
-      "missing": [
-        "There is no mod manifest, data-pack loader, sandbox boundary or compatibility validator."
-      ]
-    }
-  ],
+  "nextSection": null,
+  "openPoints": [],
   "sections": [
     {
       "id": "1.1",
@@ -43290,17 +43265,66 @@
         {
           "id": "4.0.1",
           "label": "Multiple kingdoms and map regions",
-          "status": "open",
-          "missing": [
-            "Diplomacy models four abstract neighbouring realms; there is no multi-kingdom world map or region ownership consumer."
+          "evidence": [
+            {
+              "file": "js/world/world-regions.js",
+              "symbol": "WORLD_REGION_CATALOG",
+              "role": "province-catalog"
+            },
+            {
+              "file": "js/world/world-regions.js",
+              "symbol": "WORLD_KINGDOM_IDS",
+              "role": "kingdom-catalog"
+            },
+            {
+              "file": "js/systems/world-map.js",
+              "symbol": "getWorldMapSnapshot",
+              "role": "province-state"
+            },
+            {
+              "file": "js/systems/world-map.js",
+              "symbol": "pressRegionClaim",
+              "role": "player-claim"
+            },
+            {
+              "file": "js/systems/world-map.js",
+              "symbol": "updateRegions",
+              "role": "annual-province-simulation"
+            },
+            {
+              "file": "js/presentation/world-map-panel.js",
+              "symbol": "renderWorldMapPanel",
+              "role": "gameplay"
+            },
+            {
+              "file": "js/core/save-runtime.js",
+              "symbol": "normalizeWorldMapSnapshot",
+              "role": "persistence"
+            },
+            {
+              "file": "js/simulation/simulation.js",
+              "symbol": "worldMap",
+              "role": "simulation-cadence"
+            }
           ],
           "tests": [
             "tests/systems/ai-chronicle.test.js",
-            "tests/systems/diplomacy.test.js"
+            "tests/systems/world-map.test.js",
+            "tests/browser/world-map.mjs"
           ],
+          "status": "implemented",
+          "missing": [],
           "consumers": [
             "js/presentation/ai-chronicle-panel.js#renderAiChroniclePanel (history)",
-            "js/core/save-migrations.js#migrateSaveSnapshot (persistence)"
+            "js/core/save-migrations.js#migrateSaveSnapshot (persistence)",
+            "js/world/world-regions.js#WORLD_REGION_CATALOG (province-catalog)",
+            "js/world/world-regions.js#WORLD_KINGDOM_IDS (kingdom-catalog)",
+            "js/systems/world-map.js#getWorldMapSnapshot (province-state)",
+            "js/systems/world-map.js#pressRegionClaim (player-claim)",
+            "js/systems/world-map.js#updateRegions (annual-province-simulation)",
+            "js/presentation/world-map-panel.js#renderWorldMapPanel (gameplay)",
+            "js/core/save-runtime.js#normalizeWorldMapSnapshot (persistence)",
+            "js/simulation/simulation.js#worldMap (simulation-cadence)"
           ],
           "probe": null
         },
@@ -43493,17 +43517,60 @@
         {
           "id": "4.0.6",
           "label": "Mod/data packs after schema and security boundaries",
-          "status": "open",
-          "missing": [
-            "There is no mod manifest, data-pack loader, sandbox boundary or compatibility validator."
+          "evidence": [
+            {
+              "file": "js/core/data-packs.js",
+              "symbol": "validateDataPack",
+              "role": "schema-security"
+            },
+            {
+              "file": "js/core/data-packs.js",
+              "symbol": "installDataPack",
+              "role": "local-library"
+            },
+            {
+              "file": "js/core/data-packs.js",
+              "symbol": "getDataPackScenarios",
+              "role": "scenario-consumer"
+            },
+            {
+              "file": "js/core/data-packs.js",
+              "symbol": "getDataPackRegionLabel",
+              "role": "world-map-consumer"
+            },
+            {
+              "file": "js/systems/world-map.js",
+              "symbol": "regionDisplayName",
+              "role": "province-label-consumer"
+            },
+            {
+              "file": "js/app/main.js",
+              "symbol": "setupScenarioPicker",
+              "role": "start-screen"
+            },
+            {
+              "file": "index.html",
+              "symbol": "data-pack-forge",
+              "role": "start-screen"
+            }
           ],
           "tests": [
             "tests/systems/ai-chronicle.test.js",
-            "tests/systems/card-catalog.test.js"
+            "tests/core/data-packs.test.js",
+            "tests/browser/scenario-start.mjs"
           ],
+          "status": "implemented",
+          "missing": [],
           "consumers": [
             "js/presentation/ai-chronicle-panel.js#renderAiChroniclePanel (history)",
-            "js/core/save-migrations.js#migrateSaveSnapshot (persistence)"
+            "js/core/save-migrations.js#migrateSaveSnapshot (persistence)",
+            "js/core/data-packs.js#validateDataPack (schema-security)",
+            "js/core/data-packs.js#installDataPack (local-library)",
+            "js/core/data-packs.js#getDataPackScenarios (scenario-consumer)",
+            "js/core/data-packs.js#getDataPackRegionLabel (world-map-consumer)",
+            "js/systems/world-map.js#regionDisplayName (province-label-consumer)",
+            "js/app/main.js#setupScenarioPicker (start-screen)",
+            "index.html#data-pack-forge (start-screen)"
           ],
           "probe": null
         }
@@ -43533,8 +43600,8 @@
       "probeFunction": null,
       "probeClimate": "temperate",
       "probeExtra": {},
-      "implemented": 4,
-      "open": 2,
+      "implemented": 6,
+      "open": 0,
       "total": 6
     }
   ]

@@ -385,6 +385,17 @@
                     <p id="scenario-editor-status" class="scenario-editor__status" role="status" aria-live="polite"></p>
                     <p class="profile-note">Custom scenarios are validated and kept in this browser (up to six). Their start stores replace the default opening stores; the founding charter still applies afterwards. The objective deadline must fall after the opening.</p>
                 </details>
+                <details id="data-pack-forge" class="data-pack-forge">
+                    <summary>DATA PACKS · LOCAL CONTENT</summary>
+                    <p class="scenario-forge__intro">A data pack is bounded JSON, never executable code. It can add up to six authored scenarios and rename a few provinces on the world map. Packs are checked against this game version, stored only in this browser and listed here before any realm is founded.</p>
+                    <div class="data-pack-import">
+                        <label for="data-pack-file"><span>PACK FILE</span><input id="data-pack-file" type="file" accept=".json,application/json"></label>
+                        <button id="data-pack-import" class="ui-button ui-button--secondary secondary-button" type="button">INSTALL PACK</button>
+                    </div>
+                    <p id="data-pack-status" class="scenario-editor__status" role="status" aria-live="polite"></p>
+                    <div id="data-pack-list" class="data-pack-list"></div>
+                    <p class="profile-note">No code, URLs, markup or unrestricted fields are accepted. Installed packs persist locally; removing a pack never changes a running realm or its saved scenario objective.</p>
+                </details>
             </section>
             <label for="world-seed-input">WORLD SEED</label>
             <div class="seed-row"><input id="world-seed-input" type="number" min="1" step="1"><button id="random-seed-btn" class="ui-button ui-button--secondary secondary-button" type="button">RANDOMIZE</button></div>
@@ -522,7 +533,7 @@
             <div><span>Save / Load</span><kbd>CTRL+S / CTRL+O</kbd></div><div><span>Help / close</span><kbd>? / ESC</kbd></div>
         </div>
         <div class="profile-note">Saves are currently stored per local browser profile. Do not use this as secure multi-user authentication or cloud backup.</div>
-        <div class="settings-meta"><span>KINGS &amp; CARDS · <b>v3.67.0</b></span><span>ORIGINAL INTERFACE · LOCAL-FIRST · VANILLA HTML / CSS / JS</span></div>
+        <div class="settings-meta"><span>KINGS &amp; CARDS · <b>v3.68.0</b></span><span>ORIGINAL INTERFACE · LOCAL-FIRST · VANILLA HTML / CSS / JS</span></div>
     </div>
 </div>
 

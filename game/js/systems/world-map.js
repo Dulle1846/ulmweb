@@ -17,8 +17,17 @@ import {
 import { BASE_PRICES } from "./market.js";
 import { addResource } from "./resources.js";
 import { addLog } from "./events.js";
+import { getDataPackRegionLabel } from "../core/data-packs.js";
+import {
+    CROWN_OWNER_ID, WORLD_REGION_CATALOG, regionDefinitionFor, regionIsKnown
+} from "../world/world-regions.js";
 
-export const WORLD_MAP_VERSION = 1;
+export const WORLD_MAP_VERSION = 2;
+export const REGION_CLAIM_COST = Object.freeze({ gold: 24, food: 8 });
+export const REGION_CONTROL_MAX = 100;
+export const REGION_CONTESTED_BELOW = 38;
+export const REGION_SECURE_ABOVE = 48;
+export const REGION_FLIP_BELOW = 12;
 export const TRADE_ROUTE_LIMIT = 6;
 export const TRADE_ROUTE_LOT = 6;
 export const TRADE_ROUTE_COST = Object.freeze({ gold: 15, wood: 8 });
@@ -94,12 +103,27 @@ function defaultFrontier(realmId) {
     };
 }
 
+function defaultRegion(definition) {
+    return {
+        id: definition.id,
+        ownerId: definition.ownerId,
+        control: definition.control,
+        loyalty: definition.loyalty,
+        garrison: definition.garrison,
+        contestedBy: null,
+        lastChangeYear: 0,
+        changes: 0
+    };
+}
+
 export function createWorldMapState() {
     return {
         version: WORLD_MAP_VERSION,
         lastUpdateYear: 0,
+        lastRegionClaimYear: 0,
         routes: [],
         frontiers: DIPLOMATIC_REALMS.map(realm => defaultFrontier(realm.id)),
+        regions: WORLD_REGION_CATALOG.map(defaultRegion),
         history: [],
         totals: {
             routesOpened: 0,
@@ -107,7 +131,10 @@ export function createWorldMapState() {
             earned: 0,
             spent: 0,
             incidents: 0,
-            stalls: 0
+            stalls: 0,
+            regionYield: 0,
+            regionChanges: 0,
+            provinceClaims: 0
         }
     };
 }
@@ -123,6 +150,25 @@ function normalizeFrontier(input, realmId) {
         incidents: integer(source.incidents, 0, 9999),
         lastIncidentYear: yearOf(source.lastIncidentYear),
         updatedYear: yearOf(source.updatedYear)
+    };
+}
+
+function normalizeRegion(input, definition) {
+    const source = input && typeof input === "object" && !Array.isArray(input) ? input : {};
+    const ownerId = source.ownerId === CROWN_OWNER_ID || REALM_BY_ID.has(text(source.ownerId, 40))
+        ? source.ownerId
+        : definition.ownerId;
+    const contestedBy = text(source.contestedBy, 40);
+    return {
+        id: definition.id,
+        ownerId,
+        control: Math.round(clamp(source.control ?? definition.control, 0, REGION_CONTROL_MAX)),
+        loyalty: Math.round(clamp(source.loyalty ?? definition.loyalty)),
+        garrison: Math.round(clamp(source.garrison ?? definition.garrison, 0, 10)),
+        contestedBy: contestedBy && contestedBy !== ownerId && (contestedBy === CROWN_OWNER_ID || REALM_BY_ID.has(contestedBy))
+            ? contestedBy : null,
+        lastChangeYear: yearOf(source.lastChangeYear),
+        changes: integer(source.changes, 0, 9999)
     };
 }
 
@@ -189,11 +235,18 @@ export function normalizeWorldMapSnapshot(input) {
             .filter(row => row && typeof row === "object" && !Array.isArray(row))
             .map(row => [text(row.realmId, 40), row])
     );
+    const savedRegions = new Map(
+        (Array.isArray(source.regions) ? source.regions : [])
+            .filter(row => row && typeof row === "object" && !Array.isArray(row))
+            .map(row => [text(row.id, 40), row])
+    );
     return {
         version: WORLD_MAP_VERSION,
         lastUpdateYear: yearOf(source.lastUpdateYear),
+        lastRegionClaimYear: yearOf(source.lastRegionClaimYear),
         routes,
         frontiers: DIPLOMATIC_REALMS.map(realm => normalizeFrontier(savedFrontiers.get(realm.id), realm.id)),
+        regions: WORLD_REGION_CATALOG.map(definition => normalizeRegion(savedRegions.get(definition.id), definition)),
         history: (Array.isArray(source.history) ? source.history : [])
             .map(normalizeHistoryEntry).filter(Boolean).slice(0, WORLD_ROUTE_HISTORY_LIMIT),
         totals: {
@@ -202,7 +255,10 @@ export function normalizeWorldMapSnapshot(input) {
             earned: integer(source.totals?.earned),
             spent: integer(source.totals?.spent),
             incidents: integer(source.totals?.incidents, 0, 9999),
-            stalls: integer(source.totals?.stalls, 0, 9999)
+            stalls: integer(source.totals?.stalls, 0, 9999),
+            regionYield: integer(source.totals?.regionYield),
+            regionChanges: integer(source.totals?.regionChanges, 0, 9999),
+            provinceClaims: integer(source.totals?.provinceClaims, 0, 9999)
         }
     };
 }
@@ -212,7 +268,8 @@ export function validateWorldMapSnapshot(snapshot) {
     if (typeof snapshot !== "object" || Array.isArray(snapshot)) {
         throw new Error("Save data contains an invalid world map state.");
     }
-    if (Number(snapshot.version) !== WORLD_MAP_VERSION) {
+    const version = Number(snapshot.version);
+    if (version !== 1 && version !== WORLD_MAP_VERSION) {
         throw new Error("Save data contains an unsupported world map version.");
     }
     if (snapshot.routes !== undefined && (!Array.isArray(snapshot.routes) || snapshot.routes.length > TRADE_ROUTE_LIMIT)) {
@@ -230,6 +287,31 @@ export function validateWorldMapSnapshot(snapshot) {
     if (snapshot.history !== undefined && (!Array.isArray(snapshot.history) || snapshot.history.length > WORLD_ROUTE_HISTORY_LIMIT)) {
         throw new Error("Save data contains an invalid world map history.");
     }
+    if (snapshot.regions !== undefined) {
+        if (!Array.isArray(snapshot.regions) || snapshot.regions.length > WORLD_REGION_CATALOG.length) {
+            throw new Error("Save data contains an invalid province list.");
+        }
+        const seen = new Set();
+        for (const [index, region] of snapshot.regions.entries()) {
+            if (!region || typeof region !== "object" || Array.isArray(region)) {
+                throw new Error("Save data contains an invalid province at position " + index + ".");
+            }
+            const id = text(region.id, 40);
+            if (!regionIsKnown(id) || seen.has(id)) {
+                throw new Error("Save data contains an unknown or duplicate province id.");
+            }
+            seen.add(id);
+            const ownerId = text(region.ownerId, 40);
+            if (ownerId !== CROWN_OWNER_ID && !REALM_BY_ID.has(ownerId)) {
+                throw new Error("Save data contains an unknown province owner.");
+            }
+            if (!Number.isFinite(Number(region.control)) || Number(region.control) < 0 || Number(region.control) > REGION_CONTROL_MAX ||
+                !Number.isFinite(Number(region.loyalty)) || Number(region.loyalty) < 0 || Number(region.loyalty) > 100 ||
+                !Number.isFinite(Number(region.garrison)) || Number(region.garrison) < 0 || Number(region.garrison) > 10) {
+                throw new Error("Save data contains an invalid province control record.");
+            }
+        }
+    }
     return true;
 }
 
@@ -237,7 +319,8 @@ export function ensureWorldMap() {
     const current = state.worldMap;
     if (!current || typeof current !== "object" || Array.isArray(current) ||
         current.version !== WORLD_MAP_VERSION || !Array.isArray(current.routes) ||
-        !Array.isArray(current.frontiers)) {
+        !Array.isArray(current.frontiers) || !Array.isArray(current.regions) ||
+        current.regions.length !== WORLD_REGION_CATALOG.length) {
         state.worldMap = normalizeWorldMapSnapshot(current);
     }
     return state.worldMap;
@@ -250,6 +333,133 @@ function frontierEntry(map, realmId) {
         map.frontiers.push(entry);
     }
     return entry;
+}
+
+function regionEntry(map, regionId) {
+    return map.regions.find(row => row.id === regionId) || null;
+}
+
+function regionDisplayName(regionId, fallback) {
+    return getDataPackRegionLabel(regionId) || fallback;
+}
+
+function crownKingdomName() {
+    return text(state.identity?.kingdomName || state.kingdomName || "The Crown", 60) || "The Crown";
+}
+
+function crownRulerName() {
+    const king = (state.entities || []).find(entity => entity && !entity.dead && entity.isKing);
+    return text(king?.name || king?.person?.name || "The Sovereign", 80) || "The Sovereign";
+}
+
+function regionOwnerName(ownerId) {
+    if (ownerId === CROWN_OWNER_ID) return crownKingdomName();
+    return REALM_BY_ID.get(ownerId)?.name || "Unclaimed";
+}
+
+function regionYieldFor(region, definition) {
+    const factor = 0.55 + clamp(region.control, 0, REGION_CONTROL_MAX) / 200 + clamp(region.loyalty) / 400;
+    return Math.max(1, Math.round(definition.baseYield * factor));
+}
+
+function adjacentCrownCount(region, map) {
+    const definition = regionDefinitionFor(region.id);
+    if (!definition) return 0;
+    return definition.neighbours.filter(id => regionEntry(map, id)?.ownerId === CROWN_OWNER_ID).length;
+}
+
+const REGION_CLAIM_REASONS = Object.freeze({
+    "crown-province": "Already held by the crown",
+    "no-crown-border": "No crown province shares this border",
+    "unknown-owner": "The province has no known kingdom",
+    "alliance-holds-the-border": "An alliance protects this border",
+    "trade-pact-holds-the-border": "A trade pact protects this border",
+    "relation-too-high": "The court will not press a friendly border",
+    "claim-already-pressed": "One claim can be pressed each year",
+    "not-enough-gold": "The crown treasury is short",
+    "not-enough-food": "The royal granary is short"
+});
+
+function regionClaimReadiness(region, map) {
+    const definition = regionDefinitionFor(region.id);
+    if (!definition) return { ok: false, reason: "unknown-owner", reasonLabel: REGION_CLAIM_REASONS["unknown-owner"] };
+    if (region.ownerId === CROWN_OWNER_ID) {
+        return { ok: false, reason: "crown-province", reasonLabel: REGION_CLAIM_REASONS["crown-province"] };
+    }
+    if (adjacentCrownCount(region, map) === 0) {
+        return { ok: false, reason: "no-crown-border", reasonLabel: REGION_CLAIM_REASONS["no-crown-border"] };
+    }
+    const realm = realmState(region.ownerId);
+    if (!realm) return { ok: false, reason: "unknown-owner", reasonLabel: REGION_CLAIM_REASONS["unknown-owner"] };
+    if (realm.treaty === "alliance") {
+        return { ok: false, reason: "alliance-holds-the-border", reasonLabel: REGION_CLAIM_REASONS["alliance-holds-the-border"] };
+    }
+    if (realm.treaty === "trade") {
+        return { ok: false, reason: "trade-pact-holds-the-border", reasonLabel: REGION_CLAIM_REASONS["trade-pact-holds-the-border"] };
+    }
+    if (realm.treaty !== "war" && realm.relation >= 55) {
+        return { ok: false, reason: "relation-too-high", reasonLabel: REGION_CLAIM_REASONS["relation-too-high"] };
+    }
+    const year = Math.max(1, Math.floor(Number(state.year) || 1));
+    if (map.lastRegionClaimYear >= year) {
+        return { ok: false, reason: "claim-already-pressed", reasonLabel: REGION_CLAIM_REASONS["claim-already-pressed"] };
+    }
+    if ((Number(state.resources?.gold) || 0) < REGION_CLAIM_COST.gold) {
+        return { ok: false, reason: "not-enough-gold", reasonLabel: REGION_CLAIM_REASONS["not-enough-gold"] };
+    }
+    if ((Number(state.resources?.food) || 0) < REGION_CLAIM_COST.food) {
+        return { ok: false, reason: "not-enough-food", reasonLabel: REGION_CLAIM_REASONS["not-enough-food"] };
+    }
+    const war = realm.treaty === "war";
+    const chance = Math.max(5, Math.min(92, Math.round(
+        28 + (REGION_CONTROL_MAX - region.control) * 0.45 + (war ? 18 : 0) +
+        adjacentCrownCount(region, map) * 4 - region.garrison * 4 + (region.loyalty < 45 ? 6 : 0)
+    )));
+    return { ok: true, chance, cost: REGION_CLAIM_COST };
+}
+
+function regionSnapshot(region, map) {
+    const definition = regionDefinitionFor(region.id);
+    const readiness = regionClaimReadiness(region, map);
+    return {
+        id: region.id,
+        name: regionDisplayName(region.id, definition.name),
+        description: definition.description,
+        terrain: definition.terrain,
+        resource: definition.resource,
+        baseYield: definition.baseYield,
+        yield: regionYieldFor(region, definition),
+        ownerId: region.ownerId,
+        ownerName: regionOwnerName(region.ownerId),
+        ownerKind: region.ownerId === CROWN_OWNER_ID ? "crown" : "realm",
+        control: Math.round(region.control),
+        loyalty: Math.round(region.loyalty),
+        garrison: Math.round(region.garrison),
+        contestedBy: region.contestedBy,
+        contestedName: region.contestedBy ? regionOwnerName(region.contestedBy) : null,
+        contested: Boolean(region.contestedBy),
+        lastChangeYear: region.lastChangeYear,
+        changes: region.changes,
+        anchor: { ...definition.anchor },
+        neighbours: definition.neighbours.map(id => ({
+            id,
+            name: regionDisplayName(id, regionDefinitionFor(id)?.name || id),
+            ownerId: regionEntry(map, id)?.ownerId || null
+        })),
+        adjacentCrown: adjacentCrownCount(region, map),
+        canClaim: readiness.ok,
+        claimReason: readiness.reason || null,
+        claimReasonLabel: readiness.reasonLabel || null,
+        claimChance: readiness.chance || 0,
+        claimCost: REGION_CLAIM_COST
+    };
+}
+
+function provincePressureFor(realmId, map) {
+    return map.regions.reduce((sum, region) => {
+        if (region.ownerId !== realmId) return sum;
+        return sum + (region.contestedBy ? 4 : 0) + (region.control < 35 ? 2 : 0);
+    }, 0);
 }
 
 function seatById(seatId) {
@@ -355,7 +565,7 @@ function nearbySeats(seats, anchor) {
     return { count, nearest };
 }
 
-export function frontierPressureFor(realm, seats, watch = 0, routeCount = 0, relief = 0) {
+export function frontierPressureFor(realm, seats, watch = 0, routeCount = 0, relief = 0, provincePressure = 0) {
     const line = realmState(realm.id);
     const treaty = line?.treaty || "none";
     const anchor = regionAnchorFor(realm.id, DIPLOMATIC_REALMS.indexOf(realm));
@@ -372,6 +582,7 @@ export function frontierPressureFor(realm, seats, watch = 0, routeCount = 0, rel
     pressure -= clamp(relief, 0, 24);
     pressure -= clamp(dread.dread, 0, 100) * 0.1;
     pressure += Math.max(0, finite(levy.percent)) * 0.35;
+    pressure += clamp(provincePressure, 0, 20);
     return {
         pressure: Math.round(clamp(pressure)),
         band: frontierBand(pressure),
@@ -389,7 +600,8 @@ function liveRealmRow(realm, seats, map, year) {
     const routes = map.routes.filter(route => route.realmId === realm.id);
     const active = routes.filter(route => routeStatus(route, seatById(route.seatId), line) === "open").length;
     const routeDelivered = routes.reduce((sum, route) => sum + Math.max(0, Number(route.delivered) || 0), 0);
-    const computed = frontierPressureFor(realm, seats, entry.watch, active, entry.relief);
+    const computed = frontierPressureFor(realm, seats, entry.watch, active, entry.relief, provincePressureFor(realm.id, map));
+    const provinces = map.regions.filter(region => region.ownerId === realm.id);
     return {
         id: realm.id,
         name: realm.name,
@@ -414,6 +626,9 @@ function liveRealmRow(realm, seats, map, year) {
         activeRoutes: active,
         routeDelivered: integer(routeDelivered),
         tradeVolume: integer(line?.tradeVolume),
+        provinces: provinces.length,
+        contestedProvinces: provinces.filter(region => region.contestedBy).length,
+        provincePressure: provincePressureFor(realm.id, map),
         year
     };
 }
@@ -441,12 +656,39 @@ export function getWorldMapSnapshot() {
             payout: lotPayout(route.resource)
         };
     });
+    const regions = map.regions.map(region => regionSnapshot(region, map));
+    const kingdoms = [{
+        id: CROWN_OWNER_ID,
+        name: crownKingdomName(),
+        ruler: crownRulerName(),
+        isCrown: true,
+        regionCount: regions.filter(region => region.ownerId === CROWN_OWNER_ID).length,
+        control: regions.filter(region => region.ownerId === CROWN_OWNER_ID).reduce((sum, region) => sum + region.control, 0),
+        contested: regions.filter(region => region.ownerId === CROWN_OWNER_ID && region.contested).length
+    }, ...DIPLOMATIC_REALMS.map(realm => {
+        const owned = regions.filter(region => region.ownerId === realm.id);
+        return {
+            id: realm.id,
+            name: realm.name,
+            ruler: realm.ruler,
+            isCrown: false,
+            regionCount: owned.length,
+            control: owned.reduce((sum, region) => sum + region.control, 0),
+            contested: owned.filter(region => region.contested).length
+        };
+    })].map(kingdom => ({
+        ...kingdom,
+        control: kingdom.regionCount ? Math.round(kingdom.control / kingdom.regionCount) : 0
+    }));
     const totals = {
         ...map.totals,
         activeRoutes: routes.filter(route => route.status === "open").length,
         closedRoutes: routes.filter(route => route.status === "closed").length,
         stallRoutes: routes.filter(route => !["open", "closed"].includes(route.status)).length,
-        watchLevels: map.frontiers.reduce((sum, row) => sum + row.watch, 0)
+        watchLevels: map.frontiers.reduce((sum, row) => sum + row.watch, 0),
+        crownProvinces: regions.filter(region => region.ownerId === CROWN_OWNER_ID).length,
+        contestedProvinces: regions.filter(region => region.contested).length,
+        annualYield: regions.filter(region => region.ownerId === CROWN_OWNER_ID).reduce((sum, region) => sum + region.yield, 0)
     };
     return {
         version: WORLD_MAP_VERSION,
@@ -456,11 +698,17 @@ export function getWorldMapSnapshot() {
         // player-facing snapshot carries plain data.
         seats: seats.map(({ live, ...seat }) => seat),
         realms,
+        regions,
+        kingdoms,
         routes,
         totals,
         history: map.history.slice(0, 12),
-        costs: { route: TRADE_ROUTE_COST, watch: FRONTIER_WATCH_COST, lot: TRADE_ROUTE_LOT },
-        limits: { routes: TRADE_ROUTE_LIMIT, watch: FRONTIER_WATCH_LIMIT },
+        costs: { route: TRADE_ROUTE_COST, watch: FRONTIER_WATCH_COST, lot: TRADE_ROUTE_LOT, claim: REGION_CLAIM_COST },
+        limits: { routes: TRADE_ROUTE_LIMIT, watch: FRONTIER_WATCH_LIMIT, provinces: WORLD_REGION_CATALOG.length },
+        regionAction: {
+            lastClaimYear: map.lastRegionClaimYear,
+            oneClaimPerYear: true
+        },
         inventory: {
             wood: Math.max(0, finite(state.resources?.wood)),
             stone: Math.max(0, finite(state.resources?.stone)),
@@ -697,6 +945,171 @@ function settleExport(map, route, seat, realm, definition, year) {
     });
 }
 
+function strongestNeighbourOwner(region, map) {
+    const definition = regionDefinitionFor(region.id);
+    if (!definition) return null;
+    let best = null;
+    for (const id of definition.neighbours) {
+        const other = regionEntry(map, id);
+        if (!other || other.ownerId === region.ownerId) continue;
+        const otherRealm = realmState(other.ownerId);
+        const ownerRealm = region.ownerId === CROWN_OWNER_ID ? null : realmState(region.ownerId);
+        // Realms only have a treaty with the crown, not with each other. A
+        // foreign province is hostile to the crown only across a crown border;
+        // two foreign neighbours are not at war merely because one of them is
+        // fighting the crown elsewhere.
+        const hostile = region.ownerId === CROWN_OWNER_ID
+            ? otherRealm?.treaty === "war"
+            : other.ownerId === CROWN_OWNER_ID && ownerRealm?.treaty === "war";
+        const score = other.control + (hostile ? 24 : 0) + (other.contestedBy ? -8 : 0) + (id < (best?.id || "" ) ? 1 : 0);
+        if (!best || score > best.score) best = { id, ownerId: other.ownerId, score };
+    }
+    return best;
+}
+
+function regionCanFlip(region, challengerId) {
+    if (!challengerId) return false;
+    if (region.ownerId === CROWN_OWNER_ID) return realmState(challengerId)?.treaty === "war";
+    const ownerRealm = realmState(region.ownerId);
+    if (challengerId === CROWN_OWNER_ID) return ownerRealm?.treaty === "war";
+    // The four neighbouring realms do not fight each other in the shared
+    // diplomacy ledger; only a crown border can change a province's owner.
+    return false;
+}
+
+function changeRegionOwner(map, region, ownerId, year, kind, summary) {
+    const oldOwner = region.ownerId;
+    region.ownerId = ownerId;
+    region.control = Math.max(26, Math.round(region.control));
+    region.loyalty = Math.max(38, Math.round(region.loyalty));
+    region.garrison = 1;
+    region.contestedBy = null;
+    region.lastChangeYear = year;
+    region.changes += 1;
+    map.totals.regionChanges += 1;
+    if (ownerId === CROWN_OWNER_ID) {
+        state.morale = clamp((Number(state.morale) || 0) + 1.5);
+    } else if (oldOwner === CROWN_OWNER_ID) {
+        state.morale = clamp((Number(state.morale) || 0) - 2);
+        if (state.politics && typeof state.politics === "object") {
+            state.politics.legitimacy = clamp((Number(state.politics.legitimacy) || 0) - 1);
+        }
+    }
+    record(map, kind, summary, ownerId === CROWN_OWNER_ID ? null : ownerId);
+    addLog("PROVINCE CHANGED HANDS · " + regionDisplayName(region.id, regionDefinitionFor(region.id).name).toUpperCase(),
+        ownerId === CROWN_OWNER_ID ? "#a5d6a7" : "#d27b6d", "frontier");
+}
+
+function updateRegions(map, year) {
+    let annualYield = 0;
+    let changes = 0;
+    for (const region of map.regions) {
+        const definition = regionDefinitionFor(region.id);
+        if (!definition) continue;
+        const ownerRealm = region.ownerId === CROWN_OWNER_ID ? null : realmState(region.ownerId);
+        const atWar = ownerRealm?.treaty === "war";
+        let delta = region.ownerId === CROWN_OWNER_ID
+            ? ((Number(state.morale) || 0) >= 50 ? 1 : -1)
+            : (atWar ? -2 : 1);
+        if (region.contestedBy) delta -= 2;
+        if (ownerRealm && !atWar && ownerRealm.relation >= 55) delta += 1;
+        if (ownerRealm && ownerRealm.relation < 25) delta -= 1;
+        const hostileBorders = definition.neighbours.filter(id => {
+            const other = regionEntry(map, id);
+            if (!other || other.ownerId === region.ownerId) return false;
+            return region.ownerId === CROWN_OWNER_ID
+                ? realmState(other.ownerId)?.treaty === "war"
+                : other.ownerId === CROWN_OWNER_ID && atWar;
+        }).length;
+        delta -= hostileBorders * 2;
+        region.control = clamp(region.control + delta, 0, REGION_CONTROL_MAX);
+        region.loyalty = clamp(region.loyalty + (region.ownerId === CROWN_OWNER_ID
+            ? ((Number(state.morale) || 0) >= 50 ? 1 : -1)
+            : (ownerRealm && ownerRealm.relation >= 50 ? 1 : -1)) - (region.contestedBy ? 2 : 0));
+        if (region.control < REGION_CONTESTED_BELOW) {
+            const challenger = strongestNeighbourOwner(region, map);
+            region.contestedBy = challenger?.ownerId || null;
+        } else if (region.control >= REGION_SECURE_ABOVE) {
+            region.contestedBy = null;
+        }
+        if (region.contestedBy && region.control <= REGION_FLIP_BELOW && regionCanFlip(region, region.contestedBy)) {
+            const roll = hashText(region.id + ":" + year + ":flip") % 100;
+            const chance = region.ownerId === CROWN_OWNER_ID ? 48 : 36;
+            if (roll < chance) {
+                const previous = region.ownerId;
+                const oldName = regionOwnerName(previous);
+                const newName = regionOwnerName(region.contestedBy);
+                const summary = regionDisplayName(region.id, definition.name) + " passed from " + oldName + " to " + newName + " after a contested border year.";
+                changeRegionOwner(map, region, region.contestedBy, year, "province-changed", summary);
+                changes += 1;
+                continue;
+            }
+        }
+        if (region.ownerId === CROWN_OWNER_ID) {
+            const amount = regionYieldFor(region, definition);
+            addResource(definition.resource, amount);
+            map.totals.regionYield += amount;
+            annualYield += amount;
+        }
+    }
+    map.lastRegionClaimYear = Math.min(map.lastRegionClaimYear, year);
+    return { annualYield, changes };
+}
+
+export function pressRegionClaim(regionId) {
+    const map = ensureWorldMap();
+    const region = regionEntry(map, text(regionId, 40));
+    if (!region) return { ok: false, reason: "unknown-province" };
+    const readiness = regionClaimReadiness(region, map);
+    if (!readiness.ok) return { ok: false, reason: readiness.reason, reasonLabel: readiness.reasonLabel };
+    const year = Math.max(1, Math.floor(Number(state.year) || 1));
+    addResource("gold", -REGION_CLAIM_COST.gold);
+    addResource("food", -REGION_CLAIM_COST.food);
+    map.lastRegionClaimYear = year;
+    map.totals.provinceClaims += 1;
+    const definition = regionDefinitionFor(region.id);
+    const oldOwner = region.ownerId;
+    const oldRealm = realmState(oldOwner);
+    const roll = hashText(region.id + ":" + year + ":claim") % 100;
+    const success = roll < readiness.chance;
+    if (success) {
+        region.ownerId = CROWN_OWNER_ID;
+        region.control = 30;
+        region.loyalty = 42;
+        region.garrison = 1;
+        region.contestedBy = null;
+        region.lastChangeYear = year;
+        region.changes += 1;
+        map.totals.regionChanges += 1;
+        if (oldRealm) {
+            oldRealm.relation = clamp(oldRealm.relation - 14);
+            oldRealm.trust = clamp(oldRealm.trust - 10);
+            oldRealm.fear = clamp(oldRealm.fear + 5);
+        }
+        state.morale = clamp((Number(state.morale) || 0) + 1.5);
+        record(map, "province-claimed", "The crown pressed its claim to " + regionDisplayName(region.id, definition.name) + " and the border yielded.");
+        addLog("PROVINCE CLAIMED · " + regionDisplayName(region.id, definition.name).toUpperCase(), "#a5d6a7", "frontier");
+    } else {
+        region.control = clamp(region.control - 14);
+        region.loyalty = clamp(region.loyalty - 6);
+        if (oldRealm) {
+            oldRealm.relation = clamp(oldRealm.relation - 6);
+            oldRealm.trust = clamp(oldRealm.trust - 4);
+        }
+        record(map, "province-claim-repulsed", "The claim on " + regionDisplayName(region.id, definition.name) + " was repulsed; the border holds for now.");
+        addLog("PROVINCE CLAIM REPULSED · " + regionDisplayName(region.id, definition.name).toUpperCase(), "#d8a38a", "frontier");
+    }
+    return {
+        ok: true,
+        success,
+        chance: readiness.chance,
+        message: success
+            ? "Province claimed: " + regionDisplayName(region.id, definition.name)
+            : "Claim repulsed at " + regionDisplayName(region.id, definition.name) + " (" + readiness.chance + "% chance)",
+        region: regionSnapshot(region, map)
+    };
+}
+
 // One bounded annual pass. It runs after the court has settled its own trade
 // agreements and after the settlements received their year-start grant.
 export function updateWorldMap() {
@@ -712,6 +1125,7 @@ export function updateWorldMap() {
     const seatFor = route => seats.find(seat =>
         seat.buildingId === route.seatId || seat.id === route.seatId) || null;
     const levy = getFrontierPressure();
+    updateRegions(map, year);
 
     for (const definition of DIPLOMATIC_REALMS) {
         const entry = frontierEntry(map, definition.id);
@@ -719,7 +1133,7 @@ export function updateWorldMap() {
         const activeRoutes = map.routes.filter(route =>
             route.realmId === definition.id &&
             routeStatus(route, seatFor(route), realm) === "open").length;
-        const computed = frontierPressureFor(definition, seatRows, entry.watch, activeRoutes, entry.relief);
+        const computed = frontierPressureFor(definition, seatRows, entry.watch, activeRoutes, entry.relief, provincePressureFor(definition.id, map));
         const pressure = computed.pressure;
         entry.pressure = pressure;
         entry.updatedYear = year;

@@ -157,12 +157,12 @@ Art:
 
 ## 4.0 — Great World and long-running history
 
-- Multiple kingdoms and map regions.
-- World map, trade routes, borders and frontier settlements. **Implemented in 3.50.0:** a WORLD management tab over the real settlement seats and diplomatic realms, standing annual caravans that move goods through the existing market stock and seat depots, and saved frontiers that follow treaties and can raid; see [WORLD_MAP.md](WORLD_MAP.md).
+- Multiple kingdoms and map regions. **Implemented in 3.68.0:** ten saved provinces held by five crowns (the player's crown and the four diplomatic realms), with control, loyalty, garrisons, yearly yields, contested borders, deterministic ownership changes and one charged border claim per year; see [WORLD_KINGDOMS.md](WORLD_KINGDOMS.md).
+- World map, trade routes, borders and frontier settlements. **Implemented in 3.50.0:** a WORLD management tab over the real settlement seats and diplomatic realms, standing annual caravans that move goods through the existing market stock and seat depots, and saved frontiers that follow treaties and can raid; see [WORLD_MAP.md](WORLD_MAP.md). The 3.68.0 province layer extends that same map and annual task.
 - Long-term world history, chronicles and generational change.
 - Scenario editor and multiple start conditions. **Implemented in 3.49.0:** five authored openings, a local custom editor and a daily objective that reads the live realm; see [SCENARIOS.md](SCENARIOS.md).
 - Save migration and world simulation performance for long campaigns.
-- Optional mod/data packs only after schema and security boundaries are stable.
+- Optional mod/data packs only after schema and security boundaries are stable. **Implemented in 3.68.0:** a versioned, size-bounded JSON pack with a closed schema, forbidden-key/markup checks, semantic game-version compatibility, local storage and exactly two consumers (start-screen scenarios and province labels); no code execution or save mutation; see [DATA_PACKS.md](DATA_PACKS.md).
 
 ## Cross-cutting requirements for every version
 

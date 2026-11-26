@@ -1,13 +1,56 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.67.0`
-**Next development line:** `3.68.0-dev`
+**Current production version:** `3.68.0`
+**Next development line:** `3.69.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
 **Last repository verification:** 2026-11-26 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.68.0 — Five crowns and local data packs
+
+The last two open audit points move into the running world. **4.0.1** adds a
+saved province layer to the existing world map: ten provinces, five crowns,
+ownership, control, loyalty, garrisons, yearly yields, contested borders and a
+charged border claim. **4.0.6** adds a bounded local JSON data pack with a
+closed schema, version gate and two real consumers.
+
+- `js/world/world-regions.js` names the ten provinces and their border graph;
+  `world-map.js` stores owner/control/loyalty/garrison in the existing schema-15
+  `worldMap` block. There is no second map, kingdom record or economy.
+- The annual world pass moves control and loyalty once, resolves contested
+  provinces, flips ownership only across a hostile border at 12 control or less
+  with a local deterministic roll, and pays crown province yields through
+  `addResource`. The pass is bounded to ten provinces and one run per year.
+- The WORLD panel now shows the five crowns, ten province polygons and ten
+  province cards with control, loyalty, garrison, yield and a claim action. A
+  claim costs 24 gold and 8 food, is limited to one per year, and uses a visible
+deterministic chance; success changes the owner, repulse weakens the province
+  and both spend the cost and move the former owner's relation/trust.
+- A version-1 world map without provinces normalizes to the ten defaults
+  without losing routes or frontiers; all province fields survive save/load.
+- `js/core/data-packs.js` validates a closed, size-bounded JSON contract: at
+  most 3 packs, 6 scenarios per pack, 12 installed scenarios, 10 province
+  labels per pack and 96 KB per file. It rejects unknown fields, markup, control
+  characters, forbidden keys, future game versions and unknown provinces.
+- The start screen gets a DATA PACKS section with file import, a status line, a
+  list of installed packs and removal. Pack scenarios flow into the existing
+  scenario picker; province labels flow into the existing world map through
+  `regionDisplayName()`. No pack is stored in a realm save.
+- Version 3.68.0, docs [WORLD_KINGDOMS.md](docs/WORLD_KINGDOMS.md) and
+  [DATA_PACKS.md](docs/DATA_PACKS.md), the roadmap, the UI contract and the
+  generated spec audit are updated with this batch.
+- **Proof.** The full suite passes **1,565/1,565** tests and the syntax/UI gate
+  checks 227 source files and 258 UI ids. The deterministic 25-year campaign
+  ends `ok: true` after **10,040 ticks** at **1.365 ms/tick**, all 21
+  requirements and 13 ambitions complete, **no stalled sites**, **3,507 forest
+  tiles** and **0 untyped**. The generated audit is **1,648/1,648 implemented,
+  0 open**. Browser references: `artifacts/world-map/desktop.png` (ten province
+  polygons, five kingdom cards, ten province cards, legend, no overflow and no
+  console errors) and the scenario-start pack install/select/remove flow;
+  `artifacts/world-map/map-desktop.png` shows the province layer on the map.
 
 ## 3.67.0 — The forest gets one shared data model
 

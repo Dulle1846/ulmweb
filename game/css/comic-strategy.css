@@ -311,6 +311,19 @@
 .scenario-editor__actions .secondary-button{min-height:34px;font-size:.55rem;width:auto}
 .scenario-editor__status{min-height:1rem;margin:.35rem 0 0;color:#e6c98e;font-size:.56rem;line-height:1.4}
 .scenario-editor .profile-note{margin:.2rem 0 0;font-size:.52rem;line-height:1.4}
+.data-pack-forge{margin-top:.55rem;border-top:1px solid rgba(185,154,89,.24);padding-top:.45rem}
+.data-pack-forge summary{cursor:pointer;color:#d8b979;font-size:.57rem;font-weight:900;letter-spacing:.12em}
+.data-pack-forge summary:hover{color:#f3dcb0}
+.data-pack-import{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.45rem;align-items:end;margin-top:.5rem}
+.data-pack-import label{display:flex;flex-direction:column;gap:.2rem;color:#b9c4b8;font-size:.5rem;font-weight:900;letter-spacing:.1em}
+.data-pack-import input[type=file]{min-width:0;padding:.35rem;border:1px solid rgba(185,154,89,.4);border-radius:4px;background:rgba(255,255,255,.04);color:#e9ddc2;font:500 .55rem Georgia,serif}
+.data-pack-import .secondary-button{min-height:34px;font-size:.55rem;width:auto}
+.data-pack-list{display:flex;flex-direction:column;gap:.35rem;margin-top:.45rem}
+.data-pack-row{display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem;padding:.45rem .5rem;border:1px solid rgba(185,154,89,.28);border-radius:4px;background:rgba(255,255,255,.035)}
+.data-pack-row strong{display:block;color:#f3e3bf;font-size:.6rem;letter-spacing:.04em}
+.data-pack-row small{display:block;margin-top:.1rem;color:#9fae9f;font-size:.5rem;line-height:1.35}
+.data-pack-row button{padding:.25rem .45rem;border:1px solid #8d5545;border-radius:3px;background:rgba(141,85,69,.18);color:#e3b6a8;font:800 .48rem/1.2 "Cinzel",Georgia,serif;letter-spacing:.06em;cursor:pointer}
+.data-pack-empty{margin:.2rem 0 0;color:#87968a;font-size:.52rem;line-height:1.4}
 .scenario-objective{margin:12px 0 4px;padding:13px 14px;border:2px solid #ad8750;border-radius:9px;background:linear-gradient(145deg,#fff8df,#ecd8ad);color:#243a50}
 .scenario-objective.is-won{border-color:#4d8067;background:linear-gradient(145deg,#e7f3df,#c9dfbd)}
 .scenario-objective.is-failed{border-color:#9b4a3b;background:linear-gradient(145deg,#f8e3d7,#e0bfae)}
@@ -353,6 +366,9 @@
  .scenario-card{min-height:64px}
  .scenario-editor__grid,.scenario-editor__stores{grid-template-columns:repeat(2,minmax(0,1fr))}
  .scenario-editor__objective{grid-template-columns:1fr}
+ .data-pack-import{grid-template-columns:1fr}
+ .data-pack-import .secondary-button{width:100%}
+ .data-pack-row{flex-direction:column}
  .scenario-briefing__conditions{grid-template-columns:1fr}
  .scenario-hud{max-width:145px}
  .scenario-hud strong,.scenario-hud em{max-width:145px}

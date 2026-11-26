@@ -2,21 +2,15 @@
 export const SPEC_COVERAGE = Object.freeze({
   "version": 2,
   "generatedBy": "scripts/spec-audit.mjs",
-  "commit": "da8dd8c42a18f98968d5d3313d95f14ee6f370d1",
-  "sourceHash": "19fdb5717ac54cb43fa5d841ec6d513bb4d79f69bc015d7d490d001679800f1a",
+  "commit": "5c9cf76f74eea7ad2855ddd4c38227eb82e96354",
+  "sourceHash": "8e00ce12a8663d503225bf2ccd67b0b539dd057753504e2f803e57f719596e3a",
   "totals": {
     "total": 1648,
-    "implemented": 1646,
-    "open": 2,
+    "implemented": 1648,
+    "open": 0,
     "sections": 39
   },
-  "nextSection": {
-    "id": "4.0",
-    "title": "Great World and long-running history",
-    "open": 2,
-    "total": 6,
-    "firstOpen": "4.0.1"
-  },
+  "nextSection": null,
   "collisions": [
     {
       "id": "1.2.10.1",
@@ -664,29 +658,10 @@ export const SPEC_COVERAGE = Object.freeze({
       "id": "4.0",
       "title": "Great World and long-running history",
       "total": 6,
-      "implemented": 4,
-      "open": 2,
+      "implemented": 6,
+      "open": 0,
       "source": "system registry"
     }
   ],
-  "openPoints": [
-    {
-      "id": "4.0.1",
-      "section": "4.0",
-      "title": "Great World and long-running history",
-      "label": "Multiple kingdoms and map regions",
-      "missing": [
-        "Diplomacy models four abstract neighbouring realms; there is no multi-kingdom world map or region ownership consumer."
-      ]
-    },
-    {
-      "id": "4.0.6",
-      "section": "4.0",
-      "title": "Great World and long-running history",
-      "label": "Mod/data packs after schema and security boundaries",
-      "missing": [
-        "There is no mod manifest, data-pack loader, sandbox boundary or compatibility validator."
-      ]
-    }
-  ]
+  "openPoints": []
 });

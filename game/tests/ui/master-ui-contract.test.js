@@ -198,6 +198,16 @@ test("the population panel explains a stalled growth gate and its recovery hint"
   assert.ok(management.includes("applyCrownRelief"));
 });
 
+test("the start screen exposes local data packs through the existing scenario and world-map consumers",()=>{
+  for(const id of ["data-pack-forge","data-pack-file","data-pack-import","data-pack-status","data-pack-list"]){
+    assert.ok(html.includes('id="'+id+'"'),"data-pack UI is missing "+id);
+  }
+  assert.ok(main.includes("installDataPack"),"the start screen must install validated data packs");
+  assert.ok(main.includes("getDataPackScenarios"),"pack scenarios must flow into the existing scenario picker");
+  assert.ok(main.includes("removeInstalledDataPack"),"installed packs must be removable from the start screen");
+  assert.ok(main.includes("dataPackScenarios"),"pack scenarios must be a bounded picker source");
+});
+
 test("map layer selector and legend are wired to real geography overlays",()=>{
   assert.ok(html.includes('id="map-layer-select"'));
   assert.ok(html.includes('id="map-layer-legend"'));
@@ -214,7 +224,7 @@ test("settings expose local save slots, import/export and version/credits metada
   assert.ok(html.includes('id="export-save-btn"'));
   assert.ok(html.includes('id="import-save-input"'));
   assert.ok(html.includes('id="save-archive-status"'));
-  assert.ok(html.includes("KINGS &amp; CARDS · <b>v3.67.0</b>"));
+  assert.ok(html.includes("KINGS &amp; CARDS · <b>v3.68.0</b>"));
   assert.ok(management.includes('data-command="crown-grain"'));
   assert.ok(management.includes('data-command="crown-water"'));
   assert.ok(management.includes('data-command="crown-housing"'));

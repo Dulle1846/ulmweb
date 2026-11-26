@@ -9,6 +9,8 @@ For the current development stage, these documents focus on making the existing 
 ## Documents
 
 - [Master UI implementation register](MASTER_UI_IMPLEMENTATION.md) — status against the approved visual design concept, implemented navigation contract and remaining acceptance work.
+- [Five crowns and ten provinces](WORLD_KINGDOMS.md) — the saved province layer over the existing world map: ten provinces, five crowns, control/loyalty/garrison, annual yields, contested borders, deterministic ownership changes and the once-per-year border claim (roadmap 4.0.1, v3.68.0).
+- [Local data packs](DATA_PACKS.md) — the bounded JSON contract for local scenarios and province labels, its security/version gates, storage envelope, two existing consumers and save independence (roadmap 4.0.6, v3.68.0).
 
 - [Technical Foundation](TECHNICAL_FOUNDATION.md) — current architecture, runtime and engineering principles.
 - [Extensibility and Module Design](EXTENSIBILITY_AND_MODULE_DESIGN.md) — modularity, replaceable implementations, explicit contracts and extension rules.
