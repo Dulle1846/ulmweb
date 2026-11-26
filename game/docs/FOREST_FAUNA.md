@@ -1,6 +1,6 @@
 # Fauna, Ökologie und Nahrungsnetze · 1.2.23.1.091–120
 
-> **Status: implementiert, vertieft und als Spielmechanik verdrahtet (v3.66.0).**
+> **Status: implementiert, vertieft und als Spielmechanik verdrahtet (v3.67.0).**
 > Die 30 Punkte laufen als eine reine, abgeleitete `forest-fauna-ecology`-Schicht
 > über dem bestehenden `forestStandAt()`-Vertrag. Es gibt keine zweite Karte,
 > keinen zweiten Waldsimulator, keinen neuen Save-Typ und keine zusätzliche

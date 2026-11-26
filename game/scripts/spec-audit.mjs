@@ -372,6 +372,25 @@ const MANIFEST_SPECS = [
             { file: "js/core/save-runtime.js", symbol: "serializeBiomeAtlasState", role: "persistence" }
         ],
         tests: ["tests/systems/cross-biome-systems.test.js"]
+    },
+    {
+        id: "1.2.23.1", title: "Forest simulation, data model and performance",
+        file: "js/world/forest-model.js",
+        manifest: "FOREST_MODEL_REQUIREMENTS",
+        profile: null,
+        consumers: [
+            { file: "js/world/forest-model.js", symbol: "FOREST_MODEL_REQUIREMENTS", role: "manifest" },
+            { file: "js/world/forest-model.js", symbol: "forestModelFor", role: "model" },
+            { file: "js/presentation/forest-atlas-panel.js", symbol: "renderForestAtlasPanel", role: "ui" },
+            { file: "js/systems/forest-succession.js", symbol: "updateForestSuccession", role: "simulation" },
+            { file: "js/systems/resource-geography.js", symbol: "serializeResourceGeography", role: "persistence" }
+        ],
+        tests: [
+            "tests/world/forest-model.test.js",
+            "tests/presentation/forest-atlas.test.js",
+            "tests/world/regional-forests.test.js",
+            "tests/systems/forest-succession.test.js"
+        ]
     }
 ];
 

@@ -2,13 +2,13 @@
 export const SPEC_COVERAGE = Object.freeze({
   "version": 2,
   "generatedBy": "scripts/spec-audit.mjs",
-  "commit": "d3ad88dd9656ad5f0b81bdef43ef52b4567c6088",
-  "sourceHash": "a9b63e54a0df404b8cc669945b2aae0c2df130d3b58d49e67f1c40295f4eca7a",
+  "commit": "7193adbc81d2e6944cc1b42aa413bb5c6649f55a",
+  "sourceHash": "f0388f24c5f994204e3110b5fb7c436d07330e3187c44978a567f581b5f3fd28",
   "totals": {
-    "total": 1618,
-    "implemented": 1616,
+    "total": 1648,
+    "implemented": 1646,
     "open": 2,
-    "sections": 38
+    "sections": 39
   },
   "nextSection": {
     "id": "4.0",
@@ -547,6 +547,14 @@ export const SPEC_COVERAGE = Object.freeze({
       "implemented": 54,
       "open": 0,
       "source": "docs/BIOME_GENERATION.md"
+    },
+    {
+      "id": "1.2.23.1",
+      "title": "Forest simulation, data model and performance",
+      "total": 30,
+      "implemented": 30,
+      "open": 0,
+      "source": "js/world/forest-model.js"
     },
     {
       "id": "2.1",

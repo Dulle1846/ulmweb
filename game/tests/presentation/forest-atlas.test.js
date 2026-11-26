@@ -40,6 +40,8 @@ test("the atlas surveys a bounded, deterministic sample of the realm's forest ti
     assert.ok(Number.isInteger(first.transitionSamples) && first.transitionSamples >= 0);
     assert.equal(first.types.reduce((sum, type) => sum + type.transitionCount, 0), first.transitionSamples);
     assert.ok(first.types.some(type => type.dynamics?.composition), "present types must carry a sampled dynamics record");
+    assert.ok(first.types.some(type => type.model?.typeId), "present types must carry the shared forest model record");
+    assert.ok(first.types.filter(type => type.model).every(type => type.model.requirementIds.length === 30));
     assert.equal(first.systems.length, 6, "the atlas must report every silvicultural system, including unsampled ones");
     assert.ok(first.systems.every(row => row.label && Number.isInteger(row.count)), "every system needs a visible label and count");
     assert.equal(first.systems.reduce((sum, row) => sum + row.count, 0), first.sampled,
@@ -103,6 +105,13 @@ test("the rendered atlas lists all 60 types, their effects and their signature t
     assert.match(markup, /log share \d+%/);
     assert.match(markup, /logs → planks|food \/ market|pannage \/ market/);
     assert.match(markup, /MYCORRHIZA|mycorrhiza/);
+    assert.match(markup, /data-forest-model="1\.2\.23\.1\.\d{3}"/);
+    assert.match(markup, /MODEL<\/small><strong>ID \d{3} · \d+% region/);
+    assert.match(markup, /SOIL \/ WATER/);
+    assert.match(markup, /DISTURBANCE/);
+    assert.match(markup, /PERFORMANCE/);
+    assert.match(markup, /LOD detail · \d+ trees\/chunk/);
+    assert.match(markup, /biodiversity \d+% · \d+y regen/);
     assert.match(markup, /STRUCTURE/);
     assert.match(markup, /GAPS/);
     assert.match(markup, /REGIME/);

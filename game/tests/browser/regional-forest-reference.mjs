@@ -231,12 +231,25 @@ try {
     assert.match(ecologyText, /STRUCTURE/, "a surveyed atlas card must show understorey and epiphytes");
     assert.match(ecologyText, /LIGHT/, "a surveyed atlas card must show light woodland and gap age");
     assert.match(ecologyText, /GAPS/, "a surveyed atlas card must show canopy gaps and medicine");
+    assert.match(ecologyText, /MODEL/, "a surveyed atlas card must show the stable model id and site envelope");
+    assert.match(ecologyText, /SOIL \/ WATER/, "a surveyed atlas card must show soil, pH and water storage");
+    assert.match(ecologyText, /DISTURBANCE/, "a surveyed atlas card must show the disturbance matrix");
+    assert.match(ecologyText, /PERFORMANCE/, "a surveyed atlas card must show the LOD and biodiversity budget");
+    assert.match(ecologyText, /LOD detail · \d+ trees\/chunk/, "the atlas must expose the real LOD tier and tree cap");
+    assert.match(ecologyText, /biodiversity \d+% · \d+y regen/, "the atlas must expose biodiversity and regeneration");
+    const modelCards = await page.locator('#command-panel-content [data-forest-model]').count();
+    assert.ok(modelCards > 0, "at least one present type must render the shared forest model block");
+    const modelText = await page.locator('#command-panel-content [data-forest-model]').first().innerText();
+    assert.doesNotMatch(modelText, /undefined|NaN/, "the model block must not leak placeholders");
     assert.match(ecologyText, /fire \d+% · wind \d+%/, "the regime must expose both fire and wind shares");
     assert.match(ecologyText, /uptake \d+%/, "the soil block must expose water uptake");
     assert.match(ecologyText, /decomposition \d+%/, "the soil block must expose decomposition");
     assert.match(ecologyText, /gap age \d+d/, "the light block must expose a real gap age");
     assert.match(ecologyText, /medicine \d+%/, "the gap block must expose medicinal herbs");
-    evidence.atlas = { cards: atlasCards, sampled: /SURVEYED/.test(atlasText), mangrove: true, redwood: true, ecology: true };
+    evidence.atlas = {
+        cards: atlasCards, sampled: /SURVEYED/.test(atlasText), mangrove: true, redwood: true, ecology: true,
+        model: modelCards,
+    };
     await page.screenshot({ path: resolve(outputDir, "forest-atlas.png"), fullPage: false });
     await ecologyCard.scrollIntoViewIfNeeded();
     await page.waitForTimeout(200);

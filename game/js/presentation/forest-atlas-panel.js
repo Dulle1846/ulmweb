@@ -10,6 +10,7 @@ import {
 import { FOREST_GOODS, forestStandAt } from "../world/forest-ecology.js";
 import { FOREST_MANAGEMENT_SYSTEMS } from "../world/forest-dynamics.js";
 import { forestFaunaEcologyFor, forestFaunaFieldGuide } from "../world/forest-fauna-ecology.js";
+import { forestModelFor } from "../world/forest-model.js";
 import { timberQuote } from "../systems/regional-timber-market.js";
 import { forestGoodUseLabel } from "../systems/forest-gathering.js";
 
@@ -66,7 +67,7 @@ export function forestAtlasSurvey(limit = SURVEY_LIMIT) {
     const indices = [];
     for (let index = 0; index < total; index++) if (geo.forestStock[index] > 0) indices.push(index);
     const stride = Math.max(1, Math.ceil(indices.length / Math.max(1, limit)));
-    const counts = {}, transitions = {}, samples = {}, faunaSamples = {}, systemCounts = {};
+    const counts = {}, transitions = {}, samples = {}, faunaSamples = {}, modelSamples = {}, systemCounts = {};
     let sampled = 0, transitionSamples = 0;
     const climate = state.worldOptions?.climate || "temperate";
     for (let slot = 0; slot < indices.length; slot += stride) {
@@ -87,6 +88,11 @@ export function forestAtlasSurvey(limit = SURVEY_LIMIT) {
         if (!id) continue;
         counts[id] = (counts[id] || 0) + 1;
         if (!samples[id] && stand.dynamics) samples[id] = stand.dynamics;
+        if (!modelSamples[id] && stand.dynamics) {
+            modelSamples[id] = forestModelFor(stand, {
+                day: state.dayOfYear, climate, zoom: 1, seed: geo.seed,
+            });
+        }
         if (!faunaSamples[id] && stand.dynamics) {
             faunaSamples[id] = forestFaunaEcologyFor(stand, {
                 day: state.dayOfYear, climate, seed: geo.seed, x, y,
@@ -105,6 +111,7 @@ export function forestAtlasSurvey(limit = SURVEY_LIMIT) {
         transitionCount: transitions[type.id] || 0,
         dynamics: samples[type.id] || null,
         fauna: faunaSamples[type.id] || null,
+        model: modelSamples[type.id] || null,
     }));
     const value = {
         available: true,
@@ -240,7 +247,38 @@ function dynamicsBlock(dynamics, fauna = null) {
         + '</div>';
 }
 
-function card(type, count, sampled, transitionCount, currentSeason, dynamics = null, fauna = null) {
+function modelBlock(model) {
+    if (!model) return '';
+    const limits = model.limits || {};
+    const temperature = limits.temperature || [0, 0];
+    const moisture = limits.moisture || [0, 0];
+    const height = limits.height || [0, 0];
+    const disturbance = model.disturbance || {};
+    const succession = model.succession || {};
+    const lod = model.lod || {};
+    const facts = [
+        ['MODEL', 'ID ' + model.typeId.slice(-3) + ' · ' + pct(model.distribution.share) + '% region',
+            'temp ' + Number(temperature[0]).toFixed(2) + '–' + Number(temperature[1]).toFixed(2)
+            + ' · moisture ' + Number(moisture[0]).toFixed(2) + '–' + Number(moisture[1]).toFixed(2)
+            + ' · height ' + Number(height[0]).toFixed(2) + '–' + Number(height[1]).toFixed(2)],
+        ['SOIL / WATER', esc(model.soil.label) + ' · pH ' + model.soil.pH,
+            'N ' + pct(model.soil.nutrients) + '% · water ' + pct(model.soil.waterCapacity)
+            + '% · ' + model.moisture.class + ' / ' + model.moisture.habitat],
+        ['DISTURBANCE', 'fire ' + pct(disturbance.fire) + '% · wind ' + pct(disturbance.wind) + '%',
+            'ice ' + pct(disturbance.ice) + '% · flood ' + pct(disturbance.flood)
+            + '% · ' + (succession.stageLabel || succession.stage || 'undisturbed')
+            + ' · return ' + number(disturbance.returnYears) + 'y'],
+        ['PERFORMANCE', 'LOD ' + lod.tier + ' · ' + number(lod.maxTrees) + ' trees/chunk',
+            'biodiversity ' + model.biodiversity.percent + '% · ' + number(model.regeneration.yearsToCanopy)
+            + 'y regen · ' + model.rng.vegetation],
+    ];
+    return '<div class="forest-atlas__dynamics" data-forest-model="' + esc(model.typeId) + '">'
+        + facts.map(([label, value, detail]) => '<span><small>' + esc(label) + '</small><strong>'
+            + esc(value) + '</strong><em>' + esc(detail) + '</em></span>').join('')
+        + '</div>';
+}
+
+function card(type, count, sampled, transitionCount, currentSeason, dynamics = null, fauna = null, model = null) {
     const timber = signatureTimberForRegionalType(type);
     const quote = timber ? timberQuote(timber.id) : null;
     const share = sampled > 0 ? Math.round(count / sampled * 100) : 0;
@@ -260,6 +298,7 @@ function card(type, count, sampled, transitionCount, currentSeason, dynamics = n
         + '<p class="forest-atlas__profile">' + esc(type.profile) + '</p>'
         + characterLine(type, currentSeason)
         + dynamicsBlock(dynamics, fauna)
+        + modelBlock(model)
         + '<div class="forest-atlas__stats">'
         + meter("Timber", effects.timber, signed((effects.timber ?? 1) - 1))
         + meter("Regrowth", effects.regrowth, signed((effects.regrowth ?? 1) - 1))
@@ -317,10 +356,10 @@ export function renderForestAtlasPanel() {
     const currentSeason = Math.max(0, Math.min(3, Number(state.seasonIndex) || 0));
     const cards = REGIONAL_FOREST_TYPES.map(type => {
         const row = survey.types.find(entry => entry.id === type.id);
-        return card(type, row?.count || 0, survey.sampled, row?.transitionCount || 0, currentSeason, row?.dynamics || null, row?.fauna || null);
+        return card(type, row?.count || 0, survey.sampled, row?.transitionCount || 0, currentSeason, row?.dynamics || null, row?.fauna || null, row?.model || null);
     }).join("");
     return intro("THE FOREST ATLAS", "Sixty regional woodlands",
-        "Every forest tile belongs to exactly one regional type, and boundary tiles name the woodland they blend into. Open a type to read its field marks, its signature good, its timber, its ecological effects and the named wood its sawmill can produce.")
+        "Every forest tile belongs to exactly one regional type, and boundary tiles name the woodland they blend into. Open a type to read its field marks, its signature good, its timber, its ecological effects, its soil/water envelope, its disturbance and succession matrix, its biodiversity index and its bounded LOD budget.")
         + '<div class="command-summary"><div><small>CATALOGUED</small><strong>' + number(REGIONAL_FOREST_TYPES.length) + ' TYPES</strong></div>'
         + '<div><small>IN THIS REALM</small><strong>' + number(present) + ' TYPES</strong></div>'
         + '<div><small>SILVICULTURE</small><strong>' + survey.systems.filter(row => row.count > 0).length + ' / 6 SYSTEMS</strong></div>'

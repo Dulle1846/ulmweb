@@ -1,13 +1,45 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.66.0`
-**Next development line:** `3.67.0-dev`
+**Current production version:** `3.67.0`
+**Next development line:** `3.68.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
 **Last repository verification:** 2026-11-26 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.67.0 — The forest gets one shared data model
+
+Points **121–150** now live in `js/world/forest-model.js`: stable type ids,
+regional weights, climate/height/soil/moisture matrices, disturbance and
+succession rules, a regional species pool, LOD/chunk/cache budgets, telemetry,
+spatial indices, neighbourhood/fire/wind/water/erosion/regeneration helpers, a
+biodiversity index, separate RNG streams and a modding/save contract. It is a
+read layer over the existing regional stands, not a second simulation.
+
+- The atlas adds a `MODEL`, `SOIL / WATER`, `DISTURBANCE` and `PERFORMANCE` row
+  per present type. The player sees the stable id, site envelope, pH and water
+  storage, disturbance mix, succession stage, LOD tier, biodiversity and
+  regeneration horizon without a new panel or a per-frame scan.
+- Disturbance spread now uses the shared eight-neighbour order. A storm pushes
+  fire and windthrow downwind first; calm weather keeps the deterministic start.
+- New resource snapshots carry `forestModelVersion: 1`. Old 3.66 saves without
+  the marker still restore the same regional wood; `migrateForestModelSave()`
+  converts legacy `forestKind` indices to stable ids without dropping a type.
+- The model caches distributions, limits, species pools and chunks (64 each) and
+  samples at most 16 points per 16×16 chunk. LOD tiers cap trees at 48/24/10/3
+  per chunk. Telemetry records chunk time, cache hits, misses and seen types;
+  the work budget, not a flaky wall-clock assertion, defines `withinBudget`.
+- `validateForestModelCatalog()` accepts all 60 built-in types and rejects a mod
+  type with missing fields, non-ascending ranges or non-positive species weights.
+- **Proof.** The full suite passes **1,553/1,553** tests and the syntax/UI gate
+  checks 225 source files and 254 UI ids. The deterministic 25-year campaign ends
+  `ok: true` after **10,040 ticks** at **0.917 ms/tick**, all 21 requirements and
+  13 ambitions complete, with **3,507 forest tiles**, **0 untyped**, and 16
+  regional types observed. The tropical browser reference renders all 60 atlas
+  cards, finds 10 model blocks, asserts the four new rows and no `undefined`/`NaN`
+  or console errors, and captures the atlas and three distinct stand frames.
 
 ## 3.66.0 — The four process points become real mechanics
 

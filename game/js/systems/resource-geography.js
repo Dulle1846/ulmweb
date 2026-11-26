@@ -15,6 +15,7 @@ import { snowProfileAt } from "../world/snow-ecology.js";
 import { transitionMovementFactorAt } from "../world/transition-biomes.js";
 import { vegetationMovementFactorAt } from "../world/vegetation-density.js";
 import { getCrossBiomeMovementFactorAt } from "./cross-biome-state.js";
+import { FOREST_MODEL_SAVE_VERSION } from "../world/forest-model.js";
 
 const VERSION=1;
 
@@ -1013,12 +1014,19 @@ export function serializeResourceGeography(){
         if(forestCapacityChanged)forestCapacity.push([i,geo.forestCapacity[i]]);
         if(stoneCapacityChanged)stoneCapacity.push([i,geo.stoneCapacity[i]]);
     }
-    return {version:VERSION,forest,stone,forestCapacity,stoneCapacity};
+    // The regional ids themselves are derived from the seed and the catalog, so
+    // only the model version is stored. An older snapshot without this marker
+    // still restores; the marker lets a future catalog migration run before the
+    // first forest tile is read.
+    return {version:VERSION,forestModelVersion:FOREST_MODEL_SAVE_VERSION,forest,stone,forestCapacity,stoneCapacity};
 }
 
 export function validateResourceGeographySnapshot(snapshot, limits = {}){
     if(snapshot===undefined||snapshot===null)return true;
     if(!snapshot||typeof snapshot!=="object"||Array.isArray(snapshot)||snapshot.version!==VERSION)throw new Error("Save data contains an unsupported resource geography version.");
+    if(snapshot.forestModelVersion!==undefined&&Number(snapshot.forestModelVersion)!==FOREST_MODEL_SAVE_VERSION){
+        throw new Error("Save data contains an unsupported forest model version.");
+    }
     // A browser may validate an import before initWorld has replaced the
     // current realm's dimensions. Use the saved world's cell count when the
     // caller can prove it; the live count remains correct after restore.

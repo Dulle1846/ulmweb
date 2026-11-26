@@ -170,6 +170,7 @@ test("the regional assignment and its effects survive a resource save/load round
 
     assert.ok(harvestForest(target.x, target.y, 7) > 0);
     const snapshot = serializeResourceGeography();
+    assert.equal(snapshot.forestModelVersion, 1, "new saves carry the forest-model marker");
     const before = getResourceNodeAt(target.x, target.y);
     initWorld(SEED, { ...WORLD_OPTIONS, climate: "taiga" });
     restoreResourceGeography(snapshot);
@@ -178,4 +179,14 @@ test("the regional assignment and its effects survive a resource save/load round
     assert.equal(after.forestRegionalLabel, before.forestRegionalLabel);
     assert.deepEqual(after.forestRegionalEffects, before.forestRegionalEffects);
     assert.equal(after.forestStock, before.forestStock);
+
+    // A 3.66 save predates the marker. Restoring it must not drop or re-roll the
+    // regional woodland; only the optional metadata is missing.
+    const legacy = { ...snapshot };
+    delete legacy.forestModelVersion;
+    initWorld(SEED, { ...WORLD_OPTIONS, climate: "taiga" });
+    restoreResourceGeography(legacy);
+    const migrated = getResourceNodeAt(target.x, target.y);
+    assert.equal(migrated.forestRegionalType, before.forestRegionalType);
+    assert.equal(migrated.forestStock, before.forestStock);
 });

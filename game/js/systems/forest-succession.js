@@ -12,6 +12,7 @@ import {
     forestSuccessionStage,
 } from "../world/forest-ecology.js";
 import { forestBarkBeetlePressureAt } from "./forest-fauna.js";
+import { forestNeighbourOrderFor } from "../world/forest-model.js";
 
 const VERSION = 1;
 const MAX_TILES = 4096;
@@ -436,7 +437,6 @@ function spreadDisturbances(model) {
     // created during this pass" rule.
     const keys = activeKeyList(model).slice();
     let tileCount = Object.keys(model.tiles).length;
-    const neighbourOrder = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, 1], [1, -1], [-1, -1]];
     let spreads = 0;
 
     for (const key of keys) {
@@ -460,9 +460,18 @@ function spreadDisturbances(model) {
         // crossing actually happens; broadleaf kinds keep the old threshold.
         const riskAware = ["burned", "bark-beetle", "snowbreak", "drought-stressed", "windthrow"].includes(record.kind);
         if (roll > chance * (riskAware ? 1.5 : 1)) continue;
+        // The shared neighbourhood order follows the current weather: a storm
+        // pushes fire and windthrow downwind first, while a calm day still uses
+        // a deterministic hash start. This is the same eight-neighbour walk the
+        // renderer and atlas use, not a second spread model.
+        const neighbourOrder = forestNeighbourOrderFor({
+            x, y, width, height, wind: state.weather, seed: model.seed,
+        });
         const start = hash32(model.seed, x, y, model.day + 0x53505244) % neighbourOrder.length;
         for (let offset = 0; offset < neighbourOrder.length; offset++) {
-            const [dx, dy] = neighbourOrder[(start + offset) % neighbourOrder.length];
+            const neighbour = neighbourOrder[(start + offset) % neighbourOrder.length];
+            const dx = neighbour.dx;
+            const dy = neighbour.dy;
             const nx = x + dx;
             const ny = y + dy;
             if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
