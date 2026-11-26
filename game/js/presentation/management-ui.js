@@ -75,6 +75,7 @@ import { constructionSnapshot, isUnderConstruction } from "../systems/constructi
 import { getBulkRepairSnapshot, getBuildingRepairSnapshot, getRealmDamageSnapshot, repairAllDamaged, repairBuilding } from "../systems/building-repair.js";
 import { CARRIER_CAPACITY, getInventorySummary, getBuildingLogisticsStatus, getBuildingSupplyReason, getCitySummary, getGoodsAudit, getLogisticsSnapshot, getPhysicalStockMap, setWarehouseProfile } from "../systems/logistics.js";
 import { getManualLogisticsSnapshot, placeManualOrder } from "./manual-logistics.js";
+import { chainTagsFor, getProductionChainSnapshot, getWarehouseProfileSnapshot, warehouseProfileHint } from "./production-chain.js";
 import { GOODS, GOOD_KEYS, WAREHOUSE_PROFILES } from "../systems/city-config.js";
 import { getSettlementSnapshot, getServiceReason } from "../systems/settlement.js";
 import { foresterRangeSummary } from "../systems/fields.js";
@@ -249,6 +250,8 @@ export function resources(){
  '<div class="resource-detail-grid">'+RESOURCE_ORDER.map(key=>resourceCard(key,history)).join("")+'</div>'+
  '<p class="command-note">Stock history contains up to 24 completed 20-day settlements. The chart is intentionally blank until two settlements exist; no interpolated or invented points are drawn.</p>'+
  goodsOverviewPanel(cycle)+
+ productionChainPanel()+
+ warehouseProfilePanel()+
  timberMarketPanel();
 }
 
@@ -304,6 +307,43 @@ function timberMarketPanel(){
  return '<div class="command-section-title">REGIONAL TIMBER MARKET · '+number(market.kinds)+' / '+number(market.totalKinds)+' KINDS IN STORE · '+amount(market.value)+'G VALUE</div>'+
   '<div class="timber-market">'+rows+'</div>'+
   '<p class="command-note">A sawmill turns two units of a named timber into its own plank and firewood batch. Timbers reach the yard from a delivered forester haul or from a lumber camp working a regional stand. Selling removes real warehouse stock at the current seasonal quote.</p>';
+}
+
+// The chain register is a read model, not a second economy. It shows the real
+// structures, their declared recipe, physical stock and the same ready carrier
+// orders the Buildings register offers. Chains are collapsed so the Stores tab
+// stays within the low-end panel budget until a player opens one.
+function productionChainPanel(){
+ let snapshot;
+ try{snapshot=getProductionChainSnapshot();}catch{return "";}
+ const chains=snapshot?.chains||[];
+ const chainRows=chains.map(chain=>{
+  const stages=chain.stages.map(stage=>{
+   const orders=(stage.orders||[]).slice(0,4).map(order=>'<button type="button" class="command-choice chain-order" data-command="manual-order" data-manual-order="'+esc(order.kind)+'" data-value="'+esc(order.buildingId)+'" data-good="'+esc(order.good)+'" data-quantity="'+number(order.quantity)+'">'+esc((order.kind==="supply"?"SUPPLY ":"HAUL ")+order.quantity+" "+order.label).toUpperCase()+'</button>').join("");
+   const focus=stage.focusBuildingId!==null?'<button type="button" class="command-choice chain-focus" data-chain-focus="'+esc(stage.focusBuildingId)+'">SHOW BUILDING</button>':"";
+   return '<div class="chain-stage" data-chain-stage="'+esc(stage.id)+'" data-chain-status="'+esc(stage.status)+'"><span class="chain-stage-head"><strong>'+esc(stage.label)+'</strong><b>'+esc(stage.status)+'</b></span><small>'+number(stage.count)+' structures · '+number(stage.ready)+' ready · '+number(stage.sites)+' sites · '+number(stage.stock)+' goods in realm</small><small>'+esc(stage.recipe)+' · '+esc(stage.goods.join(", "))+'</small>'+orders+focus+'</div>';
+  }).join("");
+  const active=chain.stages.filter(stage=>stage.ready>0).length;
+  return '<details class="chain-record" data-chain-id="'+esc(chain.id)+'"><summary><span><strong>'+esc(chain.label)+'</strong><small>'+number(active)+' / '+number(chain.stages.length)+' stages have a ready structure</small></span><b>'+number(active)+' ACTIVE</b></summary><div class="chain-detail"><p class="command-note">'+esc(chain.note)+'</p><div class="chain-stage-grid">'+stages+'</div></div></details>';
+ }).join("");
+ const stageTotal=chains.reduce((sum,chain)=>sum+(chain.stages?.length||0),0);
+ return '<div class="command-section-title">PRODUCTION CHAINS · '+number(chains.length)+' ROUTES · '+number(stageTotal)+' STAGES</div>'+
+  '<div class="chain-register">'+(chainRows||'<p class="command-note">No chain is declared yet.</p>')+'</div>'+
+  '<p class="command-note">Every row reads live structures, recipes and physical stock. READY counts structures with no current supply block; it is not a forecast. A carrier button or SHOW BUILDING uses the same verified path as the Buildings register.</p>';
+}
+
+// Warehouse profiles are a filter and capacity setting on an existing store.
+// This board explains the settings and names any good that currently has stock
+// but no accepting free space; it never changes a profile by itself.
+function warehouseProfilePanel(){
+ let snapshot;
+ try{snapshot=getWarehouseProfileSnapshot();}catch{return "";}
+ const rows=(snapshot?.profiles||[]).map(profile=>'<div class="warehouse-profile-card" data-profile-id="'+esc(profile.id)+'"><strong>'+esc(profile.label)+'</strong><small>'+esc(profile.description)+'</small><small>'+number(profile.stores)+' stores · '+number(profile.used)+' used · '+number(profile.free)+' free · '+number(profile.heldGoodKinds)+' matching realm kinds · '+number(profile.accepts)+' accepted goods</small></div>').join("");
+ const stranded=(snapshot?.stranded||[]).map(item=>'<span class="warehouse-stranded" data-stranded-good="'+esc(item.good)+'">'+esc(item.label)+' · '+number(item.stored)+' held, no accepting space</span>').join("");
+ return '<div class="command-section-title">WAREHOUSE PROFILES · '+number(snapshot?.stores||0)+' STORES · '+number(snapshot?.free||0)+' / '+number(snapshot?.capacity||0)+' SPACE FREE</div>'+
+  '<div class="warehouse-profile-grid">'+(rows||'<p class="command-note">No profile is declared yet.</p>')+'</div>'+
+  (stranded?'<div class="warehouse-stranded-board"><span>NO ACCEPTING STORE</span>'+stranded+'</div>':'')+
+  '<p class="command-note">A profile narrows which goods a store accepts and how much it holds. Granary, timber yard, stone depot and cistern only accept their named goods; the royal keep stays a general store. Change a profile on an individual store in the Buildings register.</p>';
 }
 function realmCycleStatus(){
  const c=getRealmCycleSnapshot();
@@ -731,6 +771,8 @@ function buildings(){
    }
   }catch{}
   const detail=card?.desc||BUILDING_LABELS[building.type]||"No additional building description is recorded.";
+  const chainTags=chainTagsFor(building.type);
+  const chainTagMarkup=chainTags.length?'<span class="building-chain-tags" data-chain-tags="'+esc(chainTags.join(","))+'"><strong>Production chains</strong><small>'+esc(chainTags.join(" · "))+'</small></span>':"";
   const buildingForm=buildingFormFor(building);
   const formText=buildingForm?(buildingForm.label+" · "+buildingForm.description+" · Hearth insulation "+(buildingForm.warmthPercent>=0?"+":"")+buildingForm.warmthPercent+"%"):"No regional form was assigned to this structure.";
   const sawInfo=building.type===TYPE.SAWMILL?(()=>{
@@ -756,9 +798,11 @@ function buildings(){
   const manualOrders=getManualLogisticsSnapshot(building,{warehouseFree:city.warehouses?.free??0}).orders;
   const manualOrderMarkup=manualOrders.length?('<span class="building-detail-wide" data-manual-logistics="'+esc(building.id)+'"><strong>Manual carrier orders</strong><small>'+number(manualOrders.length)+' recipe goods · '+number(manualOrders.filter(order=>order.ok).length)+' ready · max '+number(CARRIER_CAPACITY)+' per cart</small>'+manualOrders.map(order=>'<button type="button" class="command-choice" data-command="manual-order" data-manual-order="'+esc(order.kind)+'" data-value="'+esc(building.id)+'" data-good="'+esc(order.good)+'" data-quantity="'+number(order.quantity)+'"'+(order.ok?'':' disabled title="'+esc(order.reason||"Order unavailable")+'"')+'>'+esc((order.kind==="supply"?"SUPPLY ":"HAUL ")+order.quantity+" "+order.label).toUpperCase()+'</button>').join("")+'</span>'):"";
   const profileField=inventory?.kind==="warehouse"?'<span>Warehouse profile<strong>'+(building.type===TYPE.KEEP?esc(inventory.profileLabel||"General store")+" · fixed by the crown":'<select class="warehouse-profile-select" data-warehouse-profile="'+esc(building.id)+'" aria-label="Warehouse profile for '+esc(name)+'">'+Object.values(WAREHOUSE_PROFILES).map(profile=>'<option value="'+esc(profile.id)+'"'+(inventory.profile===profile.id?' selected':'')+'>'+esc(profile.label)+" · "+number(profile.capacity)+'</option>').join("")+'</select>')+'</strong></span>':"";
+  const profileRow=(logistics.warehouses?.rows||[]).find(row=>String(row.id)===String(building.id))||null;
+  const profileHint=inventory?.kind==="warehouse"?'<span class="building-detail-wide warehouse-profile-hint" data-profile-hint="'+esc(inventory.profile)+'"><strong>Warehouse profile note</strong><small>'+esc(warehouseProfileHint(profileRow||inventory,inventory.profile))+'</small></span>':"";
   const fieldText=building.field?" · field "+building.field.stage+" ("+Math.round(building.field.growth)+"%) · soil "+Math.round(building.field.fertility)+"%"+(building.field.resting?" · resting":""):"";
   const stewardship=foresterStewardship(building);
-  return '<details class="building-record" data-building-name="'+esc(name.toLowerCase())+'" data-building-id="'+esc(building.id)+'"'+(String(building.id)===String(expandedBuildingId)?' open':'')+'><summary><svg class="building-record-art" viewBox="0 0 64 64" aria-hidden="true"><use href="assets/royal-building-atlas.svg#'+buildingSprite(building.type)+'"></use></svg><span class="building-record-title"><strong>'+esc(name)+'</strong><small>'+esc(building.id||("record-"+index))+' · '+Math.round(building.x)+', '+Math.round(building.y)+'</small></span><span class="building-record-status"><b>'+(isUnderConstruction(building)?site.percent+'%':condition+'%')+'</b><small>'+(isUnderConstruction(building)?"built":"condition")+'</small></span></summary><div class="building-record-details"><p>'+esc(detail)+'</p>'+stewardship+'<div class="building-detail-grid"><span>Footprint<strong>'+amount(width)+' × '+amount(height)+' tiles</strong></span><span>Health<strong>'+amount(hp)+' / '+amount(maxHp)+'</strong></span><span>Construction<strong>'+esc(site.status)+' · '+site.percent+'%</strong></span><span>Staff<strong>'+staff+(capacity?' / '+capacity:' · not staffed')+'</strong></span><span>Workforce efficiency<strong>'+(efficiency===null?'not applicable':efficiency+'%')+'</strong></span><span>Recorded card cost<strong>'+esc(costs)+'</strong></span><span>Local store<strong>'+esc(storeText)+'</strong></span>'+(sawInfo?'<span>Timber recipe<strong>'+esc(sawInfo)+'</strong></span>':'')+profileField+'<span>Active haul<strong>'+esc(haulText)+'</strong></span><span>Supply / service<strong>'+esc(supply||"Operating")+'</strong></span><span>Building form<strong>'+esc(formText)+'</strong></span><span>Site data<strong>'+esc(siteNote)+esc(fieldText)+'</strong></span>'+manualOrderMarkup+repairButton+forestGather+forestPannage+meadowGather+wetlandWorks+mountainWorks+volcanoWorks+coastWorks+'</div></div></details>';
+  return '<details class="building-record" data-building-name="'+esc(name.toLowerCase())+'" data-building-id="'+esc(building.id)+'"'+(String(building.id)===String(expandedBuildingId)?' open':'')+'><summary><svg class="building-record-art" viewBox="0 0 64 64" aria-hidden="true"><use href="assets/royal-building-atlas.svg#'+buildingSprite(building.type)+'"></use></svg><span class="building-record-title"><strong>'+esc(name)+'</strong><small>'+esc(building.id||("record-"+index))+' · '+Math.round(building.x)+', '+Math.round(building.y)+'</small></span><span class="building-record-status"><b>'+(isUnderConstruction(building)?site.percent+'%':condition+'%')+'</b><small>'+(isUnderConstruction(building)?"built":"condition")+'</small></span></summary><div class="building-record-details"><p>'+esc(detail)+'</p>'+chainTagMarkup+stewardship+'<div class="building-detail-grid"><span>Footprint<strong>'+amount(width)+' × '+amount(height)+' tiles</strong></span><span>Health<strong>'+amount(hp)+' / '+amount(maxHp)+'</strong></span><span>Construction<strong>'+esc(site.status)+' · '+site.percent+'%</strong></span><span>Staff<strong>'+staff+(capacity?' / '+capacity:' · not staffed')+'</strong></span><span>Workforce efficiency<strong>'+(efficiency===null?'not applicable':efficiency+'%')+'</strong></span><span>Recorded card cost<strong>'+esc(costs)+'</strong></span><span>Local store<strong>'+esc(storeText)+'</strong></span>'+(sawInfo?'<span>Timber recipe<strong>'+esc(sawInfo)+'</strong></span>':'')+profileField+profileHint+'<span>Active haul<strong>'+esc(haulText)+'</strong></span><span>Supply / service<strong>'+esc(supply||"Operating")+'</strong></span><span>Building form<strong>'+esc(formText)+'</strong></span><span>Site data<strong>'+esc(siteNote)+esc(fieldText)+'</strong></span>'+manualOrderMarkup+repairButton+forestGather+forestPannage+meadowGather+wetlandWorks+mountainWorks+volcanoWorks+coastWorks+'</div></div></details>';
  }).join("");
  const logisticsClosed=narrowViewport()&&!expandedBuildingLogistics;
  const rejection=!logisticsClosed&&logistics.lastRejection?'<p class="command-note logistics-rejection">LAST ORDER REJECTED · '+esc(logistics.lastRejection.reason)+' · '+esc(logistics.lastRejection.kind||"job")+' '+(logistics.lastRejection.good?esc(logistics.lastRejection.good):"")+' · tick '+number(logistics.lastRejection.tick)+'</p>':"";
@@ -1807,6 +1851,20 @@ export function setupManagementUI(){
    expandedBuildingLogistics=true;
    const panel=$("command-panel-content");const scrollTop=panel?.scrollTop||0;
    render();if(panel)panel.scrollTop=scrollTop;return;
+  }
+  const chainFocus=e.target.closest("[data-chain-focus]");
+  if(chainFocus){
+   expandedBuildingId=chainFocus.dataset.chainFocus||null;
+   buildingShowAll=true;
+   activePanel="buildings";
+   render(true);
+   setCommandModalOpen(true);
+   requestAnimationFrame(()=>{
+    const panel=$("command-panel-content");
+    const record=[...(panel?.querySelectorAll(".building-record")||[])].find(node=>String(node.dataset.buildingId)===String(expandedBuildingId));
+    if(record)record.scrollIntoView({block:"start"});
+   });
+   return;
   }
   const buildingSummary=e.target.closest(".building-record>summary");
   if(buildingSummary&&narrowViewport()){

@@ -246,7 +246,44 @@ button:focus-visible,[role=button]:focus-visible,input:focus-visible,select:focu
 .logistics-movement[data-movement-type="consumed"] strong{color:#d0b184}
 .logistics-movement[data-movement-type="withdrawn"],.logistics-movement[data-movement-type="evacuated"] strong{color:#c9a5a0}
 .warehouse-profile-select{width:100%;min-height:28px;padding:3px 5px;border:1px solid var(--ui-line-strong);border-radius:3px;background:#171512;color:#f0e3c7;font:10px var(--ui-body-font)}
-@media(max-width:790px){.ledger-grid,.building-detail-grid,.forester-stewardship-facts{grid-template-columns:1fr}.building-record>summary{padding:8px}.building-type-summary{gap:4px}}
+/* Production-chain and warehouse-profile read models share the dark card
+   language of the logistics archive. They are collapsed lists, so a long game
+   cannot turn the Stores tab into an unbounded per-frame render. */
+.building-chain-tags{display:grid;gap:3px;padding:7px;border:1px solid #b99a5930;border-radius:2px;color:#a89572;font-size:9px}
+.building-chain-tags strong{color:#d9c49a;font-size:9px;letter-spacing:.06em}
+.building-chain-tags small{color:#ead9b5;font-size:10px}
+.warehouse-profile-hint{grid-column:1/-1;border-color:#b56b5f55;background:#2b241b66}
+.warehouse-profile-hint strong{color:#e0b96e}
+.warehouse-profile-hint small{color:#d7c49e;font-size:10px;line-height:1.45;overflow-wrap:anywhere}
+.chain-register,.warehouse-profile-grid{display:grid;gap:6px;margin:8px 0 10px}
+.chain-record{overflow:hidden;border:1px solid #5c4a33;border-radius:3px;background:linear-gradient(145deg,#2b2620,#1b1916)}
+.chain-record>summary{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 11px;color:#ead9b5;cursor:pointer;list-style:none}
+.chain-record>summary::-webkit-details-marker{display:none}
+.chain-record>summary::after{content:"+";color:#d1b476;font:700 16px var(--ui-title-font)}
+.chain-record[open]>summary::after{content:"−"}
+.chain-record>summary>span{display:grid;gap:3px;min-width:0}
+.chain-record>summary strong{color:#f0e3c7;font:700 11px var(--ui-title-font);letter-spacing:.06em}
+.chain-record>summary small{color:#bba984;font-size:9px}
+.chain-record>summary>b{color:#d9c49a;font:700 9px var(--ui-title-font);white-space:nowrap}
+.chain-detail{padding:9px;border-top:1px solid #5c4a33;background:#17151266}
+.chain-detail .command-note{color:#c6b492}
+.chain-stage-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.chain-stage{display:grid;gap:4px;min-width:0;padding:8px;border:1px solid #7a6443;border-radius:3px;background:linear-gradient(145deg,#332c23,#211d18)}
+.chain-stage-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.chain-stage-head strong{color:#f0e3c7;font:700 10px var(--ui-title-font);letter-spacing:.05em}
+.chain-stage-head b{color:#a9c08c;font:700 8px var(--ui-body-font);text-align:right;overflow-wrap:anywhere}
+.chain-stage[data-chain-status="NO STRUCTURE"]{opacity:.72}
+.chain-stage[data-chain-status="NO STRUCTURE"] .chain-stage-head b,.chain-stage[data-chain-status^="WAITING"] .chain-stage-head b{color:#d0b184}
+.chain-stage small{color:#bba984;font-size:9px;line-height:1.4;overflow-wrap:anywhere}
+.chain-stage .command-choice{min-height:24px;padding:3px 5px;font-size:9px}
+.chain-focus{border-color:#8f743f;color:#d9c49a}
+.warehouse-profile-card{display:grid;gap:4px;padding:8px 9px;border:1px solid #5c4a33;border-radius:3px;background:linear-gradient(145deg,#2b2620,#1b1916)}
+.warehouse-profile-card strong{color:#f0e3c7;font:600 10px var(--ui-body-font)}
+.warehouse-profile-card small{color:#bba984;font-size:9px;line-height:1.4;overflow-wrap:anywhere}
+.warehouse-stranded-board{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:8px 0;padding:8px;border:1px solid #b56b5f;border-radius:3px;background:#33231f}
+.warehouse-stranded-board>span:first-child{color:#f0b8ad;font:700 9px var(--ui-title-font);letter-spacing:.08em}
+.warehouse-stranded{color:#e6d6ae;font-size:9px}
+@media(max-width:790px){.ledger-grid,.building-detail-grid,.forester-stewardship-facts,.chain-stage-grid,.warehouse-profile-grid{grid-template-columns:1fr}.building-record>summary{padding:8px}.building-type-summary{gap:4px}}
 
 
 /* Phase 3 — creature dossiers and searchable royal chronicle. */

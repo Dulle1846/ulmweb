@@ -2,11 +2,11 @@
 export const SPEC_COVERAGE = Object.freeze({
   "version": 2,
   "generatedBy": "scripts/spec-audit.mjs",
-  "commit": "b64f1d0bd7df0f718c3fb7e5256f137baadea970",
-  "sourceHash": "c2bf0a161d68da61102aab9a2e528544c937dffd709aefd74bae3df9a723dc71",
+  "commit": "5c1f85f5d112ed35975c0682a77a26434e136c5b",
+  "sourceHash": "4cdb296010269b1842bf59e5c8c6179e288774d4d9fac3463699c5652c721d7b",
   "totals": {
-    "total": 1648,
-    "implemented": 1648,
+    "total": 1649,
+    "implemented": 1649,
     "open": 0,
     "sections": 39
   },
@@ -609,8 +609,8 @@ export const SPEC_COVERAGE = Object.freeze({
     {
       "id": "3.5",
       "title": "Production chains, warehouses and hauling",
-      "total": 10,
-      "implemented": 10,
+      "total": 11,
+      "implemented": 11,
       "open": 0,
       "source": "system registry"
     },

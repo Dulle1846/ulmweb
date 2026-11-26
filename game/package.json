@@ -1,6 +1,6 @@
 {
   "name": "kings-and-cards",
-  "version": "3.72.0",
+  "version": "3.73.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -59,6 +59,7 @@
     "test:crown-commissary-stores": "node tests/browser/crown-commissary-stores.mjs",
     "test:goods-market-ui": "node tests/browser/goods-market-ui.mjs",
     "test:crafted-item-uses": "node tests/browser/crafted-item-uses.mjs",
+    "test:production-chain-inspector": "node tests/browser/production-chain-inspector.mjs",
     "test:realm-warning-hud": "node tests/browser/realm-warning-hud.mjs",
     "test:road-owners": "node tests/browser/road-owners.mjs",
     "test:chronicles": "node tests/browser/chronicle-audit.mjs",

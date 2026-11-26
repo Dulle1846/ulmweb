@@ -2,12 +2,12 @@
   "version": 2,
   "generatedBy": "scripts/spec-audit.mjs",
   "scope": "All numbered 1.1 and 1.2.1–1.2.18 requirements, plus the documented 2.x phases and 3.3–4.0 roadmap points.",
-  "commit": "b64f1d0bd7df0f718c3fb7e5256f137baadea970",
-  "sourceHash": "c2bf0a161d68da61102aab9a2e528544c937dffd709aefd74bae3df9a723dc71",
-  "generatedAt": "2026-11-26T14:44:46+00:00",
+  "commit": "5c1f85f5d112ed35975c0682a77a26434e136c5b",
+  "sourceHash": "4cdb296010269b1842bf59e5c8c6179e288774d4d9fac3463699c5652c721d7b",
+  "generatedAt": "2026-11-26T15:33:34Z",
   "totals": {
-    "total": 1648,
-    "implemented": 1648,
+    "total": 1649,
+    "implemented": 1649,
     "open": 0,
     "sections": 39
   },
@@ -41802,6 +41802,39 @@
             "js/systems/logistics.js#rebuildLogisticsReservations (point)"
           ],
           "probe": null
+        },
+        {
+          "id": "3.5.11",
+          "label": "Read-only production-chain inspector and warehouse profile hints",
+          "evidence": [
+            {
+              "file": "js/presentation/production-chain.js",
+              "symbol": "getProductionChainSnapshot"
+            },
+            {
+              "file": "js/presentation/production-chain.js",
+              "symbol": "getWarehouseProfileSnapshot"
+            },
+            {
+              "file": "js/systems/logistics.js",
+              "symbol": "getBuildingSupplyReason"
+            }
+          ],
+          "tests": [
+            "tests/systems/logistics-integrity.test.js",
+            "tests/presentation/production-chain.test.js",
+            "tests/browser/production-chain-inspector.mjs"
+          ],
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/systems/logistics.js#updateLogistics (simulation)",
+            "js/systems/craft-production.js#updateCraftProduction (production)",
+            "js/presentation/production-chain.js#getProductionChainSnapshot (point)",
+            "js/presentation/production-chain.js#getWarehouseProfileSnapshot (point)",
+            "js/systems/logistics.js#getBuildingSupplyReason (point)"
+          ],
+          "probe": null
         }
       ],
       "consumers": [
@@ -41829,9 +41862,9 @@
       "probeFunction": null,
       "probeClimate": "temperate",
       "probeExtra": {},
-      "implemented": 10,
+      "implemented": 11,
       "open": 0,
-      "total": 10
+      "total": 11
     },
     {
       "id": "3.6",

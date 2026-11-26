@@ -1,13 +1,37 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.72.0`
-**Next development line:** `3.73.0-dev`
+**Current production version:** `3.73.0`
+**Next development line:** `3.74.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
 **Last repository verification:** 2026-11-26 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.73.0 — Production chains become readable
+
+The Royal Stores panel now explains five real supply routes from field to loaf,
+forest to frame, quarry to wall, well to hearth and workshop to deed. Each
+collapsed chain reads live structures, declared recipes, physical stock and the
+same bounded carrier orders the Buildings register already verifies. Warehouse
+profiles are also explained in one bounded board, and an individual store's
+dossier states what its current profile accepts and what blocks a switch.
+
+- **One route, one status, one action.** Stage cards name the real structure
+  count, ready count, construction sites, physical goods and the next ready
+  SUPPLY or HAUL order. Clicking an order uses the existing manual-order path;
+  SHOW BUILDING opens the real building dossier. Nothing is forecast, invented
+  or moved by the inspector itself.
+- **Real profile guidance.** Six profile rows show accepted goods, stores, used
+  and free space; goods with physical stock but no accepting free store are
+  named explicitly. A store dossier warns before a profile switch would strand
+  held or reserved goods. The select still calls `setWarehouseProfile()` and a
+  rejected switch leaves the store unchanged.
+- **Bounded and save-compatible.** Five chains and sixteen stages are declared
+  once; at most four ready orders are shown per stage. The read model has no
+  timer, save field, RNG or per-tick work, and the existing logistics snapshot
+  remains the single source of truth.
 
 ## 3.72.0 — The founding gate
 
@@ -178,7 +202,6 @@ deterministic chance; success changes the owner, repulse weakens the province
   polygons, five kingdom cards, ten province cards, legend, no overflow and no
   console errors) and the scenario-start pack install/select/remove flow;
   `artifacts/world-map/map-desktop.png` shows the province layer on the map.
-
 ## 3.68.0 — Crafted items do real work
 
 Unique workshop records are now usable. The smithy and scriptorium still make
