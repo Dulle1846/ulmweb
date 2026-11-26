@@ -76,10 +76,15 @@ try {
         };
         renderUI();
     });
-    // HUD chunks are deliberately scheduled off the frame to keep rendering
-    // bounded. Advance the installed clock once so the checklist has actually
-    // refreshed before asserting what a player can see.
-    await page.clock.runFor(50);
+    // HUD chunks are deliberately scheduled one per task to keep rendering
+    // bounded. Advance the installed clock until the visible checklist has
+    // actually refreshed; do not assume a single fixed slice covers all 14
+    // chunks on a loaded machine.
+    for (let attempt = 0; attempt < 20; attempt++) {
+        const heading = await page.evaluate(() => document.querySelector("#first-session-heading")?.textContent?.trim());
+        if (heading === "FIRST SESSION COMPLETE") break;
+        await page.clock.runFor(50);
+    }
     const completed = await page.evaluate(() => {
         return {
             heading: document.querySelector("#first-session-heading")?.textContent?.trim(),
@@ -119,7 +124,11 @@ try {
     }, null, { timeout: 15000 });
     const loadStatus = (await page.locator("#status-message").textContent() || "").trim();
     assert.ok(loadStatus.includes("Loaded realm"), "the saved 5/5 realm must load; actual status: " + loadStatus);
-    await page.clock.runFor(50);
+    for (let attempt = 0; attempt < 20; attempt++) {
+        const heading = await page.evaluate(() => document.querySelector("#first-session-heading")?.textContent?.trim());
+        if (heading === "FIRST SESSION COMPLETE") break;
+        await page.clock.runFor(50);
+    }
     await page.locator("#first-session-complete").waitFor({ state: "visible", timeout: 10000 });
     const afterLoad = await page.evaluate(async () => ({
         heading: document.querySelector("#first-session-heading")?.textContent?.trim(),

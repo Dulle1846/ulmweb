@@ -162,8 +162,12 @@ try {
 
     await page.locator("#warning-inbox-btn").click();
     await page.locator("#command-modal").waitFor({ state: "visible", timeout: 15000 });
+    // Chronicle sections hydrate one node per frame. The ribbon can be visible
+    // before the button in the same article has been appended, so wait for the
+    // real control instead of reading the panel mid-hydration.
     await page.waitForFunction(
-        () => document.querySelector("#command-panel-content")?.textContent.includes("CURRENTLY AWAITING THE CROWN"),
+        () => Boolean(document.querySelector("#command-panel-content [data-command='show-active-event']"))
+            && document.querySelector("#command-panel-content")?.textContent.includes("CURRENTLY AWAITING THE CROWN"),
         null, { timeout: 15000 }
     );
     assert.equal(await page.locator('[data-command="show-active-event"]').count() > 0, true,

@@ -593,6 +593,7 @@ try {
                     width: crop, height: crop,
                 },
                 animations: "disabled",
+                timeout: 120000,
             });
             frames.push({ ...frame, buffer, sha256: crypto.createHash("sha256").update(buffer).digest("hex") });
             if (framesDir) {
@@ -735,7 +736,7 @@ async function renderSheet(browserContext, panels, meta) {
 </body></html>`;
     await sheet.setContent(html, { waitUntil: "load" });
     await waitForImages(sheet);
-    const png = await sheet.locator(".sheet").screenshot({ animations: "disabled" });
+    const png = await sheet.locator(".sheet").screenshot({ animations: "disabled", timeout: 120000 });
     await sheet.close();
     return png;
 }
