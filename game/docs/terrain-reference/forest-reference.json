@@ -12,7 +12,7 @@
   "renderer": "Canvas2D",
   "rendererMode": "canvas",
   "maxTextureSize": 0,
-  "generatedAt": "2026-11-21T16:28:33.776Z",
+  "generatedAt": "2026-11-26T01:12:35.482Z",
   "world": {
     "width": 176,
     "height": 176,
@@ -29,12 +29,16 @@
       "species": [
         "Oak",
         "Beech",
-        "Elm",
         "Linden",
-        "Maple"
+        "Maple",
+        "Elm",
+        "Ash",
+        "Hornbeam"
       ],
       "goods": [
         "acorns",
+        "ash-keys",
+        "ash-timber",
         "bark",
         "beech-timber",
         "beechnuts",
@@ -48,6 +52,8 @@
         "herbs",
         "hides",
         "honey",
+        "hornbeam-seeds",
+        "hornbeam-timber",
         "linden-flower",
         "linden-timber",
         "maple-syrup",
@@ -66,12 +72,16 @@
         "squirrel",
         "woodpecker",
         "owl",
-        "beetle"
+        "beetle",
+        "roe-deer",
+        "fox",
+        "songbird",
+        "butterfly"
       ],
       "mixed": true,
       "tropical": null,
       "jungle": null,
-      "mixtureLabel": "Oak · Beech · Elm · Linden",
+      "mixtureLabel": "Oak · Beech · Linden · Maple",
       "mixturePattern": "even",
       "broadleafShare": 1,
       "coniferShare": 0,
@@ -87,9 +97,10 @@
       "autumnPalette": [
         "#9a5f2c",
         "#a86f2f",
-        "#9a7534",
         "#9d7b31",
-        "#b65a2e"
+        "#b65a2e",
+        "#9a7534",
+        "#a67a2e"
       ],
       "moisture": 0.474,
       "temperature": 0.495,
@@ -112,10 +123,13 @@
       "label": "Beechwood",
       "age": "mature",
       "species": [
+        "Podocarp",
         "Beech",
+        "Southern Beech",
         "Oak",
-        "Maple",
         "Birch",
+        "Tree Fern",
+        "Maple",
         "Linden"
       ],
       "goods": [
@@ -131,16 +145,23 @@
         "firewood",
         "fur",
         "game",
+        "herbs",
         "hides",
         "honey",
+        "lichen",
         "linden-flower",
         "linden-timber",
         "maple-syrup",
         "maple-timber",
+        "moss",
         "mushrooms",
+        "nothofagus-timber",
         "oak-timber",
+        "podocarpus-timber",
         "porcini",
+        "resin",
         "timber",
+        "treefern-timber",
         "truffles",
         "wild-garlic",
         "wood-sorrel"
@@ -150,16 +171,20 @@
         "squirrel",
         "owl",
         "songbird",
-        "beetle"
+        "beetle",
+        "boar",
+        "fox",
+        "woodpecker",
+        "frog"
       ],
       "mixed": true,
       "tropical": null,
       "jungle": null,
-      "mixtureLabel": "Beech · Oak · Maple · Birch",
+      "mixtureLabel": "Podocarp · Beech · Southern Beech · Oak",
       "mixturePattern": "even",
-      "broadleafShare": 1,
-      "coniferShare": 0,
-      "dominantSpecies": "beech",
+      "broadleafShare": 0.62,
+      "coniferShare": 0.38,
+      "dominantSpecies": "podocarpus",
       "canopyLayers": [
         "Main canopy",
         "Understorey and saplings"
@@ -169,11 +194,12 @@
         "honey"
       ],
       "autumnPalette": [
+        "#1e4432",
         "#a86f2f",
+        "#a45d2d",
         "#9a5f2c",
-        "#b65a2e",
         "#c9a83a",
-        "#9d7b31"
+        "#356f40"
       ],
       "moisture": 0.697,
       "temperature": 0.511,
@@ -182,11 +208,11 @@
       "treeChance": 0.58,
       "clearing": 0,
       "exposure": 0.234,
-      "snowPotential": 0.43,
-      "groundShade": 0.577,
-      "visibility": 0.5,
-      "sightRadius": 6,
-      "winterSnowDepthCm": 60,
+      "snowPotential": 0.46,
+      "groundShade": 0.669,
+      "visibility": 0.424,
+      "sightRadius": 5,
+      "winterSnowDepthCm": 64,
       "frame": "forest-reference.png"
     },
     {
@@ -197,8 +223,11 @@
       "age": "young",
       "species": [
         "Birch",
-        "Maple",
+        "Pine",
+        "Juniper",
         "Oak",
+        "Rowan",
+        "Maple",
         "Beech",
         "Alder"
       ],
@@ -212,15 +241,25 @@
         "berries",
         "birch-sap",
         "birch-timber",
+        "blueberries",
         "chanterelle",
         "crab-apples",
         "firewood",
         "herbs",
+        "juniper-berries",
+        "juniper-timber",
+        "lichen",
+        "lingonberries",
         "maple-syrup",
         "maple-timber",
         "mushrooms",
         "oak-timber",
+        "pine-cones",
+        "pine-timber",
         "porcini",
+        "resin",
+        "rowan-berries",
+        "rowan-timber",
         "sloes",
         "timber",
         "truffles",
@@ -231,15 +270,20 @@
         "hare",
         "songbird",
         "woodpecker",
-        "butterfly"
+        "butterfly",
+        "capercaillie",
+        "fox",
+        "squirrel",
+        "ant",
+        "bark-beetle"
       ],
       "mixed": true,
       "tropical": null,
       "jungle": null,
-      "mixtureLabel": "Birch · Maple · Oak · Beech",
+      "mixtureLabel": "Birch · Pine · Juniper · Oak",
       "mixturePattern": "even",
-      "broadleafShare": 1,
-      "coniferShare": 0,
+      "broadleafShare": 0.62,
+      "coniferShare": 0.38,
       "dominantSpecies": "birch",
       "canopyLayers": [
         "Main canopy",
@@ -249,10 +293,11 @@
       "silviculture": [],
       "autumnPalette": [
         "#c9a83a",
-        "#b65a2e",
+        "#2b5138",
+        "#31543a",
         "#9a5f2c",
-        "#a86f2f",
-        "#8d6934"
+        "#a8452b",
+        "#b65a2e"
       ],
       "moisture": 0.458,
       "temperature": 0.577,
@@ -261,11 +306,11 @@
       "treeChance": 0.392,
       "clearing": 0,
       "exposure": 0.635,
-      "snowPotential": 0.502,
-      "groundShade": 0.058,
-      "visibility": 0.964,
-      "sightRadius": 10,
-      "winterSnowDepthCm": 70,
+      "snowPotential": 0.532,
+      "groundShade": 0.149,
+      "visibility": 0.888,
+      "sightRadius": 9,
+      "winterSnowDepthCm": 75,
       "frame": "forest-reference.png"
     },
     {
@@ -279,13 +324,19 @@
         "Beech",
         "Oak",
         "Elm",
+        "Ash",
+        "Linden",
+        "Hornbeam",
         "Birch"
       ],
       "goods": [
         "acorns",
+        "ash-keys",
+        "ash-timber",
         "bark",
         "beech-timber",
         "beechnuts",
+        "beeswax",
         "birch-sap",
         "birch-timber",
         "chanterelle",
@@ -293,7 +344,15 @@
         "elm-seeds",
         "elm-timber",
         "firewood",
+        "fur",
+        "game",
         "herbs",
+        "hides",
+        "honey",
+        "hornbeam-seeds",
+        "hornbeam-timber",
+        "linden-flower",
+        "linden-timber",
         "maple-syrup",
         "maple-timber",
         "mushrooms",
@@ -301,6 +360,7 @@
         "porcini",
         "timber",
         "truffles",
+        "wild-garlic",
         "wood-sorrel"
       ],
       "fauna": [
@@ -308,7 +368,11 @@
         "songbird",
         "fox",
         "butterfly",
-        "deer"
+        "deer",
+        "roe-deer",
+        "boar",
+        "owl",
+        "woodpecker"
       ],
       "mixed": true,
       "tropical": null,
@@ -323,13 +387,16 @@
         "Understorey and saplings"
       ],
       "understoryType": "Fern layer",
-      "silviculture": [],
+      "silviculture": [
+        "honey"
+      ],
       "autumnPalette": [
         "#b65a2e",
         "#a86f2f",
         "#9a5f2c",
         "#9a7534",
-        "#c9a83a"
+        "#a67a2e",
+        "#9d7b31"
       ],
       "moisture": 0.618,
       "temperature": 0.475,
@@ -353,14 +420,21 @@
       "age": "mature",
       "species": [
         "Chestnut",
-        "Linden",
         "Oak",
+        "Linden",
+        "Beech",
         "Maple",
-        "Elm"
+        "Elm",
+        "Ash",
+        "Hornbeam"
       ],
       "goods": [
         "acorns",
+        "ash-keys",
+        "ash-timber",
         "bark",
+        "beech-timber",
+        "beechnuts",
         "beeswax",
         "chanterelle",
         "chestnut-timber",
@@ -374,12 +448,15 @@
         "herbs",
         "hides",
         "honey",
+        "hornbeam-seeds",
+        "hornbeam-timber",
         "linden-flower",
         "linden-timber",
         "maple-syrup",
         "maple-timber",
         "mushrooms",
         "oak-timber",
+        "porcini",
         "timber",
         "truffles",
         "wild-garlic",
@@ -390,12 +467,17 @@
         "squirrel",
         "mouse",
         "woodpecker",
-        "songbird"
+        "songbird",
+        "deer",
+        "roe-deer",
+        "fox",
+        "owl",
+        "butterfly"
       ],
       "mixed": true,
       "tropical": null,
       "jungle": null,
-      "mixtureLabel": "Chestnut · Linden · Oak · Maple",
+      "mixtureLabel": "Chestnut · Oak · Linden · Beech",
       "mixturePattern": "even",
       "broadleafShare": 1,
       "coniferShare": 0,
@@ -410,8 +492,9 @@
       ],
       "autumnPalette": [
         "#a85d2d",
-        "#9d7b31",
         "#9a5f2c",
+        "#9d7b31",
+        "#a86f2f",
         "#b65a2e",
         "#9a7534"
       ],
@@ -433,18 +516,25 @@
       "type": "linden-elm",
       "x": 84,
       "y": 72,
-      "label": "Linden Stand",
+      "label": "Elm Stand",
       "age": "mature",
       "species": [
+        "Oak",
         "Linden",
         "Elm",
-        "Oak",
+        "Beech",
+        "Maple",
+        "Ash",
         "Chestnut",
-        "Maple"
+        "Hornbeam"
       ],
       "goods": [
         "acorns",
+        "ash-keys",
+        "ash-timber",
         "bark",
+        "beech-timber",
+        "beechnuts",
         "beeswax",
         "chanterelle",
         "chestnut-timber",
@@ -458,12 +548,15 @@
         "herbs",
         "hides",
         "honey",
+        "hornbeam-seeds",
+        "hornbeam-timber",
         "linden-flower",
         "linden-timber",
         "maple-syrup",
         "maple-timber",
         "mushrooms",
         "oak-timber",
+        "porcini",
         "timber",
         "truffles",
         "wild-garlic",
@@ -474,16 +567,21 @@
         "squirrel",
         "owl",
         "ant",
-        "deer"
+        "deer",
+        "roe-deer",
+        "boar",
+        "fox",
+        "woodpecker",
+        "butterfly"
       ],
       "mixed": true,
       "tropical": null,
       "jungle": null,
-      "mixtureLabel": "Linden · Elm · Oak · Chestnut",
+      "mixtureLabel": "Oak · Linden · Elm · Beech",
       "mixturePattern": "even",
       "broadleafShare": 1,
       "coniferShare": 0,
-      "dominantSpecies": "linden",
+      "dominantSpecies": "oak",
       "canopyLayers": [
         "Main canopy",
         "Understorey and saplings"
@@ -493,11 +591,12 @@
         "honey"
       ],
       "autumnPalette": [
+        "#9a5f2c",
         "#9d7b31",
         "#9a7534",
-        "#9a5f2c",
-        "#a85d2d",
-        "#b65a2e"
+        "#a86f2f",
+        "#b65a2e",
+        "#a67a2e"
       ],
       "moisture": 0.484,
       "temperature": 0.492,
@@ -522,13 +621,17 @@
       "species": [
         "Oak",
         "Beech",
-        "Birch",
         "Maple",
         "Linden",
-        "Elm"
+        "Elm",
+        "Ash",
+        "Birch",
+        "Hornbeam"
       ],
       "goods": [
         "acorns",
+        "ash-keys",
+        "ash-timber",
         "bark",
         "beech-timber",
         "beechnuts",
@@ -546,6 +649,8 @@
         "herbs",
         "hides",
         "honey",
+        "hornbeam-seeds",
+        "hornbeam-timber",
         "linden-flower",
         "linden-timber",
         "maple-syrup",
@@ -566,12 +671,14 @@
         "songbird",
         "woodpecker",
         "owl",
-        "beetle"
+        "beetle",
+        "boar",
+        "butterfly"
       ],
       "mixed": true,
       "tropical": null,
       "jungle": null,
-      "mixtureLabel": "Oak · Beech · Birch · Maple",
+      "mixtureLabel": "Oak · Beech · Maple · Linden",
       "mixturePattern": "even",
       "broadleafShare": 1,
       "coniferShare": 0,
@@ -587,10 +694,10 @@
       "autumnPalette": [
         "#9a5f2c",
         "#a86f2f",
-        "#c9a83a",
         "#b65a2e",
         "#9d7b31",
-        "#9a7534"
+        "#9a7534",
+        "#a67a2e"
       ],
       "moisture": 0.476,
       "temperature": 0.452,
@@ -613,9 +720,12 @@
       "label": "Alluvial Woodland",
       "age": "mature",
       "species": [
+        "Poplar",
         "Alder",
-        "Elm",
         "Birch",
+        "Willow",
+        "Elm",
+        "Ash",
         "Maple",
         "Oak"
       ],
@@ -623,6 +733,8 @@
         "acorns",
         "alder-cones",
         "alder-timber",
+        "ash-keys",
+        "ash-timber",
         "bark",
         "beeswax",
         "birch-sap",
@@ -641,9 +753,12 @@
         "maple-timber",
         "mushrooms",
         "oak-timber",
+        "poplar-timber",
         "sloes",
         "timber",
         "truffles",
+        "willow-timber",
+        "willow-withies",
         "wood-sorrel"
       ],
       "fauna": [
@@ -652,16 +767,20 @@
         "owl",
         "songbird",
         "butterfly",
-        "deer"
+        "deer",
+        "beaver",
+        "otter",
+        "heron",
+        "frog"
       ],
       "mixed": true,
       "tropical": null,
       "jungle": null,
-      "mixtureLabel": "Alder · Elm · Birch · Maple",
+      "mixtureLabel": "Poplar · Alder · Birch · Willow",
       "mixturePattern": "even",
       "broadleafShare": 1,
       "coniferShare": 0,
-      "dominantSpecies": "alder",
+      "dominantSpecies": "poplar",
       "canopyLayers": [
         "Main canopy",
         "Understorey and saplings"
@@ -671,11 +790,12 @@
         "honey"
       ],
       "autumnPalette": [
+        "#c9a53a",
         "#8d6934",
-        "#9a7534",
         "#c9a83a",
-        "#b65a2e",
-        "#9a5f2c"
+        "#b09a35",
+        "#9a7534",
+        "#a67a2e"
       ],
       "moisture": 0.74,
       "temperature": 0.496,
@@ -699,8 +819,12 @@
       "age": "mature",
       "species": [
         "Beech",
-        "Oak",
+        "Fir",
+        "Spruce",
         "Maple",
+        "Oak",
+        "Rowan",
+        "Birch",
         "Linden",
         "Elm"
       ],
@@ -710,15 +834,21 @@
         "beech-timber",
         "beechnuts",
         "beeswax",
+        "birch-sap",
+        "birch-timber",
+        "chanterelle",
         "crab-apples",
         "elm-seeds",
         "elm-timber",
+        "fir-cones",
+        "fir-timber",
         "firewood",
         "fur",
         "game",
         "herbs",
         "hides",
         "honey",
+        "lichen",
         "linden-flower",
         "linden-timber",
         "maple-syrup",
@@ -726,6 +856,11 @@
         "mushrooms",
         "oak-timber",
         "porcini",
+        "resin",
+        "rowan-berries",
+        "rowan-timber",
+        "spruce-cones",
+        "spruce-timber",
         "timber",
         "truffles",
         "wild-garlic",
@@ -736,15 +871,19 @@
         "fox",
         "raptor",
         "hare",
-        "woodpecker"
+        "woodpecker",
+        "deer",
+        "owl",
+        "crossbill",
+        "capercaillie"
       ],
       "mixed": true,
       "tropical": null,
       "jungle": null,
-      "mixtureLabel": "Beech · Oak · Maple · Linden",
+      "mixtureLabel": "Beech · Fir · Spruce · Maple",
       "mixturePattern": "even",
-      "broadleafShare": 1,
-      "coniferShare": 0,
+      "broadleafShare": 0.62,
+      "coniferShare": 0.38,
       "dominantSpecies": "beech",
       "canopyLayers": [
         "Main canopy",
@@ -756,10 +895,11 @@
       ],
       "autumnPalette": [
         "#a86f2f",
-        "#9a5f2c",
+        "#19342a",
+        "#1b392c",
         "#b65a2e",
-        "#9d7b31",
-        "#9a7534"
+        "#9a5f2c",
+        "#a8452b"
       ],
       "moisture": 0.629,
       "temperature": 0.423,
@@ -768,11 +908,11 @@
       "treeChance": 0.494,
       "clearing": 0,
       "exposure": 0.416,
-      "snowPotential": 0.55,
-      "groundShade": 0.477,
-      "visibility": 0.586,
-      "sightRadius": 7,
-      "winterSnowDepthCm": 77,
+      "snowPotential": 0.58,
+      "groundShade": 0.568,
+      "visibility": 0.51,
+      "sightRadius": 6,
+      "winterSnowDepthCm": 81,
       "frame": "forest-reference.png"
     },
     {
@@ -872,8 +1012,9 @@
       "species": [
         "Birch",
         "Maple",
-        "Beech",
         "Oak",
+        "Rowan",
+        "Beech",
         "Linden"
       ],
       "goods": [
@@ -897,6 +1038,8 @@
         "mushrooms",
         "oak-timber",
         "porcini",
+        "rowan-berries",
+        "rowan-timber",
         "timber",
         "truffles",
         "wild-garlic",
@@ -912,7 +1055,7 @@
       "mixed": true,
       "tropical": null,
       "jungle": null,
-      "mixtureLabel": "Birch · Maple · Beech · Oak",
+      "mixtureLabel": "Birch · Maple · Oak · Rowan",
       "mixturePattern": "even",
       "broadleafShare": 1,
       "coniferShare": 0,
@@ -928,8 +1071,9 @@
       "autumnPalette": [
         "#c9a83a",
         "#b65a2e",
-        "#a86f2f",
         "#9a5f2c",
+        "#a8452b",
+        "#a86f2f",
         "#9d7b31"
       ],
       "moisture": 0.741,
@@ -955,9 +1099,10 @@
       "species": [
         "Birch",
         "Maple",
+        "Rowan",
+        "Oak",
         "Beech",
-        "Linden",
-        "Oak"
+        "Linden"
       ],
       "goods": [
         "acorns",
@@ -972,6 +1117,7 @@
         "charcoal",
         "crab-apples",
         "firewood",
+        "herbs",
         "honey",
         "linden-flower",
         "linden-timber",
@@ -980,6 +1126,8 @@
         "mushrooms",
         "oak-timber",
         "porcini",
+        "rowan-berries",
+        "rowan-timber",
         "timber",
         "truffles",
         "wild-garlic",
@@ -994,7 +1142,7 @@
       "mixed": true,
       "tropical": null,
       "jungle": null,
-      "mixtureLabel": "Birch · Maple · Beech · Linden",
+      "mixtureLabel": "Birch · Maple · Rowan · Oak",
       "mixturePattern": "even",
       "broadleafShare": 1,
       "coniferShare": 0,
@@ -1011,9 +1159,10 @@
       "autumnPalette": [
         "#c9a83a",
         "#b65a2e",
+        "#a8452b",
+        "#9a5f2c",
         "#a86f2f",
-        "#9d7b31",
-        "#9a5f2c"
+        "#9d7b31"
       ],
       "moisture": 0.467,
       "temperature": 0.464,
@@ -1194,8 +1343,9 @@
       "species": [
         "Birch",
         "Maple",
-        "Beech",
         "Oak",
+        "Rowan",
+        "Beech",
         "Linden"
       ],
       "goods": [
@@ -1210,6 +1360,7 @@
         "chanterelle",
         "crab-apples",
         "firewood",
+        "herbs",
         "honey",
         "linden-flower",
         "linden-timber",
@@ -1218,6 +1369,8 @@
         "mushrooms",
         "oak-timber",
         "porcini",
+        "rowan-berries",
+        "rowan-timber",
         "timber",
         "truffles",
         "wild-garlic",
@@ -1232,7 +1385,7 @@
       "mixed": true,
       "tropical": null,
       "jungle": null,
-      "mixtureLabel": "Birch · Maple · Beech · Oak",
+      "mixtureLabel": "Birch · Maple · Oak · Rowan",
       "mixturePattern": "even",
       "broadleafShare": 1,
       "coniferShare": 0,
@@ -1248,8 +1401,9 @@
       "autumnPalette": [
         "#c9a83a",
         "#b65a2e",
-        "#a86f2f",
         "#9a5f2c",
+        "#a8452b",
+        "#a86f2f",
         "#9d7b31"
       ],
       "moisture": 0.474,
@@ -1375,8 +1529,8 @@
     }
   ],
   "artifactHashes": {
-    "formation": "b54580e85faf9fcf63fa8dd90d4c6a403051a2ff3736d1f362b22a51f5bd97e6",
-    "seasonal": "60442eb8e5f786d7af641331227c9bcacd40a5de3e267bed6e67a204467aea05"
+    "formation": "3731a9a060e0b39233ef095d6b4dcfae88079d288a0cc304d1cd00164e822a6a",
+    "seasonal": "6a4b909c4f9623296673d8ee14233f0768a9d9e91adc08d978e3addbf6a34b71"
   },
   "note": "HUD, entities, fog and weather hidden; paused simulation; camera centred at the 0.95x rooftop level. Forest formations are real generated tiles, not hand-placed demo props. The cutover frame uses a wooded tile with stock set to zero. Not a GPU performance benchmark."
 }

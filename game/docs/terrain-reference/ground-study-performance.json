@@ -1,0 +1,495 @@
+{
+  "generatedAt": "2026-11-26T01:15:54.035Z",
+  "seed": 20261104,
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "renderer": "WebKit WebGL",
+  "world": {
+    "width": 176,
+    "height": 176,
+    "climate": "temperate",
+    "forests": 52
+  },
+  "method": "Real Chromium WebGL2 game loop; HUD visible; camera static at the close tile; close-detail raster staged in bounded slices; frame intervals and game-loop draw/build timings sampled after the cache settles.",
+  "tile": {
+    "x": 60,
+    "y": 60,
+    "s1": 0.992,
+    "s2": 0.953,
+    "s3": 0.843,
+    "type": "mixed-ancient",
+    "label": "Ancient Mixed Wood",
+    "age": "ancient",
+    "canopy": 0.696,
+    "treeChance": 0.623,
+    "clearing": 0,
+    "trees": false,
+    "saved": [
+      "ant:1.87",
+      "beetle:0.40"
+    ],
+    "herd": [
+      "deer:12.6"
+    ],
+    "insects": [
+      "ant",
+      "beetle",
+      "bark-beetle",
+      "butterfly",
+      "mouse",
+      "bee"
+    ],
+    "animal": {
+      "id": "deer",
+      "label": "Red deer",
+      "group": "large",
+      "population": 12.6
+    },
+    "dryAt": {
+      "5.4": true,
+      "7.4": true
+    },
+    "score": 2.5017,
+    "focus": {
+      "x": 60.5,
+      "y": 60.5
+    },
+    "visibleTiles": [
+      {
+        "zoom": 5.4,
+        "count": 35
+      },
+      {
+        "zoom": 7.4,
+        "count": 25
+      }
+    ]
+  },
+  "budgets": {
+    "p95FrameMs": 33,
+    "p95WorldDrawMs": 16.7,
+    "maxBuildSliceMs": 16.7
+  },
+  "results": [
+    {
+      "zoom": 5.4,
+      "canvas": {
+        "width": 832,
+        "height": 631
+      },
+      "renderScale": 1,
+      "sampledFrames": 235,
+      "frameMs": {
+        "p50": 16.7,
+        "p95": 25.2,
+        "p99": 42,
+        "max": 100
+      },
+      "activeFrameMs": {
+        "p50": 16.7,
+        "p95": 23.4,
+        "p99": 37.4,
+        "max": 42
+      },
+      "externalStalls": 2,
+      "slowFrames": [
+        {
+          "intervalMs": 100,
+          "drawMs": 0.3,
+          "worldDrawMs": 0.3,
+          "uiMs": 0.1,
+          "simMs": 0,
+          "terrainBuildMs": 0,
+          "external": true
+        },
+        {
+          "intervalMs": 58.1,
+          "drawMs": 0.4,
+          "worldDrawMs": 0.4,
+          "uiMs": 0.1,
+          "simMs": 0,
+          "terrainBuildMs": 0,
+          "external": true
+        },
+        {
+          "intervalMs": 42,
+          "drawMs": 0.4,
+          "worldDrawMs": 0.4,
+          "uiMs": 0.1,
+          "simMs": 0,
+          "terrainBuildMs": 0,
+          "external": false
+        },
+        {
+          "intervalMs": 38.9,
+          "drawMs": 0.3,
+          "worldDrawMs": 0.3,
+          "uiMs": 0.1,
+          "simMs": 0,
+          "terrainBuildMs": 0,
+          "external": false
+        },
+        {
+          "intervalMs": 37.4,
+          "drawMs": 0.2,
+          "worldDrawMs": 0.2,
+          "uiMs": 0.1,
+          "simMs": 0,
+          "terrainBuildMs": 0,
+          "external": false
+        },
+        {
+          "intervalMs": 34.3,
+          "drawMs": 0.5,
+          "worldDrawMs": 0.5,
+          "uiMs": 0.1,
+          "simMs": 0,
+          "terrainBuildMs": 0,
+          "external": false
+        },
+        {
+          "intervalMs": 28.3,
+          "drawMs": 0.1,
+          "worldDrawMs": 0.1,
+          "uiMs": 0,
+          "simMs": 0,
+          "terrainBuildMs": 0,
+          "external": false
+        },
+        {
+          "intervalMs": 26.6,
+          "drawMs": 0.4,
+          "worldDrawMs": 0.4,
+          "uiMs": 0.1,
+          "simMs": 0,
+          "terrainBuildMs": 0,
+          "external": false
+        }
+      ],
+      "drawMs": {
+        "p50": 0.2,
+        "p95": 0.4,
+        "p99": 0.5,
+        "max": 0.5
+      },
+      "worldDrawMs": {
+        "p50": 0.2,
+        "p95": 0.4,
+        "p99": 0.5,
+        "max": 0.5
+      },
+      "uiMs": {
+        "p50": 0.1,
+        "p95": 0.1,
+        "p99": 0.1,
+        "max": 0.1
+      },
+      "simMs": {
+        "p50": 0,
+        "p95": 0,
+        "p99": 0,
+        "max": 0
+      },
+      "terrainBuildMs": {
+        "p50": 0,
+        "p95": 0,
+        "p99": 0,
+        "max": 0
+      },
+      "rebuild": {
+        "sampledFrames": 25,
+        "buildFrames": 17,
+        "buildSliceMs": {
+          "p50": 3.6,
+          "max": 8.2
+        },
+        "buildDrawMsMax": 13.7,
+        "totalBuildMs": 70,
+        "cacheMisses": 1,
+        "groundCacheMisses": 7,
+        "groundCacheHits": 24,
+        "treeDraws": 90,
+        "closeDetailTiles": 35,
+        "closeGoodsTiles": 35,
+        "closeInsectTiles": 25,
+        "closeFaunaTiles": 1,
+        "faunaDrawnTiles": 2,
+        "detailTiles": 35,
+        "visibleTiles": 35,
+        "bounds": {
+          "startX": 57,
+          "startY": 58,
+          "endX": 64,
+          "endY": 63
+        },
+        "beforeGroundMisses": 6
+      },
+      "steady": {
+        "cacheMisses": 1,
+        "groundCacheMisses": 7,
+        "groundCacheHits": 259,
+        "closeDetailTiles": 35,
+        "closeGoodsTiles": 35,
+        "closeInsectTiles": 25,
+        "closeFaunaTiles": 1,
+        "faunaDrawnTiles": 2,
+        "treeDraws": 90,
+        "frameFaulted": false,
+        "frameErrors": 0
+      },
+      "checks": {
+        "closeDetailActive": true,
+        "faunaDrawn": true,
+        "boundedToVisibleTiles": true,
+        "offTick": true,
+        "buildSliced": true,
+        "noCacheChurn": true,
+        "staticGroundCached": true,
+        "p95FrameWithinBudget": true,
+        "activeP95FrameWithinBudget": true,
+        "p95WorldDrawWithinBudget": true
+      }
+    },
+    {
+      "zoom": 7.4,
+      "canvas": {
+        "width": 832,
+        "height": 631
+      },
+      "renderScale": 1,
+      "sampledFrames": 239,
+      "frameMs": {
+        "p50": 16.7,
+        "p95": 24.4,
+        "p99": 31.7,
+        "max": 35
+      },
+      "activeFrameMs": {
+        "p50": 16.7,
+        "p95": 24.4,
+        "p99": 31.7,
+        "max": 35
+      },
+      "externalStalls": 0,
+      "slowFrames": [
+        {
+          "intervalMs": 35,
+          "drawMs": 0.5,
+          "worldDrawMs": 0.4,
+          "uiMs": 0.1,
+          "simMs": 0,
+          "terrainBuildMs": 0,
+          "external": false
+        },
+        {
+          "intervalMs": 32.3,
+          "drawMs": 0.2,
+          "worldDrawMs": 0.2,
+          "uiMs": 0,
+          "simMs": 0,
+          "terrainBuildMs": 0,
+          "external": false
+        },
+        {
+          "intervalMs": 31.7,
+          "drawMs": 0.4,
+          "worldDrawMs": 0.4,
+          "uiMs": 0.1,
+          "simMs": 0,
+          "terrainBuildMs": 0,
+          "external": false
+        },
+        {
+          "intervalMs": 29.6,
+          "drawMs": 0.2,
+          "worldDrawMs": 0.2,
+          "uiMs": 0.1,
+          "simMs": 0,
+          "terrainBuildMs": 0,
+          "external": false
+        },
+        {
+          "intervalMs": 29.1,
+          "drawMs": 0.1,
+          "worldDrawMs": 0.1,
+          "uiMs": 0.1,
+          "simMs": 0,
+          "terrainBuildMs": 0,
+          "external": false
+        },
+        {
+          "intervalMs": 26.6,
+          "drawMs": 0.2,
+          "worldDrawMs": 0.2,
+          "uiMs": 0,
+          "simMs": 0,
+          "terrainBuildMs": 0,
+          "external": false
+        },
+        {
+          "intervalMs": 26.2,
+          "drawMs": 0.2,
+          "worldDrawMs": 0.2,
+          "uiMs": 0.1,
+          "simMs": 0,
+          "terrainBuildMs": 0,
+          "external": false
+        },
+        {
+          "intervalMs": 25,
+          "drawMs": 0.1,
+          "worldDrawMs": 0.1,
+          "uiMs": 0,
+          "simMs": 0,
+          "terrainBuildMs": 0,
+          "external": false
+        }
+      ],
+      "drawMs": {
+        "p50": 0.2,
+        "p95": 0.4,
+        "p99": 0.5,
+        "max": 0.6
+      },
+      "worldDrawMs": {
+        "p50": 0.2,
+        "p95": 0.4,
+        "p99": 0.5,
+        "max": 0.6
+      },
+      "uiMs": {
+        "p50": 0.1,
+        "p95": 0.1,
+        "p99": 0.1,
+        "max": 0.1
+      },
+      "simMs": {
+        "p50": 0,
+        "p95": 0,
+        "p99": 0,
+        "max": 0
+      },
+      "terrainBuildMs": {
+        "p50": 0,
+        "p95": 0,
+        "p99": 0,
+        "max": 0
+      },
+      "rebuild": {
+        "sampledFrames": 41,
+        "buildFrames": 10,
+        "buildSliceMs": {
+          "p50": 3.6,
+          "max": 4.9
+        },
+        "buildDrawMsMax": 5,
+        "totalBuildMs": 35,
+        "cacheMisses": 2,
+        "groundCacheMisses": 8,
+        "groundCacheHits": 302,
+        "treeDraws": 63,
+        "closeDetailTiles": 25,
+        "closeGoodsTiles": 25,
+        "closeInsectTiles": 17,
+        "closeFaunaTiles": 1,
+        "faunaDrawnTiles": 2,
+        "detailTiles": 25,
+        "visibleTiles": 25,
+        "bounds": {
+          "startX": 58,
+          "startY": 58,
+          "endX": 63,
+          "endY": 63
+        },
+        "beforeGroundMisses": 7
+      },
+      "steady": {
+        "cacheMisses": 2,
+        "groundCacheMisses": 8,
+        "groundCacheHits": 541,
+        "closeDetailTiles": 25,
+        "closeGoodsTiles": 25,
+        "closeInsectTiles": 17,
+        "closeFaunaTiles": 1,
+        "faunaDrawnTiles": 2,
+        "treeDraws": 63,
+        "frameFaulted": false,
+        "frameErrors": 0
+      },
+      "checks": {
+        "closeDetailActive": true,
+        "faunaDrawn": true,
+        "boundedToVisibleTiles": true,
+        "offTick": true,
+        "buildSliced": true,
+        "noCacheChurn": true,
+        "staticGroundCached": true,
+        "p95FrameWithinBudget": true,
+        "activeP95FrameWithinBudget": true,
+        "p95WorldDrawWithinBudget": true
+      }
+    }
+  ],
+  "diagnostics": [
+    "warning: The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio",
+    "warning: The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio"
+  ],
+  "summary": [
+    {
+      "zoom": 5.4,
+      "frameP50": 16.7,
+      "frameP95": 25.2,
+      "frameP99": 42,
+      "frameMax": 100,
+      "activeFrameP95": 23.4,
+      "externalStalls": 2,
+      "worldDrawP95": 0.4,
+      "buildSliceMax": 8.2,
+      "totalBuildMs": 70,
+      "closeDetailTiles": 35,
+      "visibleTiles": 35,
+      "cacheHits": 259,
+      "checks": {
+        "closeDetailActive": true,
+        "faunaDrawn": true,
+        "boundedToVisibleTiles": true,
+        "offTick": true,
+        "buildSliced": true,
+        "noCacheChurn": true,
+        "staticGroundCached": true,
+        "p95FrameWithinBudget": true,
+        "activeP95FrameWithinBudget": true,
+        "p95WorldDrawWithinBudget": true
+      }
+    },
+    {
+      "zoom": 7.4,
+      "frameP50": 16.7,
+      "frameP95": 24.4,
+      "frameP99": 31.7,
+      "frameMax": 35,
+      "activeFrameP95": 24.4,
+      "externalStalls": 0,
+      "worldDrawP95": 0.4,
+      "buildSliceMax": 4.9,
+      "totalBuildMs": 35,
+      "closeDetailTiles": 25,
+      "visibleTiles": 25,
+      "cacheHits": 541,
+      "checks": {
+        "closeDetailActive": true,
+        "faunaDrawn": true,
+        "boundedToVisibleTiles": true,
+        "offTick": true,
+        "buildSliced": true,
+        "noCacheChurn": true,
+        "staticGroundCached": true,
+        "p95FrameWithinBudget": true,
+        "activeP95FrameWithinBudget": true,
+        "p95WorldDrawWithinBudget": true
+      }
+    }
+  ]
+}

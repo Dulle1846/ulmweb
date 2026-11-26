@@ -152,12 +152,12 @@ try {
         const { state } = await import("./js/core/state.js");
         const { getHeightAt, getMoistureAt, getTemperatureAt } = await import("./js/world/world.js");
         const {
-            forestStandAt, forestPotentialAt, forestFaunaFor, pickSpecies,
+            forestStandAt, forestPotentialAt, forestFaunaFor, forestMicrofaunaAt, pickSpecies,
         } = await import("./js/world/forest-ecology.js");
         const { seasonalState } = await import("./js/world/season.js");
         const { flowerBloom } = await import("./js/presentation/rendering/seasonal-foliage.js");
         const { getResourceNodeAt } = await import("./js/systems/resource-geography.js");
-        const { ensureForestFauna, forestFaunaAt } = await import("./js/systems/forest-fauna.js");
+        const { ensureForestFauna, forestFaunaAt, forestInsectAt } = await import("./js/systems/forest-fauna.js");
         ensureForestFauna();
 
         const width = Number(state.worldW) || 160;
@@ -298,6 +298,36 @@ try {
                             if (animal.group === "insect") push("insect", tile, 0.8, { herd: false, animal });
                         }
                     }
+
+                    // The close insect pass reads a second deterministic roll
+                    // (s2), not the s3 roll used by the old habitat fallback.
+                    // Select from the same saved colonies, microfauna and habitat
+                    // species the renderer actually receives, and prefer the
+                    // tiles that also carry a resident herd. This is the proof
+                    // tile for ants/beetles beside a scaled animal, not merely
+                    // an insect habitat on a meadow edge.
+                    const savedInsects = forestInsectAt(x, y);
+                    const microInsects = forestMicrofaunaAt(stand, summerDay, climateKey, s2);
+                    const habitatInsects = forestFaunaFor(stand, summerDay, climateKey, s2)
+                        .filter(entry => entry.group === "insect");
+                    if (savedInsects.length || microInsects.length || habitatInsects.length) {
+                        const visibleInsects = [...new Set([
+                            ...savedInsects.slice(0, 3).map(entry => entry.id),
+                            ...microInsects.slice(0, 2).map(entry => entry.id),
+                            ...habitatInsects.slice(0, 2).map(entry => entry.id),
+                        ])];
+                        const resident = herd[0] || forestFaunaFor(stand, summerDay, climateKey, s3)[0] || null;
+                        const score = 4
+                            + Math.min(1, savedInsects.length * 0.35)
+                            + (s1 > 0.95 ? 1 : 0)
+                            + (resident ? 1 : 0)
+                            + stand.canopy * 0.4
+                            + stand.ground.litter * 0.2;
+                        push("insectLife", tile, score, {
+                            herd: Boolean(herd.length), animal: resident,
+                            insects: visibleInsects,
+                        });
+                    }
                 }
             }
         }
@@ -347,7 +377,7 @@ try {
 
     const required = [
         "clearing", "meadow", "sunbeam", "trail", "wetFloor", "loamFloor", "roots", "stones",
-        "log", "mast", "blossom", "small", "bird", "insect", "nest", "loneTree",
+        "log", "mast", "blossom", "small", "bird", "insect", "insectLife", "nest", "loneTree",
     ];
     const missing = required.filter(key => !(scan.candidates[key] || []).length);
     if (missing.length) throw new Error("No real tile found for detail motifs: " + missing.join(", "));
@@ -391,7 +421,7 @@ try {
     const blossomTile = pick("blossom");
     const smallTile = pick("small");
     const birdTile = pick("bird");
-    const insectTile = pick("insect");
+    const insectTile = pick("insectLife", { reuse: true });
     const nestTile = pick("nest");
     const loneTile = pick("loneTree");
     const fungiTiles = pickAll(["fungiStump", "fungiFloor"], 2);
@@ -510,10 +540,10 @@ try {
         },
         {
             id: "1.2.1.35", title: "Insects, beetles, butterflies and ants",
-            note: "A habitat insect mark on a forest tile; it is deliberately small, so the second frame is a native 4.2× close-up.",
+            note: "A resident animal herd, wood ants and beetles on one densely wooded tile. The close-up is a native 6.4× render, not an upscaled crop.",
             frames: [
-                { tile: insectTile.tile, day: summerDay, zoom: 2.4, crop: 700, label: "TILE", focus: motifFocus(insectTile.tile), animal: insectTile.animal, herd: insectTile.herd },
-                { tile: insectTile.tile, day: summerDay, zoom: 6.4, crop: 320, label: "CLOSE-UP", mark: insectTile.animal?.label || "INSECT", focus: animalFocus(insectTile.tile), animal: insectTile.animal, herd: insectTile.herd },
+                { tile: insectTile.tile, day: summerDay, zoom: 2.4, crop: 700, label: "TILE", focus: motifFocus(insectTile.tile), animal: insectTile.animal, herd: insectTile.herd, insects: insectTile.insects },
+                { tile: insectTile.tile, day: summerDay, zoom: 6.4, crop: 640, label: "CLOSE-UP", mark: [insectTile.animal?.label, "ANTS"].filter(Boolean).join(" + "), focus: animalFocus(insectTile.tile), animal: insectTile.animal, herd: insectTile.herd, insects: insectTile.insects },
             ],
         },
         {
@@ -539,10 +569,11 @@ try {
             }],
         },
     ];
-    for (const key of ["small", "bird", "insect"]) {
+    for (const key of ["small", "bird", "insectLife"]) {
         const entry = key === "small" ? smallTile : key === "bird" ? birdTile : insectTile;
         console.log("Fauna " + key + ": " + (entry.animal?.label || "none")
             + " (" + (entry.animal?.group || "?") + ", herd=" + Boolean(entry.herd) + ")"
+            + " + insects " + (entry.insects || []).join(", ")
             + " on tile " + entry.tile.x + ", " + entry.tile.y);
     }
 
@@ -575,7 +606,7 @@ try {
             // fixed timeout occasionally captured the previous view. Wait for the
             // cache miss that proves the new view was rasterised.
             let rebuilt = false;
-            for (let attempt = 0; attempt < 50; attempt++) {
+            for (let attempt = 0; attempt < 170; attempt++) {
                 rebuilt = await page.evaluate(async (before) => {
                     const { state } = await import("./js/core/state.js");
                     return (Number(state.terrainCacheMisses) || 0) > before;
@@ -583,8 +614,34 @@ try {
                 if (rebuilt) break;
                 await page.waitForTimeout(120);
             }
-            if (!rebuilt) throw new Error("The terrain decoration cache did not rebuild for " + panel.id + " " + frame.label);
+            if (!rebuilt) {
+                const stalled = await page.evaluate(async () => {
+                    const { state } = await import("./js/core/state.js");
+                    const before = { zoom: state.zoom, target: state.zoomTarget, x: state.camera.x, y: state.camera.y };
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                    return {
+                        misses: Number(state.terrainCacheMisses) || 0,
+                        hits: Number(state.terrainCacheHits) || 0,
+                        buildMs: Number(state.terrainDecorationBuildMs) || 0,
+                        before, after: { zoom: state.zoom, target: state.zoomTarget, x: state.camera.x, y: state.camera.y },
+                        revealed: Number(state.terrainDetailTiles) || 0,
+                        frameFaulted: Boolean(state.frameFaulted),
+                        frameErrors: Number(state.frameErrorCount) || 0,
+                    };
+                });
+                throw new Error("The terrain decoration cache did not rebuild for " + panel.id + " " + frame.label
+                    + ": " + JSON.stringify(stalled));
+            }
             await page.waitForTimeout(160);
+            const faunaDrawn = await page.evaluate(async ({ tx, ty }) => {
+                const { state } = await import("./js/core/state.js");
+                const { forestFaunaAt } = await import("./js/systems/forest-fauna.js");
+                return {
+                    drawnTiles: Number(state.terrainFaunaDrawnTiles) || 0,
+                    closeFaunaTiles: Number(state.terrainCloseFaunaTiles) || 0,
+                    herds: forestFaunaAt(tx, ty).map(herd => herd.species + ":" + herd.population),
+                };
+            }, { tx: frame.tile.x, ty: frame.tile.y });
             const crop = frame.crop;
             const buffer = await page.screenshot({
                 clip: {
@@ -595,7 +652,7 @@ try {
                 animations: "disabled",
                 timeout: 120000,
             });
-            frames.push({ ...frame, buffer, sha256: crypto.createHash("sha256").update(buffer).digest("hex") });
+            frames.push({ ...frame, buffer, faunaDrawn, sha256: crypto.createHash("sha256").update(buffer).digest("hex") });
             if (framesDir) {
                 await fs.mkdir(framesDir, { recursive: true });
                 await fs.writeFile(path.join(framesDir,
@@ -642,6 +699,8 @@ try {
                     activity: frame.animal.activity, simulatedHerd: Boolean(frame.herd),
                     population: frame.animal.population ?? null,
                 } : null,
+                insects: Array.isArray(frame.insects) ? frame.insects : [],
+                faunaDrawn: frame.faunaDrawn || null,
             })),
         })),
         note: "HUD, entities, fog and weather hidden; simulation paused. Every frame is a real generated tile rendered by the normal terrain pass. Close-ups are native renders centred on the motif, not upscaled crops. No demo props were placed by hand.",

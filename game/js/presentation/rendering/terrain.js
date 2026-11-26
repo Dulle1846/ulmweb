@@ -446,6 +446,18 @@ let forestSightTileClimate = "";
 let forestSightTileForests = -1;
 const FOREST_SIGHT_MIN_DISTANCE = 2.1;
 
+// Cache-build diagnostics. These are written only while a decoration raster is
+// being built, never on a presented frame, and keep the close pass honest about
+// how many visible tiles it actually visited.
+function resetTerrainDetailStats() {
+    state.terrainDetailTiles = 0;
+    state.terrainCloseDetailTiles = 0;
+    state.terrainCloseGoodsTiles = 0;
+    state.terrainCloseInsectTiles = 0;
+    state.terrainCloseFaunaTiles = 0;
+    state.terrainFaunaDrawnTiles = 0;
+}
+
 function detailWorldKey() {
     return [
         Number(state.worldSeed) || 0,
@@ -532,6 +544,7 @@ function beginDetailBuild(zoom, cam, canvas, key, worldKey, surfaceCtx = null) {
         state.terrainCanvasEl.style.opacity = "1";
     }
     state.terrainTreeDraws = 0;
+    resetTerrainDetailStats();
     const setupMs = performance.now() - setupStart;
     detailBuild = {
         staging, stagingCtx, zoom,
@@ -687,6 +700,83 @@ function ensureTerrainSurface(canvas) {
 // WebGL paints the ground itself, but the authored trees, understory, rocks
 // and shore props are still Canvas artwork. Keep that transparent overlay in
 // its own cache so switching to WebGL does not lose a single decoration.
+// A settled rebuild is staged and sliced across frames. The previous raster
+// stays on screen until the new one is complete, so a dense close view cannot
+// turn a camera stop into a multi-hundred-millisecond long task.
+let overlayBuild = null;
+let overlayStageCanvas = null;
+let overlayStageCtx = null;
+
+function overlayStageSurface(canvas) {
+    if (!overlayStageCanvas || overlayStageCanvas.width !== canvas.width || overlayStageCanvas.height !== canvas.height) {
+        overlayStageCanvas = document.createElement("canvas");
+        overlayStageCanvas.width = Math.max(1, canvas.width);
+        overlayStageCanvas.height = Math.max(1, canvas.height);
+        overlayStageCtx = overlayStageCanvas.getContext("2d");
+    }
+    return overlayStageCtx;
+}
+
+function startOverlayBuild(zoom, cam, canvas, key, worldKey, renderScale, signature) {
+    const stage = overlayStageSurface(canvas);
+    if (!stage) return false;
+    stage.clearRect(0, 0, overlayStageCanvas.width, overlayStageCanvas.height);
+    state.terrainTreeDraws = 0;
+    resetTerrainDetailStats();
+    overlayBuild = {
+        stage, zoom, camX: cam.x, camY: cam.y, key, worldKey, renderScale,
+        width: canvas.width, height: canvas.height, signature,
+        cursor: { x: null, y: null }, startedAt: performance.now(), workMs: 0,
+    };
+    state.terrainDecorationBuildMs = 0;
+    state.terrainBuildThisFrame = 0;
+    return true;
+}
+
+function advanceOverlayBuild(canvas) {
+    const build = overlayBuild;
+    if (!build) return false;
+    const stepStart = performance.now();
+    const deadline = stepStart + DETAIL_BUILD_FRAME_MS;
+    const done = drawTerrainDecorations(
+        build.stage, build.zoom, { x: build.camX, y: build.camY }, canvas,
+        build.cursor, deadline
+    );
+    const stepMs = performance.now() - stepStart;
+    build.workMs += stepMs;
+    state.terrainDecorationBuildMs = Math.round(build.workMs);
+    state.terrainBuildThisFrame = stepMs;
+    if (!done) return false;
+    overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+    overlayCtx.drawImage(overlayStageCanvas, 0, 0);
+    overlayState = {
+        key: build.key, worldKey: build.worldKey, zoom: build.zoom,
+        camX: build.camX, camY: build.camY, renderScale: build.renderScale,
+        width: build.width, height: build.height,
+    };
+    state.terrainCacheMisses = (Number(state.terrainCacheMisses) || 0) + 1;
+    overlayBuild = null;
+    return true;
+}
+
+function drawCachedOverlay(ctx, zoom, cam, canvas, renderScale) {
+    if (!overlayState) return;
+    const transform = detailLayerTransform({
+        previousZoom: overlayState.zoom,
+        previousCameraX: overlayState.camX,
+        previousCameraY: overlayState.camY,
+        previousRenderScale: overlayState.renderScale,
+        zoom, cameraX: cam.x, cameraY: cam.y, renderScale,
+    });
+    ctx.drawImage(
+        overlayCanvas,
+        transform.backingX, transform.backingY,
+        overlayCanvas.width * transform.backingScale,
+        overlayCanvas.height * transform.backingScale
+    );
+    state.terrainCacheHits = (Number(state.terrainCacheHits) || 0) + 1;
+}
+
 function drawOverlayDecorations(ctx, zoom, cam, canvas) {
     if (!overlayCanvas || overlayCanvas.width !== canvas.width || overlayCanvas.height !== canvas.height) {
         overlayCanvas = document.createElement("canvas");
@@ -695,6 +785,7 @@ function drawOverlayDecorations(ctx, zoom, cam, canvas) {
         overlayCtx = overlayCanvas.getContext("2d");
         overlayState = null;
         overlayView = "";
+        overlayBuild = null;
     }
     if (!overlayCtx) return;
 
@@ -721,22 +812,24 @@ function drawOverlayDecorations(ctx, zoom, cam, canvas) {
         && overlayState.renderScale === renderScale);
     const sameWorld = surfaceMatches && overlayState.worldKey === worldKey;
 
+    // A build belongs to one exact view and world. Panning, zooming or a world
+    // swap abandons it instead of letting stale work finish into the cache.
+    if (overlayBuild && (overlayBuild.signature !== signature
+        || overlayBuild.worldKey !== worldKey
+        || overlayBuild.width !== canvas.width
+        || overlayBuild.height !== canvas.height
+        || overlayBuild.renderScale !== renderScale)) {
+        overlayBuild = null;
+    }
+
     if (!sameWorld) {
         // A new realm or canvas cannot be reused. Wait for the view to settle
-        // before spending a full decoration rasterisation on a moving camera.
+        // before staging a decoration raster for a moving camera; a cold start
+        // has no old raster to protect, so it starts immediately.
         if (overlayState && !settled) return;
-        overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
-        state.terrainTreeDraws = 0;
-        const buildStart = performance.now();
-        drawTerrainDecorations(overlayCtx, zoom, cam, canvas);
-        state.terrainDecorationBuildMs = Math.round(performance.now() - buildStart);
-        state.terrainBuildThisFrame = state.terrainDecorationBuildMs;
-        overlayState = {
-            key, worldKey, zoom, camX: cam.x, camY: cam.y, renderScale,
-            width: canvas.width, height: canvas.height,
-        };
-        state.terrainCacheMisses = (Number(state.terrainCacheMisses) || 0) + 1;
-        ctx.drawImage(overlayCanvas, 0, 0);
+        if (!overlayBuild) startOverlayBuild(zoom, cam, canvas, key, worldKey, renderScale, signature);
+        if (overlayBuild) advanceOverlayBuild(canvas);
+        drawCachedOverlay(ctx, zoom, cam, canvas, renderScale);
         return;
     }
 
@@ -745,38 +838,16 @@ function drawOverlayDecorations(ctx, zoom, cam, canvas) {
         || Math.abs(overlayState.camX - cam.x) > 0.02
         || Math.abs(overlayState.camY - cam.y) > 0.02;
     if (settled && (contentStale || viewMoved)) {
-        overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
-        state.terrainTreeDraws = 0;
-        const buildStart = performance.now();
-        drawTerrainDecorations(overlayCtx, zoom, cam, canvas);
-        state.terrainDecorationBuildMs = Math.round(performance.now() - buildStart);
-        state.terrainBuildThisFrame = state.terrainDecorationBuildMs;
-        overlayState = {
-            key, worldKey, zoom, camX: cam.x, camY: cam.y, renderScale,
-            width: canvas.width, height: canvas.height,
-        };
-        state.terrainCacheMisses = (Number(state.terrainCacheMisses) || 0) + 1;
-        ctx.drawImage(overlayCanvas, 0, 0);
+        if (!overlayBuild) startOverlayBuild(zoom, cam, canvas, key, worldKey, renderScale, signature);
+        if (overlayBuild) advanceOverlayBuild(canvas);
+        drawCachedOverlay(ctx, zoom, cam, canvas, renderScale);
         return;
     }
 
-    // Keep the old raster on screen while panning or zooming. Its world-space
-    // positions are preserved by the transform, so trees do not vanish during
-    // the 140 ms settle window.
-    const transform = detailLayerTransform({
-        previousZoom: overlayState.zoom,
-        previousCameraX: overlayState.camX,
-        previousCameraY: overlayState.camY,
-        previousRenderScale: overlayState.renderScale,
-        zoom, cameraX: cam.x, cameraY: cam.y, renderScale,
-    });
-    ctx.drawImage(
-        overlayCanvas,
-        transform.backingX, transform.backingY,
-        overlayCanvas.width * transform.backingScale,
-        overlayCanvas.height * transform.backingScale
-    );
-    state.terrainCacheHits = (Number(state.terrainCacheHits) || 0) + 1;
+    // Keep the old raster on screen while panning, zooming or staging a new
+    // one. Its world-space positions are preserved by the transform, so trees
+    // do not vanish during the settle/build window.
+    drawCachedOverlay(ctx, zoom, cam, canvas, renderScale);
 }
 
 // One screen-space fog/occlusion wall for a closed conifer stand. The profile
@@ -1512,6 +1583,7 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas, cursor = null, deadline 
                 return false;
             }
             if (!state.explored[x]?.[y]) continue;
+            state.terrainDetailTiles = (Number(state.terrainDetailTiles) || 0) + 1;
             const detail = detailColumn && y >= gridY && (y - gridY) % step === 0;
             const treeSample = treeColumn && y >= treeGridY && (y - treeGridY) % treeStep === 0;
             const clusterAnchor = clusterColumn && y >= clusterGridY
@@ -1807,6 +1879,7 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas, cursor = null, deadline 
                     drawForestFloor(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, climateKey, tick, zoom);
                     if (zoom >= 2.8) {
                         drawCloseForestFloor(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, climateKey, zoom);
+                        state.terrainCloseDetailTiles = (Number(state.terrainCloseDetailTiles) || 0) + 1;
                     }
                     // The canopy shade belongs on the floor, below trunks and
                     // understorey. One cached soft sprite per tile is far cheaper
@@ -1888,11 +1961,16 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas, cursor = null, deadline 
                 }
                 if (zoom >= 2.8) {
                     drawForestGoods(ctx, px, py, cellPx, stand, dayOfYear, climateKey, s1, s2, s3, zoom);
+                    state.terrainCloseGoodsTiles = (Number(state.terrainCloseGoodsTiles) || 0) + 1;
                 }
                 if (zoom >= 3.0 && s1 > 0.18) {
                     drawCloseInsects(ctx, px, py, cellPx, stand, dayOfYear, climateKey, s2, zoom, x, y);
+                    state.terrainCloseInsectTiles = (Number(state.terrainCloseInsectTiles) || 0) + 1;
                 }
-                if (zoom >= 0.75 && s1 > 0.95) drawForestFaunaScene(ctx, px, py, cellPx, stand, dayOfYear, climateKey, s3, zoom, x, y, tick);
+                if (zoom >= 0.75 && s1 > 0.95) {
+                    drawForestFaunaScene(ctx, px, py, cellPx, stand, dayOfYear, climateKey, s3, zoom, x, y, tick);
+                    state.terrainCloseFaunaTiles = (Number(state.terrainCloseFaunaTiles) || 0) + 1;
+                }
                 if (zoom >= 0.9 && s1 > 0.972) drawFallenLog(ctx, px, py, cellPx, stand, s2, s3, dayOfYear, climateKey);
                 continue;
             }
@@ -3706,6 +3784,61 @@ function drawCloseForestFloor(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear,
         }
     }
 
+    // Ground-study tooth. The 3.4× pass gives the floor a drawn surface; at
+    // 5.4× and 7.4× the same world distances cover several times more screen
+    // pixels, so a second, finer pass keeps the wash from reading as a blur.
+    // It is bounded to this already-visible close tile and cached with the
+    // decoration raster, never run on the simulation tick or per map tile.
+    if (zoom >= 4.6) {
+        ctx.globalAlpha = 0.30 + 0.05 * s3;
+        for (let i = 0; i < 48; i++) {
+            const angle = i * 2.399963 + s1 * 7.1 + (i % 3) * 0.37;
+            const reach = cellPx * (0.055 + ((i * 29) % 47) / 420);
+            const x = px + Math.cos(angle) * reach;
+            const y = py + 3.8 * s + Math.sin(angle) * reach * 0.54;
+            const size = (0.42 + (i % 4) * 0.15) * s;
+            ctx.fillStyle = i % 6 === 0 ? "#b7a172" : i % 3 === 0 ? "#59412a" : palette[(i + 2) % palette.length];
+            ctx.beginPath();
+            ctx.ellipse(x, y, size * (1.4 + (i % 3) * 0.4), size * 0.56, angle, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.globalAlpha = 0.26;
+        ctx.strokeStyle = turn > 0.52 ? "#6b4b2c" : "#3d5a31";
+        ctx.lineWidth = Math.max(0.38, 0.34 * s);
+        for (let i = 0; i < 22; i++) {
+            const angle = i * 2.73 + s2 * 6.2;
+            const reach = cellPx * (0.08 + (i % 5) * 0.045);
+            const x = px + Math.cos(angle) * reach;
+            const y = py + 4.25 * s + Math.sin(angle) * reach * 0.42;
+            const length = (1.4 + (i % 4) * 0.9) * s;
+            ctx.beginPath();
+            ctx.moveTo(x - Math.cos(angle) * length * 0.45, y);
+            ctx.quadraticCurveTo(x, y - length * 0.35, x + Math.cos(angle) * length * 0.55, y - length * 0.08);
+            ctx.stroke();
+        }
+        // A handful of seed heads and dry grass blades sit above the litter so
+        // the near-field has depth as well as texture.
+        for (let i = 0; i < 9; i++) {
+            const x = px + ((i * 23 + Math.floor(s2 * 67)) % 43 - 21) * s * 0.38;
+            const y = py + 4.4 * s + ((i * 17) % 13 - 6) * s * 0.3;
+            const height = (2.2 + (i % 3) * 1.2) * s;
+            ctx.strokeStyle = turn > 0.52 ? "#a58a48" : "#638449";
+            ctx.globalAlpha = 0.42;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.quadraticCurveTo(x + Math.sin(i + s1) * 0.9 * s, y - height * 0.55,
+                x + Math.sin(i * 1.7 + s2) * 1.4 * s, y - height);
+            ctx.stroke();
+            if (i % 3 === 0) {
+                ctx.fillStyle = turn > 0.52 ? "#d2b76a" : "#b8b46d";
+                ctx.globalAlpha = 0.52;
+                ctx.beginPath();
+                ctx.ellipse(x + Math.sin(i * 1.7 + s2) * 1.4 * s, y - height, 0.62 * s, 1.15 * s, 0.15, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+    }
+
     // Moss rosettes, lichen crust and a rare close mushroom cluster.
     if ((stand.ground?.moss || 0) > 0.12) {
         drawMossPatch(ctx, px + (s1 - 0.5) * cellPx * 0.28, py + 4.2 * s,
@@ -5130,9 +5263,15 @@ function drawForestFauna(ctx, px, py, cellPx, stand, dayOfYear, climateKey, seed
 // tile carries the signs a hunter or naturalist would actually see: tracks,
 // browsed shoots, a recent carcass and a hollow-nesting bird's nest.
 function drawForestFaunaScene(ctx, px, py, cellPx, stand, dayOfYear, climateKey, seed, zoom, tileX, tileY, tick) {
-    if (tileX !== null && tileY !== null && !isForestSightVisible(tileX + 0.5, tileY + 0.5)) return;
+    // At map and district distance a dense stand can hide a herd completely.
+    // At ground-study distance the player has deliberately moved into the tile
+    // and the close pass is the whole point of the view: show the resident
+    // animals there, using the same simulated herd data. The sight wall still
+    // applies to the wider view, so this does not reveal animals across the map.
+    if (tileX !== null && tileY !== null && zoom < 2.8 && !isForestSightVisible(tileX + 0.5, tileY + 0.5)) return;
     const season = seasonalState(dayOfYear, climateKey);
     const herds = tileX !== null && tileY !== null ? forestFaunaAt(tileX, tileY, stand, dayOfYear) : [];
+    if (herds.length) state.terrainFaunaDrawnTiles = (Number(state.terrainFaunaDrawnTiles) || 0) + 1;
     const signs = tileX !== null && tileY !== null ? forestFaunaSignAt(tileX, tileY, stand, dayOfYear, herds) : null;
     // Saved ant/beetle colonies drive the close-up marks. The old habitat
     // fallback remains for butterflies, bees and fresh worlds where the fauna

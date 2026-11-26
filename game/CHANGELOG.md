@@ -1,13 +1,74 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.62.0`
-**Next development line:** `3.63.0-dev`
+**Current production version:** `3.63.0`
+**Next development line:** `3.64.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
-**Last repository verification:** 2026-11-25 (UTC)
+**Last repository verification:** 2026-11-26 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.63.0 — The deepest ground view holds its frame
+
+This release closes the two gaps left by the 3.62.0 ground-study pass: the
+maximum-zoom frame budget was not measured in a real browser, and the deepest
+detail sheet could select a fauna-bearing tile but crop the animal out. Both are
+now deterministic, measured and part of the release gate. No zoom level, FPS
+target, render scale or budget was lowered.
+
+- **Measured at the real maximum.** `test:ground-study` starts the fixed standard
+  realm, switches the normal terrain pass to a real Chromium WebGL2 context and
+  holds a dry, dense ancient mixed wood (`60,60`) with saved ant and beetle
+  colonies plus a resident deer herd. At **5.40×** and **7.40×** it records the
+  actual game-loop and `requestAnimationFrame` intervals with the close-detail
+  pass active after the cache settles. On the software WebGL/compositor runner
+  at 1280 × 800 the latest recorded frame p50/p95/p99 were **16.7 / 25.2 /
+  42.0 ms** at 5.40× and **16.7 / 24.4 / 31.7 ms** at 7.40×; two 5.40×
+  samples were host presentation stalls with only 0.3–0.4 ms of app draw.
+  Excluding those, active p95 was **23.4 ms** and **24.4 ms**. App-owned world
+  draw was **0.4 ms p95** at both zooms, simulation work was **0 ms** because the
+  probe is paused, and the budget checks are **≤ 33 ms p95 frame** and
+  **≤ 16.7 ms p95 draw**.
+- **The close raster is now staged, not a long task.** The old WebGL overlay
+  rebuilt all 35 close tiles synchronously (a 60–180 ms spike). The replacement
+  is built in `DETAIL_BUILD_FRAME_MS` slices while the previous overlay stays on
+  screen; the latest 5.40× build took 70 ms across 17 frames (max slice 8.2 ms),
+  the 7.40× build 35 ms across 10 frames (max slice 4.9 ms).
+- **Dry stationary ground is cached.** The WebGL ground pass now has a
+  camera/zoom/light/season/world signature and reuses the presented buffer when
+  nothing visible changed. A close crop that actually contains water opts out
+  of the cache and keeps the animated shader path, so rivers and coasts are
+  never frozen; wider views also keep their original redraw. The 5.40× and
+  7.40× dry steady samples recorded 259 and 541 ground-cache hits; ground misses
+  stopped after the initial view change.
+- **The close pass is bounded to what is on screen.** At 5.40× it touched
+  35/35 visible tiles (25 insect tiles, one fauna tile); at 7.40× 25/25 (17
+  insect tiles, one fauna tile). Tree draws were 90 and 63, below the 3×
+  visible-tile ceiling, and the whole pass stayed on the decoration cache rather
+  than the simulation tick.
+- **The deepest reference is fauna-proven.** The `forest-detail` selector now
+  requires a saved insect colony and a resident simulated herd, scores for a
+  visible animal, and waits for the real cache rebuild. It selected `60,60`
+  (Ancient Mixed Wood, deer 12.6, ants 1.87, beetle 0.40) instead of a
+  meadow-edge fallback. The 6.4× close-up is now a 640 px native study showing
+  the red deer, ants, a bee, mushrooms, logs and honey; the metadata records the
+  rendered herd and `faunaDrawn` counters. At close range the sight wall no
+  longer hides the tile the player has deliberately moved into; the wider-view
+  occlusion rule is unchanged.
+- **More floor tooth, no parallel renderer.** Inside the existing cached close
+  tile path (zoom ≥ 4.6) the forest floor adds 48 litter flecks, 22 fine fibres
+  and 9 seed-head/grass marks per tile. They use the stand's existing colours
+  and leaf-fall data and are rasterised once with the decoration layer, so they
+  add no per-frame map loop and no new save or simulation state.
+- **Verification.** `npm test`, the regenerated forest-detail reference, the
+  ground-study performance harness, the forest/ground browser references and the
+  deterministic 25-year campaign are the release gate. The report is written to
+  `docs/terrain-reference/ground-study-performance.json` and the reference to
+  `docs/terrain-reference/forest-detail-reference.png` / `.json`. The frame
+  figures above are software-WebGL measurements on the cloud runner, not a
+  hardware-GPU claim; a real GPU should remove presentation stalls, but the
+  app-owned draw and build numbers are directly comparable.
 
 ## 3.62.0 — The forest floor is a place you can kneel down in
 

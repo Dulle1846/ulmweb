@@ -12,7 +12,7 @@
 
 import { BUILDING_SIZE, CELL } from '../../core/config.js';
 import { state } from '../../core/state.js';
-import { worldWidth, worldHeight } from '../../world/world.js';
+import { getHeightAt, worldWidth, worldHeight } from '../../world/world.js';
 import { getRoadTiles } from '../../systems/roads.js';
 import { terrainSeasonPhase, terrainShaderPaletteForPhase } from './terrain-palette.js';
 import { buildTerrainAtlas, TERRAIN_ATLAS_COLUMNS, TERRAIN_ATLAS_ROWS, TERRAIN_ATLAS_VARIANTS } from './terrain-atlas.js';
@@ -902,6 +902,14 @@ let uploadedHeights = null;
 let uploadedWidth = 0;
 let uploadedHeight = 0;
 let initialized = false;
+// The ground is a static raster unless the camera, zoom, light or season
+// changes. Keeping the last presented WebGL frame avoids re-running the full
+// material shader while a player studies one tile. Water is excluded because
+// its ripples are the one continuously animated part of the ground pass.
+let groundSignature = "";
+let groundSignatureCanvas = null;
+let groundCacheHits = 0;
+let groundCacheMisses = 0;
 
 // Release the resources we created without forcing a context loss. Chrome and
 // some ANGLE drivers log "CONTEXT_LOST_WEBGL: loseContext: context lost" for an
@@ -978,6 +986,9 @@ function init() {
         depth: false,
         stencil: false,
         powerPreference: "high-performance",
+        // Required for the stationary-ground cache: if nothing that affects the
+        // ground changed, the previous presented frame remains valid.
+        preserveDrawingBuffer: true,
     });
     if (!gl) {
         failed = true;
@@ -1128,6 +1139,7 @@ function init() {
         wearSourceKey = "";
         wearNeedsUpload = true;
         atlasUploaded = false;
+        groundSignature = "";
     });
 
     return true;
@@ -1547,6 +1559,63 @@ export function resetTerrainWebGL() {
     uploadedWidth = 0;
     uploadedHeight = 0;
     initialized = false;
+    groundSignature = "";
+    groundSignatureCanvas = null;
+    groundCacheHits = 0;
+    groundCacheMisses = 0;
+}
+
+// Any water in the visible crop keeps the animated shader path alive. The scan
+// is bounded to the viewport (at most a few dozen close tiles), never the map.
+function visibleCropHasWater(canvas) {
+    const zoom = Number(state.zoom) || 1;
+    const cellPx = CELL * zoom;
+    if (!(cellPx > 0) || !state.heightMap) return false;
+    const sea = Number(state.seaLevel) || 0.33;
+    const width = Number(state.worldW) || worldWidth();
+    const height = Number(state.worldH) || worldHeight();
+    const startX = Math.max(0, Math.floor(state.camera.x / cellPx));
+    const startY = Math.max(0, Math.floor(state.camera.y / cellPx));
+    const endX = Math.min(width, Math.ceil((state.camera.x + canvas.width) / cellPx) + 1);
+    const endY = Math.min(height, Math.ceil((state.camera.y + canvas.height) / cellPx) + 1);
+    for (let y = startY; y < endY; y++) {
+        for (let x = startX; x < endX; x++) {
+            // Four quarter points catch a bank or stream between tile centres.
+            for (const [dx, dy] of [[0.25, 0.25], [0.75, 0.25], [0.25, 0.75], [0.75, 0.75]]) {
+                if (getHeightAt(x + dx, y + dy) < sea + 0.002) return true;
+            }
+        }
+    }
+    return false;
+}
+
+function currentGroundSignature(canvas) {
+    const zoom = Number(state.zoom) || 1;
+    const day = Number.isFinite(Number(state.dayOfYear)) ? Number(state.dayOfYear) : 0;
+    const hour = Number.isFinite(Number(state.timeOfDay)) ? Number(state.timeOfDay) : 12;
+    // Water is a moving surface. A cached still would visibly freeze the
+    // ripples, so a wet crop opts out of the static path entirely. The scan is
+    // only used where the visible crop is a few dozen tiles; a landscape view
+    // keeps the original animated redraw.
+    if (zoom >= 2.4 && visibleCropHasWater(canvas)) return null;
+    return [
+        canvas.width, canvas.height,
+        Math.round((Number(state.camera.x) || 0) * 100) / 100,
+        Math.round((Number(state.camera.y) || 0) * 100) / 100,
+        Math.round(zoom * 100000) / 100000,
+        Number(state.worldEpoch) || 0,
+        Number(state.terrainVersion) || 0,
+        Number(state.terrainCacheRevision) || 0,
+        Number(state.roads?.revision) || 0,
+        Number(state.buildingCollisionVersion) || 0,
+        Number(state.seaLevel) || 0,
+        Math.floor(day / 8),
+        Math.floor(hour / 2),
+        String(state.weather || "clear"),
+        // There is no moving water in a cacheable crop; the ripple clock is
+        // deliberately absent because redrawing this frame would be pure waste.
+        "dry",
+    ].join("|");
 }
 
 export function drawTerrainGL() {
@@ -1561,6 +1630,29 @@ export function drawTerrainGL() {
         canvas.height = state.canvas.height;
     }
     if (canvas.width < 2 || canvas.height < 2) return false;
+
+    // A stationary dry close/mid view is already on screen. Skipping the
+    // shader here does not skip the close-detail cache: that lives on the
+    // decoration overlay and has already been rasterised separately. Only the
+    // rooftop-and-closer crop has a bounded water scan; wider views keep the
+    // original animated redraw so a landscape river or coast never freezes.
+    let cacheable = (Number(state.zoom) || 1) >= 2.4;
+    let signature = cacheable ? currentGroundSignature(canvas) : "";
+    if (signature === null) cacheable = false;
+    if (!cacheable) {
+        signature = "";
+        groundSignature = "";
+        groundSignatureCanvas = null;
+    }
+    if (cacheable && groundSignatureCanvas === canvas && groundSignature === signature) {
+        groundCacheHits += 1;
+        state.terrainGroundCacheHits = groundCacheHits;
+        state.terrainGroundCacheMisses = groundCacheMisses;
+        return true;
+    }
+    groundCacheMisses += 1;
+    state.terrainGroundCacheHits = groundCacheHits;
+    state.terrainGroundCacheMisses = groundCacheMisses;
 
     if (uploadedWorldEpoch !== state.worldEpoch || uploadedHeights !== state.heightMap) {
         if (!uploadWorldData()) return false;
@@ -1602,6 +1694,14 @@ export function drawTerrainGL() {
     gl.uniform1f(uniforms.atlasVariants, TERRAIN_ATLAS_VARIANTS);
     gl.uniform1f(uniforms.atlasStrength, atlasReady ? 1 : 0);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    // Optional audit hook. The normal loop measures CPU submission time; a
+    // software-GL audit also needs the actual raster cost of this one pass.
+    // Never enabled in play, so the production frame path stays asynchronous.
+    if (state.performanceProbe?.glFinish) gl.finish();
     gl.bindVertexArray(null);
+    if (cacheable) {
+        groundSignature = signature;
+        groundSignatureCanvas = canvas;
+    }
     return true;
 }

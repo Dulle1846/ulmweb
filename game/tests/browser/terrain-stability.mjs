@@ -92,6 +92,10 @@ async function viewState() {
 }
 
 async function setView(level) {
+    const missesBefore = await page.evaluate(async () => {
+        const { state } = await import("./js/core/state.js");
+        return Number(state.terrainCacheMisses) || 0;
+    });
     await page.evaluate(async ({ level }) => {
         const { state } = await import("./js/core/state.js");
         const { ZOOM_PRESETS } = await import("./js/core/zoom-model.js");
@@ -114,7 +118,20 @@ async function setView(level) {
         window.__terrainPeakDrawMs = 0;
         state.terrainCacheRevision = (Number(state.terrainCacheRevision) || 0) + 1;
     }, { level });
-    await page.waitForTimeout(520);
+    // The staged Canvas2D raster is sliced by frame budget. On a software
+    // renderer a landscape rebuild can take more than half a second, so wait
+    // for the actual cache miss instead of assuming a fixed wall-clock budget.
+    for (let attempt = 0; attempt < 120; attempt++) {
+        const misses = await page.evaluate(async () => {
+            const { state } = await import("./js/core/state.js");
+            return Number(state.terrainCacheMisses) || 0;
+        });
+        if (misses > missesBefore) return;
+        await page.waitForTimeout(100);
+    }
+    // Fall through with the last state so the caller reports the missing cache
+    // with the same assertion and diagnostics as any other regression.
+    await page.waitForTimeout(100);
 }
 
 try {
@@ -184,8 +201,14 @@ try {
     assert.match(duringPan.transform, /translate\([^)]*px, [^)]*px\)/, "the cached layer was not transformed during a pan");
     assert.equal(duringPan.cacheMisses, beforePan.cacheMisses, "the cache rebuilt repeatedly while panning");
     await page.evaluate(() => clearInterval(window.__panTimer));
-    await page.waitForTimeout(450);
-    const afterPan = await viewState();
+    let afterPan = duringPan;
+    // As with the initial views, wait for the actual staged rebuild rather
+    // than assuming a fixed software-renderer frame rate.
+    for (let attempt = 0; attempt < 80; attempt++) {
+        await page.waitForTimeout(100);
+        afterPan = await viewState();
+        if (afterPan.cacheMisses > duringPan.cacheMisses) break;
+    }
     assert.equal(afterPan.opacity, "1", "the cached layer disappeared after the pan settled");
     assert.ok(afterPan.cacheMisses > duringPan.cacheMisses, "the cache was not refreshed after the pan settled");
     console.log(`pan: hits ${beforePan.cacheHits} -> ${afterPan.cacheHits} · misses ${beforePan.cacheMisses} -> ${afterPan.cacheMisses}`);
