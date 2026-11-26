@@ -214,9 +214,10 @@ the ten visible in a sample.
 - **The browser proofs wait for the real work.** The completed-session check
   advances the deterministic clock until all 14 scheduled HUD chunks have
   refreshed instead of assuming one fixed slice, the warning proof waits for the
-  Chronicle's progressively hydrated OPEN ISSUE button, and the forest reference
-  gives its large native screenshots enough time to rasterise on a loaded
-  machine. No player-facing value, deadline or assertion was relaxed.
+  Chronicle's progressively hydrated OPEN ISSUE button, the repair proof waits
+  for the buildings register's live count and row buttons, and the forest
+  reference gives its large native screenshots enough time to rasterise on a
+  loaded machine. No player-facing value, deadline or assertion was relaxed.
 
 ## 3.60.0 — Every forest profile now has a job
 

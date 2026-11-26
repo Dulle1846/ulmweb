@@ -89,6 +89,19 @@ try {
     await page.locator("#command-modal").waitFor({ state: "visible" });
     await page.locator('[data-command-tab="buildings"]').click();
     await page.locator('[data-command="repair-all"]').waitFor({ state: "visible", timeout: 15000 });
+    // The register hydrates one DOM node per frame. The bulk button can be
+    // visible before its neighbouring summary and row buttons are appended, so
+    // wait for the real register content before reading the player's panel.
+    await page.waitForFunction(
+        () => /DAMAGED STRUCTURES\s*2/.test(document.querySelector("#command-panel-content")?.textContent || ""),
+        null,
+        { timeout: 15000 }
+    );
+    await page.waitForFunction(
+        () => document.querySelectorAll('#command-panel-content [data-command="repair-building"]').length >= 2,
+        null,
+        { timeout: 15000 }
+    );
     const panelText = await page.locator("#command-panel-content").innerText();
     assert.match(panelText, /DAMAGED STRUCTURES\s+2/, "the register must show the live damaged count");
     assert.match(panelText, /REPAIR ALL DAMAGED STRUCTURES/, "the register must offer one bulk order");
