@@ -863,6 +863,7 @@ async function startNewRealm(seed,profile,worldOptions=readWorldOptions(),scenar
     applyScenarioStart(scenarioDefinition||SCENARIO_PRESETS["free-realm"]);
     initWorld(seed,state.worldOptions,state.terrainVersion);
     setRealmLoadingStage("settle");
+    await nextPaint();
     initStartingKingdom();
     const foundingGrant=applyFoundingProfile(state.identity?.startProfile);
     if(foundingGrant.id!=="balanced")addLog("FOUNDING CHARTER — "+foundingGrant.profile.label.toUpperCase(),"#d6b56d","milestone");
@@ -908,6 +909,7 @@ async function startNewRealm(seed,profile,worldOptions=readWorldOptions(),scenar
     // would run a moment later; doing them here keeps the first visible frames
     // free of their one-off compilation and allocation cost.
     setRealmLoadingStage("chronicle");
+    await nextPaint();
     for(let warmTick=0;warmTick<60;warmTick++){
         updateSimulation();
         if(warmTick%6===0)setRealmLoadingProgress(79+Math.round(warmTick/60*17));
