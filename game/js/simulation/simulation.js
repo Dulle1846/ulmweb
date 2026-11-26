@@ -68,6 +68,7 @@ import { updateSettlementMaintenance } from "../systems/settlement-owners.js";
 import { updateScenario } from "../systems/scenario.js";
 import { updateWorldMap } from "../systems/world-map.js";
 import { updateCampaignProgress, settleAnnualCampaigns } from "../systems/feudal-campaigns.js";
+import { updateCouncilDocket } from "../systems/council-laws.js";
 
 // The annual rollover is deep but its systems are independent in strict order.
 // Headless callers run all of them in one call; the presented game loop runs
@@ -92,6 +93,9 @@ const ANNUAL_TASKS = [
     { name: "births", run(annual) { annual.newborn = updateBirths(); } },
     { name: "diplomacy", run() { updateDiplomacy(); } },
     { name: "court", run() { updateCourt(); } },
+    // The council reads the settled factions from court. One bounded annual
+    // session votes every lobbied bill with the dedicated "council" stream.
+    { name: "councilDocket", run(annual) { annual.councilDocket = updateCouncilDocket(); } },
     { name: "advisor", run() { updateAdvisor(); } },
     { name: "nobility", run() { updateNobility(); } },
     // Feuds resolve before the hosts so a new dispute immediately changes who

@@ -51,6 +51,7 @@ import { createEspionageState, normalizeEspionageState } from "../systems/espion
 import { normalizeAmbitions } from "../systems/ambitions.js";
 import { normalizePoliticalState } from "../systems/politics.js";
 import { normalizeGovernment } from "../systems/government.js";
+import { normalizeCouncilState } from "../systems/council-laws.js";
 import { normalizeRoyalState } from "../systems/royal-dynasty.js";
 import { restoreWinterState, serializeWinterState } from "../world/winter-economy.js";
 import { normalizeEndlessState } from "../systems/endless.js";
@@ -278,7 +279,7 @@ export function createSaveSnapshot() {
         aiChronicle: serializeAiChronicleState(state.aiChronicle),
         eventTimeline: serializeEventTimelineState(state.eventTimeline),
         politics: JSON.parse(JSON.stringify(state.politics || {})),
-        government: JSON.parse(JSON.stringify(state.government || {})),
+        government: JSON.parse(JSON.stringify(normalizeGovernment(state.government))),
         royal: JSON.parse(JSON.stringify(state.royal || {})),
         market: JSON.parse(JSON.stringify(state.market)),
         winter: serializeWinterState(),
@@ -504,6 +505,9 @@ export function restoreSaveSnapshot(snapshot) {
     restoreEconomyCycleState(snapshot);
     normalizePoliticalState(snapshot.politics);
     normalizeGovernment(snapshot.government);
+    // The hot-path government normalizer preserves the optional council DTO by
+    // reference; import normalization happens once at the save boundary.
+    state.government.council = normalizeCouncilState(snapshot.government?.council);
     normalizeRoyalState(snapshot.royal);
     state.royal.dynastyName = state.identity.dynastyName;
     normalizeHouseholdAssignments();

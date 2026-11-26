@@ -6,6 +6,7 @@ import { ROAD_TYPES } from "../systems/roads.js";
 import { getAmbitionSnapshot } from "../systems/ambitions.js";
 import { getScenarioSnapshot } from "../systems/scenario.js";
 import { WAR_AIMS, CAMPAIGN_GOAL } from "../systems/feudal-campaigns.js";
+import { COUNCIL_BILLS } from "../systems/council-laws.js";
 
 function canAfford(state, cost) {
     return Object.entries(cost || {}).every(([resource, amount]) =>
@@ -349,6 +350,30 @@ export function getCoreCounsel(state) {
                 " · " + Math.round(Number(campaign.progress) || 0) + "/" + CAMPAIGN_GOAL + " progress",
             actionLabel: "OPEN MILITARY",
             panel: "military",
+            buildCategory: null,
+            buildType: null
+        };
+    }
+    // A council bill is the same kind of honest continuation: settle a lobbied
+    // bill at the next session before paying a new lobby. Read the nested
+    // optional DTO directly so counsel never creates state on a loading frame.
+    const docket = Array.isArray(state?.government?.council?.docket)
+        ? state.government.council.docket.slice(0, 3) : [];
+    const readyBill = docket.find(bill => bill?.stage === "lobbied" && Number(state?.year) > Number(bill?.proposedYear));
+    const openBill = docket.find(bill => bill?.stage === "proposed");
+    const councilBill = readyBill || openBill;
+    if (councilBill) {
+        const label = COUNCIL_BILLS[councilBill.billId]?.label || "COUNCIL BILL";
+        return {
+            id: "council",
+            stepId: null,
+            text: readyBill
+                ? "Call the " + label + " council vote in Government."
+                : "Pay the " + label + " lobby in Government.",
+            evidence: label + " · " + String(councilBill.stage || "proposed").toUpperCase() +
+                " · SUPPORT " + Math.round(Number(councilBill.support) || 0) + "/" + Math.round(Number(councilBill.threshold) || 0),
+            actionLabel: "OPEN GOVERNMENT",
+            panel: "government",
             buildCategory: null,
             buildType: null
         };
