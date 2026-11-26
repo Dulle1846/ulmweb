@@ -748,7 +748,17 @@ const SYSTEM_SPECS = [
             { file: "js/systems/council-laws.js", symbol: "updateCouncilDocket" },
             { file: "js/simulation/simulation.js", symbol: "councilDocket" },
             { file: "js/presentation/management-ui.js", symbol: "councilSection" }
-        ], tests: ["tests/systems/council-laws.test.js", "tests/browser/council-docket-ui.mjs"] }
+        ], tests: ["tests/systems/council-laws.test.js", "tests/browser/council-docket-ui.mjs"] },
+        { id: "3.9.10", label: "Envoy missions stage treaty negotiation from skill, Chancellor, foreign-desk intel and seed", evidence: [
+            { file: "js/systems/diplomacy.js", symbol: "sendEnvoyMission" },
+            { file: "js/systems/diplomacy.js", symbol: "negotiateEnvoyMission" },
+            { file: "js/systems/diplomacy.js", symbol: "reportEnvoyMission" },
+            { file: "js/systems/diplomacy.js", symbol: "ratifyEnvoyMission" },
+            { file: "js/systems/diplomacy.js", symbol: "updateDiplomaticMissions" },
+            { file: "js/systems/diplomacy.js", symbol: "getDiplomaticMissionSnapshot" },
+            { file: "js/simulation/simulation.js", symbol: "diplomaticMissions" },
+            { file: "js/presentation/management-ui.js", symbol: "diplomacy" }
+        ], tests: ["tests/systems/diplomatic-missions.test.js", "tests/browser/diplomatic-missions-ui.mjs"] }
     ], {
         consumers: [
             { file: "js/systems/diplomacy.js", symbol: "getDiplomacySnapshot", role: "diplomacy" },

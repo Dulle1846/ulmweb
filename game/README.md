@@ -1,7 +1,7 @@
 # Kings & Cards
 
-**Production version:** 3.78.0
-**Next development line:** 3.79.0-dev
+**Production version:** 3.79.0
+**Next development line:** 3.80.0-dev
 **Production branch:** `ulmweb-branch`  
 **Production URL:** https://kings-and-cards.pages.dev/
 
@@ -33,6 +33,8 @@
 24. [Feudal campaigns](docs/FEUDAL_CAMPAIGNS.md) — war aims, theatre contracts, staged commitments, bounded annual settlement, noble-house consequences and the Military/Nobility/World Map presentation.
 25. [Regionale Waldwirtschaft 1.2.23.1.151–180](docs/FOREST_INDUSTRIES.md) — eighteen regional timbers, eight quality classes, five saw profiles, the 17-path Forest Works, twenty finished goods, regional furniture styles, the atlas exchange, the complete thirty-point player guide and the 3.76.0 living guild, workshop mastery and clinic medicine loops, now extended in 3.77.0 with certified style/quality orders, deterministic guild caravans, sixteen individual patron pacts, the shipyard and paper mill grand consumers, and masterwork provenance in the dynasty archive.
 26. [Waldkultur, Religion, Gesellschaft und Wissen 1.2.23.1.181–210](docs/FOREST_CULTURE.md) — sixty regional tree spirits, protected sacred groves, druids, foresters, charcoal communities, forest farmers, transhumant herders, herb-wives, tales, calendars, festivals, offerings, taboos, wood-rights, conflicts, regional naming and the five-technique Woodland research branch, with grove protection wired into harvest, hunting and firebreak paths (v3.78.0).
+
+26. [Envoy missions](docs/ENVOY_MISSIONS.md) — bounded Send → Negotiate → Report → Ratify mandates for the four neighbouring courts, deterministic Chancellor/foreign-desk negotiation, real treaty effects, save-compatible nested DTOs and the 3.79.0 browser proof.
 
 ## Development rules
 

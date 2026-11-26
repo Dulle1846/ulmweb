@@ -247,6 +247,41 @@ test("core counsel extends a completed opening into a live council bill", () => 
     }
 });
 
+test("core counsel extends a completed opening into a ready envoy mission", () => {
+    resetState();
+    try {
+        for (const ambition of AMBITIONS) state.ambitions.completed[ambition.id] = 1;
+        const mission = {
+            id: "diplomacy-mission-1-1", realmId: "northmere", goalTreaty: "trade",
+            stage: "sent", sentYear: 1
+        };
+        const counsel = getCoreCounsel(realm({ year: 2, diplomacy: { missions: [mission] } }));
+        assert.equal(counsel.id, "envoy-mission");
+        assert.equal(counsel.stepId, null);
+        assert.equal(counsel.panel, "diplomacy");
+        assert.equal(counsel.actionLabel, "OPEN DIPLOMACY");
+        assert.match(counsel.text, /Negotiate the envoy mission in Diplomacy/);
+        assert.match(counsel.evidence, /NORTHMERE · TRADE · SENT/);
+
+        mission.stage = "negotiated";
+        mission.negotiatedYear = 2;
+        mission.score = 52;
+        const report = getCoreCounsel(realm({ year: 3, diplomacy: { missions: [mission] } }));
+        assert.equal(report.id, "envoy-mission");
+        assert.match(report.text, /File the envoy report in Diplomacy/);
+        assert.match(report.evidence, /SCORE 52/);
+
+        mission.stage = "reported";
+        mission.reportYear = 3;
+        mission.outcome = "accepted";
+        const ratify = getCoreCounsel(realm({ year: 4, diplomacy: { missions: [mission] } }));
+        assert.equal(ratify.id, "envoy-mission");
+        assert.match(ratify.text, /Ratify the negotiated treaty in Diplomacy/);
+    } finally {
+        resetState();
+    }
+});
+
 test("core counsel extends a completed opening into the live theatre campaign", () => {
     resetState();
     try {

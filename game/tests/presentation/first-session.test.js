@@ -153,6 +153,32 @@ test("a completed first session continues into a live council docket", () => {
     }
 });
 
+test("a completed first session continues into a ready envoy mission", () => {
+    resetState();
+    try {
+        for (const ambition of AMBITIONS) state.ambitions.completed[ambition.id] = 1;
+        state.hasStarted = true;
+        state.entities = [{ dead: false, type: TYPE.HOUSE }];
+        state.statistics.totalHousesBuilt = 1;
+        state.statistics.totalRoadTilesBuilt = 1;
+        state.statistics.totalCardsDrawn = 1;
+        state.year = 2;
+        state.diplomacy = {
+            missions: [{
+                id: "diplomacy-mission-1-1", realmId: "northmere", goalTreaty: "trade",
+                stage: "sent", sentYear: 1
+            }]
+        };
+        const snapshot = getFirstSessionSnapshot();
+        assert.equal(snapshot.allComplete, true);
+        assert.equal(snapshot.counselId, "envoy-mission");
+        assert.match(snapshot.continuationText, /Negotiate the envoy mission in Diplomacy/);
+        assert.match(snapshot.continuationText, /NORTHMERE · TRADE · SENT/);
+    } finally {
+        resetState();
+    }
+});
+
 test("the first-session HUD carries the real latest twenty-day ledger in plain language", () => {
     resetState();
     state.hasStarted = true;

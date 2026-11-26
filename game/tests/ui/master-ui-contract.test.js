@@ -182,6 +182,13 @@ test("diplomacy exposes persistent neighbours, treaties and trade consequences",
   assert.ok(management.includes('data-command="diplomacy-honor"'));
   assert.ok(management.includes('data-command="diplomacy-refuse"'));
   assert.ok(management.includes("GUARANTEE STANDING"));
+  for(const command of ["diplomacy-mission-send","diplomacy-mission-negotiate","diplomacy-mission-report","diplomacy-mission-ratify"]) {
+    assert.ok(management.includes('data-command="'+command+'"'),"envoy mission command is missing: "+command);
+  }
+  assert.ok(management.includes("data-diplomacy-mission"));
+  assert.ok(management.includes('id="mission-goal-'));
+  assert.ok(management.includes("ENVOY MISSIONS · "));
+  assert.ok(management.includes("Send → Negotiate → Report → Ratify"));
   const compactSaveRuntime = saveRuntime.replace(/\s+/g, "");
   assert.ok(saveRuntime.includes("normalizeDiplomacySnapshot(snapshot.diplomacy)"));
   assert.ok(compactSaveRuntime.includes("diplomacy:JSON.parse(JSON.stringify(state.diplomacy"));
@@ -224,7 +231,7 @@ test("settings expose local save slots, import/export and version/credits metada
   assert.ok(html.includes('id="export-save-btn"'));
   assert.ok(html.includes('id="import-save-input"'));
   assert.ok(html.includes('id="save-archive-status"'));
-  assert.ok(html.includes("KINGS &amp; CARDS · <b>v3.78.0</b>"));
+  assert.ok(html.includes("KINGS &amp; CARDS · <b>v3.79.0</b>"));
   assert.ok(management.includes('data-command="crown-grain"'));
   assert.ok(management.includes('data-command="crown-water"'));
   assert.ok(management.includes('data-command="crown-housing"'));

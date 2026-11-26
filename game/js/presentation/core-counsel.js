@@ -354,6 +354,31 @@ export function getCoreCounsel(state) {
             buildType: null
         };
     }
+    const missions = Array.isArray(state?.diplomacy?.missions) ? state.diplomacy.missions.slice(0, 6) : [];
+    const year = Number(state?.year) || 1;
+    const readyNegotiation = missions.find(mission => mission?.stage === "sent" && year > Number(mission?.sentYear || 0));
+    const readyReport = missions.find(mission => mission?.stage === "negotiated" && year > Number(mission?.negotiatedYear || 0));
+    const readyRatification = missions.find(mission => mission?.stage === "reported" && year > Number(mission?.reportYear || 0) && mission?.outcome === "accepted");
+    const readyMission = readyRatification || readyReport || readyNegotiation;
+    if (readyMission) {
+        return {
+            id: "envoy-mission",
+            stepId: null,
+            text: readyRatification
+                ? "Ratify the negotiated treaty in Diplomacy."
+                : readyReport
+                    ? "File the envoy report in Diplomacy."
+                    : "Negotiate the envoy mission in Diplomacy.",
+            evidence: String(readyMission.realmId || "realm").toUpperCase() + " · " +
+                String(readyMission.goalTreaty || "trade").toUpperCase() + " · " +
+                String(readyMission.stage || "sent").toUpperCase() +
+                (readyMission.score !== undefined && readyMission.score !== null ? " · SCORE " + Math.round(Number(readyMission.score)) : ""),
+            actionLabel: "OPEN DIPLOMACY",
+            panel: "diplomacy",
+            buildCategory: null,
+            buildType: null
+        };
+    }
     // A council bill is the same kind of honest continuation: settle a lobbied
     // bill at the next session before paying a new lobby. Read the nested
     // optional DTO directly so counsel never creates state on a loading frame.
