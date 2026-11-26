@@ -804,6 +804,10 @@ async function beginRealmLoading({realmName="A NEW REALM",seed=1,climate="temper
     const loadingMap=document.getElementById("start-loading-map");
     const preview=document.getElementById("world-preview");
     if(loadingMap&&preview){
+        // finishRealmLoading releases the 720px backing store; restore it for a
+        // retry after a failed founding without keeping two megabytes alive for
+        // the rest of the session.
+        if(loadingMap.width!==720||loadingMap.height!==720){loadingMap.width=720;loadingMap.height=720;}
         const ctx=loadingMap.getContext("2d");
         if(ctx){
             ctx.clearRect(0,0,loadingMap.width,loadingMap.height);
@@ -829,6 +833,10 @@ async function holdRealmLoading(){
     const remaining=Math.max(0,realmLoad.minMs-(performance.now()-realmLoad.startedAt));
     if(remaining>0)await new Promise(resolve=>setTimeout(resolve,remaining));
 }
+function releaseLoadingMap(){
+    const loadingMap=document.getElementById("start-loading-map");
+    if(loadingMap&&loadingMap.width!==1){loadingMap.width=1;loadingMap.height=1;}
+}
 function finishRealmLoading(){
     window.clearInterval(realmLoad.chapterTimer);
     realmLoad.chapterTimer=0;
@@ -836,6 +844,7 @@ function finishRealmLoading(){
     const loading=document.getElementById("start-loading");
     if(loading)loading.hidden=true;
     if(screen){screen.classList.remove("is-loading");screen.removeAttribute("aria-busy");}
+    releaseLoadingMap();
     realmLoad={...realmLoad,active:false,chapters:[]};
 }
 function failRealmLoading(){
@@ -846,6 +855,7 @@ function failRealmLoading(){
     if(loading)loading.hidden=true;
     if(screen){screen.classList.remove("is-loading");screen.removeAttribute("aria-busy");}
     setRealmLoadingProgress(0);
+    releaseLoadingMap();
     realmLoad={...realmLoad,active:false,chapters:[]};
 }
 
