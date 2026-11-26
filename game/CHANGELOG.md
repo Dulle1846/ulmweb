@@ -1,6 +1,6 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.64.0`
+**Current production version:** `3.64.1`
 **Next development line:** `3.65.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
@@ -9,7 +9,33 @@
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
 
-<<<<<<< HEAD
+## 3.64.1 — Fauna readings keep their units
+
+A player-facing hotfix for the 3.64.0 forest atlas. The ecology record already
+stores browse, health, water, pollination, pest, cycle and corridor readings as
+whole percentages (0–100); the atlas passed them through the generic fraction
+formatter, so the deployed panel multiplied them a second time (`browse 5400`,
+`health 5900%`, `corridor 4800%`). The atlas now formats those fields with a
+clamped whole-percent formatter, while the inspector and summary paths keep
+their existing, correct unit handling.
+
+- **The written values now match the simulation.** A live Chromium pass reads
+  **98 percentage samples** across the surveyed atlas cards; the largest is
+  **90**, none exceeds 100, and all 30 fauna points remain visible with zero
+  page or console errors.
+- **The gate catches the regression.** The unit atlas test requires all eight
+  fauna cells, bounded percent patterns and every `browse`, `health`, `water`,
+  `pollinators`, `pests`, `hare`, `lynx` and `corridor` value to stay at or
+  below 100. The live forest-dynamics proof applies the same bound to the
+  rendered card text, so a future double conversion fails before deploy.
+- **No simulation, save or performance change.** This is a presentation-only
+  correction; the fauna record, herd model, save schema and per-frame cost are
+  untouched.
+- **Release gate.** On the rebased production tree the full `npm test` passes
+  **1533/1533** with the syntax gate at **224 files / 254 UI ids**, and the live
+  forest-dynamics proof passes with all **30 fauna points**, **60 atlas cards**,
+  **14 ecology blocks** and **12 sampled stands**.
+
 ## 3.64.0 — The forest has a food web, not a decoration list
 
 This release adds the complete fauna, ecology and food-web layer for

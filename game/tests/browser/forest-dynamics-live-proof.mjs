@@ -619,6 +619,12 @@ try {
     assert.match(atlasCorpus, /ants \d+\/ha/);
     assert.match(atlasCorpus, /game \d+ kg\/ha/);
     assert.match(atlasCorpus, /(trough|building|peak|decline)/);
+    for (const card of cardTexts) {
+        for (const match of card.matchAll(/\b(browse|health|water|pollinators|pests|hare|lynx|corridor) (\d+)/g)) {
+            assert.ok(Number(match[2]) <= 100,
+                "the atlas must render fauna " + match[1] + " as a percent, got " + match[2]);
+        }
+    }
     const surveySystems = await page.evaluate(async () => {
         const { forestAtlasSurvey } = await import("./js/presentation/forest-atlas-panel.js");
         return forestAtlasSurvey().systems;

@@ -111,6 +111,17 @@ test("the rendered atlas lists all 60 types, their effects and their signature t
     assert.match(markup, /long snow cover/);
     assert.match(markup, /Moss/);
     assert.match(markup, /Dune Grass/);
+    for (const label of ["WILDLIFE", "PREDATORS", "WATER FAUNA", "INSECTS", "DEADWOOD LIFE", "CYCLE", "CORRIDOR", "HARVEST"]) {
+        assert.match(markup, new RegExp(label), "the atlas must expose " + label);
+    }
+    assert.match(markup, /browse \d{1,2} · boar \d+/);
+    assert.match(markup, /health \d{1,3}%/);
+    assert.match(markup, /pollinators \d{1,3}%/);
+    assert.match(markup, /CORRIDOR<\/small><strong>\d{1,3}%/);
+    for (const match of markup.matchAll(/\b(browse|health|water|pollinators|pests|hare|lynx|corridor) (\d+)/g)) {
+        assert.ok(Number(match[2]) <= 100,
+            "fauna " + match[1] + " must render as a percent, not " + match[2]);
+    }
 });
 
 test("a realm without resource geography shows an honest empty atlas", () => {
