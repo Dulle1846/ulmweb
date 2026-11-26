@@ -209,6 +209,25 @@ try {
         for (const worker of workers.slice(0, 3)) worker.workplace = shipyard;
         for (const worker of workers.slice(3, 6)) worker.workplace = paperMill;
         for (const worker of workers.slice(6, 9)) worker.workplace = starvedMill;
+        // 1.2.23.1.181–210: a real shrine and its druid beside the same wood,
+        // plus the ritual goods and a forester for the wood-right.
+        const shrine = {
+            id: "culture-shrine", type: TYPE.SHRINE, x, y: y + 1, dead: false,
+            construction: { stage: 3, progress: 100 }, hp: 160, maxHp: 160,
+            isBuilding() { return true; }, isEnemy() { return false; },
+        };
+        const cultureWorkers = state.entities.filter(entity => !entity.dead && entity.type === TYPE.VILLAGER && entity !== villager).slice(0, 2);
+        if (cultureWorkers[0]) { cultureWorkers[0].workplace = shrine; cultureWorkers[0].job = "druid"; }
+        if (cultureWorkers[1]) { cultureWorkers[1].job = "forester"; }
+        state.entities.push(shrine);
+        state.resources.wood = Math.max(240, Number(state.resources.wood) || 0);
+        state.resources.gold = Math.max(160, Number(state.resources.gold) || 0);
+        state.resources.food = Math.max(160, Number(state.resources.food) || 0);
+        state.forestGathering = state.forestGathering || { version: 1, stock: {}, totalGathered: {}, quality: {}, history: [], lastGather: {} };
+        state.forestGathering.stock = state.forestGathering.stock || {};
+        state.forestGathering.stock.honey = Math.max(12, Number(state.forestGathering.stock.honey) || 0);
+        state.forestGathering.stock.herbs = Math.max(12, Number(state.forestGathering.stock.herbs) || 0);
+        state.forestGathering.stock.mushrooms = Math.max(12, Number(state.forestGathering.stock.mushrooms) || 0);
         state.entities.push(shipyard, paperMill, starvedMill);
         const shipResult = runGrandConsumer(shipyard, { force: true });
         const paperResult = runGrandConsumer(paperMill, { force: true });
@@ -224,6 +243,7 @@ try {
             commission: { id: normal.id, good: normal.good, quantity: normal.quantity, rewardGold: normal.rewardGold, rewardRenown: normal.rewardRenown },
             certified: { id: certified.id, style: lot.style, quality: lot.quality, proof: furnitureLotsSnapshot().length },
             ships: shipResult.ships, reserve: paperResult.reserve,
+            culture: { shrine: shrine.id, druid: cultureWorkers[0]?.id || null, forester: cultureWorkers[1]?.id || null },
         };
     });
     evidence.fixture = fixture;
@@ -388,6 +408,88 @@ try {
     await page.locator("[data-grand-consumers]").scrollIntoViewIfNeeded();
     await page.waitForTimeout(300);
     await page.screenshot({ path: resolve(outputDir, "grand-consumers.png") });
+
+    // 1.2.23.1.181–210: culture profile, protected grove, festival, woodlore,
+    // rights and the thirty-point field guide are reachable from the same atlas.
+    await page.locator('[data-forest-culture="30"]').waitFor({ state: "visible" });
+    assert.equal(await page.locator("[data-culture-requirement]").count(), 30);
+    assert.equal(await page.locator('[data-culture-guide="30"]').count(), 1);
+    assert.equal(await page.locator("[data-culture-role]").count(), 12);
+    assert.equal(await page.locator("[data-culture-tech]").count(), 5);
+    const profileText = await page.locator("[data-culture-profile]").innerText();
+    assert.match(profileText, /TABOO/);
+    assert.match(profileText, /REGIONAL TALE/);
+    assert.match(profileText, /WORK SONG/);
+    const cultureBefore = await page.evaluate(async () => {
+        const [{ state }, { forestCultureSummary }] = await Promise.all([
+            import("./js/core/state.js"),
+            import("./js/systems/forest-culture.js"),
+        ]);
+        return { summary: forestCultureSummary(), honey: state.forestGathering?.stock?.honey || 0 };
+    });
+    assert.ok(cultureBefore.summary.roles.druids >= 1, "the shrine must employ the seeded druid");
+    assert.ok(cultureBefore.summary.roles.foresters >= 1, "the seeded warden must hold the wood-right");
+    await page.locator('[data-culture-action="grove"]').click();
+    await page.waitForFunction(() => document.querySelector("#action-toast")?.textContent.includes("SACRED GROVE CONSECRATED"), null, { timeout: 5000 });
+    const groveAfter = await page.evaluate(async () => {
+        const [{ forestCultureSummary }, { harvestForest }] = await Promise.all([
+            import("./js/systems/forest-culture.js"),
+            import("./js/systems/resource-geography.js"),
+        ]);
+        const summary = forestCultureSummary();
+        const grove = summary.groves[0];
+        return { summary, grove, guarded: grove ? harvestForest(grove.x, grove.y, 5) : -1 };
+    });
+    assert.equal(groveAfter.summary.groves.length, 1);
+    assert.equal(groveAfter.guarded, 0, "the real harvest guard must refuse the sacred tile");
+    await page.locator('[data-culture-action="lore"]').click();
+    await page.waitForFunction(() => document.querySelector("#action-toast")?.textContent.includes("WOODLORE COLLECTED"), null, { timeout: 5000 });
+    const loreAfter = await page.evaluate(async () => {
+        const [{ forestCultureSummary }] = await Promise.all([import("./js/systems/forest-culture.js")]);
+        const summary = forestCultureSummary();
+        return { lore: summary.lore.length, names: summary.profile.names.female.length, tale: summary.profile.tale.title };
+    });
+    assert.equal(loreAfter.lore, 3);
+    await page.locator('[data-culture-action="offering"]').click();
+    await page.waitForFunction(() => document.querySelector("#action-toast")?.textContent.includes("OFFERING MADE"), null, { timeout: 5000 });
+    await page.locator('[data-culture-action="festival"]').click();
+    await page.waitForFunction(() => document.querySelector("#action-toast")?.textContent.includes("FOREST FESTIVAL"), null, { timeout: 5000 });
+    await page.locator('[data-culture-action="hunt"]').click();
+    await page.waitForFunction(() => document.querySelector("#action-toast")?.textContent.includes("HUNT RITE"), null, { timeout: 5000 });
+    await page.locator('[data-culture-action="wedding"]').click();
+    await page.waitForFunction(() => document.querySelector("#action-toast")?.textContent.includes("TREE WEDDING"), null, { timeout: 5000 });
+    await page.locator('[data-culture-rights="commons"]').click();
+    await page.waitForFunction(() => document.querySelector("#action-toast")?.textContent.includes("FOREST RIGHT"), null, { timeout: 5000 });
+    const cultureAfter = await page.evaluate(async () => {
+        const [{ forestCultureSummary }] = await Promise.all([import("./js/systems/forest-culture.js")]);
+        return forestCultureSummary();
+    });
+    assert.equal(cultureAfter.rights.priority, "commons");
+    assert.equal(cultureAfter.counts.offerings, 1);
+    assert.equal(cultureAfter.counts.festivals, 1);
+    assert.equal(cultureAfter.counts.rites, 1);
+    assert.equal(cultureAfter.counts.weddings, 1);
+    assert.equal(cultureAfter.lore.length, 3);
+    await page.locator(".culture-roles").scrollIntoViewIfNeeded();
+    await page.waitForTimeout(250);
+    await page.screenshot({ path: resolve(outputDir, "forest-culture-roles.png") });
+    assert.equal(await page.locator('[data-culture-guide="30"]').count(), 1);
+    await page.locator('[data-culture-guide="30"] > summary').click();
+    await page.waitForTimeout(200);
+    assert.ok(await page.locator('[data-culture-guide="30"]').evaluate(element => element.open));
+    assert.equal(await page.locator('[data-culture-requirement="1.2.23.1.210"]').count(), 1);
+    await page.locator('[data-culture-requirement="1.2.23.1.210"]').scrollIntoViewIfNeeded();
+    await page.waitForTimeout(200);
+    await page.screenshot({ path: resolve(outputDir, "forest-culture-guide.png") });
+    await page.locator('[data-culture-profile]').scrollIntoViewIfNeeded();
+    await page.waitForTimeout(250);
+    await page.screenshot({ path: resolve(outputDir, "forest-culture.png") });
+    evidence.checks.forestCulture = {
+        before: { favor: cultureBefore.summary.favor, groves: cultureBefore.summary.groves.length, roles: cultureBefore.summary.roles },
+        grove: groveAfter.grove, guarded: groveAfter.guarded,
+        after: { favor: cultureAfter.favor, rights: cultureAfter.rights.priority, counts: cultureAfter.counts, lore: cultureAfter.lore.length },
+        lore: loreAfter,
+    };
 
     const clinicBefore = await page.evaluate(async () => {
         const [{ state }] = await Promise.all([import("./js/core/state.js")]);

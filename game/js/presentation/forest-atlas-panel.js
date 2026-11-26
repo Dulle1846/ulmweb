@@ -22,6 +22,7 @@ import {
     SAW_PROFILES, WOOD_QUALITY_CLASSES,
 } from "../world/forest-industries.js";
 import { forestIndustrySummary } from "../systems/forest-industries.js";
+import { forestCultureSummary } from "../systems/forest-culture.js";
 import { forestGuildSummary } from "../systems/forest-guild.js";
 import { forestMasterworkArchive } from "../systems/forest-industries.js";
 import { grandConsumersSummary } from "../systems/grand-consumers.js";
@@ -593,6 +594,104 @@ function guildBlock() {
         + '<div class="forest-atlas__guild-history">' + history + '</div></details>';
 }
 
+function cultureActionButton(action, label, detail, disabled) {
+    return '<button type="button" class="command-choice culture-action" data-culture-action="' + esc(action) + '"'
+        + (disabled ? ' disabled title="' + esc(detail) + '"' : ' title="' + esc(detail) + '"')
+        + '><strong>' + esc(label) + '</strong><small>' + esc(detail) + '</small></button>';
+}
+
+function cultureBlock() {
+    const culture = forestCultureSummary();
+    const profile = culture.profile;
+    const actions = culture.actions;
+    const roles = culture.roles;
+    const rights = [
+        { id: "balance", label: "BALANCE", detail: "Forage, game and timber share the wood" },
+        { id: "commons", label: "COMMONS", detail: "Village farms, herds and forage first" },
+        { id: "hunt", label: "HUNTING", detail: "Game and the hunting court first" },
+        { id: "timber", label: "TIMBER", detail: "Woodcutters and the timber court first" },
+    ];
+    const knowledge = [
+        { key: "forestry", label: "Woodland forestry", id: "woodland-forestry" },
+        { key: "herbalism", label: "Woodland herb lore", id: "woodland-herb-lore" },
+        { key: "astronomy", label: "Natural astronomy", id: "woodland-astronomy" },
+        { key: "cartography", label: "Woodland cartography", id: "woodland-cartography" },
+        { key: "philosophy", label: "Natural philosophy", id: "woodland-natural-philosophy" },
+    ];
+    const roleRows = [
+        ["druids", "Druids & woodland priests"], ["foresters", "Foresters & wardens"],
+        ["woodcutters", "Woodcutters"], ["charcoal", "Charcoal kiln communities"],
+        ["forestFarmers", "Forest farmers"], ["herders", "Transhumant herders"],
+        ["herbWives", "Herb-wives & healers"], ["hermits", "Hermits & forest shrines"],
+        ["monasteries", "Forest monasteries"], ["scholars", "Woodland scholars"],
+        ["singers", "Work singers"], ["hunters", "Hunting parties"],
+    ];
+    const lore = culture.lore.map(entry => '<article class="culture-lore-card" data-culture-lore="' + esc(entry.kind) + '">'
+        + '<span class="command-ribbon">' + esc(entry.kind.toUpperCase()) + ' · ' + number(entry.year) + '</span>'
+        + '<strong>' + esc(entry.title) + '</strong><p>' + esc(entry.text) + '</p>'
+        + '<small>' + esc(REGIONAL_FOREST_TYPES.find(type => type.id === entry.regionId)?.short || entry.regionId || "home wood") + '</small></article>').join("");
+    const conflicts = culture.conflicts.length ? culture.conflicts.map(entry => '<article class="culture-conflict' + (entry.resolved ? ' is-resolved' : '') + '" data-culture-conflict="' + esc(entry.id) + '" data-resolved="' + (entry.resolved ? '1' : '0') + '">'
+        + '<div><span class="command-ribbon">' + esc(entry.kind.toUpperCase()) + ' · ' + (entry.resolved ? 'SETTLED ' + number(entry.resolvedYear) : 'OPEN SINCE ' + number(entry.sinceYear)) + '</span>'
+        + '<strong>' + esc(entry.label) + '</strong><p>' + esc(entry.detail) + '</p></div>'
+        + (entry.resolved ? '' : '<button type="button" class="command-choice" data-culture-mediate="' + esc(entry.id) + '"' + (actions.mediate.ok ? '' : ' disabled title="' + esc(actions.mediate.reason) + '"') + '>MEDIATE · 6G</button>') + '</article>').join("") : '<p class="command-note">No wood-right conflict is open. Extreme rights and a protected grove can still create one.</p>';
+    const groves = culture.groves.length ? culture.groves.map(grove => '<article class="culture-grove" data-culture-grove="' + esc(grove.id) + '" data-grove-protected="1">'
+        + '<div><span class="command-ribbon">PROTECTED FOREST ISLAND</span><strong>' + esc(grove.label) + '</strong>'
+        + '<p>' + esc(grove.region) + ' · tile ' + number(grove.x) + ', ' + number(grove.y) + ' · devotion ' + number(grove.devotion) + ' / 100</p>'
+        + '<small>Consecrated year ' + number(grove.foundedYear) + ' · the axe and the hunter are refused on this tile.</small></div></article>').join("") : '<p class="command-note">No grove is consecrated. A shrine beside living forest can withdraw its first tile from the axe.</p>';
+    const guide = culture.requirements.map(requirement => '<details class="culture-requirement" data-culture-requirement="' + esc(requirement.id) + '">'
+        + '<summary><span>' + esc(requirement.id) + '</span><strong>' + esc(requirement.title) + '</strong></summary>'
+        + '<p>' + esc(requirement.point) + '</p><small>' + esc(requirement.consumer) + '</small><p>' + esc(requirement.detail) + '</p></details>').join("");
+    const calendar = culture.calendar.windows.map(window => '<div class="' + (window.id === culture.calendar.active.id ? 'is-current' : '') + '" data-culture-calendar="' + esc(window.id) + '"><small>' + esc(window.label.toUpperCase()) + '</small><strong>' + esc(window.detail) + '</strong></div>').join("");
+    return '<section class="forest-culture" data-forest-culture="' + number(culture.requirementCount) + '" data-culture-region="' + esc(culture.homeRegion || "none") + '">'
+        + '<div class="command-section-title">FOREST CULTURE · 1.2.23.1.181–210 · ' + number(culture.requirementCount) + ' POINTS</div>'
+        + '<p class="command-note">The home wood has a name, a spirit, a taboo and a calendar. These are not a second economy: the grove guard uses the shared forest tile, the roles are real workers, and the rights change the same forage, hunt, farm, pannage and timber visits.</p>'
+        + '<div class="command-summary culture-summary">'
+        + '<div data-culture-favor="' + number(culture.favor) + '"><small>GROVE FAVOUR</small><strong>' + number(culture.favor) + ' / 100</strong></div>'
+        + '<div data-culture-groves="' + number(culture.groves.length) + '"><small>SACRED GROVES</small><strong>' + number(culture.groves.length) + ' / ' + number(culture.groveLimit) + '</strong></div>'
+        + '<div><small>FOREST RIGHT</small><strong>' + esc(culture.rights.label.toUpperCase()) + '</strong></div>'
+        + '<div data-culture-lore="' + number(culture.lore.length) + '"><small>WOODLORE</small><strong>' + number(culture.lore.length) + ' ENTRIES</strong></div>'
+        + '<div><small>OPEN CONFLICTS</small><strong>' + number(culture.counts.openConflicts) + '</strong></div>'
+        + '<div><small>REGIONAL TYPES</small><strong>' + number(culture.regions) + '</strong></div></div>'
+        + (profile ? '<div class="culture-profile" data-culture-profile="' + esc(profile.id) + '"><div class="culture-profile__head"><span>HOME WOOD · ' + esc(profile.region.toUpperCase()) + '</span><strong>' + esc(profile.spirit) + '</strong><p>' + esc(profile.tradition) + ' · ' + esc(profile.sacredTree) + '</p></div>'
+            + '<div class="culture-profile__grid"><div><small>TABOO</small><p>' + esc(profile.taboo) + '</p></div><div><small>WORK TECHNIQUE</small><p>' + esc(profile.workTechnique) + '</p></div><div><small>HUNT RULE</small><p>' + esc(profile.huntRule) + '</p></div><div><small>PHILOSOPHY</small><p>' + esc(profile.philosophy) + '</p></div></div>'
+            + '<p class="command-note">Paths: ' + esc((profile.paths || []).join(" · ")) + ' · Festival: ' + esc(profile.festival.name) + ' · ' + esc(profile.festival.focus) + '</p>'
+            + '<div class="culture-tale">'
+            + '<div class="culture-tale__entry"><small>REGIONAL TALE</small><strong>' + esc(profile.tale.title) + '</strong><p>' + esc(profile.tale.moral) + '</p></div>'
+            + '<div class="culture-tale__entry"><small>LEGEND OF THE LOST WOOD</small><strong>' + esc(profile.legend.title) + '</strong><p>' + esc(profile.legend.text) + '</p></div>'
+            + '<div class="culture-tale__entry"><small>WORK SONG</small><strong>' + esc(profile.song.title) + '</strong><p>' + esc(profile.song.verse) + '</p></div>'
+            + '</div></div>' : '<p class="command-note">No regional culture is available: the realm has no living forest near a shrine or hall.</p>')
+        + '<div class="command-section-title">FOREST CALENDAR</div><div class="culture-calendar" data-culture-season="' + number(culture.calendar.season) + '">' + calendar + '</div>'
+        + '<div class="command-section-title">RITUAL ACTIONS</div><div class="culture-actions">'
+        + cultureActionButton("grove", "DEDICATE GROVE", "12 wood · 8 gold · " + actions.grove.reason, !actions.grove.ok)
+        + cultureActionButton("offering", "MAKE OFFERING", "2 forest goods · " + actions.offering.reason, !actions.offering.ok)
+        + cultureActionButton("festival", "HOLD FESTIVAL", "8 food · 5 gold · " + actions.festival.reason, !actions.festival.ok)
+        + cultureActionButton("hunt", "HUNT RITE", "4 food · " + actions.hunt.reason, !actions.hunt.ok)
+        + cultureActionButton("wedding", "TREE WEDDING", "10 gold · " + actions.wedding.reason, !actions.wedding.ok)
+        + cultureActionButton("lore", "COLLECT WOODLORE", actions.lore.reason, !actions.lore.ok)
+        + '</div>'
+        + '<div class="command-section-title">SACRED GROVES · ' + number(culture.groves.length) + ' / ' + number(culture.groveLimit) + '</div><div class="culture-groves" data-culture-grove-count="' + number(culture.groves.length) + '">' + groves + '</div>'
+        + '<div class="command-section-title">WOOD-RIGHT · ' + esc(culture.rights.label.toUpperCase()) + '</div><div class="culture-rights">'
+        + rights.map(right => '<button type="button" class="command-choice' + (culture.rights.priority === right.id ? ' is-current' : '') + '" data-culture-rights="' + right.id + '"' + (actions.rights.ok ? '' : ' disabled title="' + esc(actions.rights.reason) + '"') + '><strong>' + right.label + '</strong><small>' + esc(right.detail) + '</small></button>').join("")
+        + '</div><p class="command-note">' + esc(actions.rights.reason) + '. A forester must hold office; the law changes once a year.</p>'
+        + '<div class="command-section-title">LIVING WOOD-RIGHT CONFLICTS</div>' + conflicts
+        + '<div class="command-section-title">WOODLAND ROLES · REAL WORKERS</div><div class="culture-roles">'
+        + roleRows.map(([key, label]) => '<div data-culture-role="' + key + '"><small>' + esc(label.toUpperCase()) + '</small><strong>' + number(roles[key]) + '</strong></div>').join("")
+        + '</div>'
+        + '<div class="command-section-title">WOODLAND KNOWLEDGE · ' + number(culture.knowledgeCount) + ' / 5</div><div class="culture-knowledge">'
+        + knowledge.map(entry => '<div class="' + (culture.knowledge[entry.key] ? 'is-known' : '') + '" data-culture-tech="' + esc(entry.id) + '"><small>' + (culture.knowledge[entry.key] ? 'KNOWN' : 'RESEARCH') + '</small><strong>' + esc(entry.label) + '</strong></div>').join("")
+        + '</div>'
+        + '<div class="command-section-title">LIVE CULTURE EFFECTS</div><div class="command-summary culture-effects">'
+        + '<div><small>FORAGE</small><strong>×' + amount(culture.modifiers.forage) + '</strong></div>'
+        + '<div><small>HUNT</small><strong>×' + amount(culture.modifiers.hunt) + '</strong></div>'
+        + '<div><small>FARM</small><strong>×' + amount(culture.modifiers.farm) + '</strong></div>'
+        + '<div><small>PANNAGE</small><strong>×' + amount(culture.modifiers.herd) + '</strong></div>'
+        + '<div><small>MEDICINE</small><strong>×' + amount(culture.modifiers.medicine) + '</strong></div>'
+        + '<div><small>TIMBER</small><strong>×' + amount(culture.modifiers.timber) + '</strong></div></div>'
+        + '<div class="command-section-title">WOODLORE ARCHIVE · ' + number(culture.lore.length) + '</div><div class="culture-lore">' + (lore || '<p class="command-note">No tale, legend or song has been collected yet. Collect woodlore to store the home region’s tale, legend and work song.</p>') + '</div>'
+        + '<details class="culture-guide" data-culture-guide="' + number(culture.requirementCount) + '"><summary>THIRTY-POINT CULTURE, RELIGION, SOCIETY & KNOWLEDGE FIELD GUIDE</summary><div class="culture-requirements">' + guide + '</div></details>'
+        + '</section>';
+}
+
 function grandConsumersBlock() {
     const summary = grandConsumersSummary();
     const rows = summary.rows.length ? summary.rows.map(row => '<article class="forest-atlas__grand-consumer" data-grand-consumer-card="' + esc(row.id) + '" data-grand-status="' + esc(row.status) + '"><header><b>' + esc(row.label) + '</b><span>' + esc(String(row.status).toUpperCase()) + '</span></header><p>' + esc(row.story) + '</p><small>' + esc(row.text) + '</small><em>Batches ' + number(row.batches) + ' · ' + Object.entries(row.inputs || {}).map(([good, value]) => value + ' ' + good).join(' · ') + '</em></article>').join("") : '<p class="command-note">No shipyard or paper mill stands yet. Build one from the GRAND CONSUMERS category.</p>';
@@ -706,6 +805,7 @@ export function renderForestAtlasPanel() {
         + '<div><small>SEASON</small><strong>' + esc(survey.season.toUpperCase()) + '</strong></div></div>'
         + processBlock
         + industryBlock()
+        + cultureBlock()
         + regionHistoryBlock(survey)
         + faunaFieldGuide(survey)
         + '<div class="forest-atlas">' + cards + '</div>'

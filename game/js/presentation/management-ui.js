@@ -38,6 +38,7 @@ import { timberMarketSummary, sellRegionalTimber, TIMBER_SALE_LOT } from "../sys
 import { FOREST_WORKS_MODES, SAW_PROFILES, INDUSTRY_GOODS } from "../world/forest-industries.js";
 import { forestMasteryFor, forestMasterworkArchive, forestWorksStatus, runForestWorks, sawProfileIdFor, sellForestIndustryGood, setForestWorksMode, setSawProfile, supplyClinicMedicine } from "../systems/forest-industries.js";
 import { deliverForestCommission, dispatchGuildCaravan } from "../systems/forest-guild.js";
+import { collectForestLore, dedicateSacredGrove, holdForestFestival, makeForestOffering, mediateForestConflict, performHuntRite, performTreeWedding, setForestRights } from "../systems/forest-culture.js";
 import { grandConsumerStatusFor } from "../systems/grand-consumers.js";
 import { renderScenarioPanel } from "./scenario-panel.js";
 import { renderWorldMapPanel } from "./world-map-panel.js";
@@ -1262,12 +1263,12 @@ function researchPanel(){
  const candidates=r.candidates.map(p=>'<option value="'+esc(p.personId)+'">'+esc(p.name)+' · age '+Math.floor(p.ageYears)+' · fit '+Math.round(p.fit)+'</option>').join("");
  const funding=r.fundingLevels.map(level=>'<button class="command-choice'+(level.level===r.funding?' is-current':'')+'" data-command="research-funding" data-value="'+level.level+'"><strong>'+esc(level.label.toUpperCase())+'</strong><small>'+level.gold+' gold / year · output ×'+level.multiplier+'</small></button>').join("");
  return intro("THE ROYAL ACADEMY","Research & knowledge","Scholars are named residents. Funding and salaries are paid each year, points accumulate against a chosen technology, and every completed discovery changes a live value of the realm.")+
- '<div class="command-summary"><div><small>POINTS / YEAR</small><strong>'+amount(r.pointsPerYear)+'</strong></div><div><small>RESERVE</small><strong>'+amount(r.reserve)+'</strong></div><div><small>COMPLETED</small><strong>'+m.completedCount+' / 24</strong></div><div><small>SCHOLARS</small><strong>'+r.scholars.length+' / '+r.capacity+'</strong></div><div><small>FUNDING</small><strong>'+esc(r.fundingDetails.label.toUpperCase())+'</strong></div><div><small>ACTIVE PROJECT</small><strong>'+esc(r.activeTechDetails?r.activeTechDetails.label:"NONE")+'</strong></div></div>'+
+ '<div class="command-summary"><div><small>POINTS / YEAR</small><strong>'+amount(r.pointsPerYear)+'</strong></div><div><small>RESERVE</small><strong>'+amount(r.reserve)+'</strong></div><div><small>COMPLETED</small><strong>'+m.completedCount+' / '+r.techs.length+'</strong></div><div><small>SCHOLARS</small><strong>'+r.scholars.length+' / '+r.capacity+'</strong></div><div><small>FUNDING</small><strong>'+esc(r.fundingDetails.label.toUpperCase())+'</strong></div><div><small>ACTIVE PROJECT</small><strong>'+esc(r.activeTechDetails?r.activeTechDetails.label:"NONE")+'</strong></div></div>'+
  '<div class="command-section-title">ACTIVE PROJECT</div>'+(r.activeTechDetails?'<div class="command-summary"><div><small>PROJECT</small><strong>'+esc(r.activeTechDetails.label)+'</strong></div><div><small>PROGRESS</small><strong>'+amount(r.progress)+' / '+r.activeTechDetails.cost+'</strong></div><div><small>REMAINING</small><strong>'+amount(Math.max(0,r.activeTechDetails.cost-r.progress))+'</strong></div></div>':'<p class="command-note">No project is active. An unspent reserve carries forward; choose a technology below to begin.</p>')+
  '<div class="command-section-title">LIVE EFFECTS</div><div class="court-effect-grid"><span>TAX YIELD<b>×'+amount(m.taxEfficiency)+'</b></span><span>TRADE TERMS<b>×'+amount(m.tradeFactor)+'</b></span><span>HOUSEHOLD FOOD DEMAND<b>×'+amount(m.foodDemandFactor)+'</b></span><span>MORTALITY RELIEF<b>×'+amount(m.mortalityRelief)+'</b></span><span>CONSTRUCTION DISCOUNT<b>'+Math.round(m.buildDiscount*100)+'%</b></span><span>SOLDIER POWER<b>×'+amount(m.militaryBonus)+'</b></span><span>RESEARCH RATE<b>×'+amount(m.researchSpeed)+'</b></span><span>ANNUAL LEGITIMACY<b>'+amount(m.legitimacyYear)+'</b></span></div>'+
  '<div class="command-section-title">NAMED SCHOLARS · '+r.scholars.length+' / '+r.capacity+'</div><div class="court-office-grid">'+scholars+'</div><div class="command-inline"><select id="research-scholar-select" aria-label="Choose a resident to appoint as scholar"><option value="">Choose an adult resident…</option>'+candidates+'</select><button data-command="research-appoint"'+((r.scholars.length>=r.capacity||gold<12||!candidates)?" disabled":"")+'>APPOINT · 12G</button></div><p class="command-note">A scholar leaves any other office before taking a research post. Salaries of 5 gold per scholar are paid at the annual audit; unpaid salaries reduce that year\'s output.</p>'+
  '<div class="command-section-title">ANNUAL FUNDING</div><div class="command-choice-grid">'+funding+'</div>'+
- '<div class="command-section-title">TECHNOLOGY TREE · '+m.completedCount+' / 24 COMPLETE</div>'+techs+
+ '<div class="command-section-title">TECHNOLOGY TREE · '+m.completedCount+' / '+r.techs.length+' COMPLETE</div>'+techs+
  (r.lastAudit?'<div class="command-section-title">LAST ANNUAL AUDIT</div><p class="command-note">Year '+r.lastAudit.year+' · '+r.lastAudit.points+' points · speed ×'+r.lastAudit.speed+' · '+r.lastAudit.scholars+' scholars · '+r.lastAudit.salariesPaid+' gold salaries · '+r.lastAudit.fundingPaid+' gold funding'+(r.lastAudit.completed?' · completed '+esc(r.lastAudit.completed):"")+'.</p>':'<p class="command-note">No annual research audit has been completed yet.</p>');
 }
 const CRIME_CAUSE_LABELS=Object.freeze({inequality:"inequality",hunger:"hunger",war:"war",quarantine:"quarantine",unemployment:"unemployment"});
@@ -2000,6 +2001,41 @@ export function setupManagementUI(){
    const result=entity?runForestWorks(entity):{ok:false,reason:"Building not found"};
    if(result.ok){toast("FOREST BATCH · "+Object.entries(result.output).map(([good,value])=>value+" "+(INDUSTRY_GOODS[good]?.label||good)).join(" + ")+(result.style?" · "+result.style.label:""));renderUI();render();}
    else toast(String(result.reason||"FOREST BATCH FAILED").toUpperCase());
+   return;
+  }
+  const cultureAction=e.target.closest("[data-culture-action]");
+  if(cultureAction){
+   const action=cultureAction.dataset.cultureAction;
+   const result=action==="grove"?dedicateSacredGrove()
+    :action==="offering"?makeForestOffering()
+    :action==="festival"?holdForestFestival()
+    :action==="hunt"?performHuntRite()
+    :action==="wedding"?performTreeWedding()
+    :action==="lore"?collectForestLore()
+    :{ok:false,reason:"Unknown culture action"};
+   if(result.ok){
+    const message=action==="grove"?"SACRED GROVE CONSECRATED · "+result.profile.groveName
+     :action==="offering"?"OFFERING MADE · "+result.good+" · FAVOUR "+result.favor
+     :action==="festival"?"FOREST FESTIVAL · "+result.festival.name
+     :action==="hunt"?"HUNT RITE OPENED"
+     :action==="wedding"?"TREE WEDDING · "+result.grove.label
+     :"WOODLORE COLLECTED · "+result.added+" ENTRIES";
+    toast(message);renderUI();render();
+   }else toast(String(result.reason||"CULTURE ACTION FAILED").toUpperCase());
+   return;
+  }
+  const cultureRights=e.target.closest("[data-culture-rights]");
+  if(cultureRights){
+   const result=setForestRights(cultureRights.dataset.cultureRights);
+   if(result.ok){toast("FOREST RIGHT · "+String(result.priority).toUpperCase());renderUI();render();}
+   else toast(String(result.reason||"FOREST RIGHT FAILED").toUpperCase());
+   return;
+  }
+  const cultureMediate=e.target.closest("[data-culture-mediate]");
+  if(cultureMediate){
+   const result=mediateForestConflict(cultureMediate.dataset.cultureMediate);
+   if(result.ok){toast("WOOD-RIGHT DISPUTE SETTLED · "+result.conflict.label);renderUI();render();}
+   else toast(String(result.reason||"MEDIATION FAILED").toUpperCase());
    return;
   }
   const commission=e.target.closest("[data-forest-commission]");

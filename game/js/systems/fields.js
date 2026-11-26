@@ -13,6 +13,7 @@ import { transitionGameplayAt } from "../world/transition-biomes.js";
 import { vegetationDensityAt } from "../world/vegetation-density.js";
 import { getCrossBiomeFarmYieldFactorAt, getCrossBiomeHarvestPressureAt } from "./cross-biome-state.js";
 import { addLog } from "../core/event-log.js";
+import { forestCultureFarmFactor } from "./forest-culture.js";
 
 export const FIELD_STAGES = Object.freeze(["fallow", "sown", "growing", "ripe", "harvested"]);
 export const FIELD_LABELS = Object.freeze({
@@ -184,8 +185,12 @@ export function ecotoneHarvestFactor(farm) {
     // harvest. This is the same cached multiplier the biome panel reports, so
     // a farm cannot display one value and harvest another.
     const biomeYield = getCrossBiomeFarmYieldFactorAt(Number(farm.x) + 0.5, Number(farm.y) + 0.5);
-    return Math.max(0.70, Math.min(1.40,
-        (1 + (Number(gameplay?.farm) || 0)) * densityFactor * biomeYield));
+    // 1.2.23.1.189: agroforestry and the commons right reach the real harvest.
+    // With no grove, lore or forest farmers the factor is exactly 1, so old
+    // campaigns keep their historical field yield.
+    const cultureYield = forestCultureFarmFactor();
+    return Math.max(0.70, Math.min(1.48,
+        (1 + (Number(gameplay?.farm) || 0)) * densityFactor * biomeYield * cultureYield));
 }
 
 function recoverSoil(field, amount) {

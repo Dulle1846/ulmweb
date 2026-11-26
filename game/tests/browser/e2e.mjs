@@ -782,7 +782,7 @@ try{
     await clearRealmEvent();
     await page.locator('[data-command-tab="research"]').click();
     await waitForPanelSelector("[data-research-tech]",24);
-    assert.equal(await page.locator("[data-research-tech]").count(),24,"all twenty-four technologies must render");
+    assert.equal(await page.locator("[data-research-tech]").count(),29,"all twenty-nine technologies must render");
     assert.ok(await page.locator('[data-research-tech][data-research-status="complete"]').count()>=1,"the completed technology must render as complete");
     const civilizationBeforeSave=await page.evaluate(async()=>{
         const {state}=await import("./js/core/state.js");

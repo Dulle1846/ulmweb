@@ -595,7 +595,7 @@ function checkSnapshot(snapshot, dom, tab, width, findings) {
         for (const [id, state] of Object.entries(snapshot.research.states)) {
             if (dom.techStatuses[id] !== state) fail("research-status-mismatch", `${id}: displayed ${dom.techStatuses[id] || "missing"}, expected ${state}`);
         }
-        expectSummary("COMPLETED", `${snapshot.research.completed} / 24`);
+        expectSummary("COMPLETED", `${snapshot.research.completed} / 29`);
         expectSummary("SCHOLARS", `${snapshot.research.scholars} / ${snapshot.research.capacity}`);
         expectSummary("FUNDING", snapshot.research.fundingLabel.toUpperCase());
         expectSummary("ACTIVE PROJECT", snapshot.research.active || "NONE");

@@ -42,6 +42,7 @@ import {
 } from "./resource-geography.js";
 import { addMedicineStock, tropicalExposure } from "./health.js";
 import { harvestForestGameAt } from "./forest-fauna.js";
+import { forestCultureModifiers } from "./forest-culture.js";
 import { addLocalOutput, depositGood, outputSpace, requestHaul } from "./logistics.js";
 import { REGIONAL_TIMBER_SET } from "./city-config.js";
 import { addResource } from "./resources.js";
@@ -423,6 +424,10 @@ export function gatherForestProducts(x, y, options = {}) {
     const ecotoneFactor = ecotoneGatherFactor(products.x, products.y, "forest");
     const vegetationFactor = clamp(number(products.vegetation?.yield, 1), 0.74, 1.12);
     const huntFactor = clamp(number(products.huntFactor, 1), 0.76, 1.06);
+    // 1.2.23.1.187/.188: the culture of the home woodland now reaches the
+    // existing gather/hunt visit. A grove or collected lore activates the
+    // seasonal window; an untouched ledger leaves historical yields intact.
+    const culture = forestCultureModifiers();
     // Regional effects now price the actual harvest: timber for wood, forage
     // for everything else, and a small ecotone bonus where two type windows
     // overlap. All values are bounded so a single type cannot dominate the
@@ -457,7 +462,7 @@ export function gatherForestProducts(x, y, options = {}) {
         // Timber keeps the historical stock contract; the local density shapes
         // the gathered plant/food abundance and the distinct hunting factor.
         const densityYield = good.category === "wood" ? 1 : vegetationFactor;
-        const regionalYield = good.category === "wood" ? timberFactor : forageFactor * transitionFactor;
+        const regionalYield = good.category === "wood" ? timberFactor * culture.timber : forageFactor * transitionFactor * culture.forage;
         const dynamicsYield = good.category === "wood" ? managementTimber : clamp(number(goodsBoost[good.id], 1), 0.75, 1.3);
         const habitatYield = good.category === "wood" ? 1 : biodiversityYield;
         let amount = Math.max(1, Math.round((1 + good.abundance * 3) * workFactor * ecotoneFactor
@@ -474,7 +479,7 @@ export function gatherForestProducts(x, y, options = {}) {
             amount = taken;
         } else if (good.category === "hunt") {
             if (!hunt) continue;
-            amount = Math.max(1, Math.round((good.id === "game" ? Math.max(1, hunt.taken * 2) : Math.max(1, Math.ceil(hunt.taken / 2))) * huntFactor));
+            amount = Math.max(1, Math.round((good.id === "game" ? Math.max(1, hunt.taken * 2) : Math.max(1, Math.ceil(hunt.taken / 2))) * huntFactor * culture.hunt));
             quality = hunt.quality;
         }
         const accepted = addStock(ledger, good.id, amount, quality);

@@ -578,3 +578,96 @@
 .forest-atlas__patron em{font-size:7px}
 .forest-atlas__masterwork b{font-size:8px}
 .forest-atlas__masterwork small{font-size:7px}
+/* 1.2.23.1.181–210: forest culture, sacred groves and woodland knowledge. */
+.forest-culture{display:grid;gap:5px;padding:8px 0 10px;border-top:1px solid rgba(185,154,89,.24);margin-top:8px}
+.forest-culture .command-section-title{margin-top:5px}
+.culture-summary>div{background:rgba(28,31,26,.78);border-color:rgba(185,154,89,.38)}
+.culture-profile{display:grid;gap:7px;padding:9px;border:1px solid rgba(185,154,89,.45);border-radius:5px;background:rgba(28,31,26,.82)}
+.culture-profile__head>span{display:block;color:var(--color-antique-gold);font:700 7px/1.2 var(--ui-number-font,monospace);letter-spacing:.08em}
+.culture-profile__head>strong{display:block;margin-top:2px;color:#f2e5c4;font:700 13px/1.2 var(--ui-title-font,Georgia,serif)}
+.culture-profile__head>p{margin:2px 0 0;color:#c9b99a;font:400 8px/1.4 var(--ui-body-font,sans-serif)}
+.culture-profile__grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:6px}
+.culture-profile__grid>div{padding:6px;border:1px solid rgba(185,154,89,.2);border-radius:3px;background:rgba(12,16,12,.3)}
+.culture-profile__grid small,.culture-tale small{display:block;color:var(--color-antique-gold);font:700 6px/1.2 var(--ui-number-font,monospace);letter-spacing:.06em}
+.culture-profile__grid p,.culture-tale p{margin:3px 0 0;color:#c9b99a;font:400 7.5px/1.45 var(--ui-body-font,sans-serif)}
+.culture-tale{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:6px;padding-top:4px;border-top:1px solid rgba(185,154,89,.18)}
+.culture-tale strong{display:block;margin-top:2px;color:#f2e5c4;font:700 8px/1.3 var(--ui-body-font,sans-serif)}
+.culture-calendar{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
+.culture-calendar>div{display:grid;gap:2px;padding:6px;border:1px solid rgba(185,154,89,.24);border-radius:3px;background:rgba(28,31,26,.7)}
+.culture-calendar>div.is-current{border-color:rgba(214,178,106,.8);background:rgba(73,63,38,.55)}
+.culture-calendar small{color:#c9b99a;font:700 6px/1.2 var(--ui-number-font,monospace)}
+.culture-calendar strong{color:#f2e5c4;font:700 7px/1.35 var(--ui-body-font,sans-serif)}
+.culture-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:4px}
+.culture-action{display:grid;gap:2px;text-align:left}
+.culture-action small{color:#c9b99a;font:400 6px/1.35 var(--ui-body-font,sans-serif)}
+.culture-groves,.culture-lore,.culture-requirements{display:grid;gap:4px}
+.culture-grove,.culture-lore-card,.culture-conflict{display:grid;gap:3px;padding:7px;border:1px solid rgba(185,154,89,.4);border-radius:4px;background:rgba(28,31,26,.82)}
+.culture-grove strong,.culture-lore-card strong,.culture-conflict strong{color:#f2e5c4;font:700 8px/1.3 var(--ui-body-font,sans-serif)}
+.culture-grove p,.culture-lore-card p,.culture-conflict p{margin:0;color:#c9b99a;font:400 7px/1.4 var(--ui-body-font,sans-serif)}
+.culture-grove small,.culture-lore-card small{color:#c9b99a;font:400 6.5px/1.35 var(--ui-body-font,sans-serif)}
+.culture-grove .command-ribbon,.culture-lore-card .command-ribbon,.culture-conflict .command-ribbon{justify-self:start;color:var(--color-antique-gold);font:700 6px/1.2 var(--ui-number-font,monospace)}
+.culture-conflict{grid-template-columns:minmax(0,1fr) auto;align-items:center}
+.culture-conflict.is-resolved{opacity:.72;border-color:rgba(110,150,100,.45)}
+.culture-conflict button{align-self:center;white-space:nowrap}
+.culture-rights{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:4px}
+.culture-rights .command-choice{display:grid;gap:2px;text-align:left}
+.culture-rights .command-choice small{font:400 6px/1.35 var(--ui-body-font,sans-serif);color:#c9b99a}
+.culture-rights .command-choice.is-current{border-color:rgba(214,178,106,.8);background:rgba(73,63,38,.55)}
+.culture-roles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:4px}
+.culture-roles>div{display:flex;justify-content:space-between;align-items:baseline;gap:6px;padding:5px 6px;border:1px solid rgba(185,154,89,.2);border-radius:3px;background:rgba(28,31,26,.6)}
+.culture-roles small{color:#c9b99a;font:700 6px/1.2 var(--ui-number-font,monospace)}
+.culture-roles strong{color:#f2e5c4;font:700 10px/1 var(--ui-number-font,monospace)}
+.culture-knowledge{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:4px}
+.culture-knowledge>div{display:grid;gap:2px;padding:5px 6px;border:1px solid rgba(185,154,89,.2);border-radius:3px;background:rgba(28,31,26,.6)}
+.culture-knowledge>div.is-known{border-color:rgba(110,150,100,.55);background:rgba(60,80,52,.4)}
+.culture-knowledge small{color:#c9b99a;font:700 6px/1.2 var(--ui-number-font,monospace)}
+.culture-knowledge strong{color:#f2e5c4;font:700 7px/1.3 var(--ui-body-font,sans-serif)}
+.culture-guide{border:1px solid rgba(185,154,89,.4);border-radius:4px;background:rgba(28,31,26,.82);padding:0 7px 7px}
+.culture-guide>summary{cursor:pointer;padding:7px 0;color:#f2e5c4;font:700 7px/1.3 var(--ui-body-font,sans-serif);letter-spacing:.04em}
+.culture-requirement{border-top:1px solid rgba(185,154,89,.18);padding:5px 0}
+.culture-requirement>summary{display:grid;grid-template-columns:76px minmax(0,1fr);gap:5px;cursor:pointer;color:#f2e5c4;font:700 7px/1.35 var(--ui-body-font,sans-serif)}
+.culture-requirement>summary span{color:var(--color-antique-gold);font:700 6px/1.35 var(--ui-number-font,monospace)}
+.culture-requirement p{margin:3px 0;color:#c9b99a;font:400 7px/1.45 var(--ui-body-font,sans-serif)}
+.culture-requirement small{color:#a9ca9f;font:400 6.5px/1.35 var(--ui-body-font,sans-serif)}
+@media(max-width:720px){.culture-calendar{grid-template-columns:repeat(2,minmax(0,1fr))}.culture-conflict{grid-template-columns:1fr}.culture-roles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* The management panel sets its own paragraph colour by id; the culture cards
+   keep a dark ledger surface, so their body copy needs an equally specific
+   readable colour instead of inheriting the parchment ink. */
+.culture-tale__entry{display:grid;gap:2px;padding:6px 7px;border-left:2px solid rgba(214,178,106,.55);background:rgba(12,16,12,.28)}
+#command-panel-content .culture-profile__head>p,
+#command-panel-content .culture-profile__grid p,
+#command-panel-content .culture-tale__entry p,
+#command-panel-content .culture-grove p,
+#command-panel-content .culture-lore-card p,
+#command-panel-content .culture-conflict p{color:#d6c4a0}
+#command-panel-content .culture-profile__grid small,
+#command-panel-content .culture-tale__entry small,
+#command-panel-content .culture-grove small,
+#command-panel-content .culture-lore-card small{color:#bfae8d}
+#command-panel-content .culture-profile__head>strong,
+#command-panel-content .culture-profile__grid strong,
+#command-panel-content .culture-tale__entry strong,
+#command-panel-content .culture-grove strong,
+#command-panel-content .culture-lore-card strong,
+#command-panel-content .culture-conflict strong{color:#f4e8c9}
+#command-panel-content .culture-guide>summary,
+#command-panel-content .culture-requirement>summary{color:#f4e8c9}
+#command-panel-content .culture-requirement p{color:#d6c4a0}
+#command-panel-content .culture-requirement small{color:#a9ca9f}
+#command-panel-content .culture-action small,
+#command-panel-content .culture-rights .command-choice small{color:#5b4a31}
+#command-panel-content .forest-culture .culture-calendar small{color:#d6c4a0}
+#command-panel-content .forest-culture .culture-calendar strong{color:#f4e8c9}
+#command-panel-content .forest-culture .culture-roles small,
+#command-panel-content .forest-culture .culture-knowledge small{color:#d6c4a0}
+#command-panel-content .forest-culture .culture-roles strong,
+#command-panel-content .forest-culture .culture-knowledge strong{color:#f4e8c9}
+#command-panel-content .culture-requirement>summary strong{color:#f4e8c9}
+#command-panel-content .culture-requirement>summary span{color:#d6b56d}
+#command-panel-content .culture-guide>summary{font-size:8px;line-height:1.4}
+#command-panel-content .culture-requirement>summary{font-size:8px;line-height:1.4}
+#command-panel-content .culture-requirement>summary span{font-size:6.5px;line-height:1.4}
+#command-panel-content .culture-requirement p{font-size:7.5px;line-height:1.5}
+#command-panel-content .culture-requirement>summary{grid-template-columns:76px minmax(0,1fr) 12px}
+#command-panel-content .culture-requirement>summary::after{content:"+";justify-self:end;color:#d6b56d;font:700 11px/1 var(--ui-number-font,monospace)}
+#command-panel-content .culture-requirement[open]>summary::after{content:"−"}

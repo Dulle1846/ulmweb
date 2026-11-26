@@ -6,6 +6,7 @@ import { spawnEntity, canSpawnEntity } from "../world/entities.js";
 import { getHousingSnapshot, getHouseholdSnapshot, recordPopulationGrowth } from "./population.js";
 import { linkParentChild } from "./families.js";
 import { ensurePersonProfile, addPersonMemory, PERSON_SPECIES } from "./people.js";
+import { forestCultureChildName } from "./forest-culture.js";
 
 export const BIRTH_CHANCE_PER_PARTNERSHIP_YEAR = 0.12;
 export const BIRTH_COOLDOWN_YEARS = 3;
@@ -131,6 +132,12 @@ export function createChildFromParents(firstId, secondId) {
     childPerson.ageYears = 0;
     childPerson.lifeStage = "young";
     childPerson.familyName = familyName;
+    // 1.2.23.1.202: once the home region's tale or song is collected, a child
+    // may receive a regional tree or animal name. The seed is the child's own
+    // stable id, so the choice is deterministic and old saves keep their
+    // original sequence until they choose to collect woodlore.
+    const cultureName = forestCultureChildName(childPerson.sex, child.personId || (state.worldSeed + ":" + state.tick));
+    if (cultureName) childPerson.firstName = cultureName;
     childPerson.name = childPerson.firstName + " " + familyName;
     childPerson.role = "child";
     childPerson.goals = ["family", "security"];

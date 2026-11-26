@@ -1,13 +1,70 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.77.0`
-**Next development line:** `3.78.0-dev`
+**Current production version:** `3.78.0`
+**Next development line:** `3.79.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
 **Last repository verification:** 2026-11-26 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.78.0 — Waldkultur, heilige Haine und Waldrecht
+
+3.77.0 closed the forest economy around certified guild orders, caravans and
+grand consumers. 3.78.0 adds the thirtieth and final missing layer:
+**1.2.23.1.181–210**, culture, religion, society and knowledge. The thirty
+points are one regional culture layer over the existing sixty forest types —
+not a second economy and not a second map. Every grove is a real tile, every
+role is a real worker or existing workplace, and every rite spends goods the
+realm already has.
+
+- **Sixty regional cultures.** Twelve living traditions are projected through
+  the sixty real forest types. Each region has its own tree spirit, sacred tree,
+  taboo, work technique, hunt rule, festival, tale, legend, work song, calendar,
+  philosophy, paths and tree/animal names. The profile is deterministic and
+  save-neutral.
+- **Protected sacred groves.** A finished shrine beside living forest can
+  consecrate a real tile (12 wood, 8 gold). `harvestForest`, forest game
+  harvesting, firebreak crews and controlled burns refuse the sacred tile; the
+  surrounding wood remains fully playable. The grove limit is 4, raised to 8 by
+  cartography and natural philosophy.
+- **Druids are a real job.** Shrines now employ one druid, use the learning
+  skill and appear in the population register. Foresters, woodcutters, charcoal
+  kiln communities, forest farmers, transhumant herders, herb-wives, hermits,
+  forest monasteries, woodland scholars, work singers and hunting parties are
+  counted from the actual buildings and villagers.
+- **Rites and wood-right.** Offerings consume real honey, herbs or mushrooms
+  once per season. Festival, hunt rite and tree wedding are once a year, cost
+  food or gold, and move morale, legitimacy, clergy and commons support. The
+  forester may set balance, commons, hunting or timber rights once a year; those
+  rights change the existing forage, hunt, farm, pannage and timber yields.
+- **Conflicts and lore.** Extreme rights beside a grove or competing users
+  create bounded, named conflicts that can be mediated for 6 gold. Collecting
+  woodlore stores the region's tale, legend and song, adds research points and
+  lets later children receive regional tree or animal names.
+- **Five woodland technologies.** Forestry, herb lore, natural astronomy,
+  cartography and natural philosophy form the new **Woodland** branch. They gate
+  real culture modifiers, the grove limit and the final philosophy of balance.
+- **Bounded and save-compatible.** All state is additive under
+  `state.economy.productionChains.forestCulture` with caps (8 groves, 60 lore,
+  8 conflicts, 24 annual records). `updateForestCulture` is a season/year guard
+  called from the daily economy; it performs no per-frame tile work and draws
+  no shared RNG. Old saves normalize to empty defaults.
+- **Player-facing atlas.** The Forest Atlas shows the home culture, calendar,
+  six actions, grove cards, the four rights, named conflicts, twelve role
+  counters, five knowledge cards, live culture factors, the woodlore archive and
+  a collapsible thirty-point field guide. The management handlers execute the
+  real actions.
+- **Verification.** Focused culture tests **9/9**; full `npm test` **1639/1639**;
+  spec audit **1711/1711, 0 open** with section `1.2.23.1.181-210` at **30/30**;
+  deterministic 25-year campaign `ok: true` over **10,040 ticks** at
+  **1.358 ms/tick**. The Chromium forest proof opens the new profile, verifies
+  all 30 guide points, consecrates a grove, proves the harvest guard returns 0,
+  performs offering/festival/hunt rite/tree wedding, sets commons, collects
+  lore and renders all twelve role counters with zero new page or console
+  errors. Screenshots: `forest-culture.png`, `forest-culture-roles.png` and
+  `forest-culture-guide.png` under `artifacts/forest-industry-ui/`.
 
 ## 3.77.0 — Certified guild orders, caravans, patron pacts and grand consumers
 

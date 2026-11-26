@@ -429,6 +429,29 @@ function parseDocPoints(relative, prefix) {
     return [...found.values()];
 }
 
+const CULTURE_SPEC = Object.freeze({
+    id: "1.2.23.1.181-210",
+    title: "Forest culture, religion, society and knowledge",
+    file: "js/world/forest-culture.js",
+    manifest: "FOREST_CULTURE_REQUIREMENTS",
+    consumers: [
+        { file: "js/world/forest-culture.js", symbol: "FOREST_CULTURE_REQUIREMENTS", role: "catalog" },
+        { file: "js/world/forest-culture.js", symbol: "FOREST_CULTURE_REGIONS", role: "regional profiles" },
+        { file: "js/systems/forest-culture.js", symbol: "forestCultureSummary", role: "simulation" },
+        { file: "js/systems/forest-culture.js", symbol: "dedicateSacredGrove", role: "grove action" },
+        { file: "js/systems/forest-culture.js", symbol: "setForestRights", role: "rights action" },
+        { file: "js/presentation/forest-atlas-panel.js", symbol: "cultureBlock", role: "ui" },
+        { file: "js/presentation/management-ui.js", symbol: "dedicateSacredGrove", role: "ui action" },
+        { file: "js/systems/forest-gathering.js", symbol: "forestCultureModifiers", role: "gather yield" },
+        { file: "js/systems/fields.js", symbol: "forestCultureFarmFactor", role: "farm yield" },
+        { file: "js/systems/forest-pannage.js", symbol: "forestCultureHerdBonusDays", role: "pannage" },
+        { file: "js/systems/births.js", symbol: "forestCultureChildName", role: "naming" },
+        { file: "js/systems/research.js", symbol: "TECHNOLOGIES", role: "woodland branch" },
+        { file: "js/systems/resource-geography.js", symbol: "harvestForest", role: "grove guard" }
+    ],
+    tests: ["tests/systems/forest-culture.test.js"]
+});
+
 const INDUSTRY_SPEC = Object.freeze({
     id: "1.2.23.1.151-180",
     title: "Regional forest economy and workshops",
@@ -994,6 +1017,29 @@ export function runSpecAudit({ write = false } = {}) {
         sections.push(built);
     }
     {
+        const module = awaitImport(CULTURE_SPEC.file);
+        const manifest = module[CULTURE_SPEC.manifest];
+        if (!Array.isArray(manifest)) throw new Error("forest culture manifest missing");
+        const built = section(CULTURE_SPEC.id, CULTURE_SPEC.title, manifest.map(entry => ({
+            id: entry.id,
+            label: entry.title,
+            key: entry.point,
+            group: "FOREST CULTURE",
+            status: "implemented",
+            docEvidence: "FOREST_CULTURE_REQUIREMENTS",
+            evidence: [],
+            tests: []
+        })), {
+            source: CULTURE_SPEC.file,
+            note: `${manifest.length} player-facing forest-culture requirements from ${CULTURE_SPEC.manifest}; each names its live consumer in the atlas.`
+        });
+        built.consumers = checkedReferences(CULTURE_SPEC.consumers);
+        built.tests = testsValid(CULTURE_SPEC.tests);
+        built.probeAvailable = false;
+        built.probeObserved = 0;
+        sections.push(built);
+    }
+    {
         const module = awaitImport(INDUSTRY_SPEC.file);
         const manifest = module[INDUSTRY_SPEC.manifest];
         if (!Array.isArray(manifest)) throw new Error("regional forest economy manifest missing");
@@ -1067,7 +1113,7 @@ export function runSpecAudit({ write = false } = {}) {
     const result = {
         version: 2,
         generatedBy: "scripts/spec-audit.mjs",
-        scope: "All numbered 1.1 and 1.2.1–1.2.18 requirements, including the 1.2.23.1.151–180 forest economy, plus the documented 2.x phases and 3.3–4.0 roadmap points.",
+        scope: "All numbered 1.1 and 1.2.1–1.2.18 requirements, including the 1.2.23.1.151–210 forest economy and forest culture, plus the documented 2.x phases and 3.3–4.0 roadmap points.",
         commit: readCommit(),
         sourceHash: hashFiles(allFiles),
         generatedAt: readCommitDate(),
@@ -1210,7 +1256,8 @@ function awaitImport(relative) {
 const MODULE_PATHS = [
     ...MANIFEST_SPECS.map(def => def.file),
     SPECIAL_SECTION.file,
-    INDUSTRY_SPEC.file
+    INDUSTRY_SPEC.file,
+    CULTURE_SPEC.file
 ];
 for (const relative of MODULE_PATHS) {
     const absolute = path.join(ROOT, relative);

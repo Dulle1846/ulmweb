@@ -13,6 +13,7 @@ import {
     requestTimberSupply,
 } from "./logistics.js";
 import { ensureForestGathering } from "./forest-gathering.js";
+import { forestCultureModifiers } from "./forest-culture.js";
 import { addMedicineStock, MEDICINE_MAX_STOCK } from "./health.js";
 import { consumeIndustryGoodFromWarehouses, forestGuildMarketPremium, industryWarehouseStock } from "./forest-guild.js";
 import { addLog } from "../core/event-log.js";
@@ -393,8 +394,14 @@ export function runForestWorks(building, { force = false } = {}) {
 
     const production = productionLedger();
     const accepted = {};
+    // 1.2.23.1.185: a real kiln community improves charcoal recovery. The
+    // bonus begins with the second kiln and is bounded, so a single workshop
+    // keeps the historical batch exactly.
+    const cultureCharcoal = mode.id === "charcoal" ? forestCultureModifiers().charcoal : 1;
     for (const [good, amount] of Object.entries(mode.output)) {
-        const stored = addLocalOutput(building, good, amount, { cause: "forest-works-output" });
+        const batchAmount = good === "charcoal" && cultureCharcoal > 1
+            ? Math.max(1, Math.round(amount * cultureCharcoal)) : amount;
+        const stored = addLocalOutput(building, good, batchAmount, { cause: "forest-works-output" });
         if (stored <= 0) continue;
         accepted[good] = stored;
         requestHaul(building, good, getAvailableOutput(building, good));

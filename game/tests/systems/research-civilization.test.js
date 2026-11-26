@@ -146,8 +146,8 @@ test("research gates prerequisites, completes technologies and changes real modi
     assert.equal(snapshot.techs.filter(tech => tech.status === "complete").length, 3);
     assert.equal(snapshot.techs.find(tech => tech.id === "guild-halls").status, "available");
     assert.equal(snapshot.techs.find(tech => tech.id === "administration").status, "locked");
-    assert.equal(TECHNOLOGIES.length, 24);
-    assert.equal(snapshot.branches.length, 4);
+    assert.equal(TECHNOLOGIES.length, 29);
+    assert.equal(snapshot.branches.length, 5);
 });
 
 test("the annual research audit pays the budget and produces points", () => {

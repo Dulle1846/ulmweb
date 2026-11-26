@@ -16,6 +16,7 @@ import { transitionMovementFactorAt } from "../world/transition-biomes.js";
 import { vegetationMovementFactorAt } from "../world/vegetation-density.js";
 import { getCrossBiomeMovementFactorAt } from "./cross-biome-state.js";
 import { FOREST_MODEL_SAVE_VERSION, forestRegenerationFor } from "../world/forest-model.js";
+import { sacredGroveTileAt } from "../world/sacred-groves.js";
 
 const VERSION=1;
 
@@ -896,7 +897,13 @@ function extract(type,x,y,amount){
     if(type==="forest")noteForestVisualChange(before,geo.forestCapacity[point.index],stock[point.index]);
     return taken;
 }
-export function harvestForest(x,y,amount){return extract("forest",x,y,amount);}
+export function harvestForest(x,y,amount){
+    // 1.2.23.1.182/.199: a consecrated grove is a real protected island. The
+    // shared harvest path refuses it for every caller (works, thinning, fire
+    // breaks and direct harvests), without adding a second resource ledger.
+    if(sacredGroveTileAt(x,y))return 0;
+    return extract("forest",x,y,amount);
+}
 export function extractStone(x,y,amount){return extract("stone",x,y,amount);}
 
 // A hazard converts the physical resource tile, not only a ledger counter.

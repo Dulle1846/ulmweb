@@ -8,6 +8,7 @@
 import { TYPE } from "../core/types.js";
 import { state } from "../core/state.js";
 import { ensureForestGathering } from "./forest-gathering.js";
+import { forestCultureHerdBonusDays } from "./forest-culture.js";
 import { FOREST_GOODS } from "../world/forest-ecology.js";
 
 const VERSION = 1;
@@ -68,12 +69,16 @@ export function feedStableFromMast(building, rations = 6) {
     }
     const fed = Object.values(taken).reduce((sum, amount) => sum + amount, 0);
     if (fed <= 0) return { ok: false, reason: "No mast, cones or fodder in the stores" };
-    reserve.days += fed;
-    reserve.fedTotal += fed;
+    // 1.2.23.1.190: herders in a culture with a grove or the commons right
+    // know which mast keeps best. The bonus is bounded by the goods actually
+    // fed and is zero for an untouched culture ledger.
+    const cultureBonus = Math.min(fed, forestCultureHerdBonusDays());
+    reserve.days += fed + cultureBonus;
+    reserve.fedTotal += fed + cultureBonus;
     reserve.mastUsed += fed;
     reserve.lastFedDay = Math.max(1, Math.min(400, Math.floor(number(state.dayOfYear, 1))));
     reserve.lastFedYear = Math.max(1, Math.floor(number(state.year, 1)));
-    return { ok: true, fed, days: reserve.days, mast: taken, reserve };
+    return { ok: true, fed, cultureBonus, days: reserve.days, mast: taken, reserve };
 }
 
 // A stable eats one reserve day per simulation day. The feed is not free: the

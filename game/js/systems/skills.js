@@ -16,7 +16,7 @@ export const JOB_SKILL = Object.freeze({
     clerk: "learning", teacher: "learning",
     bathkeeper: "care", watchman: "command",
     healer: "care", stablehand: "care",
-    acolyte: "learning", scholar: "learning",
+    druid: "learning", acolyte: "learning", scholar: "learning",
     soldier: "command", guard: "command", archer: "command", knight: "command"
 });
 const BUILDING_SKILL = Object.freeze({

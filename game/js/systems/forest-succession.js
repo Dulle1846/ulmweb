@@ -12,6 +12,7 @@ import {
     forestSuccessionStage,
 } from "../world/forest-ecology.js";
 import { forestBarkBeetlePressureAt } from "./forest-fauna.js";
+import { sacredGroveTileAt } from "../world/sacred-groves.js";
 import {
     buildForestSpatialIndex, forestBiodiversityFor, forestErosionFor,
     forestFireSpreadFor, forestFloodPressureFor, forestNeighbourOrderFor,
@@ -889,7 +890,7 @@ export function buildNearestForestFirebreak(originX, originY, radius = STEWARDSH
     const geo = state.resourceGeography;
     if (!model || !geo) return { ok: false, reason: "No active forest geography" };
     const target = nearestForestTarget(geo, originX, originY, radius, (stand, x, y) =>
-        !forestFirebreakAt(x, y) && Number(stand.stockRatio) > 0.05);
+        !forestFirebreakAt(x, y) && !sacredGroveTileAt(x, y) && Number(stand.stockRatio) > 0.05);
     if (!target) return { ok: false, reason: "No unprotected forest within " + radius + " tiles" };
     const keys = [];
     for (let y = target.y - FIREBREAK_RADIUS; y <= target.y + FIREBREAK_RADIUS; y++) {
@@ -897,6 +898,9 @@ export function buildNearestForestFirebreak(originX, originY, radius = STEWARDSH
             if (x < 0 || y < 0 || x >= (Number(state.worldW) || 0) || y >= (Number(state.worldH) || 0)) continue;
             const index = y * (Number(state.worldW) || 0) + x;
             if (!Number(geo.forestCapacity?.[index])) continue;
+            // A consecrated grove is never cleared for a firebreak; the crew
+            // works around it, even when it sits inside the intended belt.
+            if (sacredGroveTileAt(x, y)) continue;
             keys.push(tileKey(x, y));
         }
     }
@@ -934,7 +938,7 @@ export function controlledBurnNearestForestTile(originX, originY, radius = STEWA
     const geo = state.resourceGeography;
     if (!model || !geo) return { ok: false, reason: "No active forest geography" };
     const target = nearestForestTarget(geo, originX, originY, radius, (stand, x, y, index) => {
-        if (forestFirebreakAt(x, y)) return false;
+        if (forestFirebreakAt(x, y) || sacredGroveTileAt(x, y)) return false;
         const record = model.tiles[tileKey(x, y)];
         const stage = record ? forestSuccessionStage(record.kind, record.age) : null;
         if (stage && stage.id !== "recovered") return false;

@@ -15,6 +15,7 @@ import { updateEspionage } from "../systems/espionage.js";
 import { updateCivic } from "../systems/civic.js";
 import { updateEconomy } from "../systems/economy.js";
 import { updateForestIndustry } from "../systems/forest-industries.js";
+import { updateForestCulture } from "../systems/forest-culture.js";
 import { updateForestGuild } from "../systems/forest-guild.js";
 import { updateGrandConsumers } from "../systems/grand-consumers.js";
 import { updateEdicts } from "../systems/edicts.js";
@@ -422,6 +423,9 @@ function finishDailyEconomy() {
     // a tick guard on every other day and at most eight batches per pass, so it
     // never competes with the ordinary producer settlement.
     updateForestIndustry();
+    // Forest culture is a season guard plus one bounded annual pass. It does no
+    // per-tile work on an ordinary day and never consumes the shared RNG.
+    updateForestCulture();
     updateForestGuild();
     updateGrandConsumers();
     updateCraftProduction(annualSlicingEnabled ? { supply: 5, craft: 1 } : 0);

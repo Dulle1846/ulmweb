@@ -69,6 +69,8 @@ export const JOB_MAP = [
     { building: TYPE.GOLDMINE, job: "goldminer" },
     { building: TYPE.TAVERN,  job: "innkeeper" },
     { building: TYPE.TEMPLE,  job: "acolyte" },
+    // 1.2.23.1.183: a shrine is a real druid workplace, not decoration.
+    { building: TYPE.SHRINE,  job: "druid" },
     { building: TYPE.MILL,    job: "miller" },
     { building: TYPE.STABLE,  job: "stablehand" },
     { building: TYPE.SAWMILL, job: "sawyer" },

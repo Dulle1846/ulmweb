@@ -1,15 +1,15 @@
 {
   "version": 2,
   "generatedBy": "scripts/spec-audit.mjs",
-  "scope": "All numbered 1.1 and 1.2.1–1.2.18 requirements, including the 1.2.23.1.151–180 forest economy, plus the documented 2.x phases and 3.3–4.0 roadmap points.",
-  "commit": "550849884df247fcd7b1af7b7694312ef758c557",
-  "sourceHash": "7921cfa05eaf846f0d39bf86761da34259ee3b205f8390101d58fc682ae5e2a7",
-  "generatedAt": "2026-11-26T21:35:17+00:00",
+  "scope": "All numbered 1.1 and 1.2.1–1.2.18 requirements, including the 1.2.23.1.151–210 forest economy and forest culture, plus the documented 2.x phases and 3.3–4.0 roadmap points.",
+  "commit": "7ede2fc6f5558680e01cef2d96848400e6c1f493",
+  "sourceHash": "8124dfa8189f0e070138d8b260074099982769152020f3adde8ca58f07597da3",
+  "generatedAt": "2026-11-26T21:42:38+00:00",
   "totals": {
-    "total": 1681,
-    "implemented": 1681,
+    "total": 1711,
+    "implemented": 1711,
     "open": 0,
-    "sections": 40
+    "sections": 41
   },
   "collisions": [
     {
@@ -40930,6 +40930,978 @@
       ],
       "source": "js/world/forest-industries.js",
       "note": "30 player-facing forest-economy requirements from FOREST_INDUSTRY_REQUIREMENTS; each names its live consumer in the atlas.",
+      "probeFunction": null,
+      "probeClimate": "temperate",
+      "probeExtra": {},
+      "probeAvailable": false,
+      "probeObserved": 0,
+      "implemented": 30,
+      "open": 0,
+      "total": 30
+    },
+    {
+      "id": "1.2.23.1.181-210",
+      "title": "Forest culture, religion, society and knowledge",
+      "points": [
+        {
+          "id": "1.2.23.1.181",
+          "label": "Waldgeister und Baumgottheiten pro Region",
+          "key": "Every regional forest type names its own tree spirit, sacred tree, taboo and offering, derived from the real stand rather than a generic pantheon.",
+          "group": "FOREST CULTURE",
+          "status": "implemented",
+          "docEvidence": "FOREST_CULTURE_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-culture.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-culture.js#FOREST_CULTURE_REQUIREMENTS (catalog)",
+            "js/world/forest-culture.js#FOREST_CULTURE_REGIONS (regional profiles)",
+            "js/systems/forest-culture.js#forestCultureSummary (simulation)",
+            "js/systems/forest-culture.js#dedicateSacredGrove (grove action)",
+            "js/systems/forest-culture.js#setForestRights (rights action)",
+            "js/presentation/forest-atlas-panel.js#cultureBlock (ui)",
+            "js/presentation/management-ui.js#dedicateSacredGrove (ui action)",
+            "js/systems/forest-gathering.js#forestCultureModifiers (gather yield)",
+            "js/systems/fields.js#forestCultureFarmFactor (farm yield)",
+            "js/systems/forest-pannage.js#forestCultureHerdBonusDays (pannage)",
+            "js/systems/births.js#forestCultureChildName (naming)",
+            "js/systems/research.js#TECHNOLOGIES (woodland branch)",
+            "js/systems/resource-geography.js#harvestForest (grove guard)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.182",
+          "label": "Heilige Haine als geschützte Waldinseln",
+          "key": "Consecrating a grove protects a real forest tile from every felling, thinning and firebreak action.",
+          "group": "FOREST CULTURE",
+          "status": "implemented",
+          "docEvidence": "FOREST_CULTURE_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-culture.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-culture.js#FOREST_CULTURE_REQUIREMENTS (catalog)",
+            "js/world/forest-culture.js#FOREST_CULTURE_REGIONS (regional profiles)",
+            "js/systems/forest-culture.js#forestCultureSummary (simulation)",
+            "js/systems/forest-culture.js#dedicateSacredGrove (grove action)",
+            "js/systems/forest-culture.js#setForestRights (rights action)",
+            "js/presentation/forest-atlas-panel.js#cultureBlock (ui)",
+            "js/presentation/management-ui.js#dedicateSacredGrove (ui action)",
+            "js/systems/forest-gathering.js#forestCultureModifiers (gather yield)",
+            "js/systems/fields.js#forestCultureFarmFactor (farm yield)",
+            "js/systems/forest-pannage.js#forestCultureHerdBonusDays (pannage)",
+            "js/systems/births.js#forestCultureChildName (naming)",
+            "js/systems/research.js#TECHNOLOGIES (woodland branch)",
+            "js/systems/resource-geography.js#harvestForest (grove guard)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.183",
+          "label": "Druiden und Waldpriester als eigene Berufe",
+          "key": "Shrines employ druids; a shrine in deep forest becomes a woodland priesthood with a real job, skill and census entry.",
+          "group": "FOREST CULTURE",
+          "status": "implemented",
+          "docEvidence": "FOREST_CULTURE_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-culture.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-culture.js#FOREST_CULTURE_REQUIREMENTS (catalog)",
+            "js/world/forest-culture.js#FOREST_CULTURE_REGIONS (regional profiles)",
+            "js/systems/forest-culture.js#forestCultureSummary (simulation)",
+            "js/systems/forest-culture.js#dedicateSacredGrove (grove action)",
+            "js/systems/forest-culture.js#setForestRights (rights action)",
+            "js/presentation/forest-atlas-panel.js#cultureBlock (ui)",
+            "js/presentation/management-ui.js#dedicateSacredGrove (ui action)",
+            "js/systems/forest-gathering.js#forestCultureModifiers (gather yield)",
+            "js/systems/fields.js#forestCultureFarmFactor (farm yield)",
+            "js/systems/forest-pannage.js#forestCultureHerdBonusDays (pannage)",
+            "js/systems/births.js#forestCultureChildName (naming)",
+            "js/systems/research.js#TECHNOLOGIES (woodland branch)",
+            "js/systems/resource-geography.js#harvestForest (grove guard)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.184",
+          "label": "Förster als Verwalter von Waldrecht und Nutzung",
+          "key": "Only a working forester can set forest rights; the chosen rights change forage, hunting, timber and farm yields.",
+          "group": "FOREST CULTURE",
+          "status": "implemented",
+          "docEvidence": "FOREST_CULTURE_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-culture.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-culture.js#FOREST_CULTURE_REQUIREMENTS (catalog)",
+            "js/world/forest-culture.js#FOREST_CULTURE_REGIONS (regional profiles)",
+            "js/systems/forest-culture.js#forestCultureSummary (simulation)",
+            "js/systems/forest-culture.js#dedicateSacredGrove (grove action)",
+            "js/systems/forest-culture.js#setForestRights (rights action)",
+            "js/presentation/forest-atlas-panel.js#cultureBlock (ui)",
+            "js/presentation/management-ui.js#dedicateSacredGrove (ui action)",
+            "js/systems/forest-gathering.js#forestCultureModifiers (gather yield)",
+            "js/systems/fields.js#forestCultureFarmFactor (farm yield)",
+            "js/systems/forest-pannage.js#forestCultureHerdBonusDays (pannage)",
+            "js/systems/births.js#forestCultureChildName (naming)",
+            "js/systems/research.js#TECHNOLOGIES (woodland branch)",
+            "js/systems/resource-geography.js#harvestForest (grove guard)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.185",
+          "label": "Köhler als spezialisierte Dorfgemeinschaft",
+          "key": "Charcoal-burning Forest Works form a counted craft community with its own culture modifier and lore.",
+          "group": "FOREST CULTURE",
+          "status": "implemented",
+          "docEvidence": "FOREST_CULTURE_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-culture.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-culture.js#FOREST_CULTURE_REQUIREMENTS (catalog)",
+            "js/world/forest-culture.js#FOREST_CULTURE_REGIONS (regional profiles)",
+            "js/systems/forest-culture.js#forestCultureSummary (simulation)",
+            "js/systems/forest-culture.js#dedicateSacredGrove (grove action)",
+            "js/systems/forest-culture.js#setForestRights (rights action)",
+            "js/presentation/forest-atlas-panel.js#cultureBlock (ui)",
+            "js/presentation/management-ui.js#dedicateSacredGrove (ui action)",
+            "js/systems/forest-gathering.js#forestCultureModifiers (gather yield)",
+            "js/systems/fields.js#forestCultureFarmFactor (farm yield)",
+            "js/systems/forest-pannage.js#forestCultureHerdBonusDays (pannage)",
+            "js/systems/births.js#forestCultureChildName (naming)",
+            "js/systems/research.js#TECHNOLOGIES (woodland branch)",
+            "js/systems/resource-geography.js#harvestForest (grove guard)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.186",
+          "label": "Holzfäller mit regionalen Techniken und Tabus",
+          "key": "Woodcutters follow the region's felling technique and taboo, and cannot cut a marked sacred tree.",
+          "group": "FOREST CULTURE",
+          "status": "implemented",
+          "docEvidence": "FOREST_CULTURE_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-culture.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-culture.js#FOREST_CULTURE_REQUIREMENTS (catalog)",
+            "js/world/forest-culture.js#FOREST_CULTURE_REGIONS (regional profiles)",
+            "js/systems/forest-culture.js#forestCultureSummary (simulation)",
+            "js/systems/forest-culture.js#dedicateSacredGrove (grove action)",
+            "js/systems/forest-culture.js#setForestRights (rights action)",
+            "js/presentation/forest-atlas-panel.js#cultureBlock (ui)",
+            "js/presentation/management-ui.js#dedicateSacredGrove (ui action)",
+            "js/systems/forest-gathering.js#forestCultureModifiers (gather yield)",
+            "js/systems/fields.js#forestCultureFarmFactor (farm yield)",
+            "js/systems/forest-pannage.js#forestCultureHerdBonusDays (pannage)",
+            "js/systems/births.js#forestCultureChildName (naming)",
+            "js/systems/research.js#TECHNOLOGIES (woodland branch)",
+            "js/systems/resource-geography.js#harvestForest (grove guard)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.187",
+          "label": "Sammler für Kräuter, Beeren und Pilze",
+          "key": "Foragers gain a favour and rights modifier on the existing gather action, with the regional bloom calendar visible.",
+          "group": "FOREST CULTURE",
+          "status": "implemented",
+          "docEvidence": "FOREST_CULTURE_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-culture.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-culture.js#FOREST_CULTURE_REQUIREMENTS (catalog)",
+            "js/world/forest-culture.js#FOREST_CULTURE_REGIONS (regional profiles)",
+            "js/systems/forest-culture.js#forestCultureSummary (simulation)",
+            "js/systems/forest-culture.js#dedicateSacredGrove (grove action)",
+            "js/systems/forest-culture.js#setForestRights (rights action)",
+            "js/presentation/forest-atlas-panel.js#cultureBlock (ui)",
+            "js/presentation/management-ui.js#dedicateSacredGrove (ui action)",
+            "js/systems/forest-gathering.js#forestCultureModifiers (gather yield)",
+            "js/systems/fields.js#forestCultureFarmFactor (farm yield)",
+            "js/systems/forest-pannage.js#forestCultureHerdBonusDays (pannage)",
+            "js/systems/births.js#forestCultureChildName (naming)",
+            "js/systems/research.js#TECHNOLOGIES (woodland branch)",
+            "js/systems/resource-geography.js#harvestForest (grove guard)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.188",
+          "label": "Jäger mit saisonalen Jagdregeln",
+          "key": "A hunting rite opens the season and the profile's hunt rule modifies the existing hunt action.",
+          "group": "FOREST CULTURE",
+          "status": "implemented",
+          "docEvidence": "FOREST_CULTURE_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-culture.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-culture.js#FOREST_CULTURE_REQUIREMENTS (catalog)",
+            "js/world/forest-culture.js#FOREST_CULTURE_REGIONS (regional profiles)",
+            "js/systems/forest-culture.js#forestCultureSummary (simulation)",
+            "js/systems/forest-culture.js#dedicateSacredGrove (grove action)",
+            "js/systems/forest-culture.js#setForestRights (rights action)",
+            "js/presentation/forest-atlas-panel.js#cultureBlock (ui)",
+            "js/presentation/management-ui.js#dedicateSacredGrove (ui action)",
+            "js/systems/forest-gathering.js#forestCultureModifiers (gather yield)",
+            "js/systems/fields.js#forestCultureFarmFactor (farm yield)",
+            "js/systems/forest-pannage.js#forestCultureHerdBonusDays (pannage)",
+            "js/systems/births.js#forestCultureChildName (naming)",
+            "js/systems/research.js#TECHNOLOGIES (woodland branch)",
+            "js/systems/resource-geography.js#harvestForest (grove guard)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.189",
+          "label": "Waldbauern mit Agroforst und Waldweide",
+          "key": "Farms near the wood gain an agroforestry factor; the role census names them and the pannage path feeds the herds.",
+          "group": "FOREST CULTURE",
+          "status": "implemented",
+          "docEvidence": "FOREST_CULTURE_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-culture.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-culture.js#FOREST_CULTURE_REQUIREMENTS (catalog)",
+            "js/world/forest-culture.js#FOREST_CULTURE_REGIONS (regional profiles)",
+            "js/systems/forest-culture.js#forestCultureSummary (simulation)",
+            "js/systems/forest-culture.js#dedicateSacredGrove (grove action)",
+            "js/systems/forest-culture.js#setForestRights (rights action)",
+            "js/presentation/forest-atlas-panel.js#cultureBlock (ui)",
+            "js/presentation/management-ui.js#dedicateSacredGrove (ui action)",
+            "js/systems/forest-gathering.js#forestCultureModifiers (gather yield)",
+            "js/systems/fields.js#forestCultureFarmFactor (farm yield)",
+            "js/systems/forest-pannage.js#forestCultureHerdBonusDays (pannage)",
+            "js/systems/births.js#forestCultureChildName (naming)",
+            "js/systems/research.js#TECHNOLOGIES (woodland branch)",
+            "js/systems/resource-geography.js#harvestForest (grove guard)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.190",
+          "label": "Wanderhirten zwischen Wald und offener Weide",
+          "key": "Stablehands become transhumant herders and gain mast days when the wood is held in commons.",
+          "group": "FOREST CULTURE",
+          "status": "implemented",
+          "docEvidence": "FOREST_CULTURE_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-culture.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-culture.js#FOREST_CULTURE_REQUIREMENTS (catalog)",
+            "js/world/forest-culture.js#FOREST_CULTURE_REGIONS (regional profiles)",
+            "js/systems/forest-culture.js#forestCultureSummary (simulation)",
+            "js/systems/forest-culture.js#dedicateSacredGrove (grove action)",
+            "js/systems/forest-culture.js#setForestRights (rights action)",
+            "js/presentation/forest-atlas-panel.js#cultureBlock (ui)",
+            "js/presentation/management-ui.js#dedicateSacredGrove (ui action)",
+            "js/systems/forest-gathering.js#forestCultureModifiers (gather yield)",
+            "js/systems/fields.js#forestCultureFarmFactor (farm yield)",
+            "js/systems/forest-pannage.js#forestCultureHerdBonusDays (pannage)",
+            "js/systems/births.js#forestCultureChildName (naming)",
+            "js/systems/research.js#TECHNOLOGIES (woodland branch)",
+            "js/systems/resource-geography.js#harvestForest (grove guard)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.191",
+          "label": "Einsiedler und Waldklöster",
+          "key": "A shrine in deep forest shelters a hermit; a scriptorium beside it forms a forest monastery and adds research weight.",
+          "group": "FOREST CULTURE",
+          "status": "implemented",
+          "docEvidence": "FOREST_CULTURE_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-culture.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-culture.js#FOREST_CULTURE_REQUIREMENTS (catalog)",
+            "js/world/forest-culture.js#FOREST_CULTURE_REGIONS (regional profiles)",
+            "js/systems/forest-culture.js#forestCultureSummary (simulation)",
+            "js/systems/forest-culture.js#dedicateSacredGrove (grove action)",
+            "js/systems/forest-culture.js#setForestRights (rights action)",
+            "js/presentation/forest-atlas-panel.js#cultureBlock (ui)",
+            "js/presentation/management-ui.js#dedicateSacredGrove (ui action)",
+            "js/systems/forest-gathering.js#forestCultureModifiers (gather yield)",
+            "js/systems/fields.js#forestCultureFarmFactor (farm yield)",
+            "js/systems/forest-pannage.js#forestCultureHerdBonusDays (pannage)",
+            "js/systems/births.js#forestCultureChildName (naming)",
+            "js/systems/research.js#TECHNOLOGIES (woodland branch)",
+            "js/systems/resource-geography.js#harvestForest (grove guard)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.192",
+          "label": "Hexen und Kräuterfrauen in Märchen und Realität",
+          "key": "Healers near the wood are counted as herb-wives; their presence improves the culture medicine modifier and the tale archive.",
+          "group": "FOREST CULTURE",
+          "status": "implemented",
+          "docEvidence": "FOREST_CULTURE_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-culture.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-culture.js#FOREST_CULTURE_REQUIREMENTS (catalog)",
+            "js/world/forest-culture.js#FOREST_CULTURE_REGIONS (regional profiles)",
+            "js/systems/forest-culture.js#forestCultureSummary (simulation)",
+            "js/systems/forest-culture.js#dedicateSacredGrove (grove action)",
+            "js/systems/forest-culture.js#setForestRights (rights action)",
+            "js/presentation/forest-atlas-panel.js#cultureBlock (ui)",
+            "js/presentation/management-ui.js#dedicateSacredGrove (ui action)",
+            "js/systems/forest-gathering.js#forestCultureModifiers (gather yield)",
+            "js/systems/fields.js#forestCultureFarmFactor (farm yield)",
+            "js/systems/forest-pannage.js#forestCultureHerdBonusDays (pannage)",
+            "js/systems/births.js#forestCultureChildName (naming)",
+            "js/systems/research.js#TECHNOLOGIES (woodland branch)",
+            "js/systems/resource-geography.js#harvestForest (grove guard)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.193",
+          "label": "Regionale Märchen über Waldtypen",
+          "key": "Each of the sixty regional types has its own tale, spirit and moral, collectable into the atlas archive.",
+          "group": "FOREST CULTURE",
+          "status": "implemented",
+          "docEvidence": "FOREST_CULTURE_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-culture.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-culture.js#FOREST_CULTURE_REQUIREMENTS (catalog)",
+            "js/world/forest-culture.js#FOREST_CULTURE_REGIONS (regional profiles)",
+            "js/systems/forest-culture.js#forestCultureSummary (simulation)",
+            "js/systems/forest-culture.js#dedicateSacredGrove (grove action)",
+            "js/systems/forest-culture.js#setForestRights (rights action)",
+            "js/presentation/forest-atlas-panel.js#cultureBlock (ui)",
+            "js/presentation/management-ui.js#dedicateSacredGrove (ui action)",
+            "js/systems/forest-gathering.js#forestCultureModifiers (gather yield)",
+            "js/systems/fields.js#forestCultureFarmFactor (farm yield)",
+            "js/systems/forest-pannage.js#forestCultureHerdBonusDays (pannage)",
+            "js/systems/births.js#forestCultureChildName (naming)",
+            "js/systems/research.js#TECHNOLOGIES (woodland branch)",
+            "js/systems/resource-geography.js#harvestForest (grove guard)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.194",
+          "label": "Sagen über verschwundene Wälder und alte Bäume",
+          "key": "A second legend per region records a lost forest or ancient tree and its warning.",
+          "group": "FOREST CULTURE",
+          "status": "implemented",
+          "docEvidence": "FOREST_CULTURE_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-culture.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-culture.js#FOREST_CULTURE_REQUIREMENTS (catalog)",
+            "js/world/forest-culture.js#FOREST_CULTURE_REGIONS (regional profiles)",
+            "js/systems/forest-culture.js#forestCultureSummary (simulation)",
+            "js/systems/forest-culture.js#dedicateSacredGrove (grove action)",
+            "js/systems/forest-culture.js#setForestRights (rights action)",
+            "js/presentation/forest-atlas-panel.js#cultureBlock (ui)",
+            "js/presentation/management-ui.js#dedicateSacredGrove (ui action)",
+            "js/systems/forest-gathering.js#forestCultureModifiers (gather yield)",
+            "js/systems/fields.js#forestCultureFarmFactor (farm yield)",
+            "js/systems/forest-pannage.js#forestCultureHerdBonusDays (pannage)",
+            "js/systems/births.js#forestCultureChildName (naming)",
+            "js/systems/research.js#TECHNOLOGIES (woodland branch)",
+            "js/systems/resource-geography.js#harvestForest (grove guard)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.195",
+          "label": "Lieder und Arbeitsgesänge der Waldberufe",
+          "key": "Each region names a work song with a verse tied to its actual craft.",
+          "group": "FOREST CULTURE",
+          "status": "implemented",
+          "docEvidence": "FOREST_CULTURE_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-culture.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-culture.js#FOREST_CULTURE_REQUIREMENTS (catalog)",
+            "js/world/forest-culture.js#FOREST_CULTURE_REGIONS (regional profiles)",
+            "js/systems/forest-culture.js#forestCultureSummary (simulation)",
+            "js/systems/forest-culture.js#dedicateSacredGrove (grove action)",
+            "js/systems/forest-culture.js#setForestRights (rights action)",
+            "js/presentation/forest-atlas-panel.js#cultureBlock (ui)",
+            "js/presentation/management-ui.js#dedicateSacredGrove (ui action)",
+            "js/systems/forest-gathering.js#forestCultureModifiers (gather yield)",
+            "js/systems/fields.js#forestCultureFarmFactor (farm yield)",
+            "js/systems/forest-pannage.js#forestCultureHerdBonusDays (pannage)",
+            "js/systems/births.js#forestCultureChildName (naming)",
+            "js/systems/research.js#TECHNOLOGIES (woodland branch)",
+            "js/systems/resource-geography.js#harvestForest (grove guard)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.196",
+          "label": "Waldkalender mit Blüte, Ernte und Jagdzeiten",
+          "key": "The home profile provides bloom, hunt and felling windows and a current-season status.",
+          "group": "FOREST CULTURE",
+          "status": "implemented",
+          "docEvidence": "FOREST_CULTURE_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-culture.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-culture.js#FOREST_CULTURE_REQUIREMENTS (catalog)",
+            "js/world/forest-culture.js#FOREST_CULTURE_REGIONS (regional profiles)",
+            "js/systems/forest-culture.js#forestCultureSummary (simulation)",
+            "js/systems/forest-culture.js#dedicateSacredGrove (grove action)",
+            "js/systems/forest-culture.js#setForestRights (rights action)",
+            "js/presentation/forest-atlas-panel.js#cultureBlock (ui)",
+            "js/presentation/management-ui.js#dedicateSacredGrove (ui action)",
+            "js/systems/forest-gathering.js#forestCultureModifiers (gather yield)",
+            "js/systems/fields.js#forestCultureFarmFactor (farm yield)",
+            "js/systems/forest-pannage.js#forestCultureHerdBonusDays (pannage)",
+            "js/systems/births.js#forestCultureChildName (naming)",
+            "js/systems/research.js#TECHNOLOGIES (woodland branch)",
+            "js/systems/resource-geography.js#harvestForest (grove guard)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.197",
+          "label": "Feste zu Frühling, Holzschlag und Ernte",
+          "key": "A seasonal festival can be held once a year, with the region's own name and focus.",
+          "group": "FOREST CULTURE",
+          "status": "implemented",
+          "docEvidence": "FOREST_CULTURE_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-culture.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-culture.js#FOREST_CULTURE_REQUIREMENTS (catalog)",
+            "js/world/forest-culture.js#FOREST_CULTURE_REGIONS (regional profiles)",
+            "js/systems/forest-culture.js#forestCultureSummary (simulation)",
+            "js/systems/forest-culture.js#dedicateSacredGrove (grove action)",
+            "js/systems/forest-culture.js#setForestRights (rights action)",
+            "js/presentation/forest-atlas-panel.js#cultureBlock (ui)",
+            "js/presentation/management-ui.js#dedicateSacredGrove (ui action)",
+            "js/systems/forest-gathering.js#forestCultureModifiers (gather yield)",
+            "js/systems/fields.js#forestCultureFarmFactor (farm yield)",
+            "js/systems/forest-pannage.js#forestCultureHerdBonusDays (pannage)",
+            "js/systems/births.js#forestCultureChildName (naming)",
+            "js/systems/research.js#TECHNOLOGIES (woodland branch)",
+            "js/systems/resource-geography.js#harvestForest (grove guard)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.198",
+          "label": "Opfergaben an Baum- und Waldgeister",
+          "key": "Honey, herbs or mushrooms from the real forest store can be offered once per season for favour.",
+          "group": "FOREST CULTURE",
+          "status": "implemented",
+          "docEvidence": "FOREST_CULTURE_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-culture.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-culture.js#FOREST_CULTURE_REQUIREMENTS (catalog)",
+            "js/world/forest-culture.js#FOREST_CULTURE_REGIONS (regional profiles)",
+            "js/systems/forest-culture.js#forestCultureSummary (simulation)",
+            "js/systems/forest-culture.js#dedicateSacredGrove (grove action)",
+            "js/systems/forest-culture.js#setForestRights (rights action)",
+            "js/presentation/forest-atlas-panel.js#cultureBlock (ui)",
+            "js/presentation/management-ui.js#dedicateSacredGrove (ui action)",
+            "js/systems/forest-gathering.js#forestCultureModifiers (gather yield)",
+            "js/systems/fields.js#forestCultureFarmFactor (farm yield)",
+            "js/systems/forest-pannage.js#forestCultureHerdBonusDays (pannage)",
+            "js/systems/births.js#forestCultureChildName (naming)",
+            "js/systems/research.js#TECHNOLOGIES (woodland branch)",
+            "js/systems/resource-geography.js#harvestForest (grove guard)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.199",
+          "label": "Tabus gegen das Fällen heiliger Bäume",
+          "key": "The grove taboo and every consecrated tile are enforced in the shared harvest guard.",
+          "group": "FOREST CULTURE",
+          "status": "implemented",
+          "docEvidence": "FOREST_CULTURE_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-culture.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-culture.js#FOREST_CULTURE_REQUIREMENTS (catalog)",
+            "js/world/forest-culture.js#FOREST_CULTURE_REGIONS (regional profiles)",
+            "js/systems/forest-culture.js#forestCultureSummary (simulation)",
+            "js/systems/forest-culture.js#dedicateSacredGrove (grove action)",
+            "js/systems/forest-culture.js#setForestRights (rights action)",
+            "js/presentation/forest-atlas-panel.js#cultureBlock (ui)",
+            "js/presentation/management-ui.js#dedicateSacredGrove (ui action)",
+            "js/systems/forest-gathering.js#forestCultureModifiers (gather yield)",
+            "js/systems/fields.js#forestCultureFarmFactor (farm yield)",
+            "js/systems/forest-pannage.js#forestCultureHerdBonusDays (pannage)",
+            "js/systems/births.js#forestCultureChildName (naming)",
+            "js/systems/research.js#TECHNOLOGIES (woodland branch)",
+            "js/systems/resource-geography.js#harvestForest (grove guard)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.200",
+          "label": "Jagdrituale und Initiationsriten",
+          "key": "A once-a-year hunt rite opens the season and strengthens the existing hunt yield.",
+          "group": "FOREST CULTURE",
+          "status": "implemented",
+          "docEvidence": "FOREST_CULTURE_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-culture.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-culture.js#FOREST_CULTURE_REQUIREMENTS (catalog)",
+            "js/world/forest-culture.js#FOREST_CULTURE_REGIONS (regional profiles)",
+            "js/systems/forest-culture.js#forestCultureSummary (simulation)",
+            "js/systems/forest-culture.js#dedicateSacredGrove (grove action)",
+            "js/systems/forest-culture.js#setForestRights (rights action)",
+            "js/presentation/forest-atlas-panel.js#cultureBlock (ui)",
+            "js/presentation/management-ui.js#dedicateSacredGrove (ui action)",
+            "js/systems/forest-gathering.js#forestCultureModifiers (gather yield)",
+            "js/systems/fields.js#forestCultureFarmFactor (farm yield)",
+            "js/systems/forest-pannage.js#forestCultureHerdBonusDays (pannage)",
+            "js/systems/births.js#forestCultureChildName (naming)",
+            "js/systems/research.js#TECHNOLOGIES (woodland branch)",
+            "js/systems/resource-geography.js#harvestForest (grove guard)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.201",
+          "label": "Baumhochzeiten und symbolische Vermählungen",
+          "key": "A tree wedding binds the community to its grove and raises favour and legitimacy.",
+          "group": "FOREST CULTURE",
+          "status": "implemented",
+          "docEvidence": "FOREST_CULTURE_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-culture.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-culture.js#FOREST_CULTURE_REQUIREMENTS (catalog)",
+            "js/world/forest-culture.js#FOREST_CULTURE_REGIONS (regional profiles)",
+            "js/systems/forest-culture.js#forestCultureSummary (simulation)",
+            "js/systems/forest-culture.js#dedicateSacredGrove (grove action)",
+            "js/systems/forest-culture.js#setForestRights (rights action)",
+            "js/presentation/forest-atlas-panel.js#cultureBlock (ui)",
+            "js/presentation/management-ui.js#dedicateSacredGrove (ui action)",
+            "js/systems/forest-gathering.js#forestCultureModifiers (gather yield)",
+            "js/systems/fields.js#forestCultureFarmFactor (farm yield)",
+            "js/systems/forest-pannage.js#forestCultureHerdBonusDays (pannage)",
+            "js/systems/births.js#forestCultureChildName (naming)",
+            "js/systems/research.js#TECHNOLOGIES (woodland branch)",
+            "js/systems/resource-geography.js#harvestForest (grove guard)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.202",
+          "label": "Namensgebung nach Bäumen und Waldtieren",
+          "key": "Children born in a realm with collected woodlore receive a regional tree or animal name.",
+          "group": "FOREST CULTURE",
+          "status": "implemented",
+          "docEvidence": "FOREST_CULTURE_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-culture.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-culture.js#FOREST_CULTURE_REQUIREMENTS (catalog)",
+            "js/world/forest-culture.js#FOREST_CULTURE_REGIONS (regional profiles)",
+            "js/systems/forest-culture.js#forestCultureSummary (simulation)",
+            "js/systems/forest-culture.js#dedicateSacredGrove (grove action)",
+            "js/systems/forest-culture.js#setForestRights (rights action)",
+            "js/presentation/forest-atlas-panel.js#cultureBlock (ui)",
+            "js/presentation/management-ui.js#dedicateSacredGrove (ui action)",
+            "js/systems/forest-gathering.js#forestCultureModifiers (gather yield)",
+            "js/systems/fields.js#forestCultureFarmFactor (farm yield)",
+            "js/systems/forest-pannage.js#forestCultureHerdBonusDays (pannage)",
+            "js/systems/births.js#forestCultureChildName (naming)",
+            "js/systems/research.js#TECHNOLOGIES (woodland branch)",
+            "js/systems/resource-geography.js#harvestForest (grove guard)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.203",
+          "label": "Waldrecht für Allmende, Jagd und Holzeinschlag",
+          "key": "The forester can set one of four rights priorities, changing the real yield modifiers.",
+          "group": "FOREST CULTURE",
+          "status": "implemented",
+          "docEvidence": "FOREST_CULTURE_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-culture.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-culture.js#FOREST_CULTURE_REQUIREMENTS (catalog)",
+            "js/world/forest-culture.js#FOREST_CULTURE_REGIONS (regional profiles)",
+            "js/systems/forest-culture.js#forestCultureSummary (simulation)",
+            "js/systems/forest-culture.js#dedicateSacredGrove (grove action)",
+            "js/systems/forest-culture.js#setForestRights (rights action)",
+            "js/presentation/forest-atlas-panel.js#cultureBlock (ui)",
+            "js/presentation/management-ui.js#dedicateSacredGrove (ui action)",
+            "js/systems/forest-gathering.js#forestCultureModifiers (gather yield)",
+            "js/systems/fields.js#forestCultureFarmFactor (farm yield)",
+            "js/systems/forest-pannage.js#forestCultureHerdBonusDays (pannage)",
+            "js/systems/births.js#forestCultureChildName (naming)",
+            "js/systems/research.js#TECHNOLOGIES (woodland branch)",
+            "js/systems/resource-geography.js#harvestForest (grove guard)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.204",
+          "label": "Allmenderechte und Dorfgemeinschaften",
+          "key": "The commons priority strengthens farms, herds and forage and is visible in politics and the role census.",
+          "group": "FOREST CULTURE",
+          "status": "implemented",
+          "docEvidence": "FOREST_CULTURE_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-culture.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-culture.js#FOREST_CULTURE_REQUIREMENTS (catalog)",
+            "js/world/forest-culture.js#FOREST_CULTURE_REGIONS (regional profiles)",
+            "js/systems/forest-culture.js#forestCultureSummary (simulation)",
+            "js/systems/forest-culture.js#dedicateSacredGrove (grove action)",
+            "js/systems/forest-culture.js#setForestRights (rights action)",
+            "js/presentation/forest-atlas-panel.js#cultureBlock (ui)",
+            "js/presentation/management-ui.js#dedicateSacredGrove (ui action)",
+            "js/systems/forest-gathering.js#forestCultureModifiers (gather yield)",
+            "js/systems/fields.js#forestCultureFarmFactor (farm yield)",
+            "js/systems/forest-pannage.js#forestCultureHerdBonusDays (pannage)",
+            "js/systems/births.js#forestCultureChildName (naming)",
+            "js/systems/research.js#TECHNOLOGIES (woodland branch)",
+            "js/systems/resource-geography.js#harvestForest (grove guard)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.205",
+          "label": "Nutzungskonflikte zwischen Bauern, Jägern und Holzfällern",
+          "key": "Extreme rights and a protected grove create named conflicts that can be mediated for gold.",
+          "group": "FOREST CULTURE",
+          "status": "implemented",
+          "docEvidence": "FOREST_CULTURE_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-culture.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-culture.js#FOREST_CULTURE_REQUIREMENTS (catalog)",
+            "js/world/forest-culture.js#FOREST_CULTURE_REGIONS (regional profiles)",
+            "js/systems/forest-culture.js#forestCultureSummary (simulation)",
+            "js/systems/forest-culture.js#dedicateSacredGrove (grove action)",
+            "js/systems/forest-culture.js#setForestRights (rights action)",
+            "js/presentation/forest-atlas-panel.js#cultureBlock (ui)",
+            "js/presentation/management-ui.js#dedicateSacredGrove (ui action)",
+            "js/systems/forest-gathering.js#forestCultureModifiers (gather yield)",
+            "js/systems/fields.js#forestCultureFarmFactor (farm yield)",
+            "js/systems/forest-pannage.js#forestCultureHerdBonusDays (pannage)",
+            "js/systems/births.js#forestCultureChildName (naming)",
+            "js/systems/research.js#TECHNOLOGIES (woodland branch)",
+            "js/systems/resource-geography.js#harvestForest (grove guard)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.206",
+          "label": "Waldbildung für Förster und Kräuterkundige",
+          "key": "The forest school is represented by the woodland research branch, the forest scholar role and the school's teaching effect.",
+          "group": "FOREST CULTURE",
+          "status": "implemented",
+          "docEvidence": "FOREST_CULTURE_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-culture.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-culture.js#FOREST_CULTURE_REQUIREMENTS (catalog)",
+            "js/world/forest-culture.js#FOREST_CULTURE_REGIONS (regional profiles)",
+            "js/systems/forest-culture.js#forestCultureSummary (simulation)",
+            "js/systems/forest-culture.js#dedicateSacredGrove (grove action)",
+            "js/systems/forest-culture.js#setForestRights (rights action)",
+            "js/presentation/forest-atlas-panel.js#cultureBlock (ui)",
+            "js/presentation/management-ui.js#dedicateSacredGrove (ui action)",
+            "js/systems/forest-gathering.js#forestCultureModifiers (gather yield)",
+            "js/systems/fields.js#forestCultureFarmFactor (farm yield)",
+            "js/systems/forest-pannage.js#forestCultureHerdBonusDays (pannage)",
+            "js/systems/births.js#forestCultureChildName (naming)",
+            "js/systems/research.js#TECHNOLOGIES (woodland branch)",
+            "js/systems/resource-geography.js#harvestForest (grove guard)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.207",
+          "label": "Kräuterkunde als Forschungszweig",
+          "key": "Herb lore is a real technology in the new woodland branch, gated by forestry.",
+          "group": "FOREST CULTURE",
+          "status": "implemented",
+          "docEvidence": "FOREST_CULTURE_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-culture.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-culture.js#FOREST_CULTURE_REQUIREMENTS (catalog)",
+            "js/world/forest-culture.js#FOREST_CULTURE_REGIONS (regional profiles)",
+            "js/systems/forest-culture.js#forestCultureSummary (simulation)",
+            "js/systems/forest-culture.js#dedicateSacredGrove (grove action)",
+            "js/systems/forest-culture.js#setForestRights (rights action)",
+            "js/presentation/forest-atlas-panel.js#cultureBlock (ui)",
+            "js/presentation/management-ui.js#dedicateSacredGrove (ui action)",
+            "js/systems/forest-gathering.js#forestCultureModifiers (gather yield)",
+            "js/systems/fields.js#forestCultureFarmFactor (farm yield)",
+            "js/systems/forest-pannage.js#forestCultureHerdBonusDays (pannage)",
+            "js/systems/births.js#forestCultureChildName (naming)",
+            "js/systems/research.js#TECHNOLOGIES (woodland branch)",
+            "js/systems/resource-geography.js#harvestForest (grove guard)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.208",
+          "label": "Naturastronomie und Jahreszeitenwissen",
+          "key": "Natural astronomy reads the calendar, improves the festival and extends the offering window.",
+          "group": "FOREST CULTURE",
+          "status": "implemented",
+          "docEvidence": "FOREST_CULTURE_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-culture.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-culture.js#FOREST_CULTURE_REQUIREMENTS (catalog)",
+            "js/world/forest-culture.js#FOREST_CULTURE_REGIONS (regional profiles)",
+            "js/systems/forest-culture.js#forestCultureSummary (simulation)",
+            "js/systems/forest-culture.js#dedicateSacredGrove (grove action)",
+            "js/systems/forest-culture.js#setForestRights (rights action)",
+            "js/presentation/forest-atlas-panel.js#cultureBlock (ui)",
+            "js/presentation/management-ui.js#dedicateSacredGrove (ui action)",
+            "js/systems/forest-gathering.js#forestCultureModifiers (gather yield)",
+            "js/systems/fields.js#forestCultureFarmFactor (farm yield)",
+            "js/systems/forest-pannage.js#forestCultureHerdBonusDays (pannage)",
+            "js/systems/births.js#forestCultureChildName (naming)",
+            "js/systems/research.js#TECHNOLOGIES (woodland branch)",
+            "js/systems/resource-geography.js#harvestForest (grove guard)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.209",
+          "label": "Kartographie von Waldwegen und heiligen Orten",
+          "key": "Cartography raises the grove cap and records the region's paths and sacred places.",
+          "group": "FOREST CULTURE",
+          "status": "implemented",
+          "docEvidence": "FOREST_CULTURE_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-culture.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-culture.js#FOREST_CULTURE_REQUIREMENTS (catalog)",
+            "js/world/forest-culture.js#FOREST_CULTURE_REGIONS (regional profiles)",
+            "js/systems/forest-culture.js#forestCultureSummary (simulation)",
+            "js/systems/forest-culture.js#dedicateSacredGrove (grove action)",
+            "js/systems/forest-culture.js#setForestRights (rights action)",
+            "js/presentation/forest-atlas-panel.js#cultureBlock (ui)",
+            "js/presentation/management-ui.js#dedicateSacredGrove (ui action)",
+            "js/systems/forest-gathering.js#forestCultureModifiers (gather yield)",
+            "js/systems/fields.js#forestCultureFarmFactor (farm yield)",
+            "js/systems/forest-pannage.js#forestCultureHerdBonusDays (pannage)",
+            "js/systems/births.js#forestCultureChildName (naming)",
+            "js/systems/research.js#TECHNOLOGIES (woodland branch)",
+            "js/systems/resource-geography.js#harvestForest (grove guard)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.210",
+          "label": "Naturphilosophie über Gleichgewicht und Nutzung",
+          "key": "Natural philosophy is the capstone technology; it raises research and legitimacy and reports the region's philosophy.",
+          "group": "FOREST CULTURE",
+          "status": "implemented",
+          "docEvidence": "FOREST_CULTURE_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-culture.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-culture.js#FOREST_CULTURE_REQUIREMENTS (catalog)",
+            "js/world/forest-culture.js#FOREST_CULTURE_REGIONS (regional profiles)",
+            "js/systems/forest-culture.js#forestCultureSummary (simulation)",
+            "js/systems/forest-culture.js#dedicateSacredGrove (grove action)",
+            "js/systems/forest-culture.js#setForestRights (rights action)",
+            "js/presentation/forest-atlas-panel.js#cultureBlock (ui)",
+            "js/presentation/management-ui.js#dedicateSacredGrove (ui action)",
+            "js/systems/forest-gathering.js#forestCultureModifiers (gather yield)",
+            "js/systems/fields.js#forestCultureFarmFactor (farm yield)",
+            "js/systems/forest-pannage.js#forestCultureHerdBonusDays (pannage)",
+            "js/systems/births.js#forestCultureChildName (naming)",
+            "js/systems/research.js#TECHNOLOGIES (woodland branch)",
+            "js/systems/resource-geography.js#harvestForest (grove guard)"
+          ],
+          "probe": null
+        }
+      ],
+      "consumers": [
+        {
+          "file": "js/world/forest-culture.js",
+          "symbol": "FOREST_CULTURE_REQUIREMENTS",
+          "role": "catalog",
+          "valid": true
+        },
+        {
+          "file": "js/world/forest-culture.js",
+          "symbol": "FOREST_CULTURE_REGIONS",
+          "role": "regional profiles",
+          "valid": true
+        },
+        {
+          "file": "js/systems/forest-culture.js",
+          "symbol": "forestCultureSummary",
+          "role": "simulation",
+          "valid": true
+        },
+        {
+          "file": "js/systems/forest-culture.js",
+          "symbol": "dedicateSacredGrove",
+          "role": "grove action",
+          "valid": true
+        },
+        {
+          "file": "js/systems/forest-culture.js",
+          "symbol": "setForestRights",
+          "role": "rights action",
+          "valid": true
+        },
+        {
+          "file": "js/presentation/forest-atlas-panel.js",
+          "symbol": "cultureBlock",
+          "role": "ui",
+          "valid": true
+        },
+        {
+          "file": "js/presentation/management-ui.js",
+          "symbol": "dedicateSacredGrove",
+          "role": "ui action",
+          "valid": true
+        },
+        {
+          "file": "js/systems/forest-gathering.js",
+          "symbol": "forestCultureModifiers",
+          "role": "gather yield",
+          "valid": true
+        },
+        {
+          "file": "js/systems/fields.js",
+          "symbol": "forestCultureFarmFactor",
+          "role": "farm yield",
+          "valid": true
+        },
+        {
+          "file": "js/systems/forest-pannage.js",
+          "symbol": "forestCultureHerdBonusDays",
+          "role": "pannage",
+          "valid": true
+        },
+        {
+          "file": "js/systems/births.js",
+          "symbol": "forestCultureChildName",
+          "role": "naming",
+          "valid": true
+        },
+        {
+          "file": "js/systems/research.js",
+          "symbol": "TECHNOLOGIES",
+          "role": "woodland branch",
+          "valid": true
+        },
+        {
+          "file": "js/systems/resource-geography.js",
+          "symbol": "harvestForest",
+          "role": "grove guard",
+          "valid": true
+        }
+      ],
+      "tests": [
+        {
+          "file": "tests/systems/forest-culture.test.js",
+          "valid": true
+        }
+      ],
+      "source": "js/world/forest-culture.js",
+      "note": "30 player-facing forest-culture requirements from FOREST_CULTURE_REQUIREMENTS; each names its live consumer in the atlas.",
       "probeFunction": null,
       "probeClimate": "temperate",
       "probeExtra": {},

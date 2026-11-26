@@ -55,14 +55,23 @@ export const TECHNOLOGIES = Object.freeze([
     { id: "hospitals", branch: "medicine", label: "Hospitals", cost: 150, requires: ["epidemiology"], effects: { mortality: 0.05, legitimacy: 0.02 }, description: "Wards, trained nurses and a common casebook keep the sick out of the household." },
     { id: "vaccination", branch: "medicine", label: "Vaccination", cost: 220, requires: ["hospitals"], effects: { mortality: 0.08, foodDemand: -0.02 }, description: "A deliberate, recorded exposure turns a lethal season into a mild one." },
     { id: "standing-bureaucracy", branch: "statecraft", label: "Standing bureaucracy", cost: 160, requires: ["administration"], effects: { tax: 0.03, research: 0.05 }, description: "Salaried clerks outlive the minister who appointed them." },
-    { id: "great-charter", branch: "statecraft", label: "Great charter", cost: 240, requires: ["standing-bureaucracy"], effects: { legitimacy: 0.04, trade: 0.04, tax: 0.02 }, description: "A sealed charter binds the crown's successor, the guilds and the towns in one law." }
+    { id: "great-charter", branch: "statecraft", label: "Great charter", cost: 240, requires: ["standing-bureaucracy"], effects: { legitimacy: 0.04, trade: 0.04, tax: 0.02 }, description: "A sealed charter binds the crown's successor, the guilds and the towns in one law." },
+    // 1.2.23.1.206–210: the woodland branch grows out of the practical forest
+    // offices. Its completed ids are read by the culture ledger; the ordinary
+    // research modifiers are deliberately modest so it remains a real choice.
+    { id: "woodland-forestry", branch: "woodland", label: "Woodland forestry", cost: 22, requires: [], effects: { foodDemand: -0.02, buildCost: 0.01 }, description: "Foresters codify coppice, standards and leave-trees; the wood yields more without losing its old growth." },
+    { id: "woodland-herb-lore", branch: "woodland", label: "Woodland herb lore", cost: 36, requires: ["woodland-forestry"], effects: { mortality: 0.02 }, description: "Herb-wives, foresters and shrine druids write a regional materia medica of bark, berry, fungus and root." },
+    { id: "woodland-astronomy", branch: "woodland", label: "Natural astronomy", cost: 52, requires: ["woodland-herb-lore"], effects: { foodDemand: -0.02, research: 0.03 }, description: "The solstice, the mast year and the first frost are read from the sky and entered into the forest calendar." },
+    { id: "woodland-cartography", branch: "woodland", label: "Woodland cartography", cost: 70, requires: ["woodland-astronomy"], effects: { trade: 0.03, research: 0.03 }, description: "Surveyed paths, boundary oaks and sacred places make the wood legible to wardens, pilgrims and carriers." },
+    { id: "woodland-natural-philosophy", branch: "woodland", label: "Natural philosophy", cost: 92, requires: ["woodland-astronomy", "woodland-cartography"], effects: { research: 0.05, legitimacy: 0.02 }, description: "A written philosophy of balance and use binds the forester's practice, the druid's calendar and the crown's law." }
 ]);
 
 export const RESEARCH_BRANCHES = Object.freeze([
     { id: "agriculture", label: "Agriculture", description: "Fields, water, animals and stored grain." },
     { id: "craft", label: "Craft", description: "Materials, workshops, standards and machines." },
     { id: "medicine", label: "Medicine", description: "Herbs, anatomy, sanitation and public health." },
-    { id: "statecraft", label: "Statecraft", description: "Law, census, diplomacy and administration." }
+    { id: "statecraft", label: "Statecraft", description: "Law, census, diplomacy and administration." },
+    { id: "woodland", label: "Woodland", description: "Forestry, herb lore, natural astronomy, cartography and natural philosophy." }
 ]);
 
 const TECH_BY_ID = new Map(TECHNOLOGIES.map(tech => [tech.id, tech]));

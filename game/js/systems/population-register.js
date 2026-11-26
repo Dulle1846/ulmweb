@@ -51,7 +51,7 @@ const PROFESSION_TRAITS = Object.freeze({
     Resident: ["sociability", "patience"]
 });
 const JOB_LABELS = Object.freeze({
-    farmer: "Farmer", farmhand: "Farmhand", woodcutter: "Woodcutter", forester: "Forester",
+    farmer: "Farmer", farmhand: "Farmhand", woodcutter: "Woodcutter", forester: "Forester", druid: "Druid",
     quarryman: "Quarryman", miner: "Miner", miller: "Miller", baker: "Baker",
     mason: "Mason", soldier: "Soldier", healer: "Healer", priest: "Cleric",
     scholar: "Scholar", merchant: "Merchant", innkeeper: "Innkeeper", courtier: "Courtier",
@@ -62,7 +62,7 @@ const JOB_LABELS = Object.freeze({
 const BUILDING_PROFESSIONS = Object.freeze({
     [TYPE.FARM]: "Farmer", [TYPE.LUMBER]: "Woodcutter", [TYPE.QUARRY]: "Quarryman",
     [TYPE.GOLDMINE]: "Miner", [TYPE.MILL]: "Miller", [TYPE.BAKERY]: "Baker",
-    [TYPE.TAVERN]: "Innkeeper", [TYPE.TEMPLE]: "Cleric", [TYPE.MARKET]: "Merchant",
+    [TYPE.TAVERN]: "Innkeeper", [TYPE.TEMPLE]: "Cleric", [TYPE.SHRINE]: "Druid", [TYPE.MARKET]: "Merchant",
     [TYPE.MASON]: "Mason", [TYPE.FORESTER]: "Forester", [TYPE.CLINIC]: "Healer",
     [TYPE.TOWN_HALL]: "Clerk", [TYPE.SCHOOL]: "Teacher", [TYPE.BATHHOUSE]: "Bathkeeper",
     [TYPE.GUILDHALL]: "Guildmaster", [TYPE.WATCHHOUSE]: "Watchman", [TYPE.BREWERY]: "Brewer",

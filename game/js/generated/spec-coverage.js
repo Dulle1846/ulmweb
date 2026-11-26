@@ -2,13 +2,13 @@
 export const SPEC_COVERAGE = Object.freeze({
   "version": 2,
   "generatedBy": "scripts/spec-audit.mjs",
-  "commit": "550849884df247fcd7b1af7b7694312ef758c557",
-  "sourceHash": "7921cfa05eaf846f0d39bf86761da34259ee3b205f8390101d58fc682ae5e2a7",
+  "commit": "7ede2fc6f5558680e01cef2d96848400e6c1f493",
+  "sourceHash": "8124dfa8189f0e070138d8b260074099982769152020f3adde8ca58f07597da3",
   "totals": {
-    "total": 1681,
-    "implemented": 1681,
+    "total": 1711,
+    "implemented": 1711,
     "open": 0,
-    "sections": 40
+    "sections": 41
   },
   "nextSection": null,
   "collisions": [
@@ -557,6 +557,14 @@ export const SPEC_COVERAGE = Object.freeze({
       "implemented": 30,
       "open": 0,
       "source": "js/world/forest-industries.js"
+    },
+    {
+      "id": "1.2.23.1.181-210",
+      "title": "Forest culture, religion, society and knowledge",
+      "total": 30,
+      "implemented": 30,
+      "open": 0,
+      "source": "js/world/forest-culture.js"
     },
     {
       "id": "2.1",

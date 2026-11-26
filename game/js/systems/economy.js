@@ -49,6 +49,7 @@ export const BUILDING_WORKFORCE = Object.freeze({
     [TYPE.MASON]: 1,
     [TYPE.FORESTER]: 1,
     [TYPE.CLINIC]: 1,
+    [TYPE.SHRINE]: 1,
     [TYPE.MARKET]: 1,
     [TYPE.TOWN_HALL]: 2,
     [TYPE.SCHOOL]: 2,

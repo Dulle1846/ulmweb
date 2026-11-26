@@ -21,6 +21,7 @@ import { getForestHabitatAt } from "./resource-geography.js";
 import { getHeightAt, getMoistureAt, getTemperatureAt } from "../world/world.js";
 import { seasonalState } from "../world/season.js";
 import { getHazardPastureCapacityFactor } from "./hazard-modifiers.js";
+import { sacredGroveTileAt } from "../world/sacred-groves.js";
 
 const VERSION = 1;
 const MAX_HERDS = 240;
@@ -832,6 +833,10 @@ export function forestHerdGrowth({ population, capacity, reproduction, mortality
 // is the condition of that herd at the moment of the shot, not a fixed loot
 // tier. Pressure rises with the share removed and only decays over later days.
 export function harvestForestGameAt(x, y, requested = 1) {
+    // A sacred grove is a refuge for game as well as trees. Hunters can still
+    // take animals on every neighbouring tile, but not inside the protected
+    // island itself.
+    if (sacredGroveTileAt(x, y)) return null;
     const model = ensureForestFauna();
     if (!model) return null;
     const tx = Math.floor(number(x, -1));
