@@ -35,7 +35,8 @@ import { renderBiomePanel } from "./biome-panel.js";
 import { invalidateForestAtlasSurvey, renderForestAtlasPanel } from "./forest-atlas-panel.js";
 import { timberMarketSummary, sellRegionalTimber, TIMBER_SALE_LOT } from "../systems/regional-timber-market.js";
 import { FOREST_WORKS_MODES, SAW_PROFILES, INDUSTRY_GOODS } from "../world/forest-industries.js";
-import { forestWorksStatus, runForestWorks, sawProfileIdFor, sellForestIndustryGood, setForestWorksMode, setSawProfile } from "../systems/forest-industries.js";
+import { forestMasteryFor, forestWorksStatus, runForestWorks, sawProfileIdFor, sellForestIndustryGood, setForestWorksMode, setSawProfile, supplyClinicMedicine } from "../systems/forest-industries.js";
+import { deliverForestCommission } from "../systems/forest-guild.js";
 import { renderScenarioPanel } from "./scenario-panel.js";
 import { renderWorldMapPanel } from "./world-map-panel.js";
 import { closeTradeRoute, getWorldMapSnapshot, openTradeRoute, pressRegionClaim, setFrontierWatch } from "../systems/world-map.js";
@@ -792,7 +793,7 @@ function buildings(){
   const worksStatus=building.type===TYPE.FOREST_WORKS?forestWorksStatus(building):null;
   const worksMode=worksStatus?.mode||null;
   const worksLast=building.lastForestBatch?"Last batch: "+building.lastForestBatch.label+" → "+Object.entries(building.lastForestBatch.output||{}).map(([good,value])=>value+" "+(INDUSTRY_GOODS[good]?.label||good)).join(" + ")+(building.lastForestBatch.style?" · "+building.lastForestBatch.style:"")+(building.lastForestBatch.quality?" · "+building.lastForestBatch.quality.grade:""):"No batch has run yet";
-  const forestWorksField=building.type===TYPE.FOREST_WORKS?'<span class="building-detail-wide">Forest industry<strong><select class="forest-mode-select" data-forest-mode="'+esc(building.id)+'" aria-label="Forest industry for '+esc(name)+'">'+Object.values(FOREST_WORKS_MODES).map(mode=>'<option value="'+esc(mode.id)+'"'+(worksMode?.id===mode.id?' selected':'')+'>'+esc(mode.label)+'</option>').join("")+'</select></strong><small>'+esc(worksMode?.description||"Choose a workshop")+' · Site: '+esc(worksStatus?.siteLabel||"unknown")+(worksStatus?.style?" · Style: "+esc(worksStatus.style.label):"")+' · '+esc(worksLast)+'</small><small class="'+(worksStatus?.ok?'is-balanced':'')+'">'+esc(worksStatus?.reason||worksStatus?.mode?.use||"Ready")+'</small><button type="button" class="command-choice" data-run-forest-works="'+esc(building.id)+'"'+(worksStatus?.ok?'':' disabled title="'+esc(worksStatus?.reason||"Workshop unavailable")+'"')+'>RUN ONE BATCH</button></span>':"";
+  const forestWorksField=building.type===TYPE.FOREST_WORKS?'<span class="building-detail-wide">Forest industry<strong><select class="forest-mode-select" data-forest-mode="'+esc(building.id)+'" aria-label="Forest industry for '+esc(name)+'">'+Object.values(FOREST_WORKS_MODES).map(mode=>'<option value="'+esc(mode.id)+'"'+(worksMode?.id===mode.id?' selected':'')+'>'+esc(mode.label)+'</option>').join("")+'</select></strong><small>'+esc(worksMode?.description||"Choose a workshop")+' · Site: '+esc(worksStatus?.siteLabel||"unknown")+(worksStatus?.style?" · Style: "+esc(worksStatus.style.label):"")+' · '+esc(worksLast)+'</small><small class="building-mastery" data-forest-mastery="'+number(forestMasteryFor(building).level)+'">Mastery: '+esc(forestMasteryFor(building).label)+' · '+number(forestMasteryFor(building).batches)+' batches'+(forestMasteryFor(building).nextAt!==null?' · next '+esc(forestMasteryFor(building).nextLabel)+' at '+number(forestMasteryFor(building).nextAt):' · highest rank')+'</small><small class="'+(worksStatus?.ok?'is-balanced':'')+'">'+esc(worksStatus?.reason||worksStatus?.mode?.use||"Ready")+'</small><button type="button" class="command-choice" data-run-forest-works="'+esc(building.id)+'"'+(worksStatus?.ok?'':' disabled title="'+esc(worksStatus?.reason||"Workshop unavailable")+'"')+'>RUN ONE BATCH</button></span>':"";
   const inventory=getInventorySummary(building);
   const jobs=getBuildingLogisticsStatus(building)||[];
   const supply=getBuildingSupplyReason(building)||getServiceReason(building);
@@ -1971,6 +1972,20 @@ export function setupManagementUI(){
    const result=entity?runForestWorks(entity):{ok:false,reason:"Building not found"};
    if(result.ok){toast("FOREST BATCH · "+Object.entries(result.output).map(([good,value])=>value+" "+(INDUSTRY_GOODS[good]?.label||good)).join(" + ")+(result.style?" · "+result.style.label:""));renderUI();render();}
    else toast(String(result.reason||"FOREST BATCH FAILED").toUpperCase());
+   return;
+  }
+  const commission=e.target.closest("[data-forest-commission]");
+  if(commission){
+   const result=deliverForestCommission(commission.dataset.forestCommission);
+   if(result.ok){toast("GUILD COMMISSION FILLED · +"+result.gold+" GOLD · +"+result.renown+" RENOWN"+(result.tier?" · TIER "+result.tier:''));renderUI();render();}
+   else toast(String(result.reason||"COMMISSION FAILED").toUpperCase());
+   return;
+  }
+  const clinic=e.target.closest("[data-clinic-medicine]");
+  if(clinic){
+   const result=supplyClinicMedicine(Number(clinic.dataset.clinicMedicine||6));
+   if(result.ok){toast("CLINIC SUPPLIED · "+result.amount+" MEDICINE · STORE "+result.stock+" / "+result.capacity);renderUI();render();}
+   else toast(String(result.reason||"CLINIC SUPPLY FAILED").toUpperCase());
    return;
   }
   const industrySell=e.target.closest("[data-industry-sell]");

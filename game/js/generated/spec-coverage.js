@@ -2,8 +2,8 @@
 export const SPEC_COVERAGE = Object.freeze({
   "version": 2,
   "generatedBy": "scripts/spec-audit.mjs",
-  "commit": "2917112324bf3e220fcc0efad8f4a3ef38a10442",
-  "sourceHash": "ca53ee8c458d1725bf400dea32bd30027d3f5fc6af407267cebef0bc08c8b956",
+  "commit": "ff7ef4e18711af2edc5d94308db3a2cbd5e4ee03",
+  "sourceHash": "f6568550d7b6a2344205d27830d2d96c4ca61dbc9ea4391d7802997fd7508ef5",
   "totals": {
     "total": 1680,
     "implemented": 1680,

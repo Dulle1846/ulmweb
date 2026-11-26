@@ -22,6 +22,8 @@ import {
     SAW_PROFILES, WOOD_QUALITY_CLASSES,
 } from "../world/forest-industries.js";
 import { forestIndustrySummary } from "../systems/forest-industries.js";
+import { forestGuildSummary } from "../systems/forest-guild.js";
+import { MEDICINE_MAX_STOCK } from "../systems/health.js";
 import {
     forestStewardshipAt, forestSuccessionAt, forestSuccessionChronicle,
     forestSuccessionStats,
@@ -534,6 +536,45 @@ function industryInputLabel(mode) {
     return parts.length ? parts.join(" · ") : "no material input";
 }
 
+function guildBlock() {
+    const guild = forestGuildSummary();
+    const cards = guild.active.map(entry => '<article class="forest-atlas__commission" data-forest-commission-card="' + esc(entry.id) + '" data-forest-commission-good="' + esc(entry.good) + '">'
+        + '<header><span>' + esc(entry.patronId.slice(0, 2).toUpperCase()) + '</span><b>' + esc(entry.title) + '</b></header>'
+        + '<div class="forest-atlas__commission-main"><strong>' + number(entry.quantity) + ' ' + esc(entry.label) + '</strong>'
+        + '<span>' + (entry.ready ? 'READY' : number(entry.stock) + ' IN STORE') + '</span></div>'
+        + '<p>' + esc(entry.story) + '</p>'
+        + '<div class="forest-atlas__commission-reward"><span>+' + number(entry.rewardGold) + ' G</span><span>+' + number(entry.rewardRenown) + ' RENOWN</span><span>' + number(entry.daysLeft) + ' DAYS</span></div>'
+        + '<button type="button" class="command-choice" data-forest-commission="' + esc(entry.id) + '"' + (entry.ready ? '' : ' disabled') + '>FILL COMMISSION</button>'
+        + '<small>' + esc(entry.use) + '</small></article>').join("");
+    const history = guild.history.length
+        ? guild.history.map(entry => '<div class="forest-atlas__guild-history-row" data-guild-history="' + esc(entry.outcome) + '"><span>' + number(entry.year) + '</span><b>' + esc(entry.label) + ' ×' + number(entry.quantity) + '</b><small>' + esc(entry.patronName) + ' · ' + (entry.outcome === "expired" ? "LAPSED" : '+' + number(entry.rewardGold) + ' G') + '</small></div>').join("")
+        : '<p class="command-note">No commission has been filled or lapsed yet.</p>';
+    const medicine = Math.max(0, Math.floor(Number(state.health?.medicineStock) || 0));
+    const medicineAvailable = Math.max(0, Math.floor(Number(state.entities.reduce((sum, entity) => {
+        if (!entity || entity.dead || !entity.warehouse || !Array.isArray(entity.warehouse.filters) || !entity.warehouse.filters.includes("medicine")) return sum;
+        const stored = Math.max(0, Number(entity.warehouse.stored?.medicine) || 0);
+        const reserved = Math.max(0, Number(entity.warehouse.reservedOut?.medicine) || 0);
+        return sum + Math.max(0, stored - reserved);
+    }, 0)) || 0));
+    return '<div class="command-section-title">FOREST GUILD · LIVING COMMISSION BOARD</div>'
+        + '<div class="command-summary forest-atlas__guild" data-forest-guild="' + number(guild.completed) + '" data-forest-guild-tier="' + number(guild.tier) + '" data-forest-guild-renown="' + number(guild.renown) + '" data-forest-guild-active="' + number(guild.active.length) + '">'
+        + '<div><small>GUILD RENOWN</small><strong>' + number(guild.renown) + '</strong></div>'
+        + '<div><small>STANDING</small><strong>TIER ' + number(guild.tier) + ' · ' + esc(guild.tierTitle) + '</strong></div>'
+        + '<div><small>COMMISSION PREMIUM</small><strong>+' + number(guild.premiumPct) + '%</strong></div>'
+        + '<div><small>FILLED / LAPSED</small><strong>' + number(guild.completed) + ' / ' + number(guild.expired) + '</strong></div>'
+        + '<div><small>ACTIVE ORDERS</small><strong>' + number(guild.active.length) + ' / ' + number(guild.activeLimit) + '</strong></div>'
+        + '<div><small>LIFETIME GUILD GOLD</small><strong>' + number(guild.totalGold) + ' G</strong></div></div>'
+        + '<div class="forest-atlas__guild-progress" data-guild-progress="' + Math.round(guild.progress * 100) + '"><span style="width:' + Math.round(guild.progress * 100) + '%"></span></div>'
+        + '<p class="command-note">' + (guild.nextTier ? number(guild.nextTier.remaining) + ' renown to tier ' + number(guild.nextTier.tier) + ' · ' + esc(guild.nextTier.title) + '. ' : 'The highest guild tier is held. ')
+        + 'Each filled order consumes real, unreserved warehouse stock and pays gold, renown and faction standing. A lapsed order costs 3 renown. Every filled or lapsed order is replaced immediately from 16 patrons and all 20 forest goods, so the board never runs out.</p>'
+        + '<div class="forest-atlas__commission-grid">' + (cards || '<p class="command-note">The guild board is being drawn.</p>') + '</div>'
+        + '<div class="forest-atlas__clinic" data-clinic-medicine-stock="' + number(medicine) + '" data-clinic-medicine-available="' + number(medicineAvailable) + '">'
+        + '<div><small>CLINIC MEDICINE STORE</small><strong>' + number(medicine) + ' / ' + number(MEDICINE_MAX_STOCK) + ' DOSES</strong><p>' + (medicineAvailable > 0 ? number(medicineAvailable) + ' doses sit unreserved in forest-works warehouses.' : 'No warehouse holds unreserved medicine. Run the apothecary or buy medicine from the forest exchange.') + '</p></div>'
+        + '<button type="button" class="command-choice" data-clinic-medicine="6"' + (medicineAvailable > 0 && medicine < MEDICINE_MAX_STOCK ? '' : ' disabled') + '>SUPPLY 6 DOSES</button></div>'
+        + '<details class="forest-atlas__field-guide" data-forest-guild-history="' + number(guild.history.length) + '"><summary><span>GUILD LEDGER · LAST ' + number(guild.historyLimit) + '</span><strong>Every order leaves a record</strong><em>Filled and lapsed commissions</em></summary>'
+        + '<div class="forest-atlas__guild-history">' + history + '</div></details>';
+}
+
 function industryBlock() {
     const summary = forestIndustrySummary();
     const modeCards = Object.values(FOREST_WORKS_MODES).map(mode => {
@@ -570,7 +611,8 @@ function industryBlock() {
         + '<div><small>BATCHES RUN</small><strong>' + number(summary.batches) + '</strong></div>'
         + '<div><small>RAW CONSUMED</small><strong>' + number(summary.rawConsumed) + '</strong></div>'
         + '<div><small>FURNITURE PRESTIGE</small><strong>+' + Math.round(summary.furniturePremium * 100) + '%</strong></div></div>'
-        + '<p class="command-note">Every Forest Works is a real building with its own selected industry. Standard inputs arrive by carrier from your warehouses; resin, bark, cork and other raw materials come from the live forest-gathering ledger of the wood you actually manage. Output is ordinary physical stock, hauled by the same carriers and sold here from real warehouses. ' + (last ? 'Last batch: ' + esc(last.label) + ' → ' + esc(Object.entries(last.output || {}).map(([good, value]) => value + ' ' + (INDUSTRY_GOODS[good]?.label || good)).join(' + ')) + ' · ' + esc(last.style || 'standard') + ' · ' + esc(last.quality?.grade || 'standard') + '.' : 'No workshop has completed a batch yet.') + '</p>'
+        + '<p class="command-note">Every Forest Works is a real building with its own selected industry. Standard inputs arrive by carrier from your warehouses; resin, bark, cork and other raw materials come from the live forest-gathering ledger of the wood you actually manage. Output is ordinary physical stock, hauled by the same carriers and sold here from real warehouses. ' + (last ? 'Last batch: ' + esc(last.label) + ' → ' + esc(Object.entries(last.output || {}).map(([good, value]) => value + ' ' + (INDUSTRY_GOODS[good]?.label || good)).join(' + ')) + ' · ' + esc(last.style || 'standard') + ' · ' + esc(last.quality?.grade || 'standard') + (last.mastery ? ' · ' + esc(last.mastery.label) + ' (' + number(last.mastery.batches) + ' batches)' : '') + '.' : 'No workshop has completed a batch yet.') + '</p>'
+        + guildBlock()
         + '<details class="forest-atlas__field-guide" data-industry-catalogue="' + Object.keys(FOREST_WORKS_MODES).length + '"><summary><span>WORKSHOP CATALOGUE · ' + Object.keys(FOREST_WORKS_MODES).length + ' PATHS</span><strong>From charcoal to silk</strong><em>One building type, one site-specific choice at a time</em></summary>'
         + '<div class="forest-atlas__industry-grid">' + modeCards + '</div></details>'
         + '<details class="forest-atlas__field-guide" data-industry-market="' + number(summary.rows.length) + '"><summary><span>FOREST GOODS EXCHANGE</span><strong>Finished wares, real stock</strong><em>Prices move with season and how much you hold</em></summary>'

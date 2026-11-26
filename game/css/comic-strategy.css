@@ -478,6 +478,32 @@
 .forest-atlas__chronicle li[data-forest-chronicle="burn"],
 .forest-atlas__chronicle li[data-forest-chronicle="drain"]{color:#203b55;font-weight:700}
 .forest-atlas__chronicle b{color:var(--color-antique-gold);font-family:var(--ui-number-font,monospace)}
+.forest-atlas__guild{border-left:2px solid rgba(185,154,89,.65)}
+.forest-atlas__guild-progress{height:5px;margin:0 0 7px;border-radius:999px;background:rgba(0,0,0,.32);overflow:hidden}
+.forest-atlas__guild-progress span{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#6f8a58,#d8b36a)}
+.forest-atlas__commission-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:6px;padding:2px 0 8px}
+.forest-atlas__commission{display:flex;min-width:0;flex-direction:column;gap:4px;padding:8px;border:1px solid rgba(185,154,89,.42);border-radius:5px;background:rgba(34,31,24,.42)}
+.forest-atlas__commission header{display:flex;gap:6px;align-items:center;padding-bottom:4px;border-bottom:1px solid rgba(185,154,89,.22)}
+.forest-atlas__commission header span{display:grid;place-items:center;width:18px;height:18px;border:1px solid rgba(185,154,89,.55);border-radius:50%;color:var(--color-antique-gold);font:700 6px/1 var(--ui-number-font,monospace)}
+.forest-atlas__commission header b{color:var(--ui-paper-muted);font:700 6px/1.25 var(--ui-body-font,sans-serif);letter-spacing:.07em;text-transform:uppercase}
+.forest-atlas__commission-main{display:flex;gap:8px;align-items:baseline;justify-content:space-between}
+.forest-atlas__commission-main strong{color:var(--ui-paper-text);font:700 10px/1.2 var(--ui-title-font,Georgia,serif)}
+.forest-atlas__commission-main span{padding:2px 5px;border-radius:3px;background:rgba(120,160,110,.18);color:#9fc397;font:700 6px/1.2 var(--ui-number-font,monospace);white-space:nowrap}
+.forest-atlas__commission p{margin:0;color:var(--ui-paper-muted);font:400 7px/1.4 var(--ui-body-font,sans-serif)}
+.forest-atlas__commission-reward{display:flex;flex-wrap:wrap;gap:3px 6px}
+.forest-atlas__commission-reward span{padding:2px 5px;border:1px solid var(--ui-line);border-radius:3px;color:var(--color-antique-gold);font:700 6px/1.2 var(--ui-number-font,monospace)}
+.forest-atlas__commission>small{color:var(--ui-paper-muted);font:400 6px/1.3 var(--ui-body-font,sans-serif)}
+.forest-atlas__clinic{display:flex;gap:10px;align-items:center;justify-content:space-between;margin:0 0 8px;padding:8px 9px;border:1px solid rgba(120,160,110,.42);border-radius:5px;background:rgba(38,52,38,.24)}
+.forest-atlas__clinic div{display:flex;min-width:0;flex-direction:column;gap:2px}
+.forest-atlas__clinic small{color:var(--ui-paper-muted);font:700 6px/1.2 var(--ui-body-font,sans-serif);letter-spacing:.08em}
+.forest-atlas__clinic strong{color:var(--ui-paper-text);font:700 9px/1.2 var(--ui-title-font,Georgia,serif)}
+.forest-atlas__clinic p{margin:0;color:var(--ui-paper-muted);font:400 6.5px/1.35 var(--ui-body-font,sans-serif)}
+.forest-atlas__guild-history{display:grid;gap:3px;padding:2px 8px 8px}
+.forest-atlas__guild-history-row{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:7px;align-items:baseline;padding:4px 6px;border:1px solid var(--ui-line);border-radius:3px;background:rgba(20,24,20,.26)}
+.forest-atlas__guild-history-row span{color:var(--color-antique-gold);font:700 6px/1.2 var(--ui-number-font,monospace)}
+.forest-atlas__guild-history-row b{color:var(--ui-paper-text);font:700 7px/1.25 var(--ui-body-font,sans-serif)}
+.forest-atlas__guild-history-row small{color:var(--ui-paper-muted);font:400 6px/1.3 var(--ui-body-font,sans-serif);text-align:right}
+.forest-atlas__guild-history-row[data-guild-history="expired"]{border-color:rgba(183,139,99,.45)}
 @media(max-width:620px){
  .timber-market__row{grid-template-columns:minmax(0,1fr) auto}
  .timber-market__sell{grid-column:1 / -1}
@@ -489,4 +515,6 @@
  .forest-atlas__field-guide>summary em{grid-column:1}
  .forest-atlas__region>summary{flex-direction:column;align-items:flex-start}
  .forest-atlas__region>summary small{text-align:left}
+ .forest-atlas__commission-grid{grid-template-columns:1fr}
+ .forest-atlas__clinic{flex-direction:column;align-items:flex-start}
 }

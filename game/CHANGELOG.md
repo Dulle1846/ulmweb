@@ -1,13 +1,104 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.75.0`
-**Next development line:** `3.76.0-dev`
+**Current production version:** `3.76.0`
+**Next development line:** `3.77.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
 **Last repository verification:** 2026-11-26 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.76.0 — Living guilds, master workshops and clinic medicine
+
+3.75.0 built the regional forest economy; 3.76.0 makes it keep asking the
+player for something. The twenty finished goods now have a recurring consumer,
+warehouse-backed guild commissions, a permanent renown track and a real path
+into the clinic. The report is deliberately concrete: 30 of 30 requested
+points from 1.2.23.1.151–180 remain implemented, covering 18 regional timbers,
+8 quality classes, 5 saw profiles, 17 Forest Works paths, 20 finished goods,
+10 regional furniture styles and 1,680 audited requirements. This release adds
+the missing long tail on top of that chain.
+
+- **Forest Guild commission board.** Sixteen named patrons cover all twenty
+  finished goods. Three orders are always active; every filled or lapsed order
+  is replaced immediately from a saved deterministic stream. A delivery
+  withdraws real unreserved warehouse stock, pays gold, grants renown, raises
+  guild standing and moves the patron's political faction. There is no separate
+  currency and no free resource: a commission that cannot be supplied stays on
+  the board until it is filled or lapses.
+- **Ten renown tiers and an endless market premium.** Renown 0 → 760 passes
+  through Harbour Factor, Merchant Factor, Guild Factor, Guild Master, Grand
+  Master, Trade Magnate, Forest Lord, Crown Purveyor, Lord of the Wood and
+  Eternal Patron. Each tier permanently raises the exchange premium for every
+  forest-industry good, up to +18 %, so old deliveries keep improving new
+  sales. Patrons unlock by tier, from charcoal and fish to silk, spices, rubber,
+  cork and tropical construction materials.
+- **A twelve-entry guild ledger.** Filled and lapsed orders are archived with
+  patron, good, quantity, year, gold and outcome. A lapsed order costs three
+  renown and a little guild legitimacy; the board then rotates instead of
+  stalling. This gives a 25-year realm a visible record of its forest trade.
+- **Per-building workshop mastery.** Every Forest Works saves its own batch
+  count. Apprentice → Journeyman (12 batches) → Master (36) → Guild Master (80)
+  adds a permanent furniture-prestige premium and a deterministic bonus unit
+  every 8, 5 or 3 batches. Bonus output still respects the shared reserve
+  ceilings and the physical output store, so mastery cannot create free stock.
+- **Clinic medicine supply.** The apothecary's medicine can now be withdrawn
+  from a real forest-works warehouse and placed into the clinic's finite
+  60-dose public store. The Atlas reports the available warehouse doses and the
+  current clinic stock. This closes the loop from managed forest → resin/herb
+  gathering → apothecary batch → carrier → warehouse → treated case.
+- **Player-facing Atlas block and dossier feedback.** The Forest Atlas now
+  contains the live commission board, renown progress, patron cards, rewards,
+  deadlines, history and the clinic supply action. The building dossier shows
+  the workshop's mastery rank, completed batches and next rank. Both use the
+  existing command-panel render and event delegation; no new screen or modal.
+- **Save compatibility.** Guild state lives under the existing
+  `economy.productionChains` block, so the economy restore keeps it without a
+  migration. Mastery is a single integer on the building entity. Old saves open
+  with a freshly drawn board and no lost progress.
+- **Verification.** Six focused system tests cover catalogue coverage,
+  deterministic boards, delivery, expiry/rotation, mastery bonuses and clinic
+  withdrawal. The browser test fills a real commission and supplies the clinic,
+  then still sells charcoal, runs a Forest Works batch and checks the regional
+  building form. The 25-year campaign remains green.
+
+### How much was added in this release
+
+| Area | Before 3.76.0 | Added in 3.76.0 |
+| --- | ---: | ---: |
+| Requested forest-economy points | 30 / 30 | 0 new points; all 30 now have a recurring consumer |
+| Guild patrons | 0 | 16 |
+| Active commissions | 0 | 3, replaced forever |
+| Renown tiers | 0 | 10 |
+| Archived commission records | 0 | 12 |
+| Mastery ranks per workshop | 0 | 4 |
+| Clinic supply chain | market-only medicine | real warehouse → 60-dose clinic store |
+| Browser checks | 5 | +2 recurring-consumer checks |
+| Focused system tests | 8 forest-industry tests | +6 guild/mastery/clinic tests |
+
+### Why this is deeper simulation, not more menu text
+
+Every new number has a physical or political consumer. A commission is not
+completed by opening a panel: it reads `warehouse.stored`, refuses reserved
+stock, writes a goods movement, writes a gold movement and changes the same
+`politics` object used by court, faith and diplomacy. A workshop's mastery is
+earned only by `runForestWorks` batches, and its bonus unit is written through
+`addLocalOutput` so the carrier and warehouse ledgers see it. Clinic medicine
+is withdrawn through `consumeFromWarehouse` and added through
+`addMedicineStock`, so outbreaks, healers and the existing treatment paths all
+read the same store. The loop is therefore: ecology → gathering → workshop →
+carrier → warehouse → guild/clinic → gold, renown, faction, health. Breaking any
+link is visible to the player.
+
+### Endless-content design that is now live
+
+The board is an infinite content generator with bounded state: 16 patrons ×
+multiple goods × tier-gated quantities × deterministic reward/quantity draws ×
+three rotating slots. New orders appear from the same fixed catalogue and a
+saved PRNG stream, so a 100-year realm can keep playing without unbounded
+history, new buildings or a second simulation. Future content can add patrons,
+goods or commission types to the catalogue without changing the runtime shape.
 
 ## 3.75.0 — The regional forest economy
 

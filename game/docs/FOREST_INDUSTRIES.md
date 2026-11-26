@@ -1,6 +1,6 @@
 # Regionale Waldwirtschaft 1.2.23.1.151–180
 
-**Status:** implementiert und als Spielmechanik verdrahtet (v3.75.0)
+**Status:** implementiert und als Spielmechanik verdrahtet (v3.76.0)
 **Datenmodell:** `js/world/forest-industries.js`
 **Laufzeit:** `js/systems/forest-industries.js`
 **Browser-Referenz:** `npm run test:forest-industry-ui`
@@ -260,6 +260,75 @@ Langfristig entstehen mehrere sich überlagernde Ziele:
 - **Arbeit:** Jede Werkstatt braucht Arbeitskräfte. Der Wald wird vom
   Rohstofflieferanten zum Arbeitgeber und zur Steuerbasis.
 
+## 3.76.0 — Lebendige Waldgilde, Meisterwerkstätten und Klinikversorgung
+
+Die dreißig Punkte waren vollständig gebaut, aber die zwanzig Fertigwaren hatten
+noch überwiegend nur einen Markt. 3.76.0 schließt diese Lücke mit drei echten,
+wiederkehrenden Verbrauchern. Der Bestand bleibt derselbe: **30/30 Punkte**,
+18 Holzarten, 8 Qualitätsklassen, 5 Sägeprofile, 17 Werkstattwege, 20 Güter,
+10 Möbelstile und 1.680 Audit-Anforderungen. Neu ist die lange Kette danach.
+
+### Was konkret hinzugekommen ist
+
+- **16 Gilden-Patrone** decken alle zwanzig Fertigwaren ab. Jeder Patron hat
+  einen politischen Stand, eine eigene Bestellung, einen Auftragstext und eine
+  Mindeststufe. Die Palette reicht von der Worshipful Company of Goldsmiths
+  (Holzkohle, Potasche) über die Crown Navy (Schiffbauholz, Pech, Teer) bis zur
+  Society of Woodland Explorers (Kautschuk, Bambusfaser, Palmwedel, Gewürze).
+- **Drei aktive Aufträge** sind immer auf dem Brett. Nach Lieferung oder Ablauf
+  wird sofort ein neuer Auftrag aus dem gespeicherten deterministischen Strom
+  gezogen. Es gibt keine endliche Auftragsliste und keinen unbegrenzten
+  Verlauf: nur drei aktive Aufträge und die letzten zwölf Archivzeilen.
+- **Zehn Renown-Stufen** von Harbour Factor (0) bis Eternal Patron (760).
+  Jede Stufe erhöht den Marktpreis aller Waldwaren dauerhaft um +2 %, maximal
+  +18 %. Höhere Stufen schalten exotischere Patrone und größere, teurere
+  Lieferungen frei. Renown ist damit ein Langzeitfortschritt, der neue Verkäufe
+  besser macht, statt nur eine Zahl im Dossier zu sein.
+- **Echte Lieferung:** `deliverForestCommission` prüft zuerst den tatsächlich
+  unreservierten Lagerbestand. Ist genug Ware da, werden die Güter über
+  `consumeFromWarehouse` aus den passenden Lagerhäusern entnommen, als
+  Warenbewegung gebucht und über `addResource("gold")` bezahlt. Fehlt Ware,
+  passiert nichts; es wird keine Teilmenge verbraucht und kein Gold erzeugt.
+- **Gildenpolitik:** Eine Lieferung erhöht Gildenruf und Legitimität und bewegt
+  die Fraktion des Patrons über `applyPoliticalEffects`. Ein abgelaufener Auftrag
+  kostet 3 Renown und etwas Gildenruf; das Brett rotiert weiter. Dadurch hängen
+  Waldwirtschaft, Hof, Glaube und Diplomatie an derselben Politiksimulation.
+- **Vier Meisterschaftsstufen pro Werkstatt:** Apprentice (0 Batches),
+  Journeyman (12), Master (36), Guild Master (80). Jede Stufe speichert nur eine
+  Zahl auf dem Gebäude (`forestBatches`), gibt einen dauerhaften
+  Möbelprestigebonus und erzeugt ab Stufe 2 deterministisch eine zusätzliche
+  Einheit pro 8, 5 bzw. 3 Batches. Der Bonus läuft durch `addLocalOutput` und
+  respektiert das physische Ausgangslager sowie die Reservegrenzen.
+- **Klinikversorgung:** `supplyClinicMedicine(6)` entnimmt Medizin aus echten
+  Waldlagerhäusern und füllt den bestehenden öffentlichen Klinikvorrat
+  (`MEDICINE_MAX_STOCK = 60`). Die Atlas-Anzeige nennt den verfügbaren
+  Lagerbestand und den aktuellen Klinikbestand. Damit hat das Apotheker-Rezept
+  einen echten Spielerpfad bis zur behandelten Krankheit.
+- **UI:** Der Forest Atlas zeigt Gildenstand, Renown-Fortschritt, die drei
+  Patronkarten mit Menge, Lagerbestand, Belohnung, Frist und Lieferknopf, die
+  letzten zwölf Aufträge sowie die Klinikversorgung. Das Gebäude-Dossier zeigt
+  Meisterschaftsrang, Batches und nächste Stufe.
+
+### Wie das die Deepsimulation vertieft
+
+Die neue Kette ist bewusst keine parallele Wirtschaft. Ein Auftrag liest
+`warehouse.stored` und `warehouse.reservedOut`, schreibt eine Warenbewegung und
+eine Goldbewegung, verändert `politics` und landet im selben Ereignisprotokoll
+wie Steuern, Kriege und Gerichtsfälle. Die Werkstattmeisterschaft entsteht nur
+aus echten `runForestWorks`-Batches. Die Klinikmedizin läuft durch dieselbe
+Logistik und denselben Gesundheitsvorrat wie Ausbrüche und Heiler. So gilt:
+**Ökologie → Sammlung → Werkstatt → Carrier → Lager → Gilde/Klinik → Gold,
+Renown, Fraktion, Gesundheit.** Jede Unterbrechung ist für den Spieler sichtbar.
+
+### Endloser Content, aber begrenzter Zustand
+
+Das Brett ist ein unendlicher Generator mit festem Speicherbild: 16 Patrone,
+mehrere Güter pro Patron, stufenabhängige Mengen, deterministische Belohnungen
+und drei rotierende Plätze. Ein 100-Jahres-Reich kann immer weiter spielen,
+ohne dass die Historie unbegrenzt wächst oder ein zweiter Simulator entsteht.
+Neue Inhalte lassen sich später als weitere Patrone, Güter oder Auftragstypen
+in den Katalog aufnehmen, ohne die Laufzeitform zu ändern.
+
 ## Integration und Speicherung
 
 - **Daten:** `WOOD_PROPERTIES`, `WOOD_QUALITY_CLASSES`, `SAW_PROFILES`,
@@ -267,18 +336,26 @@ Langfristig entstehen mehrere sich überlagernde Ziele:
   `FOREST_INDUSTRY_REQUIREMENTS`.
 - **Laufzeit:** `runForestWorks`, `updateForestIndustry`, `forestWorksStatus`,
   `setForestWorksMode`, `setSawProfile`, `forestIndustrySummary`,
-  `industryQuote`, `industrySaleRows`, `sellForestIndustryGood`.
+  `industryQuote`, `industrySaleRows`, `sellForestIndustryGood`,
+  `supplyClinicMedicine`, `forestMasteryFor`; Gildenlaufzeit in
+  `js/systems/forest-guild.js` mit `ensureForestGuild`,
+  `deliverForestCommission`, `updateForestGuild`, `forestGuildSummary` und
+  `consumeIndustryGoodFromWarehouses`.
 - **Gebäude:** `TYPE.FOREST_WORKS = 89`, Baukosten 38 Holz / 18 Stein / 10 Gold,
   zwei Arbeitsplätze, Beruf `woodwright`.
 - **Logistik:** `RECIPES[TYPE.FOREST_WORKS]` ist ein `custom`-Rezept mit 48
   Input-/Output-Kapazität; `requestSupply` akzeptiert `acceptedInputs`.
-- **Save:** `sawProfile` und `forestMode` werden auf der Entität serialisiert
-  und beim Laden wiederhergestellt. Alte Saves bleiben ohne Migration gültig.
+- **Save:** `sawProfile`, `forestMode` und `forestBatches` werden auf der
+  Entität serialisiert und beim Laden wiederhergestellt. Der Gildenstand liegt
+  unter `economy.productionChains.forestGuild`; der bestehende
+  `restoreEconomyCycleState` erhält ihn ohne Migration. Alte Saves öffnen mit
+  einem frisch gezogenen Brett und ohne Fortschrittsverlust.
 - **Cadence:** `FOREST_INDUSTRY_INTERVAL = 30`, maximal acht Werkstätten pro
-  Lauf; keine unbegrenzte Arbeit pro Frame.
-- **UI:** Management-Dossier mit Sägeprofil, Werkstattmodus, Status,
-  Batch-Knopf und Verkauf; Forest Atlas mit 17-Pfad-Katalog, Markt und den 30
-  Anleitungen.
+  Lauf; `FOREST_GUILD_INTERVAL = 30`, höchstens drei ablaufende Aufträge pro
+  Prüfung. Keine unbegrenzte Arbeit pro Frame.
+- **UI:** Management-Dossier mit Sägeprofil, Werkstattmodus, Status, Batches,
+  Meisterschaft, Batch-Knopf und Verkauf; Forest Atlas mit 17-Pfad-Katalog,
+  Markt, Gildenbrett, Klinikversorgung und den 30 Anleitungen.
 
 ## Verifikation
 
@@ -291,7 +368,10 @@ npm run spec:audit
 ```
 
 Die Browser-Referenz baut eine echte Forest Works, öffnet den Atlas und den
-Feldguide, verkauft Holzkohle aus dem Lager, wechselt den Werkstattmodus und
-führt einen echten Batch aus. Der Spec-Audit führt alle dreißig Punkte als
-eigene Sektion `1.2.23.1.151–180`; jeder Eintrag nennt seinen echten
-Verbraucher. Der 25-Jahres-Feldzug bleibt deterministisch und grün.
+Feldguide, füllt einen lagerbasierten Gildenauftrag, versorgt die Klinik mit
+Medizin, verkauft Holzkohle aus dem Lager, wechselt den Werkstattmodus und
+führt einen echten Batch aus. Die fokussierten Systemtests prüfen zusätzlich
+deterministische Bretter, Ablauf/Rotation, Meisterschaftsboni und den
+Lagerabzug der Klinik. Der Spec-Audit führt alle dreißig Punkte als eigene
+Sektion `1.2.23.1.151–180`; jeder Eintrag nennt seinen echten Verbraucher. Der
+25-Jahres-Feldzug bleibt deterministisch und grün.

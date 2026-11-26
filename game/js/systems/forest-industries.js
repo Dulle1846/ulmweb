@@ -13,6 +13,9 @@ import {
     requestTimberSupply,
 } from "./logistics.js";
 import { ensureForestGathering } from "./forest-gathering.js";
+import { addMedicineStock, MEDICINE_MAX_STOCK } from "./health.js";
+import { consumeIndustryGoodFromWarehouses, forestGuildMarketPremium, industryWarehouseStock } from "./forest-guild.js";
+import { addLog } from "../core/event-log.js";
 import { getForestHabitatAt } from "./resource-geography.js";
 import { REGIONAL_TIMBER_KEYS, regionalTimberGood } from "../world/regional-forests.js";
 import {
@@ -28,6 +31,30 @@ const SITE_CACHE = new Map();
 // Finished goods are useful, but not an infinite sink. The ceiling is per good
 // across every store and carrier, so a workshop cannot fill the realm with
 // furniture while the player is looking elsewhere.
+// Per-building mastery grows from completed batches. It is saved on the
+// building as a single integer, gives a deterministic bonus unit on a fixed
+// cadence, and adds a permanent furniture-prestige premium. No per-frame data
+// or separate XP economy is introduced.
+export const FOREST_MASTERY_LEVELS = Object.freeze([
+    Object.freeze({ level: 1, label: "Apprentice", at: 0, bonusEvery: 0, premium: 0 }),
+    Object.freeze({ level: 2, label: "Journeyman", at: 12, bonusEvery: 8, premium: 0.02 }),
+    Object.freeze({ level: 3, label: "Master", at: 36, bonusEvery: 5, premium: 0.04 }),
+    Object.freeze({ level: 4, label: "Guild Master", at: 80, bonusEvery: 3, premium: 0.06 }),
+]);
+
+export function forestMasteryFor(building) {
+    const batches = Math.max(0, Math.floor(Number(building?.forestBatches) || 0));
+    let found = FOREST_MASTERY_LEVELS[0];
+    for (const entry of FOREST_MASTERY_LEVELS) if (batches >= entry.at) found = entry;
+    const next = FOREST_MASTERY_LEVELS.find(entry => entry.at > batches) || null;
+    return {
+        ...found, batches,
+        nextAt: next ? next.at : null,
+        nextLabel: next ? next.label : null,
+        progress: next ? Math.max(0, Math.min(1, (batches - found.at) / Math.max(1, next.at - found.at))) : 1,
+    };
+}
+
 export const INDUSTRY_STOCK_TARGETS = Object.freeze({
     charcoal: 60, potash: 28, furniture: 24, pitch: 30, tar: 30, tannin: 30,
     dye: 30, medicine: 24, paper: 30, silk: 18, rubber: 20, bambooFibre: 24,
@@ -161,6 +188,7 @@ export function forestWorksStatus(building) {
     else if (missing.length) reason = "Waiting for " + missing.join(" · ");
     return {
         ok: !reason, reason, mode, fit, stand,
+        mastery: forestMasteryFor(building),
         siteLabel: stand?.regionalType?.short || stand?.regionalType?.label || stand?.type || "no forest",
         style: mode.style ? furnitureStyleFor(stand?.regionalType) : null,
         timber,
@@ -277,10 +305,27 @@ export function runForestWorks(building, { force = false } = {}) {
     }
     if (!Object.keys(accepted).length) return { ok: false, reason: "Output store is full" };
 
+    const nextBatches = Math.max(0, Math.floor(Number(building.forestBatches) || 0)) + 1;
+    const mastery = forestMasteryFor({ forestBatches: nextBatches });
+    let masteryBonus = null;
+    if (mastery.bonusEvery > 0 && nextBatches % mastery.bonusEvery === 0) {
+        const good = Object.keys(accepted).find(id => outputSpace(building) > 0 && Number(getPhysicalStock(id)) < (INDUSTRY_STOCK_TARGETS[id] || Infinity));
+        if (good) {
+            const stored = addLocalOutput(building, good, 1, { cause: "forest-mastery-bonus" });
+            if (stored > 0) {
+                accepted[good] += stored;
+                production.forestFinished += stored;
+                requestHaul(building, good, getAvailableOutput(building, good));
+                masteryBonus = { good, amount: stored, level: mastery.level, label: mastery.label };
+            }
+        }
+    }
+    building.forestBatches = nextBatches;
+
     const style = mode.style ? furnitureStyleFor(stand.regionalType) : null;
     const quality = mode.style && timber ? timber.quality : woodQualityFor("logs", "construction");
     if (mode.style && timber) {
-        const premium = Math.min(0.4, style.premium + quality.premium + (quality.score >= 0.78 ? 0.06 : 0));
+        const premium = Math.min(0.5, style.premium + quality.premium + mastery.premium + (quality.score >= 0.78 ? 0.06 : 0));
         production.forestFurniturePremium = Math.max(production.forestFurniturePremium, premium);
     }
     building.lastForestBatch = {
@@ -288,6 +333,7 @@ export function runForestWorks(building, { force = false } = {}) {
         output: accepted, style: style ? style.label : null, styleId: style ? style.id : null,
         quality: quality ? { classId: quality.classId, label: quality.label, grade: quality.grade, score: quality.score } : null,
         timber: timber?.good || null,
+        mastery: { level: mastery.level, label: mastery.label, batches: nextBatches, bonus: masteryBonus },
     };
     production.forestBatches += 1;
     for (const need of Object.values(mode.raw || {})) production.forestRawConsumed += need;
@@ -317,7 +363,7 @@ export function industryQuote(good) {
     const stock = Math.max(0, Number(getPhysicalStock(good)) || 0);
     const stockFactor = clamp(1.14 - Math.min(1, stock / 90) * 0.2, 0.92, 1.14);
     const furniturePremium = good === "furniture" ? 1 + productionLedger().forestFurniturePremium : 1;
-    return round2(def.basePrice * seasonFactor() * stockFactor * furniturePremium);
+    return round2(def.basePrice * seasonFactor() * stockFactor * furniturePremium * forestGuildMarketPremium(good));
 }
 
 export function industrySaleRows() {
@@ -342,8 +388,13 @@ export function forestIndustrySummary() {
     }
     const rows = industrySaleRows().filter(row => row.stock > 0);
     const production = productionLedger();
+    const masteries = works.map(forestMasteryFor);
+    const masteryBatches = masteries.reduce((sum, entry) => sum + entry.batches, 0);
     return {
         works: works.length,
+        masteryBatches,
+        masteryLevel: masteries.reduce((max, entry) => Math.max(max, entry.level), 1),
+        masteryLabel: masteries.reduce((best, entry) => entry.level > best.level ? entry : best, masteries[0] || forestMasteryFor(null)).label,
         activeModes: Object.keys(counts).length,
         counts,
         lastBatch,
@@ -355,6 +406,32 @@ export function forestIndustrySummary() {
         finished: production.forestFinished,
         gold: production.forestGold,
         furniturePremium: production.forestFurniturePremium,
+    };
+}
+
+// Real public-health supply: withdraw medicine from ordinary warehouses and
+// place it directly into the clinic's finite store. This is the consumer that
+// closes the apothecary loop from regional forest to a treated case.
+export function supplyClinicMedicine(quantity = 6) {
+    const health = state.health;
+    if (!health || typeof health !== "object") return { ok: false, reason: "No public health service in this realm" };
+    const current = Math.max(0, Math.floor(Number(health.medicineStock) || 0));
+    const capacity = Math.max(0, MEDICINE_MAX_STOCK - current);
+    if (capacity <= 0) return { ok: false, reason: "The clinic medicine store is full" };
+    const available = Math.floor(industryWarehouseStock("medicine"));
+    if (available <= 0) return { ok: false, reason: "No medicine in a warehouse store" };
+    const want = Math.min(Math.max(1, Math.floor(Number(quantity) || 6)), capacity, available);
+    const withdrawal = consumeIndustryGoodFromWarehouses("medicine", want, {
+        cause: "clinic-medicine-supply",
+        to: { kind: "health", id: "clinic-medicine-store" },
+    });
+    if (!withdrawal.ok) return { ok: false, reason: withdrawal.reason, available: withdrawal.available };
+    const accepted = addMedicineStock(withdrawal.moved);
+    if (accepted <= 0) return { ok: false, reason: "The clinic medicine store is full" };
+    addLog("CLINIC MEDICINE SUPPLIED · " + accepted + " DOSES FROM THE FOREST APOTHECARY", "#9ab7a1", "health");
+    return {
+        ok: true, amount: accepted, stock: health.medicineStock, capacity: MEDICINE_MAX_STOCK,
+        price: 0, label: "Medicine",
     };
 }
 

@@ -152,6 +152,7 @@ function serializeEntity(entity, indexByEntity) {
         // each sawmill and workshop exactly as the player left it.
         ...(entity.sawProfile ? { sawProfile: String(entity.sawProfile).slice(0, 24) } : {}),
         ...(entity.forestMode ? { forestMode: String(entity.forestMode).slice(0, 32) } : {}),
+        ...(Number(entity.forestBatches) > 0 ? { forestBatches: Math.min(100000000, Math.floor(Number(entity.forestBatches))) } : {}),
         anim: entity.anim,
         facing: entity.facing,
         visualState: entity.visualState,
@@ -373,6 +374,7 @@ export function restoreSaveSnapshot(snapshot) {
             pannage: dto.pannage && typeof dto.pannage === "object" ? JSON.parse(JSON.stringify(dto.pannage)) : null,
             sawProfile: dto.sawProfile ? String(dto.sawProfile).slice(0, 24) : null,
             forestMode: dto.forestMode ? String(dto.forestMode).slice(0, 32) : null,
+            forestBatches: Math.max(0, Math.min(100000000, Math.floor(Number(dto.forestBatches) || 0))),
             civicOrigin: dto.civicOrigin || null,
             visualState: dto.visualState,
             anchor: dto.anchor || { x: dto.x, y: dto.y },

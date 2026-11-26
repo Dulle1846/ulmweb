@@ -96,11 +96,13 @@ try {
             { TYPE },
             { ensureInventory },
             { getForestHabitatAt },
+            { ensureForestGuild },
         ] = await Promise.all([
             import("./js/core/state.js"),
             import("./js/core/types.js"),
             import("./js/systems/logistics.js"),
             import("./js/systems/resource-geography.js"),
+            import("./js/systems/forest-guild.js"),
         ]);
         const index = state.resourceGeography.forestStock.findIndex(stock => stock > 4);
         if (index < 0) throw new Error("The seeded realm has no working forest");
@@ -129,11 +131,18 @@ try {
             isEnemy() { return false; },
         };
         ensureInventory(store);
-        store.warehouse.filters = [...new Set([...store.warehouse.filters, "charcoal"])];
-        store.warehouse.stored.charcoal = 5;
-        store.warehouse.used = (Number(store.warehouse.used) || 0) + 5;
+        const commission = ensureForestGuild().active[0];
+        store.warehouse.filters = [...new Set([...store.warehouse.filters, "charcoal", "medicine", commission.good])];
+        store.warehouse.stored.charcoal = 5 + (commission.good === "charcoal" ? commission.quantity : 0);
+        store.warehouse.stored[commission.good] = (Number(store.warehouse.stored[commission.good]) || 0) + commission.quantity;
+        store.warehouse.stored.medicine = 8;
+        store.warehouse.used = (Number(store.warehouse.used) || 0) + 13 + commission.quantity;
         state.entities.push(store);
-        return { x, y, stand: stand.regionalType?.short || stand.regionalType?.label || stand.type, gold: state.resources.gold };
+        return {
+            x, y, stand: stand.regionalType?.short || stand.regionalType?.label || stand.type,
+            gold: state.resources.gold,
+            commission: { id: commission.id, good: commission.good, quantity: commission.quantity, rewardGold: commission.rewardGold, rewardRenown: commission.rewardRenown },
+        };
     });
     evidence.fixture = fixture;
 
@@ -168,6 +177,54 @@ try {
     await firstGuidePoint.scrollIntoViewIfNeeded();
     await page.screenshot({ path: resolve(outputDir, "forest-atlas.png") });
 
+    // Living guild board: fill a real warehouse-backed commission and then move
+    // medicine into the clinic. Both are recurring consumers, not catalogue text.
+    assert.equal(await page.locator("[data-forest-commission-card]").count(), 3);
+    assert.equal(await page.locator('[data-forest-guild-active="3"]').count(), 1);
+    const commissionBefore = await page.evaluate(async () => {
+        const [{ state }, { forestGuildSummary }, { industryWarehouseStock }] = await Promise.all([
+            import("./js/core/state.js"),
+            import("./js/systems/forest-guild.js"),
+            import("./js/systems/forest-guild.js"),
+        ]);
+        const guild = forestGuildSummary();
+        return {
+            gold: state.resources.gold, renown: guild.renown, completed: guild.completed,
+            order: guild.active[0], warehouse: industryWarehouseStock(guild.active[0].good),
+        };
+    });
+    assert.ok(commissionBefore.order.ready, "the seeded commission must have enough warehouse stock");
+    await page.locator("[data-forest-commission-card] [data-forest-commission]").first().click();
+    await page.waitForFunction(() => document.querySelector("#action-toast")?.textContent.includes("GUILD COMMISSION FILLED"), null, { timeout: 5000 });
+    const commissionAfter = await page.evaluate(async () => {
+        const [{ state }, { forestGuildSummary }] = await Promise.all([
+            import("./js/core/state.js"),
+            import("./js/systems/forest-guild.js"),
+        ]);
+        const guild = forestGuildSummary();
+        return { gold: state.resources.gold, renown: guild.renown, completed: guild.completed, active: guild.active.length, history: guild.history[0] };
+    });
+    assert.ok(commissionAfter.gold > commissionBefore.gold);
+    assert.ok(commissionAfter.renown > commissionBefore.renown);
+    assert.equal(commissionAfter.completed, commissionBefore.completed + 1);
+    assert.equal(commissionAfter.active, 3);
+    assert.equal(commissionAfter.history.outcome, "delivered");
+    evidence.checks.commission = { before: commissionBefore, after: commissionAfter };
+    await page.screenshot({ path: resolve(outputDir, "forest-guild.png") });
+
+    const clinicBefore = await page.evaluate(async () => {
+        const [{ state }] = await Promise.all([import("./js/core/state.js")]);
+        return state.health?.medicineStock || 0;
+    });
+    await page.locator("[data-clinic-medicine]").click();
+    await page.waitForFunction(() => document.querySelector("#action-toast")?.textContent.includes("CLINIC SUPPLIED"), null, { timeout: 5000 });
+    const clinicAfter = await page.evaluate(async () => {
+        const [{ state }] = await Promise.all([import("./js/core/state.js")]);
+        return state.health?.medicineStock || 0;
+    });
+    assert.equal(clinicAfter, clinicBefore + 6);
+    evidence.checks.clinic = { before: clinicBefore, after: clinicAfter };
+
     // Real warehouse sale through the atlas exchange.
     const beforeSale = await page.evaluate(async () => {
         const [{ state }, { getPhysicalStock }] = await Promise.all([
@@ -176,7 +233,7 @@ try {
         ]);
         return { gold: state.resources.gold, charcoal: getPhysicalStock("charcoal") };
     });
-    await page.locator('[data-industry-market="1"] summary').click();
+    await page.locator('[data-industry-market] summary').click();
     await page.locator('[data-industry-sell="charcoal"]').click();
     await page.waitForFunction(() => document.querySelector("#action-toast")?.textContent.includes("SOLD"), null, { timeout: 5000 });
     const afterSale = await page.evaluate(async () => {
@@ -229,6 +286,8 @@ try {
     await record.locator("summary").click();
     await batchButton.waitFor({ state: "visible" });
     const dossierText = await record.innerText();
+    assert.match(dossierText, /Mastery:\s*Apprentice\s*·\s*1 batches/, "the dossier must show the earned workshop mastery");
+    assert.equal(await page.locator('[data-forest-mastery="1"]').count(), 1);
     const formSection = dossierText.slice(Math.max(0, dossierText.indexOf("Building form")), dossierText.indexOf("Building form") + 240);
     assert.match(dossierText, new RegExp("Building form\\s*" + form.label), "the dossier must show the regional form; got: " + formSection);
     const formSpan = record.locator(".building-detail-grid > span").filter({ hasText: "Building form" }).first();
