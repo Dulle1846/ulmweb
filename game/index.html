@@ -18,6 +18,7 @@
     <link rel="stylesheet" href="css/event-timeline.css">
     <link rel="stylesheet" href="css/winter.css">
     <link rel="stylesheet" href="css/hazard-panel.css">
+    <link rel="stylesheet" href="css/start-cinematic.css">
     <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
 </head>
 <body>
@@ -263,11 +264,26 @@
 
 <div id="start-screen" class="screen-overlay" role="dialog" aria-modal="true" aria-labelledby="start-title" aria-describedby="start-description">
     <div class="ui-panel ui-window ui-window--founding start-panel">
-        <div class="start-emblem">♜</div>
-        <div class="start-kicker">A LIVING REALM SIMULATOR</div>
-        <img class="start-hero-art" src="assets/royal-title-illustration.svg" alt="Atmospheric dusk view of the royal castle above a river valley and walled settlement" loading="eager">
-        <h1 id="start-title">KINGS <span>&amp;</span> CARDS</h1>
-        <p id="start-description" class="start-lead">Build a settlement. Shape its fortunes. Discover what the cards bring.</p>
+        <div class="start-cover">
+            <div class="start-cover__mast">
+                <div class="start-emblem">♜</div>
+                <div class="start-cover__mast-copy">
+                    <div class="start-kicker">A LIVING REALM SIMULATOR</div>
+                    <div class="start-cover__chips" aria-label="Simulation features"><span>WORLD FORGE</span><span>LIVING ECONOMY</span><span>DYNASTIC CHRONICLE</span></div>
+                </div>
+            </div>
+            <div class="start-hero-frame">
+                <img class="start-hero-art" src="assets/royal-title-illustration.svg" alt="Atmospheric dusk view of the royal castle above a river valley and walled settlement" loading="eager">
+                <div class="start-hero-frame__overlay"><span>THE CROWNLANDS AT DUSK</span><strong>Every wood, road and quarrel is remembered.</strong></div>
+                <div class="start-hero-frame__seal" aria-hidden="true">K&amp;C</div>
+            </div>
+            <h1 id="start-title">KINGS <span>&amp;</span> CARDS</h1>
+            <p id="start-description" class="start-lead">Found a realm, then live with what it becomes. Forests spread and burn, households remember, borders harden and every winter leaves a mark.</p>
+            <div id="start-vignettes" class="start-vignettes" aria-label="Possible chapters from this world" aria-live="polite"></div>
+            <div class="start-cover__note"><span class="start-cover__pulse" aria-hidden="true"></span><span><b>POSSIBLE CHAPTERS</b> · what this realm might become</span><em>Your decisions write the real chronicle.</em></div>
+            <div id="status-message" class="status-message"></div>
+            <div class="start-footer">A NEW WORLD IS GENERATED FROM ITS SEED · ONE ORIGINAL LOOPING SOUNDTRACK</div>
+        </div>
         <div class="start-form">
             <div id="start-resume" class="start-resume" hidden>
                 <div class="start-resume-copy"><span>RETURNING RULER</span><strong>Your last realm is saved in this browser.</strong></div>
@@ -276,6 +292,10 @@
             </div>
             <label for="player-name-input">PLAYER PROFILE</label>
             <input id="player-name-input" type="text" maxlength="32" placeholder="Enter your player name" autocomplete="nickname" autofocus>
+            <section class="start-quickstart" aria-labelledby="start-quickstart-title">
+                <div class="start-quickstart__copy"><span>QUICK START</span><strong id="start-quickstart-title">Take the prepared forge</strong><small>Your name and the seeded land below. Edit the charter first, or found the realm as it stands.</small></div>
+                <button id="start-new-game-btn" class="ui-button ui-button--primary primary-button start-quickstart__button" type="button">FOUND A NEW REALM <span aria-hidden="true">→</span></button>
+            </section>
             <div class="profile-note">Local profile for this browser. Online accounts and secure admin roles will be connected to a server backend in a later infrastructure step.</div>
             <section class="realm-identity" aria-label="Realm identity and culture">
                 <div class="forge-heading"><span>THE REALM &amp; ITS HOUSE</span><span>NAME THE CROWN</span></div>
@@ -462,7 +482,7 @@
                 <div class="forge-note">The preview draws the exact terrain, river and biome grid the realm will start with. Larger worlds take longer to forge.</div>
             </section>
             <label class="endless-toggle" for="world-endless"><input id="world-endless" type="checkbox" checked><span><strong>∞ ENDLESS REALM</strong><em>The chronicle never ends. Morale collapse and a broken keep become recoverable setbacks, and every 25 years opens a new age. Uncheck for the classic finite campaign.</em></span></label>
-            <button id="start-new-game-btn" class="ui-button ui-button--primary primary-button" type="button">FOUND A NEW REALM</button>
+            <button id="start-custom-game-btn" class="ui-button ui-button--secondary secondary-button start-custom-button" type="button">FOUND WITH THESE SETTINGS</button>
             <button id="random-realm-btn" class="ui-button ui-button--secondary secondary-button random-realm-btn" type="button" aria-controls="random-realm-confirm" aria-expanded="false">⚄ RANDOM REALM</button>
             <section id="random-realm-confirm" class="random-realm-confirm" role="region" aria-labelledby="random-realm-title" hidden>
                 <div class="random-realm-confirm__head"><span>THE FORGE OFFERS A REALM</span><h2 id="random-realm-title">FOUND THIS REALM?</h2></div>
@@ -475,8 +495,37 @@
             </section>
             <button id="start-settings-btn" class="text-button" type="button">SETTINGS</button>
         </div>
-        <div id="status-message" class="status-message"></div>
-        <div class="start-footer">A NEW WORLD IS GENERATED FROM ITS SEED · ONE ORIGINAL LOOPING SOUNDTRACK</div>
+    </div>
+    <div id="start-loading" class="start-loading" role="status" aria-live="polite" aria-label="Founding the realm" hidden>
+        <div class="start-loading__frame">
+            <div class="start-loading__atlas">
+                <div class="start-loading__map-wrap">
+                    <canvas id="start-loading-map" width="720" height="720" aria-hidden="true"></canvas>
+                    <div class="start-loading__scan" aria-hidden="true"></div>
+                    <div class="start-loading__map-caption"><span>THE LANDS OF <b id="loading-realm-name">THE REALM</b></span><em id="loading-seed">SEED</em></div>
+                </div>
+                <div class="start-loading__atlas-note"><span>EXACT WORLD PREVIEW</span><span id="loading-climate">TEMPERATE</span><span>SIMULATION READY</span></div>
+            </div>
+            <section class="start-loading__chancery">
+                <div class="start-loading__eyebrow"><span>FOUNDING THE REALM</span><b id="loading-percent">0%</b></div>
+                <h2 id="loading-heading">Surveying the land</h2>
+                <p id="loading-copy">The forge reads the seed, the waters and the first forests.</p>
+                <div id="loading-progress-track" class="start-loading__track" role="progressbar" aria-labelledby="loading-heading" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="loading-progress"></i></div>
+                <ol id="loading-steps" class="start-loading__steps">
+                    <li data-loading-step="survey"><span>01</span><div><strong>Survey the land</strong><small>Seed, water, relief and regional woodland.</small></div></li>
+                    <li data-loading-step="settle"><span>02</span><div><strong>Raise the first settlement</strong><small>Keep, households, stores and the opening muster.</small></div></li>
+                    <li data-loading-step="chancery"><span>03</span><div><strong>Open the royal chancery</strong><small>Trade routes, ledgers and the court's first seals.</small></div></li>
+                    <li data-loading-step="chronicle"><span>04</span><div><strong>Write the first chronicle</strong><small>A year of weather, work and neighbourly intent.</small></div></li>
+                    <li data-loading-step="ready"><span>05</span><div><strong>Open the gates</strong><small>Hand the realm to its sovereign.</small></div></li>
+                </ol>
+                <article id="loading-chapter" class="start-loading__chapter" aria-live="polite">
+                    <span id="loading-chapter-era">A POSSIBLE CHAPTER</span>
+                    <strong id="loading-chapter-title">The land takes shape</strong>
+                    <p id="loading-chapter-copy">No realm is only its founding map. The years will decide what survives.</p>
+                </article>
+                <p class="start-loading__note">Possible futures, not a forecast. Your realm writes its own chronicle.</p>
+            </section>
+        </div>
     </div>
 </div>
 
@@ -533,7 +582,7 @@
             <div><span>Save / Load</span><kbd>CTRL+S / CTRL+O</kbd></div><div><span>Help / close</span><kbd>? / ESC</kbd></div>
         </div>
         <div class="profile-note">Saves are currently stored per local browser profile. Do not use this as secure multi-user authentication or cloud backup.</div>
-        <div class="settings-meta"><span>KINGS &amp; CARDS · <b>v3.71.0</b></span><span>ORIGINAL INTERFACE · LOCAL-FIRST · VANILLA HTML / CSS / JS</span></div>
+        <div class="settings-meta"><span>KINGS &amp; CARDS · <b>v3.72.0</b></span><span>ORIGINAL INTERFACE · LOCAL-FIRST · VANILLA HTML / CSS / JS</span></div>
     </div>
 </div>
 

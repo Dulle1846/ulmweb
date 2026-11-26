@@ -1,6 +1,6 @@
 {
   "name": "kings-and-cards",
-  "version": "3.71.0",
+  "version": "3.72.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -22,6 +22,7 @@
     "test:desert-reference": "node tests/browser/desert-reference.mjs",
     "test:tundra-reference": "node tests/browser/tundra-reference.mjs",
     "test:savanna-reference": "node tests/browser/savanna-reference.mjs",
+    "test:start-cinematic": "node tests/browser/start-cinematic.mjs",
     "test:forest-reference": "node tests/browser/forest-reference.mjs",
     "test:regional-forest-reference": "node tests/browser/regional-forest-reference.mjs",
     "test:forest-dynamics-live": "node tests/browser/forest-dynamics-live-proof.mjs",

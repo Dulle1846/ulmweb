@@ -78,6 +78,44 @@ let selectedScenarioId="free-realm";
 let selectedScenarioDefinition=SCENARIO_PRESETS["free-realm"];
 const scenarioEscape=value=>String(value??"").replace(/[&<>"']/g,character=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[character]));
 function scenarioSeasonLabel(index){return (SCENARIO_SEASONS[Number(index)%4]||"spring").replace(/^./,letter=>letter.toUpperCase());}
+
+// Possible chapters are clearly labelled flavour, not simulation output. They
+// let the founding gate show the kind of story this climate can produce while
+// the real chronicle remains entirely the player's own.
+const POSSIBLE_CHAPTER_LANDSCAPES=Object.freeze({
+    temperate:["the oak ridge","the river meadow","the market road"],
+    northern:["the pine line","the frozen ford","the long road"],
+    taiga:["the larch belt","the trapper trail","the frozen river"],
+    tundra:["the lichen plain","the reindeer ford","the winter track"],
+    savanna:["the acacia plain","the dry riverbed","the cattle road"],
+    swamp:["the alder fen","the peat causeway","the drowned meadow"],
+    mountain:["the high pass","the alpine meadow","the mine road"],
+    volcanic:["the ash slope","the lava terrace","the black beach"],
+    coastal:["the salt marsh","the harbour road","the cliff stair"],
+    snow:["the snowfield","the ice road","the shelter wood"],
+    mediterranean:["the olive slope","the hill road","the stone terrace"],
+    arid:["the dry wash","the caravan road","the cistern yard"],
+    enchanted:["the moon grove","the spirit path","the old stone ring"],
+    tropical:["the rain canopy","the river landing","the jungle track"]
+});
+function possibleChaptersFor(seedValue,climate){
+    const seed=Math.max(1,Math.floor(Number(seedValue)||1));
+    const land=POSSIBLE_CHAPTER_LANDSCAPES[String(climate||"temperate")]||POSSIBLE_CHAPTER_LANDSCAPES.temperate;
+    return [
+        {year:3+(seed%5),tag:"THE LAND",title:"The "+land[0].replace(/^the /i,"")+" is opened",copy:"Saws, carts and surveyors reach "+land[0]+". The crown must decide what is taken and what is left."},
+        {year:9+((seed>>3)%7),tag:"THE CROWN",title:"A neighbour tests the border",copy:"An envoy arrives with old maps, a marriage offer and a new toll on "+land[2]+". The answer will echo for years."},
+        {year:17+((seed>>6)%9),tag:"THE CHRONICLE",title:"A hard season changes the map",copy:"Flood, fire or frost tests "+land[1]+". Stores, roads and woodland decide who remembers the crown kindly."}
+    ];
+}
+function renderStartVignettes(){
+    const container=document.getElementById("start-vignettes");
+    if(!container)return;
+    const seed=Number(document.getElementById("world-seed-input")?.value)||1;
+    const climate=document.getElementById("world-climate")?.value||"temperate";
+    container.innerHTML=possibleChaptersFor(seed,climate).map(chapter=>
+        '<article class="start-vignette"><div class="start-vignette__top"><b>YEAR '+chapter.year+'</b><em>'+scenarioEscape(chapter.tag)+'</em></div>'
+        +'<strong>'+scenarioEscape(chapter.title)+'</strong><small>'+scenarioEscape(chapter.copy)+'</small></article>').join("");
+}
 function scenarioDeadlineLabel(definition){
     const deadline=definition?.objective;
     return deadline?scenarioSeasonLabel(Math.floor(deadline.deadlineDay/100)%4)+", year "+deadline.deadlineYear:"";
@@ -537,7 +575,7 @@ function startRealmFromForm(trigger){
             const seed=Number(document.getElementById("world-seed-input")?.value);
             const worldOptions=readWorldOptions();
             startNewRealm(Number.isSafeInteger(seed)&&seed>0?seed:randomSeed(),player,worldOptions,selectedScenarioDefinition)
-                .catch(error=>showStatus(error.message));
+                .catch(error=>{failRealmLoading();showStatus(error.message);});
         }catch(error){showStatus(error.message);}
         finally{
             trigger.disabled=false;
@@ -618,6 +656,7 @@ function syncWorldForge(options){
     }
     const endless=document.getElementById("world-endless");
     if(endless)endless.checked=state.endless?.enabled!==false;
+    renderStartVignettes();
     scheduleForgePreview();
 }
 
@@ -701,7 +740,118 @@ async function warmTerrainDetailForStart(){
     }
 }
 
+const LOADING_STAGES=Object.freeze([
+    {id:"survey",progress:8,heading:"Surveying the land",copy:"The forge reads the seed, the waters and the first forests."},
+    {id:"settle",progress:31,heading:"Raising the first settlement",copy:"The keep finds its footing. Households, stores and the opening muster take shape."},
+    {id:"chancery",progress:56,heading:"Opening the royal chancery",copy:"Trade routes, ledgers, seals and the first offices of the crown are being prepared."},
+    {id:"chronicle",progress:79,heading:"Writing the first chronicle",copy:"A year of weather, work and neighbourly intent is already passing through the realm."},
+    {id:"ready",progress:96,heading:"Opening the gates",copy:"The first view is warm and ready. Your sovereign is about to step into the light."}
+]);
+let realmLoad={active:false,startedAt:0,minMs:1600,chapterTimer:0,chapters:[],chapterIndex:0};
+const nextPaint=()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+function setRealmLoadingProgress(value){
+    const progress=Math.max(0,Math.min(100,Math.round(Number(value)||0)));
+    const bar=document.getElementById("loading-progress");
+    const track=document.getElementById("loading-progress-track");
+    const label=document.getElementById("loading-percent");
+    if(bar)bar.style.width=progress+"%";
+    if(track)track.setAttribute("aria-valuenow",String(progress));
+    if(label)label.textContent=progress+"%";
+}
+function setLoadingChapter(index=0){
+    if(!realmLoad.chapters.length)return;
+    realmLoad.chapterIndex=((index%realmLoad.chapters.length)+realmLoad.chapters.length)%realmLoad.chapters.length;
+    const chapter=realmLoad.chapters[realmLoad.chapterIndex];
+    const era=document.getElementById("loading-chapter-era");
+    const title=document.getElementById("loading-chapter-title");
+    const copy=document.getElementById("loading-chapter-copy");
+    const card=document.getElementById("loading-chapter");
+    if(era)era.textContent="YEAR "+chapter.year+" · "+chapter.tag+" · A POSSIBLE CHAPTER";
+    if(title)title.textContent=chapter.title;
+    if(copy)copy.textContent=chapter.copy;
+    if(card){
+        card.classList.remove("is-changing");
+        void card.offsetWidth;
+        card.classList.add("is-changing");
+    }
+}
+function setRealmLoadingStage(id){
+    if(!realmLoad.active)return;
+    const index=Math.max(0,LOADING_STAGES.findIndex(stage=>stage.id===id));
+    const stage=LOADING_STAGES[index]||LOADING_STAGES[0];
+    const heading=document.getElementById("loading-heading");
+    const copy=document.getElementById("loading-copy");
+    if(heading)heading.textContent=stage.heading;
+    if(copy)copy.textContent=stage.copy;
+    document.querySelectorAll("#loading-steps [data-loading-step]").forEach(step=>{
+        const stepIndex=LOADING_STAGES.findIndex(entry=>entry.id===step.dataset.loadingStep);
+        step.classList.toggle("is-done",stepIndex>=0&&stepIndex<index);
+        step.classList.toggle("is-current",stepIndex===index);
+    });
+    setRealmLoadingProgress(stage.progress);
+}
+async function beginRealmLoading({realmName="A NEW REALM",seed=1,climate="temperate"}={}){
+    const screen=document.getElementById("start-screen");
+    const loading=document.getElementById("start-loading");
+    if(!screen||!loading)return;
+    realmLoad={...realmLoad,active:true,startedAt:performance.now(),chapters:possibleChaptersFor(seed,climate),chapterIndex:0};
+    const name=document.getElementById("loading-realm-name");
+    const seedLabel=document.getElementById("loading-seed");
+    const climateLabel=document.getElementById("loading-climate");
+    if(name)name.textContent=String(realmName||"A NEW REALM").toUpperCase();
+    if(seedLabel)seedLabel.textContent="SEED "+seed;
+    if(climateLabel)climateLabel.textContent=String(climate).replace(/-/g," ").toUpperCase();
+    const loadingMap=document.getElementById("start-loading-map");
+    const preview=document.getElementById("world-preview");
+    if(loadingMap&&preview){
+        const ctx=loadingMap.getContext("2d");
+        if(ctx){
+            ctx.clearRect(0,0,loadingMap.width,loadingMap.height);
+            ctx.fillStyle="#0b1513";ctx.fillRect(0,0,loadingMap.width,loadingMap.height);
+            try{ctx.drawImage(preview,0,0,loadingMap.width,loadingMap.height);}catch{}
+        }
+    }
+    screen.classList.add("is-loading");
+    screen.setAttribute("aria-busy","true");
+    loading.hidden=false;
+    setLoadingChapter(0);
+    setRealmLoadingStage("survey");
+    window.clearInterval(realmLoad.chapterTimer);
+    realmLoad.chapterTimer=window.setInterval(()=>setLoadingChapter(realmLoad.chapterIndex+1),1800);
+    // Let the browser paint the gate before the heavier world assembly begins.
+    await nextPaint();
+}
+async function holdRealmLoading(){
+    if(!realmLoad.active)return;
+    setRealmLoadingStage("ready");
+    setRealmLoadingProgress(100);
+    await nextPaint();
+    const remaining=Math.max(0,realmLoad.minMs-(performance.now()-realmLoad.startedAt));
+    if(remaining>0)await new Promise(resolve=>setTimeout(resolve,remaining));
+}
+function finishRealmLoading(){
+    window.clearInterval(realmLoad.chapterTimer);
+    realmLoad.chapterTimer=0;
+    const screen=document.getElementById("start-screen");
+    const loading=document.getElementById("start-loading");
+    if(loading)loading.hidden=true;
+    if(screen){screen.classList.remove("is-loading");screen.removeAttribute("aria-busy");}
+    realmLoad={...realmLoad,active:false,chapters:[]};
+}
+function failRealmLoading(){
+    window.clearInterval(realmLoad.chapterTimer);
+    realmLoad.chapterTimer=0;
+    const screen=document.getElementById("start-screen");
+    const loading=document.getElementById("start-loading");
+    if(loading)loading.hidden=true;
+    if(screen){screen.classList.remove("is-loading");screen.removeAttribute("aria-busy");}
+    setRealmLoadingProgress(0);
+    realmLoad={...realmLoad,active:false,chapters:[]};
+}
+
 async function startNewRealm(seed,profile,worldOptions=readWorldOptions(),scenarioDefinition=selectedScenarioDefinition){
+    const foundingName=document.getElementById("realm-name-input")?.value?.trim()||"A New Realm";
+    await beginRealmLoading({realmName:foundingName,seed,climate:worldOptions.climate});
     resetForRun(profile);
     applyIdentityForNewRealm();
     state.worldSeed=seed;
@@ -712,6 +862,7 @@ async function startNewRealm(seed,profile,worldOptions=readWorldOptions(),scenar
     // state, seasonal atlas and starting settlement all see the same calendar.
     applyScenarioStart(scenarioDefinition||SCENARIO_PRESETS["free-realm"]);
     initWorld(seed,state.worldOptions,state.terrainVersion);
+    setRealmLoadingStage("settle");
     initStartingKingdom();
     const foundingGrant=applyFoundingProfile(state.identity?.startProfile);
     if(foundingGrant.id!=="balanced")addLog("FOUNDING CHARTER — "+foundingGrant.profile.label.toUpperCase(),"#d6b56d","milestone");
@@ -726,6 +877,7 @@ async function startNewRealm(seed,profile,worldOptions=readWorldOptions(),scenar
     drawStartingHand();
     state.camera.x=0;state.camera.y=0;
     centerCamera();
+    setRealmLoadingStage("chancery");
     // Finish the first terrain raster one 3 ms slice per frame while the start
     // screen covers the stage. The realm becomes interactive only with a
     // settled layer; this is startup work, not a blocked gameplay frame.
@@ -755,7 +907,11 @@ async function startNewRealm(seed,profile,worldOptions=readWorldOptions(),scenar
     // seasonal/day boundaries. They are the same deterministic ticks the realm
     // would run a moment later; doing them here keeps the first visible frames
     // free of their one-off compilation and allocation cost.
-    for(let warmTick=0;warmTick<60;warmTick++)updateSimulation();
+    setRealmLoadingStage("chronicle");
+    for(let warmTick=0;warmTick<60;warmTick++){
+        updateSimulation();
+        if(warmTick%6===0)setRealmLoadingProgress(79+Math.round(warmTick/60*17));
+    }
     setAnnualMaintenanceSlicing(true);
     state.selectedTab=0;
     renderInitialUI();
@@ -764,8 +920,10 @@ async function startNewRealm(seed,profile,worldOptions=readWorldOptions(),scenar
     // that becomes visible then starts on a warm canvas instead of paying the
     // first sprite allocations and style recalculation in gameplay frames.
     if (state.ctx) { drawWorld(); drawWorld(); }
-    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    await nextPaint();
+    await holdRealmLoading();
     document.getElementById("start-screen").classList.add("hidden");
+    finishRealmLoading();
     document.getElementById("settings-modal").classList.add("hidden");
     // The founding form scrolls internally on phones; once it closes, return
     // the document to the map instead of leaving the player halfway down the
@@ -1296,10 +1454,12 @@ function bindMenu(){
     refreshFoundingSummary();
     const forgeControls=["world-size","world-shape","world-climate","world-landmass","world-ruggedness","world-forests","world-water","world-fertility","world-resources","world-mountains","world-rivers","world-lakes","world-coastline","world-snow","world-wetlands","world-aridity"];
     forgeControls.forEach(id=>document.getElementById(id)?.addEventListener("input",()=>syncWorldForge(readWorldOptions())));
-    seedInput?.addEventListener("input",scheduleForgePreview);
-    document.getElementById("random-seed-btn")?.addEventListener("click",()=>{if(seedInput)seedInput.value=String(randomSeed());scheduleForgePreview();});
+    seedInput?.addEventListener("input",()=>{scheduleForgePreview();renderStartVignettes();});
+    document.getElementById("random-seed-btn")?.addEventListener("click",()=>{if(seedInput)seedInput.value=String(randomSeed());scheduleForgePreview();renderStartVignettes();});
     const startButton=document.getElementById("start-new-game-btn");
     startButton?.addEventListener("click",()=>startRealmFromForm(startButton));
+    const customStartButton=document.getElementById("start-custom-game-btn");
+    customStartButton?.addEventListener("click",()=>startRealmFromForm(customStartButton));
     document.getElementById("random-realm-btn")?.addEventListener("click",rollRandomStart);
     document.getElementById("random-realm-reroll")?.addEventListener("click",rollRandomStart);
     document.getElementById("random-realm-cancel")?.addEventListener("click",cancelRandomStart);

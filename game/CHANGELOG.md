@@ -1,13 +1,41 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.71.0`
-**Next development line:** `3.72.0-dev`
+**Current production version:** `3.72.0`
+**Next development line:** `3.73.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
 **Last repository verification:** 2026-11-26 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.72.0 — The founding gate
+
+A realm now begins like a game rather than a form. The start screen is a
+two-part title sequence — an illustrated world stage with the title, hero
+artwork and three seeded possible chapters, and a dark chancery folio for the
+player's name and charter. The prepared forge is a prominent quick start; the
+tailored founding controls remain one scroll below.
+
+- **A real loading screen.** Pressing either start action now hands the whole
+  overlay to a dedicated founding sequence. The chosen world's exact preview
+  is drawn as a map, the realm name, seed and climate are shown, and five
+  honest phases run from surveying the land through the first settlement,
+  chancery, first chronicle and opening the gates. The bar follows the real
+  work, including the sixty warm simulation ticks, and the gate opens only
+  after the first frame is ready.
+- **Possible chapters, not a forecast.** Three deterministic vignettes are
+  derived from the current seed and climate and labelled as possible futures.
+  They add flavour without touching the simulation, RNG streams or save data.
+- **A cinematic cover.** The brand mast, framed royal artwork, oversized title,
+  seeded chapter cards and status line replace the old centred parchment
+  plate. The tailored folio scrolls independently on desktop and stacks below
+  the cover on phones; reduced-motion and short-viewport layouts are included.
+- The quick-start button and the detailed `FOUND WITH THESE SETTINGS` action
+  share one start path. A failed start returns the player to a usable folio
+  instead of leaving the loading overlay in place.
+- No simulation, balance or save-schema change; existing realms load exactly as
+  before.
 
 ## 3.71.0 — The player becomes a forester
 
