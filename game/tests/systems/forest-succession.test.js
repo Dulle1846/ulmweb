@@ -3,7 +3,8 @@ import assert from "node:assert/strict";
 import { resetState, state } from "../../js/core/state.js";
 import {
     coniferDisturbanceKind, coniferDisturbanceWeights, spreadRiskFactor,
-    ensureForestSuccession, forestSuccessionAt, resetForestSuccession,
+    ensureForestSuccession, forestSuccessionAt, forestSuccessionStats,
+    forestDisturbanceKindFor, resetForestSuccession,
     restoreForestSuccession, serializeForestSuccession, suppressForestDisturbance,
     suppressNearestForestDisturbance, updateForestSuccession,
     validateForestSuccessionSnapshot,
@@ -12,6 +13,7 @@ import {
     forestStandAt, forestSuccessionStage, FOREST_SUCCESSION_PROFILES,
 } from "../../js/world/forest-ecology.js";
 import { generateResourceGeography, getResourceNodeAt } from "../../js/systems/resource-geography.js";
+import { REGIONAL_FOREST_TYPES } from "../../js/world/regional-forests.js";
 
 function setup(seed = 20261108) {
     resetState();
@@ -26,6 +28,25 @@ function setup(seed = 20261108) {
     state.heightMap = new Float32Array(128 * 128).fill(0.62);
     state.moistureMap = new Float32Array(128 * 128).fill(0.68);
     state.temperatureMap = new Float32Array(128 * 128).fill(0.55);
+    generateResourceGeography(seed);
+    return ensureForestSuccession();
+}
+
+function setupWet(seed = 20261109) {
+    resetState();
+    resetForestSuccession();
+    state.worldSeed = seed;
+    state.worldW = 48;
+    state.worldH = 48;
+    state.terrainResolution = 2;
+    state.terrainPixW = 96;
+    state.terrainPixH = 96;
+    state.worldOptions = { landmass: 60, ruggedness: 30, forests: 82, water: 72, climate: "swamp" };
+    state.heightMap = new Float32Array(96 * 96).fill(0.42);
+    state.moistureMap = new Float32Array(96 * 96).fill(0.9);
+    state.temperatureMap = new Float32Array(96 * 96).fill(0.62);
+    state.weather = "rain";
+    state.seasonIndex = 0;
     generateResourceGeography(seed);
     return ensureForestSuccession();
 }
@@ -73,6 +94,43 @@ test("conifer disturbance selection follows fire, pest, monoculture and snow pre
     assert.equal(coniferDisturbanceKind({
         ...base, fireRisk: 0, pestRisk: 0, monoculture: 0, snowPotential: 1,
     }, 3, 0.5), "snowbreak");
+});
+
+test("a wet floodplain can start a real flood event and the flood profile advances", () => {
+    const floodplain = REGIONAL_FOREST_TYPES.find(type => type.key === "ash-elm-floodplain")
+        || REGIONAL_FOREST_TYPES.find(type => /floodplain|alluvial|carr/.test(type.key));
+    assert.ok(floodplain, "the regional catalogue must contain a wet floodplain type");
+    const wet = {
+        regionalType: floodplain, regionalTypeId: floodplain.id,
+        regionalEffects: { ...(floodplain.effects || {}), flood: 0.9 },
+        moisture: 0.86, wetness: 0.9, height: 0.34, ground: { pools: 0.4 },
+        fireRisk: 0.05, pestRisk: 0.05, snowPotential: 0.05, windExposure: 0.05,
+    };
+    assert.equal(forestDisturbanceKindFor(wet, { season: 0, weather: "rain", roll: 0 }), "flooded");
+    assert.equal(forestDisturbanceKindFor(wet, { season: 0, weather: "rain", roll: 0.5 }), "flooded");
+    assert.notEqual(forestDisturbanceKindFor({ ...wet, wetness: 0.1, moisture: 0.15, regionalEffects: { flood: 0 } }, {
+        season: 2, weather: "clear", roll: 0,
+    }), "flooded");
+    assert.equal(forestSuccessionStage("flooded", 0).formation, "flooded");
+    const model = setup();
+    const stats = forestSuccessionStats();
+    assert.equal(stats.available, true);
+    assert.ok(stats.active >= 0);
+    assert.ok(Object.keys(model.tiles).length >= stats.active);
+});
+
+test("a wet realm eventually starts a flood event on a real flooded tile", () => {
+    const model = setupWet();
+    for (let index = 0; index < 40; index++) updateForestSuccession(30);
+    const floods = Object.entries(model.tiles).filter(([, record]) => record.kind === "flooded");
+    assert.ok(floods.length > 0, "the wet realm must produce at least one flood event");
+    const [key, record] = floods[0];
+    const [x, y] = key.split(":").map(Number);
+    const live = forestSuccessionAt(x, y);
+    assert.ok(live);
+    assert.match(live.label, /Flood/);
+    assert.ok(record.age >= 0);
+    assert.ok(forestSuccessionStats().byKind.flooded >= 1);
 });
 
 test("disturbance spread follows the receiving stand's pressure", () => {
@@ -186,7 +244,7 @@ test("fire, storm and disease spread to neighbouring stands and stay bounded", (
     assert.ok(model.spreadHistory.length > 0);
     assert.ok(model.spreadHistory.length <= 24);
     for (const entry of model.spreadHistory) {
-        assert.ok(["burned", "windthrow", "diseased", "bark-beetle", "snowbreak", "drought-stressed"].includes(entry.kind));
+        assert.ok(["burned", "windthrow", "diseased", "bark-beetle", "snowbreak", "drought-stressed", "flooded"].includes(entry.kind));
         assert.notEqual(entry.to.join(":"), entry.from.join(":"));
         assert.ok(entry.stockAfter < entry.stockBefore);
         assert.equal(Math.max(Math.abs(entry.to[0] - entry.from[0]), Math.abs(entry.to[1] - entry.from[1])), 1);

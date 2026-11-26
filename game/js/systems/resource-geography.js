@@ -3,7 +3,7 @@
 import { state } from "../core/state.js";
 import { WORLD_W,WORLD_H,BIOME } from "../core/config.js";
 import {
-    FOREST_TYPES, forestRegrowthFactor, forestSightProfile, forestSnowDepthAt, forestStandAt, forestTypeFromIndex, forestTypeIndex,
+    FOREST_TYPES, forestSightProfile, forestSnowDepthAt, forestStandAt, forestTypeFromIndex, forestTypeIndex,
 } from "../world/forest-ecology.js";
 import { forestSuccessionAt } from "./forest-succession.js";
 import { seasonalState } from "../world/season.js";
@@ -15,7 +15,7 @@ import { snowProfileAt } from "../world/snow-ecology.js";
 import { transitionMovementFactorAt } from "../world/transition-biomes.js";
 import { vegetationMovementFactorAt } from "../world/vegetation-density.js";
 import { getCrossBiomeMovementFactorAt } from "./cross-biome-state.js";
-import { FOREST_MODEL_SAVE_VERSION } from "../world/forest-model.js";
+import { FOREST_MODEL_SAVE_VERSION, forestRegenerationFor } from "../world/forest-model.js";
 
 const VERSION=1;
 
@@ -992,7 +992,12 @@ export function regrowForests(days=1,options={}){
             climate,forests,stockRatio:geo.forestStock[i]/Math.max(1,geo.forestCapacity[i]),rockLine:0.92,
             succession:forestSuccessionAt(x,y),
         });
-        const amount=Math.min(missing,Math.max(1,Math.round(baseGrowth*forestRegrowthFactor(stand))));
+        // Regrowth uses the shared model's regeneration envelope, including
+        // its erosion penalty. A closed, species-rich stand still recovers
+        // fastest; a bare, erodible cutover keeps a slower climb to canopy.
+        const regeneration=forestRegenerationFor(stand);
+        const amount=Math.min(missing,Math.max(1,Math.round(baseGrowth*regeneration.factor
+            *(1-Math.min(0.35,regeneration.erosionPenalty*0.15)))));
         geo.forestStock[i]+=amount;
         restored+=amount;
     }

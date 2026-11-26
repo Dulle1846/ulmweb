@@ -573,6 +573,13 @@ export const FOREST_TYPES = Object.freeze({
     'swamp-carr': type('swamp-carr', 'Alder and Willow Carr', 'Alder, willow, bog birch and floodplain oak standing in black water and moss',
         { alder: 0.34, willow: 0.28, birch: 0.16, ash: 0.12, oak: 0.1 },
         { density: 0.62, openness: 0.38, understory: { fern: 0.14, bramble: 0.04, shrub: 0.24, moss: 0.56, heather: 0, lichen: 0.08, berry: 0.2, grass: 0.08, herb: 0.24 }, goods: ['alder-timber', 'willow-withies', 'sphagnum', 'bog-herb', 'bog-cranberry', 'game', 'firewood'], fauna: ['beaver', 'otter', 'heron', 'frog', 'mallard', 'deer', 'boar'], ageBias: 'mature', productivity: 0.78, silviculture: ['firewood', 'basketry', 'coppice', 'hunting', 'medicine', 'protection'] }),
+    // A flood-scoured formation is appended after every existing formation so
+    // the numeric formation index in old resources saves keeps its meaning.
+    // The species and goods are reused from the wet woodland vocabulary; only
+    // the visible formation and its succession label are new.
+    flooded: type('flooded', 'Flood-scoured Carr', 'Silt-streaked trunks, reed banks and standing water after a river burst',
+        { alder: 0.3, willow: 0.24, ash: 0.16, birch: 0.14, oak: 0.08, elm: 0.08 },
+        { density: 0.38, openness: 0.56, understory: { fern: 0.08, bramble: 0.02, shrub: 0.18, moss: 0.42, heather: 0, lichen: 0.08, berry: 0.12, grass: 0.22, herb: 0.2 }, goods: ['alder-timber', 'willow-withies', 'sphagnum', 'bog-herb', 'bog-cranberry', 'game', 'firewood'], fauna: ['beaver', 'otter', 'heron', 'frog', 'mallard', 'deer'], ageBias: 'young', disturbance: 'flooded', productivity: 0.55 }),
 });
 
 export const FOREST_TYPE_IDS = Object.freeze(Object.keys(FOREST_TYPES));
@@ -1081,6 +1088,17 @@ export const FOREST_SUCCESSION_PROFILES = Object.freeze({
         freshDays: 60, regrowthDays: 150, youngDays: 300, recoveredDays: 440,
         freshLabel: 'Windthrow', regrowthLabel: 'Post-storm Regrowth', youngLabel: 'Young Storm Gap Wood',
         recoveryLabel: 'Recovering Windthrow', severity: 0.55, spreadChance: 0.11,
+    }),
+    // A river burst is a disturbance with its own recovery clock. It is not a
+    // second hydrology model: the succession record is created only where the
+    // shared forest model already reports a floodplain, mire or high water
+    // flow, and it reuses the same regrowth and recovery machinery as fire and
+    // windthrow.
+    flooded: Object.freeze({
+        freshDays: 40, regrowthDays: 120, youngDays: 280, recoveredDays: 420,
+        freshLabel: 'Flood-scoured Carr', regrowthLabel: 'Floodplain Regrowth',
+        youngLabel: 'Young Floodplain Wood', recoveryLabel: 'Recovering Floodplain',
+        severity: 0.46, spreadChance: 0.14,
     }),
     diseased: Object.freeze({
         freshDays: 100, regrowthDays: 220, youngDays: 420, recoveredDays: 600,

@@ -10,9 +10,13 @@ import {
 import { FOREST_GOODS, forestStandAt } from "../world/forest-ecology.js";
 import { FOREST_MANAGEMENT_SYSTEMS } from "../world/forest-dynamics.js";
 import { forestFaunaEcologyFor, forestFaunaFieldGuide } from "../world/forest-fauna-ecology.js";
-import { forestModelFor } from "../world/forest-model.js";
+import {
+    forestModelCacheStats, forestModelFor, forestModelTelemetrySnapshot,
+    precomputeForestChunk,
+} from "../world/forest-model.js";
 import { timberQuote } from "../systems/regional-timber-market.js";
 import { forestGoodUseLabel } from "../systems/forest-gathering.js";
+import { forestSuccessionStats } from "../systems/forest-succession.js";
 
 const esc = value => String(value ?? "").replace(/[&<>"']/g, character => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
@@ -70,27 +74,35 @@ export function forestAtlasSurvey(limit = SURVEY_LIMIT) {
     const counts = {}, transitions = {}, samples = {}, faunaSamples = {}, modelSamples = {}, systemCounts = {};
     let sampled = 0, transitionSamples = 0;
     const climate = state.worldOptions?.climate || "temperate";
-    for (let slot = 0; slot < indices.length; slot += stride) {
-        const index = indices[slot];
-        const x = index % width, y = Math.floor(index / width);
+    const zoom = Number(state.zoom) || 1;
+    const sampleStandAt = (sx, sy) => {
+        const x = Math.floor(sx), y = Math.floor(sy);
+        if (x < 0 || y < 0 || x >= width || y >= height) return null;
         const terrain = terrainAt(x, y);
-        const stand = forestStandAt(x + 0.5, y + 0.5, {
+        return forestStandAt(sx, sy, {
             seed: Number(geo.seed) || 1,
             moisture: terrain.moisture,
             temperature: terrain.temperature,
             height: terrain.height,
             climate,
             forests: state.worldOptions?.forests ?? 52,
-            stockRatio: geo.forestCapacity[index] ? geo.forestStock[index] / geo.forestCapacity[index] : 1,
+            stockRatio: geo.forestCapacity[y * width + x]
+                ? geo.forestStock[y * width + x] / geo.forestCapacity[y * width + x] : 1,
             rockLine: 0.92,
         });
+    };
+    for (let slot = 0; slot < indices.length; slot += stride) {
+        const index = indices[slot];
+        const x = index % width, y = Math.floor(index / width);
+        const stand = sampleStandAt(x + 0.5, y + 0.5);
         const id = stand?.regionalTypeId;
         if (!id) continue;
         counts[id] = (counts[id] || 0) + 1;
         if (!samples[id] && stand.dynamics) samples[id] = stand.dynamics;
         if (!modelSamples[id] && stand.dynamics) {
             modelSamples[id] = forestModelFor(stand, {
-                day: state.dayOfYear, climate, zoom: 1, seed: geo.seed,
+                day: state.dayOfYear, climate, zoom, seed: geo.seed,
+                weather: state.weather, season: state.seasonIndex,
             });
         }
         if (!faunaSamples[id] && stand.dynamics) {
@@ -113,6 +125,20 @@ export function forestAtlasSurvey(limit = SURVEY_LIMIT) {
         fauna: faunaSamples[type.id] || null,
         model: modelSamples[type.id] || null,
     }));
+    // One bounded 16×16 chunk is precomputed for the atlas so the player can
+    // see the same chunk budget and LOD tier the renderer uses. It is one
+    // sample, not a per-chunk scan of the realm.
+    let chunk = null;
+    if (indices.length) {
+        const index = indices[0];
+        const cx = Math.floor((index % width) / 16);
+        const cy = Math.floor(Math.floor(index / width) / 16);
+        chunk = precomputeForestChunk({
+            chunkX: cx, chunkY: cy, seed: Number(geo.seed) || 1,
+            climate, day: state.dayOfYear, zoom,
+            standAt: sampleStandAt,
+        });
+    }
     const value = {
         available: true,
         forestTiles: indices.length,
@@ -122,6 +148,10 @@ export function forestAtlasSurvey(limit = SURVEY_LIMIT) {
         transitionSamples,
         present: types.filter(type => type.count > 0).length,
         types,
+        chunk,
+        succession: forestSuccessionStats(),
+        telemetry: forestModelTelemetrySnapshot(),
+        cache: forestModelCacheStats(),
         // The card sample keeps one dynamics record per regional type. A type
         // can carry several real management forms across its formation windows,
         // so this bounded count is the player's view of every system observed
@@ -256,6 +286,11 @@ function modelBlock(model) {
     const disturbance = model.disturbance || {};
     const succession = model.succession || {};
     const lod = model.lod || {};
+    const water = model.water || {};
+    const flood = model.floodPressure || {};
+    const erosion = model.erosion || {};
+    const regeneration = model.regeneration || {};
+    const biodiversity = model.biodiversity || {};
     const facts = [
         ['MODEL', 'ID ' + model.typeId.slice(-3) + ' · ' + pct(model.distribution.share) + '% region',
             'temp ' + Number(temperature[0]).toFixed(2) + '–' + Number(temperature[1]).toFixed(2)
@@ -269,8 +304,20 @@ function modelBlock(model) {
             + '% · ' + (succession.stageLabel || succession.stage || 'undisturbed')
             + ' · return ' + number(disturbance.returnYears) + 'y'],
         ['PERFORMANCE', 'LOD ' + lod.tier + ' · ' + number(lod.maxTrees) + ' trees/chunk',
-            'biodiversity ' + model.biodiversity.percent + '% · ' + number(model.regeneration.yearsToCanopy)
-            + 'y regen · ' + (model.rng.streams?.vegetation || 'forest-vegetation')],
+            'chunk ' + (model.chunk?.key || '—') + ' · ' + number(model.chunk?.budget?.maxStands)
+            + ' stands · ' + number(model.chunk?.budget?.maxTypes) + ' types · '
+            + (model.rng.streams?.vegetation || 'forest-vegetation')],
+        ['WATER', (water.floodplain ? 'Floodplain' : water.mire ? 'Mire' : 'Upland')
+            + ' · flow ' + pct(water.flow) + '%', 'flood pressure ' + pct(flood.pressure)
+            + '% · retention ' + pct(water.retention) + '% · ' + (flood.wetWeather ? 'wet weather' : 'dry weather')],
+        ['EROSION', esc(erosion.class || 'low') + ' · ' + number(erosion.sedimentTonsPerHaYear) + ' t/ha/y',
+            'risk ' + pct(erosion.risk) + '% · mitigation ' + pct(erosion.mitigation) + '% · ' + esc(erosion.soil || 'soil')],
+        ['RECOVERY', number(regeneration.yearsToCanopy) + 'y to canopy',
+            esc(regeneration.trajectory || 'steady') + ' · seed bank ' + pct(regeneration.seedBank)
+            + '% · mother trees ' + pct(regeneration.motherTrees) + '% · erosion penalty ' + pct(regeneration.erosionPenalty) + '%'],
+        ['HABITAT', 'biodiversity ' + number(biodiversity.percent) + '%',
+            esc(biodiversity.class || 'moderate') + ' · ' + number(biodiversity.layers) + ' layers · fauna '
+            + number(biodiversity.faunaRichness) + ' · deadwood ' + pct(biodiversity.deadwood) + '%'],
     ];
     return '<div class="forest-atlas__dynamics" data-forest-model="' + esc(model.typeId) + '">'
         + facts.map(([label, value, detail]) => '<span><small>' + esc(label) + '</small><strong>'
@@ -354,6 +401,24 @@ export function renderForestAtlasPanel() {
     }
     const present = survey.types.filter(type => type.count > 0).length;
     const currentSeason = Math.max(0, Math.min(3, Number(state.seasonIndex) || 0));
+    const pulse = survey.succession || {};
+    const byKind = pulse.byKind || {};
+    const chunk = survey.chunk;
+    const processBlock = '<div class="command-section-title">LIVE ECOLOGY PULSE</div>'
+        + '<div class="command-summary" data-forest-process="' + number(pulse.active) + '" data-forest-flood="'
+        + number(byKind.flooded) + '" data-forest-chunk="' + esc(chunk?.key || 'none') + '">'
+        + '<div><small>ACTIVE DISTURBANCES</small><strong>' + number(pulse.active) + '</strong></div>'
+        + '<div><small>CONTAINED</small><strong>' + number(pulse.contained) + '</strong></div>'
+        + '<div><small>SPREADS</small><strong>' + number(pulse.spreadings) + '</strong></div>'
+        + '<div><small>ACTIVE FLOODS</small><strong>' + number(byKind.flooded) + '</strong></div>'
+        + '<div><small>CHUNK / LOD</small><strong>' + esc(chunk ? chunk.budget.lod.toUpperCase() : 'WAITING')
+        + ' · ' + number(chunk?.sampled) + ' SAMPLES</strong></div>'
+        + '<div><small>MODEL CACHE</small><strong>' + number(survey.cache?.chunks) + ' / '
+        + number(survey.cache?.limit) + '</strong></div></div>'
+        + '<p class="command-note" data-forest-model-telemetry="' + number(survey.telemetry?.chunksBuilt) + '">'
+        + 'The pulse is read from the real succession tiles, the shared chunk budget and the bounded model cache. '
+        + 'Chunk builds: ' + number(survey.telemetry?.chunksBuilt) + ' · max ' + number(survey.telemetry?.maxMs)
+        + ' ms · types seen: ' + number(survey.telemetry?.typesSeen) + '. No per-tile work is added to the simulation tick.</p>';
     const cards = REGIONAL_FOREST_TYPES.map(type => {
         const row = survey.types.find(entry => entry.id === type.id);
         return card(type, row?.count || 0, survey.sampled, row?.transitionCount || 0, currentSeason, row?.dynamics || null, row?.fauna || null, row?.model || null);
@@ -375,6 +440,7 @@ export function renderForestAtlasPanel() {
         + '<div><small>SURVEYED</small><strong>' + number(survey.sampled) + ' SAMPLES</strong></div>'
         + '<div><small>TRANSITION EDGES</small><strong>' + number(survey.transitionSamples) + '</strong></div>'
         + '<div><small>SEASON</small><strong>' + esc(survey.season.toUpperCase()) + '</strong></div></div>'
+        + processBlock
         + faunaFieldGuide(survey)
         + '<div class="forest-atlas">' + cards + '</div>'
         + '<p class="command-note">The realm count comes from a bounded deterministic sample of up to ' + number(SURVEY_LIMIT)

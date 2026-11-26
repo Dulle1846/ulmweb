@@ -67,7 +67,7 @@ test("fifty-six species and fifty-seven shared formations preserve every existin
     // every save-stored species and formation index keeps its meaning.
     assert.equal(Object.keys(FOREST_SPECIES).length, 56);
     assert.equal(FOREST_SPECIES_IDS[38], "nothofagus");
-    assert.equal(FOREST_TYPE_IDS.length, 58);
+    assert.equal(FOREST_TYPE_IDS.length, 59);
     assert.equal(FOREST_TYPE_IDS[38], "selection-forest");
     TROPICAL_FORMATION_IDS.forEach((id, index) => {
         assert.equal(FOREST_TYPE_IDS[39 + index], id);

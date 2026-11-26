@@ -326,7 +326,12 @@ export function forestDisturbanceMatrixFor(stand = {}) {
     const fire = clamp01(stand.fireRisk);
     const wind = clamp01(stand.windExposure);
     const ice = clamp01(clamp01(stand.snowPotential) * 0.78 + clamp01(stand.height) * 0.18);
-    const flood = clamp01(clamp01(stand.regionalEffects?.flood) + clamp01(stand.wetness) * 0.3);
+    // Flood is read from the same water-flow record the succession process
+    // uses. The old matrix multiplied a regional effect and wetness but never
+    // saw the actual floodplain/mire classification; this keeps the displayed
+    // matrix and the live flood event in agreement.
+    const water = forestWaterFlowFor(stand);
+    const flood = clamp01(water.flood * 0.55 + water.flow * 0.35 + clamp01(stand.wetness) * 0.1);
     const disease = clamp01(clamp01(stand.pestRisk) * 0.86 + clamp01(stand.structure?.deadwood) * 0.14);
     const rows = { fire, wind, ice, flood, disease };
     const dominant = Object.entries(rows).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0][0];
@@ -813,6 +818,33 @@ export function forestWaterFlowFor(stand = {}) {
     });
 }
 
+// A flood event is not a second water grid. It is a bounded reading of the
+// shared flow record with the current weather and season. The result is used
+// by the succession process to decide whether a burst can start on this tile
+// and whether it can cross to its neighbour.
+export function forestFloodPressureFor(stand = {}, options = {}) {
+    const water = forestWaterFlowFor(stand);
+    const weather = String(options.weather || "clear").toLowerCase();
+    const wetWeather = weather === "rain" || weather === "storm";
+    const dryWeather = weather === "heat" || weather === "drought" || weather === "clear";
+    const season = Math.max(0, Math.min(3, Math.floor(Number(options.season) || 0)));
+    // Spring snowmelt and autumn rain are the two real flood windows. A
+    // floodplain remains capable outside them, but it is much less likely.
+    const seasonal = season === 0 ? 0.16 : season === 2 ? 0.12 : season === 1 ? -0.12 : -0.02;
+    const pressure = clamp01(water.flow * 0.55 + water.flood * 0.2
+        + (water.floodplain ? 0.18 : 0) + (water.mire ? 0.12 : 0)
+        + (wetWeather ? 0.2 : 0) - (dryWeather ? 0.16 : 0) + seasonal);
+    return freeze({
+        pressure: round(pressure, 3),
+        flow: water.flow,
+        flood: water.flood,
+        floodplain: water.floodplain,
+        mire: water.mire,
+        seasonal,
+        wetWeather,
+    });
+}
+
 export function forestErosionFor(stand = {}) {
     const soil = forestSoilFor(stand);
     const water = forestWaterFlowFor(stand);
@@ -901,6 +933,10 @@ export function forestModelFor(input, options = {}) {
     const regeneration = forestRegenerationFor(stand);
     const windthrow = forestWindthrowFor(stand, stand.standAge ?? stand.age);
     const water = forestWaterFlowFor(stand);
+    const floodPressure = forestFloodPressureFor(stand, {
+        weather: options.weather,
+        season: options.season,
+    });
     const rng = freeze({
         streams: FOREST_RNG_STREAMS,
         vegetation: forestRngSeedFor("vegetation", options.seed ?? stand.seed, stand.x, stand.y),
@@ -940,6 +976,7 @@ export function forestModelFor(input, options = {}) {
         regeneration,
         windthrow,
         water,
+        floodPressure,
         rng,
         requirementIds: freeze(FOREST_MODEL_REQUIREMENTS.map(entry => entry.id)),
     });

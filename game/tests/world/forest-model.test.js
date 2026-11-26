@@ -8,6 +8,7 @@ import {
     forestDisturbanceMatrixFor, forestSuccessionMatrixFor, forestSpeciesPoolFor,
     forestLodFor, forestChunkBudgetFor, forestChunkKeyFor, precomputeForestChunk,
     forestAnnualCadenceFor, forestPhenologyFor, forestRegionSeedFor,
+    forestFloodPressureFor,
     forestModelSaveMeta, migrateForestModelSave, validateForestModelSave,
     validateForestTypeDefinition, validateForestModelCatalog,
     forestModelTelemetrySnapshot, resetForestModelTelemetry,
@@ -19,6 +20,9 @@ import {
     forestModelFor, forestModelSummaryFor,
 } from "../../js/world/forest-model.js";
 import { REGIONAL_FOREST_TYPES } from "../../js/world/regional-forests.js";
+import {
+    FOREST_DISTURBANCE_KINDS, FOREST_SUCCESSION_PROFILES, FOREST_TYPES,
+} from "../../js/world/forest-ecology.js";
 
 const TYPE = REGIONAL_FOREST_TYPES.find(type => type.key === "temperate-broadleaf") || REGIONAL_FOREST_TYPES[0];
 const CONIFER = REGIONAL_FOREST_TYPES.find(type => type.key === "spruce-fir") || TYPE;
@@ -132,6 +136,26 @@ test("soil matrix reports nutrients, pH and water storage; moisture names floodp
     assert.equal(floodplain.habitat, "floodplain");
     assert.ok(floodplain.index > dry.index);
     assert.equal(dry.dry, true);
+});
+
+test("flood pressure is a real water reading and the flood formation is reachable", () => {
+    const floodplain = REGIONAL_FOREST_TYPES.find(type => type.key === "ash-elm-floodplain")
+        || REGIONAL_FOREST_TYPES.find(type => /floodplain|alluvial|carr/.test(type.key)) || TYPE;
+    const wetStand = stand({
+        regionalType: floodplain, regionalTypeId: floodplain.id,
+        regionalEffects: { ...(floodplain.effects || {}), flood: 0.9 },
+        moisture: 0.86, wetness: 0.9, ground: { pools: 0.4, soil: "alluvial" },
+    });
+    const wet = forestFloodPressureFor(wetStand, { season: 0, weather: "rain" });
+    const dry = forestFloodPressureFor(stand({ moisture: 0.2, wetness: 0.1, regionalEffects: { flood: 0 } }), {
+        season: 2, weather: "clear",
+    });
+    assert.ok(wet.pressure > dry.pressure, "a wet floodplain in spring rain must carry the higher flood pressure");
+    assert.equal(wet.floodplain, true);
+    assert.ok(forestDisturbanceMatrixFor(wetStand).flood > forestDisturbanceMatrixFor(stand({ wetness: 0.1 })).flood);
+    assert.ok(FOREST_TYPES.flooded, "the flood formation must exist");
+    assert.ok(FOREST_DISTURBANCE_KINDS.includes("flooded"));
+    assert.ok(FOREST_SUCCESSION_PROFILES.flooded.recoveredDays > FOREST_SUCCESSION_PROFILES.flooded.freshDays);
 });
 
 test("disturbance and succession matrices expose the shared stage thresholds", () => {

@@ -8,6 +8,7 @@ import { state } from "../core/state.js";
 import { TYPE } from "../core/types.js";
 import { getHeightAt, getMoistureAt, getTemperatureAt } from "../world/world.js";
 import { FOREST_GOODS, forestGoodsFor, forestSnowDepthAt, forestStandAt } from "../world/forest-ecology.js";
+import { forestBiodiversityFor } from "../world/forest-model.js";
 import { BIOME_RESOURCE_BY_ID } from "../world/biome-resource-data.js";
 import { grasslandProductsAt } from "../world/grassland-ecology.js";
 import { isSteppeSite, steppeProductsAt } from "../world/steppe-ecology.js";
@@ -423,6 +424,12 @@ export function gatherForestProducts(x, y, options = {}) {
     const timberFactor = clamp(number(regionalEffects.timber, 1), 0.7, 1.35);
     const dynamics = products.stand.dynamics || null;
     const goodsBoost = dynamics?.goods?.boost || {};
+    // A layered, species-rich stand offers a little more forage and wild food
+    // than a monoculture on the same soil. Timber follows the existing wood
+    // contract; the biodiversity factor deliberately applies to non-wood goods
+    // only and is bounded so it cannot become a second economy.
+    const biodiversity = forestBiodiversityFor(products.stand);
+    const biodiversityYield = 0.9 + biodiversity.index * 0.2;
     const managementTimber = clamp(number(dynamics?.silviculture?.timberFactor, 1), 0.75, 1.1);
     const transitionFactor = 1 + clamp(number(products.stand.regionalTransitionShare, 0), 0, 0.5) * 0.12;
     const character = products.stand.regionalCharacter || null;
@@ -444,8 +451,9 @@ export function gatherForestProducts(x, y, options = {}) {
         const densityYield = good.category === "wood" ? 1 : vegetationFactor;
         const regionalYield = good.category === "wood" ? timberFactor : forageFactor * transitionFactor;
         const dynamicsYield = good.category === "wood" ? managementTimber : clamp(number(goodsBoost[good.id], 1), 0.75, 1.3);
+        const habitatYield = good.category === "wood" ? 1 : biodiversityYield;
         let amount = Math.max(1, Math.round((1 + good.abundance * 3) * workFactor * ecotoneFactor
-            * densityYield * regionalYield * dynamicsYield));
+            * densityYield * regionalYield * dynamicsYield * habitatYield));
         if (bounty && good.id === signature) { amount += 1; bounty.amount += 1; }
         const perishable = good.category === "gather" || good.category === "hunt";
         const spoiled = perishable ? Math.min(amount, Math.floor(amount * spoilage * 0.35)) : 0;
@@ -541,6 +549,7 @@ export function gatherForestProducts(x, y, options = {}) {
         spoilage,
         spoiled: spoiledTotal,
         exposure,
+        biodiversity: { index: biodiversity.index, percent: biodiversity.percent, class: biodiversity.class },
         total: gathered.reduce((sum, good) => sum + good.amount, 0),
     };
 }

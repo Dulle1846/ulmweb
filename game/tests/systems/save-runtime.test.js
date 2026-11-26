@@ -8,6 +8,7 @@ import { createSaveSnapshot, prepareSaveSnapshot, restoreSaveSnapshot } from "..
 import { createIdentityState } from "../../js/systems/identity.js";
 import { TYPE } from "../../js/core/types.js";
 import { createLegacyState } from "../../js/systems/legacy.js";
+import { harvestForest } from "../../js/systems/resource-geography.js";
 
 function makeCanvas() {
     return {
@@ -72,8 +73,17 @@ test("a mature realm survives an exact save/load round-trip through schema 8 and
         // realm. Its initial 160×160 world is smaller than this 176×176 fixture;
         // geography indices above 160×160 used to be rejected even though they
         // are valid for the saved world. Keep this mismatch in the regression.
-        assert.ok(saved.resourceGeography.forest.some(([index]) => index >= 160 * 160),
-            "the fixture must contain a forest tile beyond a stale 160×160 world");
+        // A real harvest makes the fixture deterministic: the 25-year campaign
+        // does not always touch a forest tile in the far rows, and the old
+        // assertion depended on that accidental disturbance.
+        const highIndex = state.resourceGeography.forestCapacity.findIndex((capacity, index) =>
+            index >= 160 * 160 && capacity > 0);
+        assert.ok(highIndex >= 160 * 160, "the fixture must contain a forest tile beyond a stale 160×160 world");
+        harvestForest(highIndex % state.worldW, Math.floor(highIndex / state.worldW), 1);
+        const savedAfterHarvest = JSON.parse(JSON.stringify(createSaveSnapshot()));
+        assert.ok(savedAfterHarvest.resourceGeography.forest.some(([index]) => index >= 160 * 160),
+            "the fixture save must carry the far forest delta");
+        Object.assign(saved, savedAfterHarvest);
 
         for (const schema of [9, 8]) {
             const legacy = JSON.parse(JSON.stringify(saved));

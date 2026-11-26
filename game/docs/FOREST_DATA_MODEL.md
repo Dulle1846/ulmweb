@@ -1,13 +1,17 @@
 # Wald-Datenmodell, Performance und Modding — 1.2.23.1.121–150
 
-> **Status: implementiert (v3.67.0).** Die dreißig Punkte aus **E. Simulation,
+> **Status: implementiert (v3.70.0).** Die dreißig Punkte aus **E. Simulation,
 > Datenmodell und Performance** liegen in `js/world/forest-model.js`. Das Modul
 > baut keine zweite Simulation: Es liest die vorhandenen regionalen Typen,
 > Stände, Böden, Sukzessionsprofile und RNG-Ströme und stellt daraus die
-> Matrizen, Indizes und Budgets bereit, die Atlas, Störungsausbreitung und Save
-> gemeinsam verwenden. Die 30 Punkte stehen zusätzlich als maschinenlesbares
-> Manifest `FOREST_MODEL_REQUIREMENTS` im Code; der Spec-Audit liest dieses
-> Manifest direkt.
+> Matrizen, Indizes und Budgets bereit, die Atlas, Störungsausbreitung,
+> Regeneration und Save gemeinsam verwenden. Seit 3.70.0 sind die wichtigsten
+> Lesewerte auch in die laufende Simulation verdrahtet: Feuer, Windwurf und
+> Hochwasser wählen und verteilen echte Störungen; Erosion, Biodiversität und
+> Samenvorrat verändern Stockverlust, Regeneration und die Ernte nicht-hölzerner
+> Produkte. Die 30 Punkte stehen zusätzlich als maschinenlesbares Manifest
+> `FOREST_MODEL_REQUIREMENTS` im Code; der Spec-Audit liest dieses Manifest
+> direkt.
 
 ## 1. Ein gemeinsamer Datenpfad
 
@@ -15,14 +19,17 @@ Jede Waldkachel läuft weiterhin durch:
 
 `regional-forests.js` (Typ, IDs, Klima-/Höhenfenster)
 → `forest-ecology.js` (`forestStandAt`, Boden, Struktur, Phänologie)
-→ `forest-succession.js` (Störung, Alter, Nachbarschaft)
-→ `resource-geography.js` (Vorrat, Ernte, Save)
-→ `forest-atlas-panel.js` (Spieleransicht).
+→ `forest-model.js` (Matrizen, Wasser, Erosion, Biodiversität, Chunk-Budget)
+→ `forest-succession.js` (Störung, Alter, Nachbarschaft, Ereignis-RNG)
+→ `resource-geography.js` (modellgetriebene Regeneration, Vorrat, Save)
+→ `forest-gathering.js` (Biodiversitätsfaktor der Nichtholz-Ernte)
+→ `forest-atlas-panel.js` (Spieleransicht mit Live-Puls).
 
-`forest-model.js` ist die gemeinsame **Leseschicht** darüber. Es speichert
-keinen zweiten Waldzustand und schreibt keine eigene Kachel. Die einzige
-persistierte Ergänzung ist der Versionsmarker im Ressourcen-Snapshot; die
-Typ-IDs selbst werden weiterhin deterministisch aus dem Seed abgeleitet.
+`forest-model.js` bleibt eine gemeinsame **Leseschicht** über dem einen Wald,
+aber keine tote Atlas-Tabelle mehr. Es speichert keinen zweiten Waldzustand
+und schreibt keine eigene Kachel. Die einzige persistierte Ergänzung ist der
+Versionsmarker im Ressourcen-Snapshot; die Typ-IDs selbst werden weiterhin
+deterministisch aus dem Seed abgeleitet.
 
 ## 2. Die dreißig Punkte
 
@@ -34,7 +41,7 @@ Typ-IDs selbst werden weiterhin deterministisch aus dem Seed abgeleitet.
 | 124 | Temperatur-, Frost- und Niederschlagsfenster | `forestClimateEnvelopeFor` |
 | 125 | Bodenmatrix aus Nährstoff, pH, Wasserspeicherung, Drainage und Erosion | `forestSoilFor` |
 | 126 | Feuchtigkeitsindex und Lebensraumklasse Aue/Moor/Trockenwald | `forestMoistureIndexFor` |
-| 127 | Störungsmatrix Feuer, Sturm, Eis, Hochwasser, Krankheit | `forestDisturbanceMatrixFor` |
+| 127 | Störungsmatrix Feuer, Sturm, Eis, Hochwasser, Krankheit; wählt reale Ereignisse | `forestDisturbanceMatrixFor`, `forestDisturbanceKindFor` |
 | 128 | Sukzessionsmatrix mit frisch → Regeneration → Jungwald → erholt → geschlossen | `forestSuccessionMatrixFor` |
 | 129 | Regionaler Artenpool für Bäume, Tiere und Unterwuchs | `forestSpeciesPoolFor` |
 | 130 | Vier LOD-Stufen mit Baumabstand, Schatten und Baumdeckel | `forestLodFor` |
@@ -51,12 +58,12 @@ Typ-IDs selbst werden weiterhin deterministisch aus dem Seed abgeleitet.
 | 141 | Gecachte Limits, Artenpools, Verteilungen und Chunks | `forestModelCacheStats` |
 | 142 | Räumlicher Index für Tiere, Ressourcen und Nachbarsuche | `buildForestSpatialIndex` |
 | 143 | Acht-Nachbar-Regel für Waldränder und Übergänge | `forestNeighboursFor` |
-| 144 | Feuerausbreitung mit Windrichtung und Zellnachbarn | `forestFireSpreadFor` |
-| 145 | Windwurf mit Richtung, Bestandsalter und Schadholz | `forestWindthrowFor` |
-| 146 | Wasserfluss durch Auen und Bruchwälder | `forestWaterFlowFor` |
-| 147 | Erosion nach Kahlschlag oder Brand | `forestErosionFor` |
-| 148 | Regeneration von Kahlflächen über Jahrzehnte | `forestRegenerationFor` |
-| 149 | Biodiversitätsindex je Waldtyp | `forestBiodiversityFor` |
+| 144 | Feuerausbreitung mit Windrichtung und Zellnachbarn, live in der Sukzession | `forestFireSpreadFor` |
+| 145 | Windwurf mit Richtung, Bestandsalter und Schadholz, live in der Sukzession | `forestWindthrowFor` |
+| 146 | Wasserfluss durch Auen und Bruchwälder; Hochwasserereignis und Ausbreitung | `forestWaterFlowFor`, `forestFloodPressureFor`, `forestDisturbanceKindFor` |
+| 147 | Erosion nach Kahlschlag oder Brand; erhöht Stockverlust und bremst Regeneration | `forestErosionFor` |
+| 148 | Regeneration von Kahlflächen über Jahrzehnte; echter Zuwachs in `regrowForests` | `forestRegenerationFor` |
+| 149 | Biodiversitätsindex je Waldtyp; senkt Stockverlust und erhöht Nichtholz-Ernte | `forestBiodiversityFor` |
 | 150 | Getrennte Seeds für Vegetation, Tiere und Events | `forestRngSeedFor` |
 
 ## 3. Standort- und Klimamatrix
@@ -83,7 +90,12 @@ Klassen `poor/moderate/rich`, `acidic/neutral/alkaline` und
 `dry/fresh/retentive` sind reine Anzeige- und Regelhilfen. Der Feuchtigkeitsindex
 gewichtet Feuchte, Nässe, Wasserlöcher und den regionalen Hochwasserfaktor.
 Daraus folgen `dry`, `fresh`, `moist`, `wet`, `flooded` sowie die Lebensräume
-`dry-forest`, `upland`, `mire` und `floodplain`.
+`dry-forest`, `upland`, `mire` und `floodplain`. `forestFloodPressureFor`
+verbindet diesen Index mit dem Wasserfluss, dem regionalen Hochwasserfaktor und
+Regen/Schneeschmelze. Die 3.70.0-Formation `flooded` hat ein eigenes
+Sukzessionsprofil (`freshDays: 40`, `regrowthDays: 120`, `youngDays: 280`,
+`recoveredDays: 420`, `severity: 0.46`, `spreadChance: 0.14`) und einen eigenen
+Formationsindex 59; die alten Indizes 0–58 bleiben unverändert.
 
 ## 4. Störung, Sukzession und Nachbarschaft
 
@@ -102,12 +114,27 @@ Die Sukzessionsmatrix verwendet exakt die Schwellen aus
 | young | `youngDays` → recovered |
 | recovered | `recoveredDays` → closed |
 
-Die Ausbreitung in `forest-succession.js` nutzt jetzt dieselbe
+Die Ausbreitung in `forest-succession.js` nutzt dieselbe
 `forestNeighbourOrderFor`-Reihenfolge wie das Modell. Bei Sturm werden die
 downwind gelegenen Nachbarn zuerst geprüft; bei ruhigem Wetter entscheidet
 weiterhin der deterministische Seed-Hash über den Start. Die acht Nachbarn
 bleiben auf die Karte begrenzt; Randkacheln haben drei, Binnenkacheln acht
 gültige Nachbarn.
+
+Seit 3.70.0 ist die Matrix nicht mehr nur Anzeige:
+
+- `spawnDisturbance` zieht das Ereignis aus dem separaten `forest-events`-Stream
+  und fragt `forestDisturbanceKindFor`. Ein feuchter Auen-/Bruchwald kann so
+  ein echtes `flooded`-Ereignis erhalten; Trockenstandorte nicht.
+- `spreadDisturbances` liest für jede Quelle die Nachbarn über den räumlichen
+  Index, lässt Feuer dem Wind folgen, Windwurf alter/Exponiertheit folgen und
+  Flut nur auf feuchte Ziele übergreifen. Die Ausbreitung bleibt auf einen
+  Nachbarn je Quelle und Intervall begrenzt.
+- Der Bestandsverlust eines neuen Ereignisses kombiniert den Störungsfaktor mit
+  Erosion und Biodiversität. Ein biodiverser, geschlossener Bestand verliert
+  weniger als eine Monokultur auf erosionsgefährdetem Hang.
+- `forestSuccessionStats()` liefert dem Atlas aktive, enthaltene und erholte
+  Störungen sowie Zähler je Typ, ohne die Kacheln zu kopieren.
 
 ## 5. Chunks, LOD und Budget
 
@@ -142,20 +169,29 @@ Chunks, Cache-Treffer, Fehlschläge, Maximalzeit und gesichtete Typen.
 ## 6. Feuer, Windwurf, Wasser, Erosion und Regeneration
 
 - **Feuer:** `forestFireSpreadFor` bewertet die acht Nachbarn mit ihrem
-  `fireRisk`, der Windausrichtung und dem saisonalen Trockenheitsfaktor.
+  `fireRisk`, der Windausrichtung und dem saisonalen Trockenheitsfaktor. In
+  `spreadDisturbances` wird daraus die erste gültige Nachbarzelle; der Wind
+  kommt aus `state.wind`, die Trockenheit aus dem Modellstand.
 - **Windwurf:** `forestWindthrowFor` leitet die Richtung aus dem Stand-Seed ab;
   Alter und Windexposition erhöhen das Risiko, flach wurzelnde Bestände
-  zusätzlich. `salvage` ist die grobe Schadholzmenge.
+  zusätzlich. `salvage` ist die grobe Schadholzmenge. Die Sukzession nutzt die
+  downwind gelegene Nachbarzelle und die Bestandsalter-Penalty.
 - **Wasser:** `forestWaterFlowFor` verbindet Nässe, Feuchte, Hochwasser und
   Hangneigung. Auen und Bruchwälder werden als `floodplain`/`mire` markiert.
+  `forestFloodPressureFor` erzeugt daraus die reale Wahrscheinlichkeit eines
+  Hochwasserereignisses; die Ausbreitung darf nur feuchte Ziele fluten.
 - **Erosion:** `forestErosionFor` kombiniert Bodenerodierbarkeit, offene
   Kronen, Hangneigung, Störung und Wasserfluss. Kahlschlag und Brand liegen
-  deutlich über geschlossenem Altbestand.
+  deutlich über geschlossenem Altbestand. Der Wert erhöht den Verlust eines
+  neuen Ereignisses und verlängert die Regeneration.
 - **Regeneration:** `forestRegenerationFor` nutzt den vorhandenen
   `forestRegrowthFactor`, den Samenvorrat, Mutterbäume und den Erosionszuschlag.
-  Die Jahre bis zum Kronenschluss sind eine Anzeige, keine neue Tick-Schleife.
+  `regrowForests` schreibt den Zuwachs in `forestStock`; die Jahre bis zum
+  Kronenschluss bleiben eine Anzeige, keine neue Tick-Schleife.
 - **Biodiversität:** `forestBiodiversityFor` gewichtet Artenvielfalt, Totholz,
-  Kronenschichten, Faunenreichtum und Altersklasse zu 0–100 %.
+  Kronenschichten, Faunenreichtum und Altersklasse zu 0–100 %. Ein hoher Index
+  puffert Störungsverluste und erhöht den Ertrag von Beeren, Pilzen, Harz und
+  anderen Nichtholzprodukten in `forest-gathering.js`.
 
 ## 7. Save und Migration
 
@@ -209,28 +245,53 @@ Alle Funktionen sind reine Reads; sie verändern keinen globalen Zähler.
 
 ## 10. Spieleransicht
 
-Der FORESTS-Atlas zeigt je vorhandenem Typ zusätzlich vier Zeilen:
+Der FORESTS-Atlas zeigt je vorhandenem Typ zusätzlich acht Zeilen:
 
 - `MODEL` — stabile ID, regionaler Anteil, Temperatur-/Feuchte-/Höhenfenster,
 - `SOIL / WATER` — Boden, pH, Nährstoff, Wasserspeicherung, Feuchtigkeitsklasse,
 - `DISTURBANCE` — Feuer, Sturm, Eis, Hochwasser, Sukzessionsstufe, Wiederkehr,
-- `PERFORMANCE` — LOD, Bäume/Chunk, Biodiversität, Regenerationsjahre, RNG-Stream.
+- `PERFORMANCE` — LOD, Bäume/Chunk, Chunk-ID, Arbeitsbudget, Vegetations-RNG,
+- `WATER` — Aue/Moor/Hochland, Wasserfluss, Hochwasserdruck, Retention,
+- `EROSION` — Erosionsklasse, Bodenabtrag, Risiko, Mitigation,
+- `RECOVERY` — Jahre bis Kronenschluss, Trajektorie, Samenbank, Mutterbäume,
+- `HABITAT` — Biodiversität, Schichten, Faunenreichtum, Totholz.
+
+Über den Karten steht ein **LIVE ECOLOGY PULSE**. Er liest die echten aktiven,
+enthaltenen und erholten Störungen aus `forestSuccessionStats`, zählt
+Hochwasserereignisse, zeigt einen begrenzten 16×16-Chunk mit LOD/Budget und die
+Trefferquote des Modell-Caches. Der Puls führt keine zusätzliche Tick-Arbeit
+ein: Er wird nur beim Öffnen/Aktualisieren des Atlas berechnet.
 
 Die Zeilen sind aus demselben Stand abgeleitet, den der Förster und die Ernte
 lesen. Sie zeigen keine erfundenen Zahlen und keine `NaN`-Platzhalter.
 
 ## 11. Nachweise
 
-- `tests/world/forest-model.test.js` — 14 Tests über alle 30 Punkte, inklusive
+- `tests/world/forest-model.test.js` — 15 Tests über alle 30 Punkte, inklusive
   Manifest, IDs, Gewichte, Boden, Feuchtigkeit, Störung, Sukzession, Artenpool,
   LOD, Chunk/Cache/Telemetrie, Save-Migration, Modding, Spatial Index,
   Nachbarschaft, Feuer, Windwurf, Wasser, Erosion, Regeneration, Biodiversität
-  und RNG.
-- `tests/presentation/forest-atlas.test.js` — die vier neuen Atlas-Zeilen.
+  und RNG. Der neue Flood-Test prüft Hochwasserdruck, Matrix und Formation.
+- `tests/presentation/forest-atlas.test.js` — die acht Modellzeilen und der
+  Live-Puls mit begrenztem Chunk.
 - `tests/world/regional-forests.test.js` — Save-Roundtrip und alter Save ohne
   Marker.
-- `tests/systems/forest-succession.test.js` — bestehende Ausbreitung und
-  Kontrolle bleiben grün.
+- `tests/systems/forest-succession.test.js` — Ausbreitung, Kontrolle, ein
+  reproduzierbares Hochwasser auf einem feuchten Realms sowie die
+  Ereigniswahl aus dem getrennten RNG-Stream.
 - `tests/browser/regional-forest-reference.mjs` — echter Browserlauf mit 60
-  Atlas-Karten, 10 Modellblöcken, den vier neuen Zeilen, drei gerenderten
-  Standbildern und keiner `undefined`/`NaN`- oder Konsolenfehlermeldung.
+  Atlas-Karten, 10 Modellblöcken, den acht Modellzeilen, dem Live-Puls, drei
+  gerenderten Standbildern und keiner `undefined`/`NaN`- oder
+  Konsolenfehlermeldung.
+
+## 12. Was 3.70.0 konkret neu verdrahtet
+
+| Bereich | Vorher | Jetzt |
+|---|---|---|
+| Hochwasser | Matrixzeile und Feuchtigkeitslabel | eigenes Profil, eigene Formation, Ereigniswahl, Ausbreitung nur auf feuchte Ziele, Kontrolle kostet Nahrung/Gold |
+| Feuer | Ausbreitung nach festem Faktor | Nachbarrisiko, Windrichtung, Trockenheit, erster gültiger Nachbar |
+| Windwurf | pauschaler Nachbarverlust | Richtung, Bestandsalter, Exposition, Schadholz |
+| Erosion | Anzeige | erhöht Verlust, bremst Regeneration |
+| Biodiversität | Anzeige | puffert Verlust, erhöht Nichtholz-Ernte |
+| Regeneration | globaler Faktor | `forestRegenerationFor` in `regrowForests` |
+| Spieleransicht | vier Modellzeilen | acht Zeilen plus Live-Puls, Chunk und Cache |

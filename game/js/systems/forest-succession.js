@@ -12,7 +12,12 @@ import {
     forestSuccessionStage,
 } from "../world/forest-ecology.js";
 import { forestBarkBeetlePressureAt } from "./forest-fauna.js";
-import { forestNeighbourOrderFor } from "../world/forest-model.js";
+import {
+    buildForestSpatialIndex, forestBiodiversityFor, forestErosionFor,
+    forestFireSpreadFor, forestFloodPressureFor, forestNeighbourOrderFor,
+    forestRngSeedFor, forestWaterFlowFor, forestWindthrowFor,
+    queryForestSpatialIndex,
+} from "../world/forest-model.js";
 
 const VERSION = 1;
 const MAX_TILES = 4096;
@@ -194,6 +199,37 @@ export function forestSuccessionSummary(limit = 3) {
     return rows.map(row => row.stage.label + " · " + row.kind).join(" · ");
 }
 
+// A compact, read-only pulse for the atlas and the building survey. It is
+// derived from the same tiles the simulation advances; no second disturbance
+// ledger is maintained.
+export function forestSuccessionStats() {
+    const model = state.forestSuccession;
+    if (!validModel(model)) {
+        return { available: false, active: 0, contained: 0, recovered: 0, byKind: {}, events: 0, spreadings: 0, suppressed: 0, day: 0 };
+    }
+    const byKind = {};
+    let active = 0, contained = 0, recovered = 0;
+    for (const record of Object.values(model.tiles)) {
+        const stage = forestSuccessionStage(record.kind, record.age);
+        if (!stage) continue;
+        if (stage.id === "recovered") {
+            recovered++;
+            continue;
+        }
+        active++;
+        byKind[record.kind] = (byKind[record.kind] || 0) + 1;
+        if (Math.max(0, number(record.containedUntil)) > model.day) contained++;
+    }
+    return {
+        available: true,
+        active, contained, recovered, byKind,
+        events: Math.max(0, Math.floor(number(model.events))),
+        spreadings: Math.max(0, Math.floor(number(model.spreadings))),
+        suppressed: Math.max(0, Math.floor(number(model.suppressed))),
+        day: Math.max(0, Math.floor(number(model.day))),
+    };
+}
+
 // Seasonal envelopes keep the existing disturbance rhythm. The stand's derived
 // fire, pest, monoculture and snow values decide which kind wins the next real
 // event; they are not stored and add no per-tick work.
@@ -288,21 +324,47 @@ export function spreadRiskFactor(kind, stand = {}, insectPressure = 0) {
         if (!stand?.conifer) return 1;
         return clamp((0.55 + clamp01(number(stand.windExposure ?? stand.exposure)) * 0.9) * shelter, 0.45, 1.45);
     }
+    if (kind === "flooded") {
+        const water = forestWaterFlowFor(stand);
+        return clamp((0.42 + water.flow * 0.9 + (water.floodplain ? 0.22 : 0)) * shelter, 0.35, 1.6);
+    }
     return 1;
 }
 
-function chooseKind(model, day, stand = null, insectPressure = 0) {
-    const season = Math.floor(number(state.seasonIndex, 0)) % 4;
-    const roll = unitHash(model.seed, model.events + 1, day, 0x4b494e44);
+// Exposed for the focused tests and for any future event UI. The caller can
+// supply the roll, season and weather, so a flood can be reproduced without
+// waiting for a particular campaign year.
+export function forestDisturbanceKindFor(stand = {}, options = {}) {
+    const season = Math.floor(number(options.season ?? state.seasonIndex, 0)) % 4;
+    const weather = options.weather ?? state.weather;
+    const insectPressure = number(options.insectPressure);
+    const roll = clamp01(number(options.roll, 0.5));
+    // A flood is a real succession event, not merely a value in the atlas. It
+    // starts only where the shared water model already names a floodplain,
+    // mire or strong flow, and it is common in wet spring/autumn weather.
+    if (stand) {
+        const flood = forestFloodPressureFor(stand, { season, weather });
+        if (flood.pressure >= 0.46 && roll < Math.min(0.55, flood.pressure)) return "flooded";
+    }
     // Conifer stands use the derived fire/pest/monoculture/snow pressure to
     // choose among real disturbances. Broadleaf woodland keeps its existing
     // fire/wind/disease cycle.
     if (stand?.conifer === true || number(stand?.coniferShare) > 0.4) {
-        return coniferDisturbanceKind(stand, season, roll, insectPressure);
+        return weightedDisturbance(coniferDisturbanceWeights(stand, season, weather, insectPressure), roll);
     }
     if (season === 1) return roll < 0.62 ? "burned" : "diseased";
     if (season === 2 || season === 3) return roll < 0.64 ? "windthrow" : "diseased";
     return roll < 0.45 ? "windthrow" : "diseased";
+}
+
+function chooseKind(model, day, stand = null, insectPressure = 0) {
+    const season = Math.floor(number(state.seasonIndex, 0)) % 4;
+    // The event stream is deliberately separate from vegetation and animal
+    // rolls. A new tree or herd can never shift which hazard a year receives.
+    const eventSeed = forestRngSeedFor("events", model.seed, model.events + 1, day);
+    return forestDisturbanceKindFor(stand, {
+        season, weather: state.weather, roll: eventSeed / 0x100000000, insectPressure,
+    });
 }
 
 function spawnDisturbance(model) {
@@ -311,7 +373,8 @@ function spawnDisturbance(model) {
     const height = Number(state.worldH) || 0;
     if (!geo || !width || !height) return null;
     for (let attempt = 0; attempt < 96; attempt++) {
-        const hash = hash32(model.seed, model.events + 1, model.day + 1, attempt + 0x53544f52);
+        const eventSeed = forestRngSeedFor("events", model.seed, model.events + 1, model.day + 1);
+        const hash = hash32(eventSeed, attempt, 0x53544f52);
         const index = hash % (width * height);
         const x = index % width;
         const y = Math.floor(index / width);
@@ -329,11 +392,16 @@ function spawnDisturbance(model) {
         if (!profile) continue;
         const before = Math.max(1, Math.floor(number(geo.forestStock[index], 1)));
         // A severe regime removes more of the stand in the same event; refugia
-        // leave a little more standing stock for seed and habitat.
+        // leave a little more standing stock for seed and habitat. The shared
+        // erosion and biodiversity readings now join that decision, so a steep
+        // bare site loses more while a layered old wood keeps a seed source.
         const regime = stand?.dynamics?.hazard?.regime;
         const severity = clamp01(number(regime?.severity));
         const refugia = clamp01(number(regime?.refugia));
-        const retained = clamp(number(profile.severity) - severity * 0.06 + refugia * 0.03, 0.18, 0.95);
+        const erosion = forestErosionFor(stand);
+        const biodiversity = forestBiodiversityFor(stand);
+        const retained = clamp(number(profile.severity) - severity * 0.06 + refugia * 0.03
+            - erosion.risk * 0.08 + biodiversity.index * 0.03, 0.18, 0.95);
         const after = Math.max(1, Math.min(before, Math.floor(before * retained)));
         geo.forestStock[index] = after;
         model.tiles[key] = { kind, age: 0, containedUntil: 0 };
@@ -414,6 +482,7 @@ function activeSuccessionRecord(record) {
 function controlCost(kind) {
     if (kind === "burned") return { food: 6, wood: 4 };
     if (kind === "windthrow") return { wood: 8 };
+    if (kind === "flooded") return { food: 5, gold: 4 };
     // Pest, snow and drought control are paid specialists and equipment, so
     // they use the same gold cost as disease. An empty cost made those kinds
     // free to contain and let a control party succeed with no resources.
@@ -450,6 +519,7 @@ function spreadDisturbances(model) {
         if (!stage || stage.id === "recovered") continue;
         const [x, y] = key.split(":").map(Number);
         const season = Math.floor(number(state.seasonIndex, 0)) % 4;
+        const sourceStand = standAtTile(geo, x, y);
         let chance = profile.spreadChance;
         if (record.kind === "burned") chance *= season === 1 ? 1.35 : state.weather === "rain" || state.weather === "storm" ? 0.35 : 0.85;
         if (record.kind === "windthrow") chance *= state.weather === "storm" ? 1.5 : season === 2 ? 1.15 : 0.8;
@@ -458,16 +528,42 @@ function spreadDisturbances(model) {
         // Risk-aware kinds may spread into a nearby stand up to the highest
         // possible factor. The target's own pressure then decides whether the
         // crossing actually happens; broadleaf kinds keep the old threshold.
-        const riskAware = ["burned", "bark-beetle", "snowbreak", "drought-stressed", "windthrow"].includes(record.kind);
+        const riskAware = ["burned", "bark-beetle", "snowbreak", "drought-stressed", "windthrow", "flooded"].includes(record.kind);
         if (roll > chance * (riskAware ? 1.5 : 1)) continue;
         // The shared neighbourhood order follows the current weather: a storm
         // pushes fire and windthrow downwind first, while a calm day still uses
         // a deterministic hash start. This is the same eight-neighbour walk the
         // renderer and atlas use, not a second spread model.
-        const neighbourOrder = forestNeighbourOrderFor({
+        let neighbourOrder = forestNeighbourOrderFor({
             x, y, width, height, wind: state.weather, seed: model.seed,
         });
-        const start = hash32(model.seed, x, y, model.day + 0x53505244) % neighbourOrder.length;
+        let gust = null;
+        if (record.kind === "windthrow" && sourceStand) {
+            // The storm direction and stand age now choose the downwind edge
+            // instead of leaving the four equally likely neighbours in charge.
+            gust = forestWindthrowFor(sourceStand, sourceStand.standAge ?? sourceStand.age);
+            chance *= 0.72 + gust.risk * 0.55;
+            neighbourOrder = [...neighbourOrder].sort((a, b) =>
+                a.id === gust.direction ? -1 : b.id === gust.direction ? 1 : 0);
+        }
+        if (record.kind === "flooded" && sourceStand) {
+            const sourceWater = forestWaterFlowFor(sourceStand);
+            chance *= 0.6 + sourceWater.flow * 0.7;
+        }
+        if (record.kind === "burned" && sourceStand) {
+            // Fire uses the eight-neighbour risk record, including the wind
+            // alignment and the target's actual fireRisk. The list is already
+            // sorted by crossing risk, so start at the top and let the shared
+            // threshold decide whether that edge ignites.
+            neighbourOrder = forestFireSpreadFor({
+                x, y, width, height, wind: state.weather,
+                season: ["spring", "summer", "autumn", "winter"][season],
+                seed: model.seed,
+                standAt: (sx, sy) => standAtTile(geo, Math.floor(sx), Math.floor(sy)),
+            });
+        }
+        const start = record.kind === "burned" || record.kind === "windthrow"
+            ? 0 : hash32(model.seed, x, y, model.day + 0x53505244) % neighbourOrder.length;
         for (let offset = 0; offset < neighbourOrder.length; offset++) {
             const neighbour = neighbourOrder[(start + offset) % neighbourOrder.length];
             const dx = neighbour.dx;
@@ -484,8 +580,22 @@ function spreadDisturbances(model) {
             if (!geo.forestCapacity?.[index] || before < 12) continue;
             const stand = standAtTile(geo, nx, ny);
             if (!stand?.forest || stand.type === "cutover") continue;
-            if (roll > chance * spreadRiskFactor(record.kind, stand, forestBarkBeetlePressureAt(nx, ny))) continue;
-            const after = Math.max(1, Math.floor(before * 0.72));
+            // Fire carries its own target risk from forestFireSpreadFor; a
+            // flood can cross only into another wet low site. The shared
+            // spread-risk factor still owns pest, snow, drought and wind.
+            const fireRisk = record.kind === "burned"
+                ? Math.max(0.22, Number(neighbour.risk) || 0) : 1;
+            if (record.kind === "flooded") {
+                const targetFlood = forestFloodPressureFor(stand, { season, weather: state.weather });
+                if (targetFlood.pressure < 0.38) continue;
+            }
+            if (roll > chance * fireRisk * spreadRiskFactor(record.kind, stand, forestBarkBeetlePressureAt(nx, ny))) continue;
+            // A diverse, layered stand keeps more seed and shade after the
+            // disturbance; an erodible open slope loses more of its stock.
+            const erosion = forestErosionFor(stand);
+            const biodiversity = forestBiodiversityFor(stand);
+            const loss = clamp(0.18 + erosion.risk * 0.16 - biodiversity.index * 0.05, 0.1, 0.45);
+            const after = Math.max(1, Math.floor(before * (1 - loss)));
             geo.forestStock[index] = after;
             model.tiles[nkey] = { kind: record.kind, age: 0, containedUntil: 0 };
             activateKey(model, nkey);
@@ -527,14 +637,21 @@ export function suppressNearestForestDisturbance(x, y, radius = 8) {
     const cx = Math.floor(number(x));
     const cy = Math.floor(number(y));
     const limit = Math.max(1, Math.floor(number(radius, 8)));
-    let best = null;
+    // The active disturbances are spatially indexed instead of scanning every
+    // old scar. The index is bounded to the existing tile cap and is built only
+    // for this player action; the daily simulation never pays for it.
+    const active = [];
     for (const [key, record] of Object.entries(model.tiles)) {
         if (!activeSuccessionRecord(record) || Math.max(0, number(record.containedUntil)) > model.day) continue;
         const [tx, ty] = key.split(":").map(Number);
-        const distance = Math.abs(tx - cx) + Math.abs(ty - cy);
-        if (distance > limit) continue;
-        if (!best || distance < best.distance) best = { x: tx, y: ty, distance };
+        active.push({ key, x: tx, y: ty });
     }
+    const index = buildForestSpatialIndex(active, { cellSize: Math.max(2, Math.ceil(limit / 2)), limit: MAX_TILES });
+    const candidates = queryForestSpatialIndex(index, cx, cy, limit * Math.SQRT2)
+        .map(({ item }) => ({ ...item, distance: Math.abs(item.x - cx) + Math.abs(item.y - cy) }))
+        .filter(item => item.distance <= limit)
+        .sort((a, b) => a.distance - b.distance || a.key.localeCompare(b.key));
+    const best = candidates[0];
     if (!best) return { ok: false, reason: "No active disturbance within " + limit + " tiles" };
     return suppressForestDisturbance(best.x, best.y);
 }

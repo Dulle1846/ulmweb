@@ -1,13 +1,60 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.69.0`
-**Next development line:** `3.70.0-dev`
+**Current production version:** `3.70.0`
+**Next development line:** `3.71.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
 **Last repository verification:** 2026-11-26 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.70.0 — The forest data model starts to govern the wood
+
+The thirty data-model points from **1.2.23.1.121–150** were already present as a
+read layer. This batch wires the important readings into the running world
+instead of leaving them in the atlas: a real flood disturbance, model-driven
+fire/wind/flood spread, erosion- and biodiversity-aware losses, model-driven
+regeneration, a biodiversity forage effect and a live ecology pulse in the
+player-facing atlas. Existing formations, indices, saves and the deterministic
+calendar stay compatible.
+
+- `forest-ecology.js` gains a `flooded` succession profile and a stable
+  formation index 59. Old indices 0–58 are unchanged; the existing sixty
+  regional types and every old save keep their meaning.
+- `forest-model.js` exposes `forestFloodPressureFor`. It joins the water flow,
+  regional flood factor, moisture, retention and wet weather into one bounded
+  pressure reading. The disturbance matrix and the new flood event use it.
+- `forest-succession.js` now chooses events from the separate `forest-events`
+  RNG stream, can start a real `flooded` record only on wet ground, and spreads
+  fire along the wind/risk order, windthrow along the derived storm direction
+  and age, and flood only into wet neighbouring tiles. One spread per source
+  and a four-spread pass keep the work bounded.
+- New events and spreads lose stock through erosion and biodiversity instead of
+  one flat percentage. A layered stand keeps more seed and shade; an erodible
+  open slope loses more. `forestSuccessionStats()` exposes active, contained
+  and recovered records for the player view without copying the tile map.
+- `regrowForests` now uses `forestRegenerationFor` and its erosion penalty.
+  `forest-gathering.js` applies a bounded biodiversity factor to non-wood
+  products, so a species-rich wood yields more berries, mushrooms and other
+  forage while timber keeps its existing contract.
+- The FORESTS atlas adds `WATER`, `EROSION`, `RECOVERY` and `HABITAT` model
+  rows, a bounded 16×16 chunk preview and a **LIVE ECOLOGY PULSE** with active
+  disturbances, containments, spreads, active floods, LOD/chunk budget and
+  model-cache telemetry. It performs no per-tick work.
+- The browser reference now checks the eight model rows, the named RNG stream,
+  flood pressure, erosion mitigation, seed bank/mother trees, biodiversity and
+  the live pulse on a real tropical realm.
+- Version 3.70.0 and [FOREST_DATA_MODEL.md](docs/FOREST_DATA_MODEL.md) /
+  [FOREST_ECOLOGY.md](docs/FOREST_ECOLOGY.md) are updated with this batch.
+- **Proof.** The full suite passes **1,573/1,573** tests and the syntax/UI gate
+  checks **227 source files** and **258 UI ids**. The generated audit is
+  **1,648/1,648 implemented, 0 open**. The deterministic 25-year campaign ends
+  `ok: true` after **10,040 ticks** at **1.383 ms/tick**, all 21 requirements
+  and 13 ambitions complete, **no stalled sites**, **3,507 forest tiles** and
+  **0 untyped**. The tropical browser reference renders all 60 atlas cards,
+  10 model blocks and three stand frames, and checks the new rows and pulse
+  without `undefined`, `NaN` or console errors.
 
 ## 3.69.0 — Five crowns and local data packs
 
