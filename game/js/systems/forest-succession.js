@@ -933,11 +933,14 @@ export function buildNearestForestFirebreak(originX, originY, radius = STEWARDSH
 // A controlled burn is a deliberate disturbance with a real salvage yield and a
 // real escape risk. It uses the stewardship RNG stream, never the vegetation or
 // natural-event stream, so planting a wood cannot reroll the fire.
-export function controlledBurnNearestForestTile(originX, originY, radius = STEWARDSHIP_RADIUS) {
+// The single source of truth for "a stand that can actually be burned".
+// Availability checks and the burn action both use it, so the Atlas can never
+// offer a fire that the succession model would then refuse.
+export function findBurnableForestTile(originX, originY, radius = STEWARDSHIP_RADIUS) {
     const model = ensureForestSuccession();
     const geo = state.resourceGeography;
-    if (!model || !geo) return { ok: false, reason: "No active forest geography" };
-    const target = nearestForestTarget(geo, originX, originY, radius, (stand, x, y, index) => {
+    if (!model || !geo) return null;
+    return nearestForestTarget(geo, originX, originY, radius, (stand, x, y, index) => {
         if (forestFirebreakAt(x, y) || sacredGroveTileAt(x, y)) return false;
         const record = model.tiles[tileKey(x, y)];
         const stage = record ? forestSuccessionStage(record.kind, record.age) : null;
@@ -945,6 +948,13 @@ export function controlledBurnNearestForestTile(originX, originY, radius = STEWA
         if (stand.ageClass === "young") return false;
         return Number(geo.forestStock[index]) >= Math.max(18, Number(geo.forestCapacity[index]) * 0.28);
     });
+}
+
+export function controlledBurnNearestForestTile(originX, originY, radius = STEWARDSHIP_RADIUS) {
+    const model = ensureForestSuccession();
+    const geo = state.resourceGeography;
+    if (!model || !geo) return { ok: false, reason: "No active forest geography" };
+    const target = findBurnableForestTile(originX, originY, radius);
     if (!target) return { ok: false, reason: "No mature, unbroken stand within " + radius + " tiles" };
     const cost = { gold: 6, food: 3 };
     const missing = affordable(cost);

@@ -15,7 +15,7 @@ import { recordLegacy } from "./legacy.js";
 import { getMilitarySnapshot, recordMilitaryWound, recordMilitaryCasualty } from "./military.js";
 import { cancelTradeAgreement, ensureDiplomacy } from "./diplomacy.js";
 import { ensureWorldMap } from "./world-map.js";
-import { controlledBurnNearestForestTile } from "./forest-succession.js";
+import { controlledBurnNearestForestTile, findBurnableForestTile } from "./forest-succession.js";
 import { sacredGroveTileAt } from "../world/sacred-groves.js";
 import { DIPLOMATIC_REALMS } from "./diplomacy-config.js";
 import { regionDefinitionFor } from "../world/world-regions.js";
@@ -485,6 +485,16 @@ export function forestWarfareActionAvailability(realmId) {
         }
         return tileCache;
     };
+    // Fire and clearance must offer the same mature, unbroken stand the burn
+    // action will actually use, not merely any forest tile in reach.
+    let burnCache;
+    const burnTile = () => {
+        if (burnCache === undefined) {
+            const anchor = regionAnchor(frontRow.provinceId);
+            burnCache = findBurnableForestTile(anchor.x, anchor.y, 16);
+        }
+        return burnCache;
+    };
     const rights = Boolean(frontRow.rights);
     return Object.freeze({
         post: reason(frontRow.posts < FOREST_WARFARE_LIMITS.posts && frontRow.postYear !== year && ready.ok,
@@ -510,10 +520,10 @@ export function forestWarfareActionAvailability(realmId) {
         partisans: reason(war && !treatyActive && frontRow.partisans < FOREST_WARFARE_LIMITS.partisans && frontRow.partisanYear !== year
             && ((province && province.contestedBy) || number(realm?.warExhaustion) >= 10) && canPay(FOREST_WAR_COSTS.partisans),
             !war ? "Partisans rise only in a war" : treatyActive ? "A border treaty disarms the partisans" : frontRow.partisans >= FOREST_WARFARE_LIMITS.partisans ? "The partisan bands are full" :             frontRow.partisanYear === year ? "The bands were raised this year" : "The province must be contested or the war weary (5 food, 3 gold)"),
-        warFire: reason(war && !treatyActive && frontRow.fireYear !== year && canPay({ food: 6, gold: 6 }) && Boolean(frontTile()) && province && province.ownerId !== "crown",
-            !war ? "War fire is a weapon of war" : treatyActive ? "A border treaty forbids fire" : frontRow.fireYear === year ? "The wood was fired this year" : !frontTile() ? "No reachable forest stands on this frontier" : province?.ownerId === "crown" ? "The crown does not burn its own province" : "Needs 3 food"),
-        burnFields: reason(frontRow.burnYear !== year && !treatyActive && canPay({ food: 8, gold: 6 }) && Boolean(frontTile()),
-            frontRow.burnYear === year ? "The clearing was burned this year" : treatyActive ? "A border treaty forbids clearance" : !frontTile() ? "No forest tile is in reach" : "Needs 8 food and 6 gold for the burn crew"),
+        warFire: reason(war && !treatyActive && frontRow.fireYear !== year && canPay({ food: 6, gold: 6 }) && Boolean(burnTile()) && province && province.ownerId !== "crown",
+            !war ? "War fire is a weapon of war" : treatyActive ? "A border treaty forbids fire" : frontRow.fireYear === year ? "The wood was fired this year" : !burnTile() ? "No mature, unbroken stand is in reach" : province?.ownerId === "crown" ? "The crown does not burn its own province" : "Needs 3 food"),
+        burnFields: reason(frontRow.burnYear !== year && !treatyActive && canPay({ food: 8, gold: 6 }) && Boolean(burnTile()),
+            frontRow.burnYear === year ? "The clearing was burned this year" : treatyActive ? "A border treaty forbids clearance" : !burnTile() ? "No mature stand is in reach" : "Needs 8 food and 6 gold for the burn crew"),
         deport: reason((war || frontRow.rebels > 0) && frontRow.deportYear !== year && canPay(FOREST_WAR_COSTS.deport),
             !war && frontRow.rebels <= 0 ? "There is no resistance to deport" : frontRow.deportYear === year ? "A deportation already ran this year" : "Needs 6 gold"),
         quota: reason(frontRow.quotaYear !== year && canPay({ food: 4 }) && number(state.resources?.wood) >= 10,

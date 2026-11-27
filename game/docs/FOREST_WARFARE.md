@@ -1,6 +1,6 @@
 # Waldkrieg, Diplomatie, Grenzen und Strategie · 1.2.23.1.211–240
 
-**Status:** implementiert, verdrahtet und als Spielerdurchlauf geprüft (v3.83.0)
+**Status:** implementiert, verdrahtet und als Spielerdurchlauf geprüft (v3.83.1)
 **Datenmodell:** `js/world/forest-warfare.js`
 **Laufzeit:** `js/systems/forest-warfare.js`
 **Grenzschutz:** `js/world/sacred-groves.js` (liest auch gemeinsame Schutzgebiete)
@@ -150,7 +150,7 @@ state.economy.productionChains.forestWarfare = {
   werden auf sichere Defaults normalisiert. Alle Felder sind additiv; das
   Kultur-Schema bleibt unverändert.
 
-## Verifikation (v3.83.0)
+## Verifikation (v3.83.1)
 
 - `node --test tests/systems/forest-warfare.test.js` — 15/15 grün: 30 Punkte,
   60 Kriegsprofile, Grenzposten/Wache/Späher, Saisonstraßen, Hinterhalt und
@@ -165,8 +165,15 @@ state.economy.productionChains.forestWarfare = {
 - `npm run test:forest-war-ui` — echte Chromium-Referenz: vier Fronten,
   30-Punkte-Feldguide, Grenzposten, Wache, Späher, Straße, Kriegserklärung,
   Hinterhalt, Gefecht, Embargo, Zoll, gemeinsames Schutzgebiet, Siedler und
-  Jahrespass. Die Save-Normalisierung deckt der Systemtest ab; Speichern und
-  Laden prüft der Live-Durchlauf auf beiden Produktions-Hosts.
+  Jahrespass. Die Save-Normalisierung deckt der Systemtest ab.
+- **Live-Fund 3.83.1.** Der Atlas bot auf Ironvale Kriegsfeuer an, obwohl kein
+  reifer, ungebrochener Bestand in Reichweite lag. `findBurnableForestTile` ist
+  jetzt die einzige Quelle für die Brennbarkeitsprüfung; Verfügbarkeit und
+  `controlledBurnNearestForestTile` rufen dieselbe Funktion. Der Chromium-
+  Spielerdurchlauf wählt die erste Front, die Feuer wirklich anbietet, legt
+  Kriegsfeuer, gewinnt ein Gefecht, mustert Elefanten und vergleicht Narben,
+  Vorrat und Hain-Schutz nach zwei echten Export/Import-Runden. Speichern und
+  Laden prüft derselbe Lauf auf beiden Produktions-Hosts.
 
 ## Bekannte Grenzen
 

@@ -1,6 +1,6 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.83.0`
+**Current production version:** `3.83.1`
 **Next development line:** `3.84.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
@@ -8,6 +8,27 @@
 **Last repository verification:** 2026-11-27 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.83.1 — Live war-fire availability fix
+
+The first live player pass on the 3.83.0 hosts found a real frontier mismatch:
+Ironvale offered **Set War Fire** in the Atlas, but the action answered "No
+mature, unbroken stand within 18 tiles". Availability accepted any reachable
+forest tile; the succession burn correctly requires a mature, unbroken stand
+outside a firebreak and outside a sacred grove.
+
+- **One source of truth.** `findBurnableForestTile` in
+  `forest-succession.js` now owns the burnable-stand predicate.
+  `controlledBurnNearestForestTile` and the forest-war availability both call
+  it, so the Atlas can never offer a fire the wood will refuse.
+- **Honest closed state.** War fire and slash-and-burn are disabled with a real
+  reason when only young, burned, firebroken or protected wood is in reach. When
+  the button is enabled, the burn has a valid target and resolves.
+- **Live proof.** A player-path Chromium run starts a realm, raises the peace
+  works, exports and imports the save twice, declares war, chooses the first
+  front that genuinely offers fire, wins a forest battle, musters elephants,
+  and compares the scars and preserve protection after loading. Full `npm test`,
+  the spec audit and the deterministic 25-year campaign are the release gate.
 
 ## 3.83.0 — Waldkrieg, Diplomatie, Grenzen und Strategie
 
