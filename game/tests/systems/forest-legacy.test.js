@@ -182,7 +182,8 @@ test("a stored ledger round-trips through JSON with the same regions, rings and 
     assert.equal(restored.regions.length, 10);
     assert.equal(JSON.stringify(forestLegacySummary().stats), before);
     assert.equal(restored.regions[0].rings.length, snapshot.regions[0].rings.length);
-    assert.equal(typeof restored.codexKey, "function");
+    assert.equal(Object.values(restored).some(value => typeof value === "function"), false,
+        "the ledger must stay persistent-data clean for save and browser state capture");
     assert.throws(() => validateForestLegacySnapshot({ version: 999, seed: 1, regions: [] }), /version/i);
 });
 

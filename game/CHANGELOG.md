@@ -1,6 +1,6 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.89.1`
+**Current production version:** `3.89.2`
 **Next development line:** `3.90.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
@@ -8,6 +8,14 @@
 **Last repository verification:** 2026-11-27 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.89.2 — Wald-Ledger bleibt reine Zustandsdaten
+
+Der Browser-E2E-Zustandsvergleich stolperte über eine Hilfsfunktion, die am
+Wald-Ledger klebte. `state.forestLegacy` ist jetzt ausnahmslos aus
+JSON-fähigen Daten aufgebaut; der Codex-Schlüssel bleibt eine interne
+Funktion. Der vollständige lokale `npm run test:e2e`-Pfad inklusive
+Realm-State-Capture läuft damit wieder durch.
 
 ## 3.89.1 — Jahresringe im Kopfzähler
 

@@ -491,22 +491,14 @@ function normalizeModel(snapshot) {
     return model;
 }
 
-function ensureCodexMethod(model) {
-    if (typeof model.codexKey !== "function") model.codexKey = codexKey;
-    return model;
-}
-
 export function ensureForestLegacy(options = {}) {
     if (!state.forestLegacy || typeof state.forestLegacy !== "object") {
         state.forestLegacy = baseState(yearNow());
-        state.forestLegacy.codexKey = codexKey;
     }
     const model = state.forestLegacy;
     if (!model.regions?.length) {
         state.forestLegacy = baseState(yearNow());
-        state.forestLegacy.codexKey = codexKey;
     }
-    ensureCodexMethod(state.forestLegacy);
     if (options?.refreshClimate === true) {
         state.forestLegacy.climate.drift = getClimateDrift();
     }
@@ -1272,7 +1264,7 @@ export function restoreForestLegacyState(snapshot) {
     validateForestLegacySnapshot(snapshot);
     const model = normalizeModel(snapshot);
     if (!model) throw new Error("Save data contains an invalid forest-legacy ledger.");
-    state.forestLegacy = ensureCodexMethod(model);
+    state.forestLegacy = model;
     return state.forestLegacy;
 }
 
