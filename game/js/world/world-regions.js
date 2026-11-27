@@ -22,7 +22,7 @@ const REGION_BLUEPRINTS = Object.freeze([
     {
         id: "crown-march", name: "Crown March", ownerId: CROWN_OWNER_ID,
         terrain: "march", resource: "wood", baseYield: 2,
-        control: 62, loyalty: 61, garrison: 2,
+        control: 62, loyalty: 61, garrison: 2, defaultAutonomy: 1,
         anchor: Object.freeze({ x: 0.57, y: 0.57 }),
         neighbours: Object.freeze(["crown-heartland", "northmere-pines", "ironvale-pass", "goldcoast-harbor", "redpass-gorge"]),
         description: "A wooded border march whose forester villages guard the approaches to the heartland."

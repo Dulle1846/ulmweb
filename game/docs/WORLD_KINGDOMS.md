@@ -91,6 +91,16 @@ reload cannot reroll the outcome.
 - All values come from the live snapshot; the panel never displays `undefined`
   or `NaN`.
 
+## Provincial charters
+
+Each crown province can hold one of three autonomy tiers: crown rule, chartered
+or free province. A charter keeps a larger share of the yearly gold levy in the
+province, adds yearly loyalty and softens hostile-border control loss. A loyal
+province petitions for the next tier after a three-year interval; granting the
+petition costs gold and food, refusing or ignoring it costs loyalty. One
+charter decision can be made per year. The full contract, formulas and 3.88.0
+evidence are in [PROVINCIAL_CHARTERS.md](PROVINCIAL_CHARTERS.md).
+
 ## Save compatibility
 
 Schema 15 still owns the `worldMap` block. Its internal version is now 2:
@@ -107,7 +117,8 @@ Schema 15 still owns the `worldMap` block. Its internal version is now 2:
 - `tests/systems/world-map.test.js` covers the 10-province/5-crown snapshot,
   v1-to-v2 migration, claim cost and ownership change, the once-per-year lock,
   alliance/trade/relation/border guards, yearly crown yield and ownership
-  bounds.
+  bounds, charter levy/loyalty effects, petitions, revocation and the legacy
+  save path without charter fields.
 - `tests/browser/world-map.mjs` founds a real realm, checks the five kingdom
   cards, ten province polygons, ten province cards, the claim affordance and
   its disabled crown state, saves/reloads and repeats the panel at 390 px with

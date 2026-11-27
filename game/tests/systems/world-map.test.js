@@ -6,9 +6,9 @@ import { createDiplomacyState } from "../../js/systems/diplomacy.js";
 import { createMarketState } from "../../js/systems/market.js";
 import { getSettlementSeats, initializeSettlementOwners, SETTLEMENT_STORE_LIMIT } from "../../js/systems/settlement-owners.js";
 import {
-    FRONTIER_INCIDENT_PRESSURE, FRONTIER_WATCH_COST, REGION_CLAIM_COST, TRADE_ROUTE_COST, TRADE_ROUTE_LIMIT,
-    closeTradeRoute, createWorldMapState, getWorldMapSnapshot, normalizeWorldMapSnapshot,
-    openTradeRoute, pressRegionClaim, setFrontierWatch, updateWorldMap, validateWorldMapSnapshot
+    FRONTIER_INCIDENT_PRESSURE, FRONTIER_WATCH_COST, REGION_CLAIM_COST, REGION_CHARTER_COSTS, TRADE_ROUTE_COST, TRADE_ROUTE_LIMIT,
+    closeTradeRoute, createWorldMapState, ensureWorldMap, getWorldMapSnapshot, grantProvinceCharter, normalizeWorldMapSnapshot,
+    openTradeRoute, pressRegionClaim, refuseProvincePetition, revokeProvinceCharter, setFrontierWatch, updateWorldMap, validateWorldMapSnapshot
 } from "../../js/systems/world-map.js";
 import { WORLD_REGION_CATALOG } from "../../js/world/world-regions.js";
 import { migrateSaveSnapshot } from "../../js/core/save-migrations.js";
@@ -107,7 +107,7 @@ test("an export caravan draws the depot, pays the crown and leaves the settlemen
     assert.equal(partner.stock.wood, 96);
     // The founding grant left this seat with 0.5 gold; the caravan adds its 1 gold fee.
     assert.equal(settledSeat.treasury.gold, 1.5, "the depot keeps its handling fee");
-    assert.equal(state.resources.gold, goldBefore + 7, "the crown receives the payout minus the fee");
+    assert.equal(state.resources.gold, goldBefore + 7 + getWorldMapSnapshot().totals.annualLevy, "the crown receives the payout minus the fee plus the annual province levy");
     assert.equal(partner.treasury, 412);
     assert.equal(getWorldMapSnapshot().routes[0].earned, 8);
 });
@@ -123,7 +123,7 @@ test("a full settlement depot stalls the import instead of wasting paid goods", 
     const snapshot = updateWorldMap();
     assert.equal(snapshot.routes[0].status, "depot-full");
     assert.match(snapshot.routes[0].lastResult, /depot at .+ is full/);
-    assert.equal(state.resources.gold, goldAfterCharter, "a stalled caravan must not pay for goods it cannot store");
+    assert.equal(state.resources.gold, goldAfterCharter + snapshot.totals.annualLevy, "a stalled caravan must not pay for goods it cannot store, while the province levy still arrives");
     assert.equal(partner.stock.wood, stockBefore, "the partner stock must stay untouched");
 });
 
@@ -347,6 +347,117 @@ test("the annual world pass pays crown province yields and keeps ownership bound
     assert.equal(snapshot.regions.filter(region => region.ownerId === "crown").length >= 2, true);
     assert.equal(snapshot.lastUpdateYear, 4);
     assert.equal(snapshot.regions.every(region => region.control >= 0 && region.control <= 100), true);
+});
+
+test("a provincial charter trades crown levy for loyalty and survives a normalized save", () => {
+    setup();
+    const before = getWorldMapSnapshot();
+    const march = before.regions.find(region => region.id === "crown-march");
+    const heartland = before.regions.find(region => region.id === "crown-heartland");
+    assert.equal(march.autonomy, 1, "the opening crown march carries its old charter");
+    assert.equal(march.autonomyLabel, "CHARTERED");
+    assert.ok(march.levyBase > march.levy, "the chartered march keeps part of its levy at home");
+    assert.equal(heartland.autonomy, 0, "the heartland starts under direct crown rule");
+    assert.ok(heartland.levy > march.levy, "the unchartered heartland pays the full levy");
+    const goldBefore = state.resources.gold;
+    const marchLoyalty = march.loyalty;
+    const heartlandLoyalty = heartland.loyalty;
+    const after = updateWorldMap();
+    const settledMarch = after.regions.find(region => region.id === "crown-march");
+    const settledHeartland = after.regions.find(region => region.id === "crown-heartland");
+    assert.equal(state.resources.gold, goldBefore + after.totals.annualLevy, "the annual pass pays the charter-adjusted crown levy");
+    assert.equal(settledMarch.loyalty, marchLoyalty + 2, "the charter adds a yearly loyalty point on top of the normal drift");
+    assert.equal(settledHeartland.loyalty, heartlandLoyalty + 1, "an unchartered province receives only the normal drift");
+    const saved = normalizeWorldMapSnapshot(JSON.parse(JSON.stringify(state.worldMap)));
+    assert.equal(saved.regions.find(region => region.id === "crown-march").autonomy, 1);
+    assert.equal(saved.regions.find(region => region.id === "crown-march").lastCharterYear >= 0, true);
+    validateWorldMapSnapshot(saved);
+    state.worldMap = saved;
+    assert.equal(getWorldMapSnapshot().regions.find(region => region.id === "crown-march").autonomy, 1, "the charter survives a reload");
+});
+
+test("a loyal province petitions for the next charter tier and the player can grant or refuse it", () => {
+    setup();
+    const heartland = state.worldMap.regions.find(region => region.id === "crown-heartland");
+    heartland.loyalty = 72;
+    const petitioned = updateWorldMap();
+    const open = petitioned.regions.find(region => region.id === "crown-heartland");
+    assert.equal(open.petitionTier, 1, "a loyal crown province asks for its first charter");
+    assert.equal(open.petitionYear, 4);
+    assert.equal(open.canGrantCharter, true);
+    const before = { gold: state.resources.gold, food: state.resources.food };
+    const granted = grantProvinceCharter("crown-heartland");
+    assert.equal(granted.ok, true);
+    assert.equal(granted.petition, true);
+    assert.equal(state.resources.gold, before.gold - REGION_CHARTER_COSTS[1].gold);
+    assert.equal(state.resources.food, before.food - REGION_CHARTER_COSTS[1].food);
+    assert.equal(state.worldMap.regions.find(region => region.id === "crown-heartland").autonomy, 1);
+    assert.equal(state.worldMap.regions.find(region => region.id === "crown-heartland").petitionTier, 0);
+    assert.equal(state.worldMap.totals.petitionsGranted, 1);
+    assert.equal(grantProvinceCharter("crown-march").ok, true, "another province can still answer its own charter in the same year");
+    assert.equal(grantProvinceCharter("crown-heartland").reason, "charter-already-answered", "one charter decision is allowed per province per year");
+
+    setup();
+    state.worldMap.regions.find(region => region.id === "crown-heartland").loyalty = 72;
+    updateWorldMap();
+    const beforeRefusal = getWorldMapSnapshot().regions.find(region => region.id === "crown-heartland").loyalty;
+    const refused = refuseProvincePetition("crown-heartland");
+    assert.equal(refused.ok, true);
+    assert.equal(state.worldMap.regions.find(region => region.id === "crown-heartland").loyalty, beforeRefusal - 5);
+    assert.equal(state.worldMap.regions.find(region => region.id === "crown-heartland").petitionTier, 0);
+    assert.equal(state.worldMap.totals.petitionsRefused, 1);
+});
+
+test("an unanswered petition lapses into a loyalty penalty, and a revoked charter restores the crown levy", () => {
+    setup();
+    const heartland = state.worldMap.regions.find(region => region.id === "crown-heartland");
+    heartland.loyalty = 72;
+    updateWorldMap();
+    const openLoyalty = getWorldMapSnapshot().regions.find(region => region.id === "crown-heartland").loyalty;
+    state.year = 5;
+    const lapsed = updateWorldMap();
+    const afterLapse = lapsed.regions.find(region => region.id === "crown-heartland");
+    assert.ok(afterLapse.loyalty < openLoyalty, "ignoring a petition costs loyalty");
+    assert.equal(state.worldMap.totals.petitionsIgnored, 1);
+    assert.equal(afterLapse.petitionTier, 0);
+
+    setup();
+    const march = getWorldMapSnapshot().regions.find(region => region.id === "crown-march");
+    const levyBefore = march.levy;
+    const revoked = revokeProvinceCharter("crown-march");
+    assert.equal(revoked.ok, true);
+    const after = getWorldMapSnapshot().regions.find(region => region.id === "crown-march");
+    assert.equal(after.autonomy, 0);
+    assert.ok(after.levy > levyBefore, "revoking the charter restores the full crown levy");
+    assert.ok(after.loyalty < march.loyalty, "revoking the charter costs loyalty");
+    assert.equal(state.worldMap.totals.chartersRevoked, 1);
+    assert.equal(grantProvinceCharter("crown-march").reason, "charter-already-answered");
+    state.year = 5;
+    assert.equal(grantProvinceCharter("crown-march").ok, true, "the next year can grant a new charter");
+});
+
+test("a legacy world map without charter fields loads as crown rule and normalizes once", () => {
+    setup();
+    const legacy = JSON.parse(JSON.stringify(state.worldMap));
+    legacy.lastRegionCharterYear = undefined;
+    legacy.totals = { ...legacy.totals };
+    delete legacy.totals.chartersGranted;
+    delete legacy.totals.petitionsIgnored;
+    for (const region of legacy.regions) {
+        delete region.autonomy;
+        delete region.petitionTier;
+        delete region.petitionYear;
+        delete region.lastPetitionYear;
+        delete region.lastCharterYear;
+    }
+    state.worldMap = legacy;
+    const normalized = ensureWorldMap();
+    assert.equal(normalized.regions.find(region => region.id === "crown-march").autonomy, 0, "old saves receive crown rule, not a new charter");
+    assert.equal(normalized.lastRegionCharterYear, 0);
+    assert.equal(normalized.totals.chartersGranted, 0);
+    validateWorldMapSnapshot(normalized);
+    const snapshot = getWorldMapSnapshot();
+    assert.equal(snapshot.regions.find(region => region.id === "crown-march").levy, snapshot.regions.find(region => region.id === "crown-march").levyBase);
 });
 
 test("schema 15 migrates a legacy realm to a quiet world map and keeps it savable", () => {

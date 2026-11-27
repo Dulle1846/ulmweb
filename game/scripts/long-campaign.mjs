@@ -49,7 +49,7 @@ try {
     for (const seed of SWEEP_SEEDS) {
         const result = runCampaign({
             seed, years: YEARS, era: ERA, minAgendaStages: MIN_AGENDA_STAGES,
-            worldOptions: { climate: CLIMATE }, answerCourtPetitions: true,
+            worldOptions: { climate: CLIMATE }, answerCourtPetitions: true, answerProvincePetitions: true,
         });
         results.push(result);
         const fuel = result.diagnostics?.fuelBackfill || null;
@@ -67,6 +67,7 @@ try {
                 final: result.final,
                 yearly: result.yearly,
                 diagnostics: result.diagnostics,
+                provinceSummary: result.final.world,
                 forestTypes: result.forestTypes,
                 timberEconomy: result.timberEconomy,
                 gameOver: result.gameOver,
@@ -95,6 +96,7 @@ try {
                     built: result.final.built,
                     eventsResolved: result.final.eventsResolved
                 },
+                provinceSummary: result.final.world,
                 forestTypes: result.forestTypes ? {
                     tiles: result.forestTypes.tiles,
                     untyped: result.forestTypes.untyped,

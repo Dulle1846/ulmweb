@@ -444,7 +444,7 @@ Regression coverage added in `game/tests/systems/strategy-management.test.js`:
 Browser E2E now exercises the command deck, constitution change, public decree, consort selection, royal child creation, dragon sanctuary and card-management panel.
 
 Limits:
-- This is the first playable strategy layer, not a full grand-strategy government simulator. Ministries, offices, judiciary, parliament, election cycles, provincial autonomy, law enforcement and regency still need dedicated systems.
+- This is the first playable strategy layer, not a full grand-strategy government simulator. Ministries, offices, judiciary, parliament, election cycles, provincial charters beyond the three-tier autonomy layer, law enforcement and regency still need dedicated systems.
 - Dragons are the first persistent magical creature species; other monsters and spirits still need their own species-specific behavior.
 - Royal inheritance is not yet an estate/property distribution system.
 - New art is lightweight SVG/vector art. Do not add gigabytes of raw assets; grow visual content through compressed sprite atlases, vector emblems, procedural variations and data-driven story packs.

@@ -24,6 +24,7 @@ import { placeDirectBuilding, canPlaceBuilding, isUnderConstruction, cancelConst
 import { placeRoad } from "../../js/systems/roads.js";
 import { getRoyalHouse, appointRoyalConsort, createRoyalChild } from "../../js/systems/royal-dynasty.js";
 import { addressFactionDemand } from "../../js/systems/court.js";
+import { getWorldMapSnapshot, grantProvinceCharter, refuseProvincePetition } from "../../js/systems/world-map.js";
 import { getResourceNodeAt } from "../../js/systems/resource-geography.js";
 import { REGIONAL_FOREST_TYPE_IDS, REGIONAL_TIMBERS } from "../../js/world/regional-forests.js";
 
@@ -324,6 +325,58 @@ function resolveActiveEvent() {
     return false;
 }
 
+function provinceEvidence() {
+    const world = getWorldMapSnapshot();
+    return {
+        crownProvinces: world.totals.crownProvinces,
+        charteredProvinces: world.totals.charteredProvinces,
+        openPetitions: world.totals.openPetitions,
+        annualLevy: world.totals.annualLevy,
+        annualYield: world.totals.annualYield,
+        chartersGranted: world.totals.chartersGranted,
+        chartersRevoked: world.totals.chartersRevoked,
+        petitionsGranted: world.totals.petitionsGranted,
+        petitionsRefused: world.totals.petitionsRefused,
+        petitionsIgnored: world.totals.petitionsIgnored,
+        provinces: world.regions.filter(region => region.ownerKind === "crown").map(region => ({
+            id: region.id,
+            autonomy: region.autonomy,
+            autonomyLabel: region.autonomyLabel,
+            loyalty: region.loyalty,
+            control: region.control,
+            levy: region.levy,
+            levyBase: region.levyBase,
+            petitionTier: region.petitionTier
+        }))
+    };
+}
+
+function answerPendingProvincePetitions(diagnostics) {
+    const snapshot = getWorldMapSnapshot();
+    for (const region of snapshot.regions) {
+        if (region.ownerKind !== "crown" || !(region.petitionTier > 0)) continue;
+        if (region.canGrantCharter) {
+            const result = grantProvinceCharter(region.id);
+            if (result.ok) {
+                diagnostics.provincePetitions.push({
+                    year: state.year, province: region.id, decision: "granted",
+                    tier: result.tier, cost: result.cost
+                });
+                continue;
+            }
+        }
+        if (region.canRefusePetition) {
+            const result = refuseProvincePetition(region.id);
+            if (result.ok) {
+                diagnostics.provincePetitions.push({
+                    year: state.year, province: region.id, decision: "refused",
+                    strategy: "the treasury could not fund the charter"
+                });
+            }
+        }
+    }
+}
+
 function captureSnapshot(extra = {}) {
     const housing = getHousingSnapshot();
     const warehouse = getWarehouseSnapshot();
@@ -395,6 +448,7 @@ function captureSnapshot(extra = {}) {
             foodDemandFactor: ledger?.eraFoodDemandFactor ?? null,
             taxEfficiency: ledger?.eraTaxEfficiency ?? null
         },
+        world: provinceEvidence(),
         ...extra
     };
 }
@@ -484,6 +538,7 @@ export function runCampaign({
     minAgendaStages = 1,
     worldOptions = null,
     answerCourtPetitions = false,
+    answerProvincePetitions = false,
     onTick = null,
     onInitialized = null
 } = {}) {
@@ -517,7 +572,8 @@ export function runCampaign({
         heirAttempts: [],
         fuelBackfill: { orders: 0, phases: 0, extensions: 0, maxOrdersPerPhase: 0, observations: [] },
         lastBuild: null,
-        lastHeir: null
+        lastHeir: null,
+        provincePetitions: []
     };
     const fuelBackfillActive = new Map();
     const fuelBackfillPhases = new Map();
@@ -613,6 +669,7 @@ export function runCampaign({
                 diagnostics.lastHeir = { year: state.year, ...heir };
                 diagnostics.heirAttempts.push(diagnostics.lastHeir);
             }
+            if (answerProvincePetitions) answerPendingProvincePetitions(diagnostics);
             yearly.push(captureSnapshot());
         }
         if (typeof onTick === "function") onTick(state);

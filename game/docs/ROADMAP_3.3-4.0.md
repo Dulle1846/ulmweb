@@ -106,7 +106,7 @@ Random events:
 
 ## 3.8 — Royal court, advisor and living nobility
 
-**Status:** the court, the resident-led noble houses, the royal advisor and the succession-law consumer are implemented. Noble land armies, feuds and autonomous noble conflict remain future work; see [NOBILITY.md](NOBILITY.md).
+**Status:** the court, the resident-led noble houses, the royal advisor and the succession-law consumer are implemented. Noble land armies and the bounded feud chain are implemented; autonomous noble conflict beyond that chain remains future work; see [NOBILITY.md](NOBILITY.md) and [NOBLE_FEUD_CHAIN.md](NOBLE_FEUD_CHAIN.md).
 
 Royal advisor:
 - A named character with skills, personality, loyalty, ambition and relationships.

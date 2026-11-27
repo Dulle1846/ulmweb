@@ -1,4 +1,5 @@
-// Player reference for 4.0.2: world map, standing trade routes and frontiers.
+// Player reference for 3.88.0: world map, standing trade routes, frontiers and
+// provincial charters.
 //
 // The test starts a real realm from the start screen, opens the WORLD panel
 // through the normal management deck, charters a route with the real selects
@@ -210,6 +211,7 @@ try {
             seats: getSettlementSeats().map(seat => ({ id: seat.buildingId, name: seat.name, wood: seat.stores.wood })),
             gold: state.resources.gold,
             wood: state.resources.wood,
+            food: state.resources.food,
             partnerStock: state.market.partners.find(row => row.id === "northmere")?.stock.wood,
             year: state.year
         };
@@ -228,6 +230,10 @@ try {
     assert.match(panelText, /Northmere Pines/);
     assert.match(panelText, /PRESS CLAIM/);
     assert.match(panelText, /CROWN PROVINCE/);
+    assert.match(panelText, /AUTONOMY/);
+    assert.match(panelText, /CHARTERED/);
+    assert.match(panelText, /CROWN LEVY/);
+    assert.match(panelText, /OPEN PETITIONS/);
     assert.match(panelText, /Beyond the realm/i);
     assert.match(panelText, /SCHEMATIC/);
     assert.doesNotMatch(panelText, /undefined|NaN|Lorem ipsum|placeholder/i);
@@ -274,6 +280,20 @@ try {
     assert.equal(chartered.routes[0].status, "open");
     assert.equal(chartered.watch, 1, "the watch level is real saved state");
     assert.ok(chartered.gold < initial.gold, "the charter and the watch were paid from the crown treasury");
+
+    const heartlandCard = desktop.locator('[data-world-province="crown-heartland"]');
+    assert.match(await heartlandCard.innerText(), /CROWN RULE/, "the unchartered heartland explains its autonomy tier");
+    await heartlandCard.locator('[data-command="world-charter-grant"]').click();
+    await desktop.waitForFunction(() => (document.querySelector('[data-world-province="crown-heartland"]')?.textContent || "").includes("CHARTERED"), null, { timeout: 10000 });
+    const charterGrant = await desktop.evaluate(async () => {
+        const { state } = await import("./js/core/state.js");
+        const { getWorldMapSnapshot } = await import("./js/systems/world-map.js");
+        const region = getWorldMapSnapshot().regions.find(row => row.id === "crown-heartland");
+        return { autonomy: region.autonomy, levy: region.levy, levyBase: region.levyBase, gold: state.resources.gold, food: state.resources.food };
+    });
+    assert.equal(charterGrant.autonomy, 1, "the browser action grants a real first-tier charter");
+    assert.ok(charterGrant.levy < charterGrant.levyBase, "the browser shows the chartered heartland keeping levy at home");
+    assert.ok(charterGrant.gold < chartered.gold && charterGrant.food < initial.food, "the charter paid its real gold and food cost");
 
     // Advance the annual survey through the same system the year boundary runs.
     const settled = await desktop.evaluate(async () => {
@@ -332,15 +352,65 @@ try {
             routes: snapshot.routes.map(route => ({ id: route.id, delivered: route.delivered })),
             watch: snapshot.realms.find(row => row.id === "redpass")?.watch,
             incidents: snapshot.realms.find(row => row.id === "redpass")?.incidents,
+            charter: snapshot.regions.find(row => row.id === "crown-heartland")?.autonomy,
             panel: document.querySelector("[data-world-map-panel]")?.textContent || ""
         };
     });
     assert.equal(restored.routes.length, 1, "the route survives save and reload");
     assert.equal(restored.routes[0].delivered, 6);
     assert.equal(restored.watch, 1, "the frontier watch survives save and reload");
+    assert.equal(restored.charter, 1, "the granted charter survives save and reload");
     assert.match(restored.panel, /Unloaded 6 wood/, "the saved caravan result is shown after reload");
+    assert.match(restored.panel, /CHARTERED/, "the restored panel shows the saved charter tier");
     assert.match(restored.panel, /FRONTIER WATCH/);
     await desktop.locator(".world-map").screenshot({ path: resolve(outDir, "map-restored.png"), animations: "disabled" });
+
+    // Recreate the shape of a pre-3.88 save: keep the whole realm and world
+    // map, but remove the additive charter fields. It must load as crown rule,
+    // not acquire a charter, and the next annual pass must still run cleanly.
+    await desktop.evaluate(() => {
+        const profile = localStorage.getItem("kings-and-cards:active-profile:v1");
+        const key = "kings-and-cards:save:v2:" + profile;
+        const envelope = JSON.parse(localStorage.getItem(key));
+        const map = envelope.snapshot.worldMap;
+        delete map.lastRegionCharterYear;
+        for (const region of map.regions) {
+            delete region.autonomy;
+            delete region.petitionTier;
+            delete region.petitionYear;
+            delete region.lastPetitionYear;
+            delete region.lastCharterYear;
+        }
+        delete map.totals.chartersGranted;
+        delete map.totals.petitionsGranted;
+        localStorage.setItem(key, JSON.stringify(envelope));
+    });
+    await desktop.reload({ waitUntil: "domcontentloaded" });
+    await desktop.locator("#start-screen").waitFor({ state: "visible", timeout: 15000 });
+    await desktop.waitForFunction(() => !document.querySelector("#continue-game-btn")?.disabled, null, { timeout: 10000 });
+    await desktop.locator("#continue-game-btn").click();
+    await desktop.waitForFunction(async () => (await import("./js/core/state.js")).state.hasStarted, null, { timeout: 60000 });
+    await desktop.evaluate(async () => { (await import("./js/core/state.js")).state.isPaused = true; });
+    await openWorld(desktop);
+    const legacyRestored = await desktop.evaluate(async () => {
+        const { state } = await import("./js/core/state.js");
+        const { getWorldMapSnapshot, updateWorldMap } = await import("./js/systems/world-map.js");
+        const before = getWorldMapSnapshot();
+        state.year += 1;
+        state.dayOfYear = 0;
+        const after = updateWorldMap();
+        return {
+            autonomy: before.regions.find(row => row.id === "crown-heartland")?.autonomy,
+            marchAutonomy: before.regions.find(row => row.id === "crown-march")?.autonomy,
+            levy: after.totals.annualLevy,
+            gold: state.resources.gold,
+            panel: document.querySelector("[data-world-map-panel]")?.textContent || ""
+        };
+    });
+    assert.equal(legacyRestored.autonomy, 0, "a pre-charter save loads as crown rule");
+    assert.equal(legacyRestored.marchAutonomy, 0, "a pre-charter save does not silently gain the march charter");
+    assert.ok(legacyRestored.levy > 0 && Number.isFinite(legacyRestored.gold), "the legacy realm continues through a clean annual pass");
+    assert.match(legacyRestored.panel, /CROWN RULE/);
 
     const narrowContext = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, reducedMotion: "reduce" });
     const narrow = await narrowContext.newPage();
@@ -380,6 +450,40 @@ try {
     assert.equal(await narrow.locator("[data-world-realm]").count(), 4);
     assert.equal(await narrow.locator(".world-map__province").count(), 10);
     assert.equal(await narrow.locator(".world-province").count(), 10);
+    const narrowHeartland = narrow.locator('[data-world-province="crown-heartland"]');
+    assert.match(await narrowHeartland.innerText(), /AUTONOMY[\s\S]*CROWN RULE/);
+    await narrowHeartland.locator('[data-command="world-charter-grant"]').click();
+    await narrow.waitForFunction(() => (document.querySelector('[data-world-province="crown-heartland"]')?.textContent || "").includes("CHARTERED"), null, { timeout: 10000 });
+    // Advance to the first petition window through the shipped annual pass,
+    // then answer the petition with the narrow panel's real button.
+    await narrow.evaluate(async () => {
+        const { state } = await import("./js/core/state.js");
+        const { updateWorldMap } = await import("./js/systems/world-map.js");
+        const { renderUI } = await import("./js/presentation/rendering/ui.js");
+        const map = state.worldMap;
+        const heartland = map.regions.find(region => region.id === "crown-heartland");
+        state.year = Math.max(4, Number(map.lastUpdateYear || 0) + 1);
+        state.dayOfYear = 0;
+        map.lastRegionCharterYear = Math.min(Number(map.lastRegionCharterYear) || 0, state.year - 1);
+        heartland.lastPetitionYear = Math.min(Number(heartland.lastPetitionYear) || 0, state.year - 3);
+        heartland.loyalty = Math.max(heartland.loyalty, 72);
+        updateWorldMap();
+        renderUI();
+    });
+    await openWorld(narrow, true);
+    await narrow.waitForFunction(() => (document.querySelector('[data-world-province="crown-heartland"]')?.textContent || "").includes("PETITION"), null, { timeout: 10000 });
+    const petitionCard = narrow.locator('[data-world-province="crown-heartland"]');
+    assert.match(await petitionCard.textContent(), /PETITION · FREE PROVINCE/, "a loyal province's petition is visible at 390 px");
+    assert.ok(await petitionCard.locator('[data-command="world-charter-grant"]').isVisible(), "the petition has a usable grant action at 390 px");
+    await petitionCard.locator('[data-command="world-charter-grant"]').click();
+    await narrow.waitForFunction(() => (document.querySelector('[data-world-province="crown-heartland"]')?.textContent || "").includes("FREE PROVINCE"), null, { timeout: 10000 });
+    const narrowCharter = await narrow.evaluate(async () => {
+        const { getWorldMapSnapshot } = await import("./js/systems/world-map.js");
+        const region = getWorldMapSnapshot().regions.find(row => row.id === "crown-heartland");
+        return { autonomy: region.autonomy, levy: region.levy, levyBase: region.levyBase };
+    });
+    assert.equal(narrowCharter.autonomy, 2, "the narrow petition grant reaches the free-province tier");
+    assert.ok(narrowCharter.levy < narrowCharter.levyBase, "the free province visibly keeps most of its levy at home");
     await narrow.screenshot({ path: resolve(outDir, "narrow.png"), animations: "disabled" });
     await narrow.locator(".world-map").scrollIntoViewIfNeeded();
     await narrow.locator(".world-map").screenshot({ path: resolve(outDir, "map-narrow.png"), animations: "disabled" });
@@ -390,7 +494,9 @@ try {
         seats: initial.seats.map(seat => seat.name),
         route: { id: chartered.routes[0].id, status: chartered.routes[0].status, seat: chartered.routes[0].seat },
         settled: { delivered: settled.route.delivered, seatStores: settled.seatStores, partnerStock: settled.partnerStock, tradeVolume: settled.realm.tradeVolume },
-        restored: { routes: restored.routes.length, watch: restored.watch, incidents: restored.incidents },
+        restored: { routes: restored.routes.length, watch: restored.watch, incidents: restored.incidents, charter: restored.charter },
+        charter: { desktop: charterGrant, narrow: narrowCharter },
+        legacy: { heartlandAutonomy: legacyRestored.autonomy, marchAutonomy: legacyRestored.marchAutonomy, levy: legacyRestored.levy, gold: legacyRestored.gold },
         layout: {
             desktopKingdom: kingdomDesktop,
             desktopWorld: worldDesktop,

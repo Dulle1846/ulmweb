@@ -1,13 +1,49 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.87.1`
-**Next development line:** `3.88.0-dev`
+**Current production version:** `3.88.0`
+**Next development line:** `3.89.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
 **Last repository verification:** 2026-11-27 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.88.0 — Provinzchartas, Loyalität und Kronabgabe
+
+Die zehn Provinzen waren bisher nur Kontrolle, Loyalität und eine jährliche
+Rohstoffabgabe. Jetzt kann die Krone einer Provinz eine Charta verleihen: Der
+Hof verzichtet auf einen Teil der jährlichen Goldabgabe, die Provinz behält ihn
+für lokale Straßen, Wachen und Beamte und wird dafür loyaler. Eine Charta
+stärkt außerdem die Grenze: Jede Stufe nimmt einer feindlichen Grenze einen
+Punkt jährlichen Kontrollverlust und mildert den Loyalitätsdruck eines
+umkämpften Landes.
+
+- Drei Stufen: **Kronherrschaft**, **Chartiert** und **Freie Provinz**. Die
+  Krone beginnt mit einer alten Charta auf der Crown March; der Crown
+  Heartland steht unter direkter Kronherrschaft.
+- Jede Provinz zahlt eine jährliche Goldabgabe, deren Höhe aus Kontrolle und
+  Loyalität folgt. Eine Charta senkt den Kronanteil auf 62 % bzw. 30 %; der
+  Rest bleibt sichtbar als „KEPT AT HOME“ in der Provinzkarte.
+- Eine Provinz mit hoher Loyalität bittet nach einer Wartezeit um die nächste
+  Stufe. Der Spieler kann die Petition annehmen, ablehnen oder verstreichen
+  lassen. Annahme kostet Gold und Nahrung; Ablehnung und Verstreichen kosten
+  Loyalität. Jede Provinz kann einmal pro Jahr über ihre Charta entscheiden.
+- Die WORLD-Seite zeigt Autonomiestufe, Kronabgabe, einbehaltene Abgabe,
+  offene Petitionen und die Erklärung, warum eine Aktion gerade nicht geht.
+  Die Provinzkarte bleibt bei 390×844 ohne horizontalen Überlauf bedienbar.
+- Kein Save-Schema-Bump: `worldMap` bleibt Version 2. Alte Saves ohne
+  `autonomy` werden beim Laden als Kronherrschaft normalisiert; die neue
+  Startwelt erbt die Charta der Crown March. Kein Per-Frame- oder Per-Tick-
+  Aufwand, die gesamte Provinzrunde bleibt im jährlichen Welttakt.
+
+**Nachweise:** Der deterministische 25-Jahres-Lauf (Seed `20261108`) bleibt
+vollständig grün: 3 Petitionen angenommen, beide Kronprovinzen enden als Freie
+Provinzen, die jährliche Kronabgabe fällt von 9 auf 4 Gold, Bevölkerung 74,
+Gold 3.651,04, Nahrung 2.987,27, Moral 99,58, keine NaN-, Game-over- oder
+Save-Drift. Der 390×844-Browserlauf vergibt eine Charta, zeigt die Petition, hebt die Crown
+Heartland auf Stufe 2 und lädt die gespeicherte Charta nach einem Reload
+wieder; Desktop- und Mobile-Layout melden 0 px Überlauf.
 
 ## 3.87.1 — Waldtypen vor dem Feldguide
 

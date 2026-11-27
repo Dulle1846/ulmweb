@@ -10,6 +10,7 @@ For the current development stage, these documents focus on making the existing 
 
 - [Master UI implementation register](MASTER_UI_IMPLEMENTATION.md) — status against the approved visual design concept, implemented navigation contract and remaining acceptance work.
 - [Five crowns and ten provinces](WORLD_KINGDOMS.md) — the saved province layer over the existing world map: ten provinces, five crowns, control/loyalty/garrison, annual yields, contested borders, deterministic ownership changes and the once-per-year border claim (roadmap 4.0.1, v3.69.0).
+- [Provincial charters](PROVINCIAL_CHARTERS.md) — three autonomy tiers, the annual crown levy, loyalty-driven petitions, grant/refuse/revoke actions, save compatibility and the 3.88.0 campaign/browser evidence.
 - [Local data packs](DATA_PACKS.md) — the bounded JSON contract for local scenarios and province labels, its security/version gates, storage envelope, two existing consumers and save independence (roadmap 4.0.6, v3.69.0).
 - [Production-chain inspector](PRODUCTION_CHAIN_INSPECTOR.md) — the read-only field-to-loaf route register, bounded carrier previews, warehouse profile board and per-store switch guidance in Royal Stores and Buildings (v3.73.0).
 

@@ -125,6 +125,18 @@
 .world-province__contest{margin:0;color:#8d332f;font:800 8px/1.3 "Cinzel",Georgia,serif;letter-spacing:.04em}
 .world-province__note{margin:0;color:#7b6a52;font:500 9.5px/1.35 Georgia,serif}
 .world-province__note.is-crown{color:#4b5d2d;font-weight:700}
+.world-province__charter{display:flex;flex-direction:column;gap:5px;padding:7px;border:1px solid #b99a62;border-radius:5px;background:#fff7dc}
+.world-province__charter-head{display:flex;justify-content:space-between;align-items:center;gap:6px;color:#806d52;font:800 8px/1.2 "Cinzel",Georgia,serif;letter-spacing:.06em}
+.world-province__charter-head b{color:#4b5d2d;font-size:9px;text-align:right}
+.world-province__charter-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px}
+.world-province__charter-stats span{display:flex;flex-direction:column;gap:1px;padding:3px 5px;border:1px solid #c4aa7b;border-radius:4px;background:#fffdf2;color:#806d52;font:700 7px/1.2 "Cinzel",Georgia,serif;letter-spacing:.04em}
+.world-province__charter-stats b{color:#3d2d20;font-size:10px}
+.world-province__petition{margin:0;padding:4px 5px;border-left:3px solid #8d332f;background:#f3d9d4;color:#6d211e;font:700 9px/1.35 Georgia,serif}
+.world-province__charter-actions{display:flex;flex-wrap:wrap;gap:5px}
+.world-province__charter-actions button{flex:1 1 auto;min-width:0;padding:5px 7px;border:1px solid #4b5d2d;border-radius:4px;background:#dfe9cd;color:#2f4429;font:800 8px/1.25 "Cinzel",Georgia,serif;letter-spacing:.04em;text-align:left;cursor:pointer}
+.world-province__charter-actions button[data-command="world-petition-refuse"],.world-province__charter-actions button[data-command="world-charter-revoke"]{border-color:#8d332f;background:#f3d9d4;color:#6d211e}
+.world-province__charter-actions button:disabled{border-color:#a57c43;background:#efe2c6;color:#806d52;cursor:default}
+.world-province__charter-note{color:#7b6a52;font:700 7.5px/1.3 "Cinzel",Georgia,serif;letter-spacing:.03em}
 
 @media (max-width:1100px){
  .world-kingdom-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
@@ -151,4 +163,6 @@
  .world-kingdom-grid{grid-template-columns:1fr}
  .world-province__stats{grid-template-columns:repeat(2,minmax(0,1fr))}
  .world-province header{flex-wrap:wrap}
+ .world-province__charter-actions{flex-direction:column}
+ .world-province__charter-actions button{width:100%}
 }

@@ -88,9 +88,45 @@ function kingdomCard(kingdom, snapshot) {
     '</article>';
 }
 
+function charterSection(region) {
+    if (region.ownerKind !== "crown") return "";
+    const petition = region.petitionTier > 0;
+    const grantLabel = region.grantCharterPetition ? "GRANT PETITION" : region.autonomy === 1 ? "GRANT FREE CHARTER" : "GRANT CHARTER";
+    const grant = region.grantCharterCost
+        ? '<button type="button" data-command="world-charter-grant" data-value="' + esc(region.id) + '"' +
+            (region.canGrantCharter ? "" : " disabled") + '>' + grantLabel + ' · ' + costText(region.grantCharterCost) + '</button>'
+        : '';
+    const refuse = petition
+        ? '<button type="button" data-command="world-petition-refuse" data-value="' + esc(region.id) + '"' +
+            (region.canRefusePetition ? "" : " disabled") + '>REFUSE PETITION</button>'
+        : '';
+    const revoke = !petition && region.autonomy > 0
+        ? '<button type="button" data-command="world-charter-revoke" data-value="' + esc(region.id) + '"' +
+            (region.canRevokeCharter ? "" : " disabled") + '>REVOKE CHARTER</button>'
+        : '';
+    const reason = petition
+        ? (region.canRefusePetition || region.canGrantCharter ? "ANSWER THE PETITION" : esc(region.refusePetitionReason || "PETITION LOCKED"))
+        : region.autonomy >= 2
+            ? (region.canRevokeCharter ? "MAXIMUM AUTONOMY · A FREE PROVINCE" : esc(region.revokeCharterReasonLabel || "MAXIMUM AUTONOMY · A FREE PROVINCE"))
+            : region.canGrantCharter ? "A CHARTER BINDS THE PROVINCE TO THE CROWN" : esc(region.grantCharterReasonLabel || "NO CHARTER AVAILABLE");
+    const petitionNote = petition
+        ? '<p class="world-province__petition">PETITION · ' + esc(String(region.petitionLabel).toUpperCase()) + ' · YEAR ' + region.petitionYear +
+            '<br>Loyalty has earned this province a claim to more self-rule. Granting keeps more of its levy at home; refusing costs 5 loyalty.</p>'
+        : '';
+    const actionButtons = grant + refuse + revoke;
+    return '<div class="world-province__charter">' +
+        '<div class="world-province__charter-head"><span>AUTONOMY</span><b>' + esc(String(region.autonomyLabel).toUpperCase()) + '</b></div>' +
+        '<div class="world-province__charter-stats"><span>CROWN LEVY<b>+' + integer(region.levy) + 'G</b></span>' +
+            '<span>KEPT AT HOME<b>+' + integer(Math.max(0, region.levyBase - region.levy)) + 'G</b></span></div>' +
+        petitionNote +
+        (actionButtons ? '<div class="world-province__charter-actions">' + actionButtons + '</div>' : '') +
+        '<small class="world-province__charter-note">' + reason + '</small>' +
+    '</div>';
+}
+
 function regionCard(region, snapshot) {
     const claim = region.ownerKind === "crown"
-        ? '<p class="world-province__note is-crown">CROWN PROVINCE · ' + region.yield + ' ' + esc(region.resource.toUpperCase()) + ' A YEAR</p>'
+        ? '<p class="world-province__note is-crown">CROWN PROVINCE · ' + region.yield + ' ' + esc(region.resource.toUpperCase()) + ' A YEAR</p>' + charterSection(region)
         : '<div class="world-province__claim">' +
             '<button type="button" data-command="world-region-claim" data-value="' + esc(region.id) + '"' + (region.canClaim ? "" : " disabled") + '>PRESS CLAIM · ' + costText(region.claimCost) + '</button>' +
             '<small>' + (region.canClaim ? "CHANCE " + region.claimChance + "%" : esc(region.claimReasonLabel || "NO CLAIM AVAILABLE")) + '</small>' +
@@ -139,7 +175,7 @@ function provinceMarkup(snapshot) {
         }).join(" ");
         return '<g class="world-map__province world-map__province--' + esc(region.ownerId) + (region.contested ? " is-contested" : "") +
             '" data-world-map-province="' + esc(region.id) + '"><polygon points="' + points + '"></polygon>' +
-            '<title>' + esc(region.name + " · " + region.ownerName + " · control " + region.control + " · " + region.yield + " " + region.resource + " a year") + '</title></g>';
+            '<title>' + esc(region.name + " · " + region.ownerName + " · control " + region.control + " · " + region.yield + " " + region.resource + " a year · " + region.autonomyLabel.toLowerCase()) + '</title></g>';
     }).join("");
 }
 
@@ -217,6 +253,9 @@ export function renderWorldMapPanel() {
         '<div><small>SEATS</small><strong>' + snapshot.seats.length + '</strong></div>' +
         '<div><small>CROWN PROVINCES</small><strong>' + snapshot.totals.crownProvinces + ' / ' + snapshot.limits.provinces + '</strong></div>' +
         '<div><small>PROVINCE YIELD</small><strong>+' + integer(snapshot.totals.annualYield) + '</strong></div>' +
+        '<div><small>CHARTERS</small><strong>' + snapshot.totals.charteredProvinces + ' / ' + snapshot.totals.crownProvinces + '</strong></div>' +
+        '<div><small>CROWN LEVY</small><strong>+' + integer(snapshot.totals.annualLevy) + 'G</strong></div>' +
+        '<div><small>OPEN PETITIONS</small><strong>' + snapshot.totals.openPetitions + '</strong></div>' +
         '<div><small>STANDING ROUTES</small><strong>' + snapshot.routes.length + ' / ' + snapshot.limits.routes + '</strong></div>' +
         '<div><small>GOODS MOVED</small><strong>' + integer(snapshot.totals.delivered) + '</strong></div>' +
         '<div><small>TRADE EARNED</small><strong>' + integer(snapshot.totals.earned) + 'G</strong></div>' +
@@ -249,14 +288,14 @@ export function renderWorldMapPanel() {
         : '<p class="command-note">The first annual world survey will write its record here.</p>';
     return '<div class="world-map-panel" data-world-map-panel>' +
         '<div class="command-panel-intro"><span>THE WORLD BEYOND THE REALM</span><h3>Kingdoms, provinces, trade routes &amp; frontiers</h3>' +
-            '<p>Five crowns hold ten provinces. Your crown begins with the heartland and its march; the four neighbouring powers hold the rest. A province pays its yield into the royal stores while the crown holds it, and can be pressed once a year where a crown border meets a foreign province. Settlements are still your real seats, roads and stores; a standing caravan moves goods through the same market stock and diplomatic ledger, and a frontier can still put raiders over the border.</p></div>' +
+            '<p>Five crowns hold ten provinces. Your crown begins with the heartland and its old chartered march; the four neighbouring powers hold the rest. A province pays its yield into the royal stores while the crown holds it, and can be pressed once a year where a crown border meets a foreign province. A charter trades part of its yearly crown levy for local loyalty and steadier borders; once a province feels secure it petitions for the next tier, and ignoring that petition costs loyalty. Settlements are still your real seats, roads and stores; a standing caravan moves goods through the same market stock and diplomatic ledger, and a frontier can still put raiders over the border.</p></div>' +
         summary + legend + kingdomLegend + mapFigure(snapshot) +
         '<div class="command-section-title">KINGDOMS &amp; PROVINCES · ' + snapshot.totals.crownProvinces + ' / ' + snapshot.limits.provinces + ' HELD BY THE CROWN</div>' +
         '<div class="world-kingdom-grid">' + snapshot.kingdoms.map(kingdom => kingdomCard(kingdom, snapshot)).join("") + '</div>' +
         '<div class="command-section-title">THEATRE CAMPAIGNS · ' + campaign.campaigns.length + ' / ' + campaign.limits.active + ' ACTIVE · ' + campaign.counters.settlements + ' SETTLED</div>' +
         '<p class="command-note"><strong>AIM → COMMIT → SETTLE.</strong> A war band reads the real control and contest of a neighbouring kingdom, not a forecast. Committing pays the crown and signs the noble contract; progress is one bounded scalar per day and the annual campaign audit settles it with its own random stream.</p>' +
         '<div class="command-policy-list">' + theatreCards + '</div>' +
-        '<p class="command-note">Province control drifts once per year with the owner\'s treaty, relation and morale; hostile borders and low control make a province contested. A claim spends ' + costText(snapshot.costs.claim) + ', resolves deterministically from the current year, control, garrison, loyalty and war status, and can only be pressed once per year. A successful claim lowers the former owner\'s relation and trust; a repulsed claim spends the cost and weakens the province.</p>' +
+        '<p class="command-note">Province control drifts once per year with the owner\'s treaty, relation and morale; hostile borders and low control make a province contested. A claim spends ' + costText(snapshot.costs.claim) + ', resolves deterministically from the current year, control, garrison, loyalty and war status, and can only be pressed once per year. A successful claim lowers the former owner\'s relation and trust; a repulsed claim spends the cost and weakens the province. <strong>A charter</strong> raises yearly loyalty and softens hostile-border control loss; its cost is paid once, but the crown receives a smaller share of that province\'s levy every year. One charter decision can be made per province each year.</p>' +
         '<div class="world-province-grid">' + snapshot.regions.map(region => regionCard(region, snapshot)).join("") + '</div>' +
         '<div class="command-section-title">FRONTIERS · ' + snapshot.realms.filter(realm => realm.pressure >= 45).length + ' PRESSED</div>' +
         '<p class="command-note">Pressure is one bounded reading: treaty (+42 at war, +18 neutral, +7 trade, +1 alliance), low relation and trust, the existing crown border levy, then minus nearby settlements, watch levels, active caravans and the standing army\'s dread. It is recomputed once per year and saved.</p>' +

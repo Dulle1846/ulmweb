@@ -1,7 +1,7 @@
 # Kings & Cards
 
-**Production version:** 3.87.1
-**Next development line:** 3.88.0-dev
+**Production version:** 3.88.0
+**Next development line:** 3.89.0-dev
 **Production branch:** `ulmweb-branch`  
 **Production URL:** https://kings-and-cards.pages.dev/
 
@@ -42,6 +42,7 @@
 31. [Darstellung, Audio, UI und Accessibility 1.2.23.1.241–270](docs/FOREST_PRESENTATION.md) — sixty regional presentation profiles, nine crown silhouettes, layered canopy parallax, regional colours, staggered autumn, snow loads, eight ground weaves, fog and light, wet weather, species stiffness, deadwood, understory, blossom/fruit, fauna, insects, procedural regional ambience with wooden instruments, modal scales, motifs and silence, a four-season phenology calendar, three-layer canopy depth, per-type field marks, eight previewable sound cues, sound subtitles, map icons and filterable legends, tooltips and filters, colour-blind patterns, canopy contrast, forest text scale, reduced motion, performance mode, reduced particles and a symbolic map view, and the card list ahead of the reference guide so the sixty woodlands appear in under a second (v3.87.1).
 32. [Noble arbitration and atlas follow-ups](docs/NOBLE_FEUD_CHAIN.md) — 3.85.0 grievance → arbitration → compensation/charter settlement, shared penalty tiers, blood-feud escalation, bounded annual relapse, six authored quest follow-ups in Explore with real ledgers, save compatibility and browser proofs.
 33. [Keyboard-only play](docs/KEYBOARD_ACCESSIBILITY.md) - pause from any focused control, real tablists with arrow/Home/End navigation across the information tabs and the 29-panel management deck, focus restoration after Buildings/Bulk-Repair and Market actions, high-contrast-safe focus rings and a Chromium keyboard-only proof (v3.87.0).
+34. [Provincial charters](docs/PROVINCIAL_CHARTERS.md) — three autonomy tiers, yearly crown levy, loyalty-driven petitions, grant/refuse/revoke actions, deterministic 25-year campaign evidence and the 390×844 browser proof (v3.88.0).
 
 ## Development rules
 

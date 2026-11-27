@@ -10,6 +10,7 @@
 import { state } from "../core/state.js";
 import { DIPLOMATIC_REALMS } from "./diplomacy-config.js";
 import { recordTradeInfluence } from "./diplomacy-trade.js";
+import { applyPoliticalEffects } from "./politics.js";
 import { getCrownDread, getFrontierPressure } from "./crown-dread.js";
 import {
     getSettlementSeats, SETTLEMENT_STORE_LIMIT, SETTLEMENT_TREASURY_LIMIT
@@ -24,6 +25,20 @@ import {
 
 export const WORLD_MAP_VERSION = 2;
 export const REGION_CLAIM_COST = Object.freeze({ gold: 24, food: 8 });
+// A provincial charter is a standing bargain, not a one-off purchase. Each
+// tier keeps more of the province's levy at home and steadies its border, but
+// the crown receives less gold every year and a province that feels secure
+// will ask for the next tier. The tiers, costs and levy shares are exported so
+// the panel, tests and campaign driver read one shared contract.
+export const REGION_AUTONOMY_MAX = 2;
+export const REGION_CHARTER_COSTS = Object.freeze({
+    1: Object.freeze({ gold: 16, food: 6 }),
+    2: Object.freeze({ gold: 26, food: 10 })
+});
+export const REGION_CHARTER_LEVY_SHARE = Object.freeze([1, 0.62, 0.3]);
+export const REGION_AUTONOMY_LABELS = Object.freeze(["CROWN RULE", "CHARTERED", "FREE PROVINCE"]);
+export const REGION_PETITION_LOYALTY = 70;
+export const REGION_PETITION_INTERVAL = 3;
 export const REGION_CONTROL_MAX = 100;
 export const REGION_CONTESTED_BELOW = 38;
 export const REGION_SECURE_ABOVE = 48;
@@ -110,6 +125,11 @@ function defaultRegion(definition) {
         control: definition.control,
         loyalty: definition.loyalty,
         garrison: definition.garrison,
+        autonomy: Math.max(0, Math.min(REGION_AUTONOMY_MAX, Math.floor(Number(definition.defaultAutonomy) || 0))),
+        petitionTier: 0,
+        petitionYear: 0,
+        lastPetitionYear: 0,
+        lastCharterYear: 0,
         contestedBy: null,
         lastChangeYear: 0,
         changes: 0
@@ -121,6 +141,7 @@ export function createWorldMapState() {
         version: WORLD_MAP_VERSION,
         lastUpdateYear: 0,
         lastRegionClaimYear: 0,
+        lastRegionCharterYear: 0,
         routes: [],
         frontiers: DIPLOMATIC_REALMS.map(realm => defaultFrontier(realm.id)),
         regions: WORLD_REGION_CATALOG.map(defaultRegion),
@@ -133,8 +154,14 @@ export function createWorldMapState() {
             incidents: 0,
             stalls: 0,
             regionYield: 0,
+            regionLevy: 0,
             regionChanges: 0,
-            provinceClaims: 0
+            provinceClaims: 0,
+            chartersGranted: 0,
+            chartersRevoked: 0,
+            petitionsGranted: 0,
+            petitionsRefused: 0,
+            petitionsIgnored: 0
         }
     };
 }
@@ -153,18 +180,29 @@ function normalizeFrontier(input, realmId) {
     };
 }
 
-function normalizeRegion(input, definition) {
+function normalizeRegion(input, definition, freshStart = false) {
     const source = input && typeof input === "object" && !Array.isArray(input) ? input : {};
     const ownerId = source.ownerId === CROWN_OWNER_ID || REALM_BY_ID.has(text(source.ownerId, 40))
         ? source.ownerId
         : definition.ownerId;
     const contestedBy = text(source.contestedBy, 40);
+    const autonomy = source.autonomy === undefined
+        ? (freshStart ? Math.max(0, Math.min(REGION_AUTONOMY_MAX, Math.floor(Number(definition.defaultAutonomy) || 0))) : 0)
+        : integer(source.autonomy, 0, REGION_AUTONOMY_MAX);
+    const petitionTier = integer(source.petitionTier, 0, REGION_AUTONOMY_MAX);
     return {
         id: definition.id,
         ownerId,
         control: Math.round(clamp(source.control ?? definition.control, 0, REGION_CONTROL_MAX)),
         loyalty: Math.round(clamp(source.loyalty ?? definition.loyalty)),
         garrison: Math.round(clamp(source.garrison ?? definition.garrison, 0, 10)),
+        // Old saves have no autonomy field. They keep crown rule (0) rather
+        // than silently gaining a charter the player never granted.
+        autonomy,
+        petitionTier: petitionTier > autonomy ? petitionTier : 0,
+        petitionYear: yearOf(source.petitionYear),
+        lastPetitionYear: yearOf(source.lastPetitionYear),
+        lastCharterYear: yearOf(source.lastCharterYear),
         contestedBy: contestedBy && contestedBy !== ownerId && (contestedBy === CROWN_OWNER_ID || REALM_BY_ID.has(contestedBy))
             ? contestedBy : null,
         lastChangeYear: yearOf(source.lastChangeYear),
@@ -216,6 +254,10 @@ function normalizeHistoryEntry(input) {
 }
 
 export function normalizeWorldMapSnapshot(input) {
+    // A brand-new realm inherits the crown march's old charter. An existing
+    // save without the field keeps crown rule (0), so old realms are not given
+    // a charter they never chose.
+    const freshStart = input === undefined || input === null;
     const source = input && typeof input === "object" && !Array.isArray(input) ? input : {};
     const seenRoutes = new Set();
     const routes = [];
@@ -244,9 +286,10 @@ export function normalizeWorldMapSnapshot(input) {
         version: WORLD_MAP_VERSION,
         lastUpdateYear: yearOf(source.lastUpdateYear),
         lastRegionClaimYear: yearOf(source.lastRegionClaimYear),
+        lastRegionCharterYear: yearOf(source.lastRegionCharterYear),
         routes,
         frontiers: DIPLOMATIC_REALMS.map(realm => normalizeFrontier(savedFrontiers.get(realm.id), realm.id)),
-        regions: WORLD_REGION_CATALOG.map(definition => normalizeRegion(savedRegions.get(definition.id), definition)),
+        regions: WORLD_REGION_CATALOG.map(definition => normalizeRegion(savedRegions.get(definition.id), definition, freshStart)),
         history: (Array.isArray(source.history) ? source.history : [])
             .map(normalizeHistoryEntry).filter(Boolean).slice(0, WORLD_ROUTE_HISTORY_LIMIT),
         totals: {
@@ -257,8 +300,14 @@ export function normalizeWorldMapSnapshot(input) {
             incidents: integer(source.totals?.incidents, 0, 9999),
             stalls: integer(source.totals?.stalls, 0, 9999),
             regionYield: integer(source.totals?.regionYield),
+            regionLevy: integer(source.totals?.regionLevy),
             regionChanges: integer(source.totals?.regionChanges, 0, 9999),
-            provinceClaims: integer(source.totals?.provinceClaims, 0, 9999)
+            provinceClaims: integer(source.totals?.provinceClaims, 0, 9999),
+            chartersGranted: integer(source.totals?.chartersGranted, 0, 9999),
+            chartersRevoked: integer(source.totals?.chartersRevoked, 0, 9999),
+            petitionsGranted: integer(source.totals?.petitionsGranted, 0, 9999),
+            petitionsRefused: integer(source.totals?.petitionsRefused, 0, 9999),
+            petitionsIgnored: integer(source.totals?.petitionsIgnored, 0, 9999)
         }
     };
 }
@@ -310,6 +359,14 @@ export function validateWorldMapSnapshot(snapshot) {
                 !Number.isFinite(Number(region.garrison)) || Number(region.garrison) < 0 || Number(region.garrison) > 10) {
                 throw new Error("Save data contains an invalid province control record.");
             }
+            if (region.autonomy !== undefined &&
+                (!Number.isFinite(Number(region.autonomy)) || Number(region.autonomy) < 0 || Number(region.autonomy) > REGION_AUTONOMY_MAX)) {
+                throw new Error("Save data contains an invalid province charter.");
+            }
+            if (region.petitionTier !== undefined &&
+                (!Number.isFinite(Number(region.petitionTier)) || Number(region.petitionTier) < 0 || Number(region.petitionTier) > REGION_AUTONOMY_MAX)) {
+                throw new Error("Save data contains an invalid province petition.");
+            }
         }
     }
     return true;
@@ -320,7 +377,12 @@ export function ensureWorldMap() {
     if (!current || typeof current !== "object" || Array.isArray(current) ||
         current.version !== WORLD_MAP_VERSION || !Array.isArray(current.routes) ||
         !Array.isArray(current.frontiers) || !Array.isArray(current.regions) ||
-        current.regions.length !== WORLD_REGION_CATALOG.length) {
+        current.regions.length !== WORLD_REGION_CATALOG.length ||
+        // Saves from before provincial charters have no autonomy field and must
+        // be normalized once instead of reading undefined every year.
+        current.regions.some(region => !Number.isFinite(Number(region?.autonomy))) ||
+        !Number.isFinite(Number(current.lastRegionCharterYear)) ||
+        !current.totals || current.totals.chartersGranted === undefined) {
         state.worldMap = normalizeWorldMapSnapshot(current);
     }
     return state.worldMap;
@@ -418,9 +480,79 @@ function regionClaimReadiness(region, map) {
     return { ok: true, chance, cost: REGION_CLAIM_COST };
 }
 
+function regionLevyBase(region) {
+    return Math.max(2, 2 + Math.floor(clamp(region.control, 0, REGION_CONTROL_MAX) / 30) +
+        Math.floor(clamp(region.loyalty) / 35));
+}
+
+// Charters do not change the province's physical yield. They change who keeps
+// the gold levy: a chartered province keeps a larger share for its own roads,
+// watch and local officers, while the crown receives less each year.
+function regionLevyFor(region) {
+    const share = REGION_CHARTER_LEVY_SHARE[region.autonomy] ?? 1;
+    return Math.max(0, Math.round(regionLevyBase(region) * share));
+}
+
+const REGION_CHARTER_REASONS = Object.freeze({
+    "not-crown": "Only a crown province can hold a charter",
+    "charter-maxed": "This province already holds a free charter",
+    "charter-already-answered": "This province has already answered its charter this year",
+    "not-enough-gold": "The crown treasury is short",
+    "not-enough-food": "The royal granary is short",
+    "no-charter": "This province holds no charter to revoke",
+    "no-petition": "No provincial petition is waiting"
+});
+
+function charterActionLocked(region) {
+    const year = Math.max(1, Math.floor(Number(state.year) || 1));
+    return Math.max(0, Math.floor(Number(region.lastCharterYear) || 0)) >= year;
+}
+
+function regionCharterReadiness(region, map) {
+    if (region.ownerId !== CROWN_OWNER_ID) {
+        return { ok: false, reason: "not-crown", reasonLabel: REGION_CHARTER_REASONS["not-crown"] };
+    }
+    if (region.autonomy >= REGION_AUTONOMY_MAX) {
+        return { ok: false, reason: "charter-maxed", reasonLabel: REGION_CHARTER_REASONS["charter-maxed"] };
+    }
+    if (charterActionLocked(region)) {
+        return { ok: false, reason: "charter-already-answered", reasonLabel: REGION_CHARTER_REASONS["charter-already-answered"] };
+    }
+    const tier = region.autonomy + 1;
+    const cost = REGION_CHARTER_COSTS[tier];
+    if ((Number(state.resources?.gold) || 0) < cost.gold) {
+        return { ok: false, reason: "not-enough-gold", reasonLabel: REGION_CHARTER_REASONS["not-enough-gold"], tier, cost };
+    }
+    if ((Number(state.resources?.food) || 0) < cost.food) {
+        return { ok: false, reason: "not-enough-food", reasonLabel: REGION_CHARTER_REASONS["not-enough-food"], tier, cost };
+    }
+    return {
+        ok: true,
+        tier,
+        cost,
+        petition: region.petitionTier === tier && region.petitionYear > 0
+    };
+}
+
+function regionRevokeReadiness(region, map) {
+    if (region.ownerId !== CROWN_OWNER_ID) {
+        return { ok: false, reason: "not-crown", reasonLabel: REGION_CHARTER_REASONS["not-crown"] };
+    }
+    if (region.autonomy <= 0) {
+        return { ok: false, reason: "no-charter", reasonLabel: REGION_CHARTER_REASONS["no-charter"] };
+    }
+    if (charterActionLocked(region)) {
+        return { ok: false, reason: "charter-already-answered", reasonLabel: REGION_CHARTER_REASONS["charter-already-answered"] };
+    }
+    return { ok: true, tier: region.autonomy };
+}
+
 function regionSnapshot(region, map) {
     const definition = regionDefinitionFor(region.id);
     const readiness = regionClaimReadiness(region, map);
+    const charter = regionCharterReadiness(region, map);
+    const revoke = regionRevokeReadiness(region, map);
+    const petitionOpen = region.petitionTier > region.autonomy && region.petitionYear > 0;
     return {
         id: region.id,
         name: regionDisplayName(region.id, definition.name),
@@ -435,6 +567,26 @@ function regionSnapshot(region, map) {
         control: Math.round(region.control),
         loyalty: Math.round(region.loyalty),
         garrison: Math.round(region.garrison),
+        autonomy: region.autonomy,
+        autonomyLabel: REGION_AUTONOMY_LABELS[region.autonomy] || REGION_AUTONOMY_LABELS[0],
+        levyBase: regionLevyBase(region),
+        levy: regionLevyFor(region),
+        petitionTier: petitionOpen ? region.petitionTier : 0,
+        petitionYear: petitionOpen ? region.petitionYear : 0,
+        petitionLabel: petitionOpen ? REGION_AUTONOMY_LABELS[region.petitionTier] : null,
+        canGrantCharter: charter.ok,
+        grantCharterReason: charter.reason || null,
+        grantCharterReasonLabel: charter.reasonLabel || null,
+        grantCharterTier: charter.tier || 0,
+        grantCharterCost: charter.cost || null,
+        grantCharterPetition: Boolean(charter.petition),
+        canRevokeCharter: revoke.ok,
+        revokeCharterReason: revoke.reason || null,
+        revokeCharterReasonLabel: revoke.reasonLabel || null,
+        canRefusePetition: petitionOpen && !charterActionLocked(region),
+        refusePetitionReason: petitionOpen
+            ? (charterActionLocked(region) ? REGION_CHARTER_REASONS["charter-already-answered"] : null)
+            : REGION_CHARTER_REASONS["no-petition"],
         contestedBy: region.contestedBy,
         contestedName: region.contestedBy ? regionOwnerName(region.contestedBy) : null,
         contested: Boolean(region.contestedBy),
@@ -688,7 +840,10 @@ export function getWorldMapSnapshot() {
         watchLevels: map.frontiers.reduce((sum, row) => sum + row.watch, 0),
         crownProvinces: regions.filter(region => region.ownerId === CROWN_OWNER_ID).length,
         contestedProvinces: regions.filter(region => region.contested).length,
-        annualYield: regions.filter(region => region.ownerId === CROWN_OWNER_ID).reduce((sum, region) => sum + region.yield, 0)
+        charteredProvinces: regions.filter(region => region.ownerId === CROWN_OWNER_ID && region.autonomy > 0).length,
+        openPetitions: regions.filter(region => region.petitionTier > 0).length,
+        annualYield: regions.filter(region => region.ownerId === CROWN_OWNER_ID).reduce((sum, region) => sum + region.yield, 0),
+        annualLevy: regions.filter(region => region.ownerId === CROWN_OWNER_ID).reduce((sum, region) => sum + region.levy, 0)
     };
     return {
         version: WORLD_MAP_VERSION,
@@ -703,11 +858,13 @@ export function getWorldMapSnapshot() {
         routes,
         totals,
         history: map.history.slice(0, 12),
-        costs: { route: TRADE_ROUTE_COST, watch: FRONTIER_WATCH_COST, lot: TRADE_ROUTE_LOT, claim: REGION_CLAIM_COST },
-        limits: { routes: TRADE_ROUTE_LIMIT, watch: FRONTIER_WATCH_LIMIT, provinces: WORLD_REGION_CATALOG.length },
+        costs: { route: TRADE_ROUTE_COST, watch: FRONTIER_WATCH_COST, lot: TRADE_ROUTE_LOT, claim: REGION_CLAIM_COST, charters: REGION_CHARTER_COSTS },
+        limits: { routes: TRADE_ROUTE_LIMIT, watch: FRONTIER_WATCH_LIMIT, provinces: WORLD_REGION_CATALOG.length, autonomy: REGION_AUTONOMY_MAX },
         regionAction: {
             lastClaimYear: map.lastRegionClaimYear,
-            oneClaimPerYear: true
+            oneClaimPerYear: true,
+            lastCharterYear: map.lastRegionCharterYear,
+            oneCharterActionPerProvincePerYear: true
         },
         inventory: {
             wood: Math.max(0, finite(state.resources?.wood)),
@@ -983,6 +1140,10 @@ function changeRegionOwner(map, region, ownerId, year, kind, summary) {
     region.control = Math.max(26, Math.round(region.control));
     region.loyalty = Math.max(38, Math.round(region.loyalty));
     region.garrison = 1;
+    region.autonomy = 0;
+    region.petitionTier = 0;
+    region.petitionYear = 0;
+    region.lastCharterYear = 0;
     region.contestedBy = null;
     region.lastChangeYear = year;
     region.changes += 1;
@@ -1002,13 +1163,29 @@ function changeRegionOwner(map, region, ownerId, year, kind, summary) {
 
 function updateRegions(map, year) {
     let annualYield = 0;
+    let annualLevy = 0;
     let changes = 0;
+    let petitions = 0;
     for (const region of map.regions) {
         const definition = regionDefinitionFor(region.id);
         if (!definition) continue;
-        const ownerRealm = region.ownerId === CROWN_OWNER_ID ? null : realmState(region.ownerId);
+        const crownProvince = region.ownerId === CROWN_OWNER_ID;
+        const autonomy = crownProvince ? region.autonomy : 0;
+        const ownerRealm = crownProvince ? null : realmState(region.ownerId);
         const atWar = ownerRealm?.treaty === "war";
-        let delta = region.ownerId === CROWN_OWNER_ID
+        // A petition left unanswered for a whole year is a refusal in the
+        // province's eyes. This is the only automatic charter decision and it
+        // runs once per annual pass, never per tick.
+        if (crownProvince && region.petitionTier > autonomy && region.petitionYear > 0 && region.petitionYear < year) {
+            region.loyalty = clamp(region.loyalty - 4);
+            region.petitionTier = 0;
+            region.petitionYear = 0;
+            region.lastPetitionYear = year;
+            map.totals.petitionsIgnored += 1;
+            record(map, "province-petition-ignored",
+                regionDisplayName(region.id, definition.name) + " waited for an answer and received none; its loyalty fell.");
+        }
+        let delta = crownProvince
             ? ((Number(state.morale) || 0) >= 50 ? 1 : -1)
             : (atWar ? -2 : 1);
         if (region.contestedBy) delta -= 2;
@@ -1017,15 +1194,23 @@ function updateRegions(map, year) {
         const hostileBorders = definition.neighbours.filter(id => {
             const other = regionEntry(map, id);
             if (!other || other.ownerId === region.ownerId) return false;
-            return region.ownerId === CROWN_OWNER_ID
+            return crownProvince
                 ? realmState(other.ownerId)?.treaty === "war"
                 : other.ownerId === CROWN_OWNER_ID && atWar;
         }).length;
-        delta -= hostileBorders * 2;
+        // Each charter tier keeps one more hostile border from eroding control;
+        // a free province can still lose its crown by war, but not simply by
+        // standing next to a hostile frontier.
+        delta -= Math.max(0, hostileBorders * 2 - autonomy);
         region.control = clamp(region.control + delta, 0, REGION_CONTROL_MAX);
-        region.loyalty = clamp(region.loyalty + (region.ownerId === CROWN_OWNER_ID
+        const loyaltyDrift = crownProvince
             ? ((Number(state.morale) || 0) >= 50 ? 1 : -1)
-            : (ownerRealm && ownerRealm.relation >= 50 ? 1 : -1)) - (region.contestedBy ? 2 : 0));
+            : (ownerRealm && ownerRealm.relation >= 50 ? 1 : -1);
+        // Chartered government is closer to its people: +1 loyalty a year at
+        // tier one and +2 at tier two, while contested borders hurt less.
+        const charterLoyalty = Math.ceil(autonomy * 0.5);
+        const contestedLoss = region.contestedBy ? Math.max(0, 2 - autonomy) : 0;
+        region.loyalty = clamp(region.loyalty + loyaltyDrift + charterLoyalty - contestedLoss);
         if (region.control < REGION_CONTESTED_BELOW) {
             const challenger = strongestNeighbourOwner(region, map);
             region.contestedBy = challenger?.ownerId || null;
@@ -1050,10 +1235,28 @@ function updateRegions(map, year) {
             addResource(definition.resource, amount);
             map.totals.regionYield += amount;
             annualYield += amount;
+            const levy = regionLevyFor(region);
+            if (levy > 0) {
+                addResource("gold", levy);
+                map.totals.regionLevy += levy;
+                annualLevy += levy;
+            }
+            // Loyalty is the demand signal. A secure province asks for the next
+            // charter tier, and the player can grant or refuse it. The interval
+            // keeps petitions bounded even in a very long campaign.
+            if (region.autonomy < REGION_AUTONOMY_MAX && !region.petitionTier &&
+                region.loyalty >= REGION_PETITION_LOYALTY && year - region.lastPetitionYear >= REGION_PETITION_INTERVAL) {
+                region.petitionTier = region.autonomy + 1;
+                region.petitionYear = year;
+                petitions += 1;
+                record(map, "province-petition",
+                    regionDisplayName(region.id, definition.name) + " petitions for " +
+                    REGION_AUTONOMY_LABELS[region.petitionTier].toLowerCase() + " status.");
+            }
         }
     }
     map.lastRegionClaimYear = Math.min(map.lastRegionClaimYear, year);
-    return { annualYield, changes };
+    return { annualYield, annualLevy, changes, petitions };
 }
 
 export function pressRegionClaim(regionId) {
@@ -1077,6 +1280,10 @@ export function pressRegionClaim(regionId) {
         region.control = 30;
         region.loyalty = 42;
         region.garrison = 1;
+        region.autonomy = 0;
+        region.petitionTier = 0;
+        region.petitionYear = 0;
+        region.lastCharterYear = 0;
         region.contestedBy = null;
         region.lastChangeYear = year;
         region.changes += 1;
@@ -1106,6 +1313,111 @@ export function pressRegionClaim(regionId) {
         message: success
             ? "Province claimed: " + regionDisplayName(region.id, definition.name)
             : "Claim repulsed at " + regionDisplayName(region.id, definition.name) + " (" + readiness.chance + "% chance)",
+        region: regionSnapshot(region, map)
+    };
+}
+
+export function grantProvinceCharter(regionId) {
+    const map = ensureWorldMap();
+    const region = regionEntry(map, text(regionId, 40));
+    if (!region) return { ok: false, reason: "unknown-province" };
+    const readiness = regionCharterReadiness(region, map);
+    if (!readiness.ok) return { ok: false, reason: readiness.reason, reasonLabel: readiness.reasonLabel };
+    const year = Math.max(1, Math.floor(Number(state.year) || 1));
+    addResource("gold", -readiness.cost.gold);
+    addResource("food", -readiness.cost.food);
+    const wasPetition = readiness.petition;
+    region.autonomy = readiness.tier;
+    region.loyalty = clamp(region.loyalty + 2);
+    region.control = clamp(region.control + 1);
+    region.lastCharterYear = year;
+    region.lastPetitionYear = year;
+    region.petitionTier = 0;
+    region.petitionYear = 0;
+    map.lastRegionCharterYear = year;
+    map.totals.chartersGranted += 1;
+    if (wasPetition) map.totals.petitionsGranted += 1;
+    const definition = regionDefinitionFor(region.id);
+    applyPoliticalEffects({ legitimacy: -0.2, nobility: 0.8, commons: 0.5, guilds: 0.2 });
+    state.morale = clamp((Number(state.morale) || 0) + 0.4);
+    const tierLabel = REGION_AUTONOMY_LABELS[readiness.tier];
+    record(map, wasPetition ? "province-petition-granted" : "province-chartered",
+        regionDisplayName(region.id, definition.name) + " received a " + tierLabel.toLowerCase() +
+        " charter for " + readiness.cost.gold + " gold and " + readiness.cost.food + " food.");
+    addLog("PROVINCE CHARTER · " + regionDisplayName(region.id, definition.name).toUpperCase() + " · " + tierLabel,
+        "#a5d6a7", "frontier");
+    return {
+        ok: true,
+        petition: wasPetition,
+        tier: readiness.tier,
+        cost: readiness.cost,
+        message: regionDisplayName(region.id, definition.name) + " is now " + tierLabel.toLowerCase() + ".",
+        region: regionSnapshot(region, map)
+    };
+}
+
+export function refuseProvincePetition(regionId) {
+    const map = ensureWorldMap();
+    const region = regionEntry(map, text(regionId, 40));
+    if (!region) return { ok: false, reason: "unknown-province" };
+    if (region.ownerId !== CROWN_OWNER_ID) return { ok: false, reason: "not-crown" };
+    if (!(region.petitionTier > region.autonomy && region.petitionYear > 0)) {
+        return { ok: false, reason: "no-petition", reasonLabel: REGION_CHARTER_REASONS["no-petition"] };
+    }
+    if (charterActionLocked(region)) {
+        return { ok: false, reason: "charter-already-answered", reasonLabel: REGION_CHARTER_REASONS["charter-already-answered"] };
+    }
+    const year = Math.max(1, Math.floor(Number(state.year) || 1));
+    const definition = regionDefinitionFor(region.id);
+    region.petitionTier = 0;
+    region.petitionYear = 0;
+    region.lastPetitionYear = year;
+    region.loyalty = clamp(region.loyalty - 5);
+    region.control = clamp(region.control - 1);
+    map.lastRegionCharterYear = year;
+    map.totals.petitionsRefused += 1;
+    applyPoliticalEffects({ legitimacy: 0.2, nobility: -0.5, commons: -0.7 });
+    state.morale = clamp((Number(state.morale) || 0) - 0.6);
+    record(map, "province-petition-refused",
+        regionDisplayName(region.id, definition.name) + " was refused its petition; its loyalty fell.");
+    addLog("PROVINCE PETITION REFUSED · " + regionDisplayName(region.id, definition.name).toUpperCase(),
+        "#d8a38a", "frontier");
+    return {
+        ok: true,
+        message: regionDisplayName(region.id, definition.name) + " remains under its current charter.",
+        region: regionSnapshot(region, map)
+    };
+}
+
+export function revokeProvinceCharter(regionId) {
+    const map = ensureWorldMap();
+    const region = regionEntry(map, text(regionId, 40));
+    if (!region) return { ok: false, reason: "unknown-province" };
+    const readiness = regionRevokeReadiness(region, map);
+    if (!readiness.ok) return { ok: false, reason: readiness.reason, reasonLabel: readiness.reasonLabel };
+    const year = Math.max(1, Math.floor(Number(state.year) || 1));
+    const oldTier = region.autonomy;
+    region.autonomy = oldTier - 1;
+    region.loyalty = clamp(region.loyalty - (8 + oldTier * 2));
+    region.control = clamp(region.control - (2 + oldTier));
+    region.lastCharterYear = year;
+    region.lastPetitionYear = year;
+    region.petitionTier = 0;
+    region.petitionYear = 0;
+    map.lastRegionCharterYear = year;
+    map.totals.chartersRevoked += 1;
+    const definition = regionDefinitionFor(region.id);
+    applyPoliticalEffects({ legitimacy: 0.4, nobility: -0.8, commons: -0.8 });
+    state.morale = clamp((Number(state.morale) || 0) - 0.6);
+    record(map, "province-charter-revoked",
+        "The crown revoked " + regionDisplayName(region.id, definition.name) + "'s charter; the province returned to " +
+        REGION_AUTONOMY_LABELS[region.autonomy].toLowerCase() + ".");
+    addLog("PROVINCE CHARTER REVOKED · " + regionDisplayName(region.id, definition.name).toUpperCase(),
+        "#d8a38a", "frontier");
+    return {
+        ok: true,
+        tier: region.autonomy,
+        message: regionDisplayName(region.id, definition.name) + " returned to " + REGION_AUTONOMY_LABELS[region.autonomy].toLowerCase() + ".",
         region: regionSnapshot(region, map)
     };
 }
