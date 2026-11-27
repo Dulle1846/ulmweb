@@ -188,5 +188,8 @@ test("the save and management contracts actually wire the crafted archive", asyn
     assert.ok(migrations.includes("7:snapshot=>") && compactSaveRuntime.includes("craftedItems:normalizeCraftedItems(state.craftedItems||[])"));
     assert.ok(compactSaveRuntime.includes("state.craftedItems=normalizeCraftedItems(snapshot.craftedItems)"));
     assert.ok(validation.includes("validateCraftedItems"));
-    assert.ok(management.includes('if(activePanel==="items")renderItemLexicon(panel)'));
+    assert.ok(management.includes("renderItemLexicon(panel)"),
+        "the archive must keep its direct renderer for plain and narrow decks");
+    assert.ok(management.includes('"items"') && management.includes("splitMarkupForStagedRender"),
+        "the staged desktop deck must split the lexicon's exact markup into bounded parts");
 });

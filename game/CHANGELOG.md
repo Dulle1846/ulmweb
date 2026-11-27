@@ -1,13 +1,36 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.89.3`
-**Next development line:** `3.90.0-dev`
+**Current production version:** `3.90.0`
+**Next development line:** `3.90.1-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
 **Last repository verification:** 2026-11-27 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.90.0 — Low-end panel render audit
+
+Every panel deck now has a bounded, inspectable mount budget and a real
+four-times-throttled Chromium proof. This is presentation instrumentation and
+bounded staging only: no save schema bump, no new RNG stream and no simulation
+or per-frame work.
+
+- **Panel timing is observable.** `window.__panelTiming` keeps its legacy flat
+  fields and adds a history capped at 64 records, including generated parts,
+  preparation time and the longest generated part.
+- **Mounts stay bounded.** Every information tab except the timeline-owned
+  Chronicle uses the existing frame-budgeted hydrator on desktop as well as on
+  phones, with unchanged 4 ms, node and card caps. Several cheap generated
+  parts share one frame under an 8 ms JS budget, and completed runs release
+  their detached staging nodes and producer buffers.
+- **Heavy markup is generated in parts.** The forest atlas, people register,
+  Royal Stores, building register, Lexicon, exploration and biome decks split
+  section generation as well as DOM mounting. The forest survey streams one
+  bounded slice per frame while preserving the exact strided sample.
+- **Low-end proof.** A software-canvas, 4x-throttled Chromium run visits every
+  panel with real deck clicks and checks the recorded mounts against unchanged
+  100 ms long-task and 33 ms frame budgets.
 
 ## 3.89.3 — Waldregister auf Desktop und Tablet
 

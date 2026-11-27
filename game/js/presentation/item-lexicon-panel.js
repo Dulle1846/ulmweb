@@ -36,6 +36,12 @@ function pageSize() {
     return isNarrowViewport() ? NARROW_PAGE_SIZE : PAGE_SIZE;
 }
 
+function chunkRows(rows, size) {
+    const chunks = [];
+    for (let index = 0; index < rows.length; index += size) chunks.push(rows.slice(index, index + size));
+    return chunks;
+}
+
 function esc(value) {
     return String(value).replace(/[&<>"']/g, character => ({
         "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
@@ -176,7 +182,7 @@ function ensureItemDetail(details) {
     details.dataset.itemDetailReady = "1";
 }
 
-function renderGroups(rows) {
+function groupEntries(rows) {
     const grouped = new Map();
     for (const row of rows) {
         if (!grouped.has(row.category)) grouped.set(row.category, []);
@@ -187,23 +193,25 @@ function renderGroups(rows) {
         (order.get(left[0]) ?? 999) - (order.get(right[0]) ?? 999)
     );
     const narrow = isNarrowViewport();
-    const groupLimit = narrow ? narrowGroupLimit : groups.length;
-    const visibleGroups = groups.slice(0, groupLimit);
-    const hiddenGroups = groups.length - visibleGroups.length;
-    const rendered = visibleGroups.map(([category, groupRows]) => {
-        if (!narrow) {
-            return '<details class="item-lexicon__group" open>' +
-                '<summary><span>' + esc(itemCategoryLabel(category).toUpperCase()) + '</span><b>' + groupRows.length + '</b></summary>' +
-                '<div class="item-lexicon__rows">' + groupRows.map(renderEntry).join("") + '</div>' +
-            '</details>';
-        }
-        lazyGroupRows.set(category, groupRows);
-        return '<details class="item-lexicon__group" data-item-group="' + esc(category) + '">' +
+    const visibleGroups = narrow ? groups.slice(0, narrowGroupLimit) : groups;
+    return { groups: visibleGroups, hiddenGroups: groups.length - visibleGroups.length };
+}
+
+function groupShell(groups) {
+    const narrow = isNarrowViewport();
+    return groups.map(([category, groupRows]) => {
+        if (narrow) lazyGroupRows.set(category, groupRows);
+        return '<details class="item-lexicon__group"' + (narrow ? ' data-item-group="' + esc(category) + '"' : ' open') + '>' +
             '<summary><span>' + esc(itemCategoryLabel(category).toUpperCase()) + '</span><b>' + groupRows.length + '</b></summary>' +
-            '<div class="item-lexicon__rows" data-item-group-body></div>' +
-        '</details>';
+            '<div class="item-lexicon__rows"' + (narrow ? ' data-item-group-body' : ' data-item-rows="' + esc(category) + '"') + '>' +
+            (narrow ? '' : groupRows.map(renderEntry).join("")) +
+            '</div></details>';
     }).join("");
-    return rendered + (hiddenGroups > 0
+}
+
+function renderGroups(rows) {
+    const { groups, hiddenGroups } = groupEntries(rows);
+    return groupShell(groups) + (hiddenGroups > 0
         ? '<button type="button" class="item-lexicon__more" data-item-more-groups>SHOW ' + Math.min(2, hiddenGroups) + ' MORE CATEGORIES · ' + hiddenGroups + ' HIDDEN</button>'
         : "");
 }
@@ -215,13 +223,106 @@ function signature(catalog) {
     ].join("|");
 }
 
-function paint(container, { force = false } = {}) {
+// The staged producer must stay cheap: catalog reads, shell generation and row
+// descriptors are separate prepared parts instead of one click/hydration task.
+// Adjacent entries share a bounded row part: twelve closed records mount fewer
+// detached roots than the old four-entry slices, while the exact row and group
+// order — and therefore the joined markup bytes — stay unchanged.
+const STAGED_ROW_CHUNK = 12;
+
+function stagedLexiconParts(container) {
+    const late = { catalog: null, signature: "", rows: [], visible: [], groups: [], hiddenGroups: 0 };
+    return [
+        () => {
+            if (!visibleLimit) visibleLimit = pageSize();
+            late.catalog = getCatalog();
+            if (activeCategory !== "all" && activeCategory !== "crafted" && !late.catalog.categoryCounts[activeCategory]) activeCategory = "all";
+            late.signature = signature(late.catalog);
+            return "";
+        },
+        () => {
+            const catalog = late.catalog;
+            const rows = matchingRows(catalog);
+            late.rows = rows;
+            late.visible = rows.slice(0, visibleLimit);
+            const searchActive = Boolean(query.trim());
+            const categoryEntries = [
+                { id: "all", label: "All items", count: catalog.total },
+                { id: "crafted", label: "Player-made", count: catalog.craftedCount },
+                ...catalog.categories.filter(entry => entry.id !== "all" && entry.id !== "crafted" && entry.count > 0),
+            ];
+            const categoryButtons = categoryEntries.map(entry => '<button type="button" class="item-lexicon__category' + (!searchActive && activeCategory === entry.id ? " is-active" : "") + '" data-item-category="' + esc(entry.id) + '">' + esc(entry.label.toUpperCase()) + ' <b>' + entry.count + '</b></button>');
+            const categoryParts = isNarrowViewport() ? [] : [
+                { into: ".item-lexicon", html: '<div class="item-lexicon__categories" role="group" aria-label="Item categories"></div>' }
+            ];
+            for (let index = 0; index < categoryButtons.length; index += 4) {
+                categoryParts.push({ into: ".item-lexicon__categories", html: categoryButtons.slice(index, index + 4).join("") });
+            }
+            const resultLabel = searchActive
+                ? 'SEARCH · ' + esc(query.trim()) + ' · ' + rows.length.toLocaleString("en-US") + ' MATCHES'
+                : (activeCategory === "all" ? 'ALL ITEMS' : 'CATEGORY · ' + esc(categoryLabel(activeCategory)).toUpperCase()) + ' · ' + rows.length.toLocaleString("en-US") + ' RECORDS';
+            const grouped = groupEntries(late.visible);
+            late.groups = grouped.groups;
+            late.hiddenGroups = grouped.hiddenGroups;
+            // Mount the archive shell in small insertions instead of one large
+            // one. The joined DOM is identical, but Chromium no longer shapes
+            // the header, search field, category rail and group shells in a
+            // single 4x-throttled layout task.
+            const head = '<div class="item-lexicon__head">' +
+                    '<div><span class="item-lexicon__kicker">REALM MATERIAL ARCHIVE · TICK ' + catalog.tick.toLocaleString("en-US") + '</span>' +
+                    '<strong class="item-lexicon__total">' + catalog.total.toLocaleString("en-US") + ' ITEMS</strong></div>' +
+                    '<span class="item-lexicon__coverage">' + catalog.baseCount.toLocaleString("en-US") + ' BASE · ' + catalog.craftedCount.toLocaleString("en-US") + ' CRAFTED · ' + catalog.categories.filter(entry => entry.count > 0 && entry.id !== "all" && entry.id !== "crafted").length + ' CATEGORIES</span>' +
+                '</div>';
+            const search = '<label class="item-lexicon__search"><span>SEARCH THE WHOLE LEXICON</span><input id="item-lexicon-query" type="search" inputmode="search" autocomplete="off" spellcheck="false" placeholder="Timber, sword, book, workshop…" value="' + esc(query) + '" aria-label="Search all items"></label>';
+            const meta = '<div class="item-lexicon__meta"><span>' + resultLabel + '</span><span>SHOWING ' + late.visible.length.toLocaleString("en-US") + ' / ' + rows.length.toLocaleString("en-US") + '</span></div>';
+            const groupParts = [
+                { into: ".item-lexicon", html: '<div class="item-lexicon__groups"></div>' },
+                ...late.groups.map(([category, groupRows]) => ({
+                    into: ".item-lexicon__groups",
+                    html: '<details class="item-lexicon__group" open><summary><span>' + esc(itemCategoryLabel(category).toUpperCase()) + '</span><b>' + groupRows.length + '</b></summary>' +
+                        '<div class="item-lexicon__rows" data-item-rows="' + esc(category) + '"></div></details>'
+                }))
+            ];
+            const rowParts = [];
+            for (const [category, groupRows] of late.groups) {
+                for (const slice of chunkRows(groupRows, STAGED_ROW_CHUNK)) {
+                    rowParts.push({
+                        into: '[data-item-rows="' + esc(category) + '"]',
+                        html: () => slice.map(renderEntry).join("")
+                    });
+                }
+            }
+            const footer = (late.hiddenGroups > 0
+                ? '<button type="button" class="item-lexicon__more" data-item-more-groups>SHOW ' + Math.min(2, late.hiddenGroups) + ' MORE CATEGORIES · ' + late.hiddenGroups + ' HIDDEN</button>'
+                : '') +
+                (rows.length > late.visible.length
+                    ? '<button type="button" class="item-lexicon__more" data-item-more>SHOW ' + Math.min(pageSize(), rows.length - late.visible.length).toLocaleString("en-US") + ' MORE</button>'
+                    : '') +
+                '<p class="item-lexicon__footnote">Base entries describe real definitions in the simulation. Crafted entries exist only when a unique item record has actually been registered; no live stock is invented here.</p>' +
+                (useNotice ? '<p class="item-lexicon__use-notice" role="status">' + esc(useNotice) + '</p>' : "");
+            container.dataset.itemLexiconSignature = late.signature;
+            return {
+                html: '<div class="item-lexicon"></div>',
+                more: [
+                    { into: ".item-lexicon", html: head },
+                    { into: ".item-lexicon", html: search },
+                    ...categoryParts,
+                    { into: ".item-lexicon", html: meta },
+                    ...groupParts,
+                    ...rowParts,
+                    { into: ".item-lexicon", html: footer }
+                ]
+            };
+        }
+    ];
+}
+
+function paint(container, { force = false, staged = false } = {}) {
+    if (staged) return stagedLexiconParts(container);
     const active = document.activeElement;
     const searchFocused = active?.id === "item-lexicon-query" && container.contains(active);
     const selectionStart = searchFocused ? active.selectionStart : null;
-    const __c0 = performance.now();
     const catalog = getCatalog();
-    const __c1 = performance.now();
     if (!visibleLimit) visibleLimit = pageSize();
     const nextSignature = signature(catalog);
     if (!force && container.dataset.itemLexiconSignature === nextSignature) return;
@@ -261,7 +362,6 @@ function paint(container, { force = false } = {}) {
             '<p class="item-lexicon__footnote">Base entries describe real definitions in the simulation. Crafted entries exist only when a unique item record has actually been registered; no live stock is invented here.</p>' +
             (useNotice ? '<p class="item-lexicon__use-notice" role="status">' + esc(useNotice) + '</p>' : "") +
         '</div>';
-    window.__itemTiming = { catalogMs: Math.round((__c1 - __c0) * 10) / 10, buildMs: Math.round((performance.now() - __c1) * 10) / 10 };
     if (isNarrowViewport() && !force && !searchFocused) renderProgressive(container, markup);
     else container.innerHTML = markup;
     container.dataset.itemLexiconSignature = nextSignature;
@@ -335,6 +435,15 @@ function bind(container) {
         visibleLimit = pageSize();
         repaint(container);
     });
+}
+
+export function renderItemLexiconParts(container) {
+    if (!container) return [];
+    bind(container);
+    if (!container.querySelector(".item-lexicon")) delete container.dataset.itemLexiconSignature;
+    // Category validation and catalog generation both belong to the first
+    // generated part; the click task only hands over the lazy producer.
+    return paint(container, { force: true, staged: true }) || [];
 }
 
 export function renderItemLexicon(container) {

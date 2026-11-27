@@ -19,8 +19,11 @@
 .command-panel-header h2{margin:4px 0;color:#243d57;font: bold 25px Georgia,serif}
 .command-ribbon,.command-panel-intro>span{color:#9b4a2a;font-size:8px;font-weight:1000;letter-spacing:.2em}
 .command-panel-content{flex:1 1 0;min-height:0;overflow:auto;padding:16px 4px 8px;contain:strict}
-/* A progressive insert must not re-layout the sections already painted. */
-.command-panel-content>*{contain:content}
+/* A progressive insert must not re-layout the sections already painted, and
+   sections outside the scrollport must not join that layout at all. The DOM,
+   text and focus order stay complete; Chromium only skips their rendering
+   until the player scrolls near them. */
+.command-panel-content>*{contain:content;content-visibility:auto;contain-intrinsic-size:auto 320px}
 .command-panel-content .command-history-list>*,
 .command-panel-content .population-citizen-list>*,
 .command-panel-content .population-household-list>*,
@@ -198,17 +201,12 @@
     contain-intrinsic-size: auto 64px;
 }
 
-/* The diplomacy deck holds four bounded courts, not a long archive. Deferring
-   their first layout made Chromium perform one combined reveal pass after the
-   progressive insert: 59 ms at 4x CPU. The population register is likewise
-   inserted one complete card per frame on desktop; its deferred reveal added
-   a 52 ms task. Let those desktop cards lay out as they mount; phones keep the
-   archive containment above. */
-@media (min-width: 641px) {
-    #command-panel-content .diplomacy-realm,
-    #command-panel-content .population-citizen,
-    #command-panel-content .population-household { content-visibility: visible; }
-}
+/* Long registers stay skip-contained at every width. Earlier desktop probes
+   saw a single deferred reveal pass, but the bounded part producer now inserts
+   complete records over many frames: revealing them all in one pass makes
+   Chromium relayout the whole command dialog in a task well over 100 ms at 4x
+   CPU. Keeping the archive rule above in force gives each record its own skip
+   boundary and leaves search, keyboard access and the printed text untouched. */
 
 /* On a phone the illustrated building register is intentionally folded: it is
    reference material, not a control the player needs on every visit. Opening

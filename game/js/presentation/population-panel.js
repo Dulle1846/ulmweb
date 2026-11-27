@@ -53,16 +53,17 @@ function pagerMarkup(kind, page) {
         '<button type="button" class="command-choice" data-population-page="' + kind + '" data-population-page-step="1"' + next + '>NEXT</button></div>';
 }
 
-function reliefAction() {
-    const offer = getCrownReliefOffer();
+function reliefAction(offer) {
     if (!offer) return "";
     const cost = offer.cost > 0 ? " · " + number(offer.cost) + " GOLD" : "";
     return '<div class="command-actions"><button type="button" class="command-choice" data-command="crown-relief"' + (offer.available ? "" : " disabled") + '>' + esc(offer.label) + cost + '</button><small class="command-note">' + esc(offer.detail) + (offer.available ? "" : " · not enough gold") + '</small></div>';
 }
 
-function growthGateNote() {
-    const gate = getPopulationGrowthGate();
-    const allowance = getPopulationGrowthAllowance();
+// `late` is a per-render cache. The staged path fills it in separate prepared
+// parts; the plain path fills it synchronously. Both produce the same note.
+function growthGateNote(late = {}) {
+    const gate = late.gate || (late.gate = getPopulationGrowthGate());
+    const allowance = late.allowance ?? (late.allowance = getPopulationGrowthAllowance());
     const used = Math.max(0, Number(state.economy?.growthThisYear) || 0);
     const remaining = Math.max(0, allowance - used);
     const hints = {
@@ -77,7 +78,8 @@ function growthGateNote() {
     };
     if (!gate.ok) {
         const hint = hints[gate.reason] || "Inspect the settlement needs, housing and workforce.";
-        return '<p id="population-growth-gate" class="command-note"><strong>GROWTH GATE · BLOCKED</strong> · ' + esc(gate.reason) + '. ' + esc(hint) + ' Free beds: ' + number(gate.housing.available) + '.</p>' + reliefAction();
+        const offer = "offer" in late ? late.offer : (late.offer = getCrownReliefOffer());
+        return '<p id="population-growth-gate" class="command-note"><strong>GROWTH GATE · BLOCKED</strong> · ' + esc(gate.reason) + '. ' + esc(hint) + ' Free beds: ' + number(gate.housing.available) + '.</p>' + reliefAction(offer);
     }
     if (remaining <= 0) {
         return '<p id="population-growth-gate" class="command-note"><strong>GROWTH GATE · THIS YEAR FILLED</strong> · ' + used + ' of ' + allowance + ' growth events already recorded. The next newcomers can arrive in the new year.</p>';
@@ -113,11 +115,23 @@ function householdRow(household, byId) {
     return '<details class="population-household" data-population-household="' + esc(household.id) + '"><summary><span><strong>' + esc(title) + '</strong><small>' + members.length + ' / ' + household.capacity + ' RESIDENTS · HEAD ' + esc(head?.name || "VACANT") + ' · FOUNDED YEAR ' + formedYear + '</small></span><span class="population-household__stats"><b>' + number(household.wealth) + '</b> GOLD<em>LOYALTY ' + household.loyalty + ' · HAPPINESS ' + household.happiness + '</em></span></summary><div class="population-household__body"><div class="population-household__members">' + memberRows + '</div><div class="population-household__relations"><small>RELATIONSHIPS</small>' + (relations || '<span>No kinship ties recorded inside this household.</span>') + '</div></div></details>';
 }
 
-export function renderPopulationPanel() {
-    if (!state.hasStarted) {
-        return intro("THE LIVING REALM", "Awaiting its people", "Found a realm to create its first households and citizen records. No population is invented before a campaign begins.");
-    }
-    const snapshot = getPopulationSnapshot();
+// The register itself is bounded by paging, but a mature realm still built
+// every visible citizen and household card in the click task. The producer now
+// only opens a chain of parts: the register snapshot, the growth gate, each
+// record and the footer are generated and parsed in separate bounded frames.
+// Plain callers still receive one identical string.
+const CITIZEN_STREAM = "[data-population-citizen-stream]";
+const HOUSEHOLD_STREAM = "[data-population-household-stream]";
+
+function populationIntro() {
+    return intro("THE LIVING REALM", "People, households & livelihoods", "Every named resident has a household, a profession, a faith, a talent and a civic life. Births, maturation, work, partnership, illness, ageing, death and migration are resolved once per year from these same records; the economy, politics and garrison read the result.");
+}
+
+function overviewMarkup(snapshot) {
+    return '<div id="population-overview" class="command-summary"><div><small>CITIZENS</small><strong>' + number(snapshot.population) + '</strong></div><div><small>HOUSEHOLDS</small><strong>' + number(snapshot.households.length) + '</strong></div><div><small>AVERAGE AGE</small><strong>' + snapshot.avgAge + '</strong></div><div><small>EMPLOYED</small><strong>' + number(snapshot.employed) + ' / ' + number(snapshot.civilians) + '</strong></div><div><small>LOYALTY</small><strong>' + snapshot.avgLoyalty + '</strong></div><div><small>HAPPINESS</small><strong>' + snapshot.avgHappiness + '</strong></div><div><small>BIRTHS</small><strong>' + number(snapshot.births) + '</strong></div><div><small>DEATHS</small><strong>' + number(snapshot.deaths) + '</strong></div></div>';
+}
+
+function populationView(snapshot) {
     const visible = filterPopulationCitizens(snapshot.citizens, populationFilter, populationQuery);
     const narrow = typeof window !== "undefined" && window.matchMedia("(max-width: 640px)").matches;
     const citizenPage = pageWindow(visible.length, narrow ? 3 : 10, populationCitizenPage);
@@ -132,18 +146,116 @@ export function renderPopulationPanel() {
     const filterBar = filters.map(([id, label]) =>
         '<button type="button" class="population-filter' + (id === populationFilter ? " is-active" : "") + '" data-population-filter="' + esc(id) + '" aria-pressed="' + (id === populationFilter) + '">' + esc(label) + '</button>'
     ).join("");
-    const citizens = shown.map(citizenRow).join("");
     const householdPage = pageWindow(snapshot.households.length, narrow ? 2 : 5, populationHouseholdPage);
     populationHouseholdPage = householdPage.current;
     const householdRows = snapshot.households.slice(householdPage.start, householdPage.end);
-    const households = householdRows.map(household => householdRow(household, byId)).join("");
+    return { visible, citizenPage, shown, byId, filterBar, householdPage, householdRows };
+}
+
+function registerOpenMarkup(snapshot, view, staged) {
     const effects = snapshot.modifiers;
-    return intro("THE LIVING REALM", "People, households & livelihoods", "Every named resident has a household, a profession, a faith, a talent and a civic life. Births, maturation, work, partnership, illness, ageing, death and migration are resolved once per year from these same records; the economy, politics and garrison read the result.") +
-        '<div id="population-overview" class="command-summary"><div><small>CITIZENS</small><strong>' + number(snapshot.population) + '</strong></div><div><small>HOUSEHOLDS</small><strong>' + number(snapshot.households.length) + '</strong></div><div><small>AVERAGE AGE</small><strong>' + snapshot.avgAge + '</strong></div><div><small>EMPLOYED</small><strong>' + number(snapshot.employed) + ' / ' + number(snapshot.civilians) + '</strong></div><div><small>LOYALTY</small><strong>' + snapshot.avgLoyalty + '</strong></div><div><small>HAPPINESS</small><strong>' + snapshot.avgHappiness + '</strong></div><div><small>BIRTHS</small><strong>' + number(snapshot.births) + '</strong></div><div><small>DEATHS</small><strong>' + number(snapshot.deaths) + '</strong></div></div>' +
-        growthGateNote() + '<div class="population-effects"><span>TAX YIELD<b>×' + amount(effects.taxEfficiency) + '</b></span><span>BUILDING OUTPUT<b>×' + amount(effects.productivity) + '</b></span><span>LEGITIMACY PRESSURE<b>' + (effects.legitimacyPressure >= 0 ? "+" : "") + amount(effects.legitimacyPressure) + '</b></span><span>SOLDIER QUALITY<b>×' + amount(effects.militaryQuality) + '</b></span><span>HOUSEHOLD WEALTH<b>' + amount(snapshot.wealth) + ' GOLD</b></span><span>AVG TALENT<b>' + snapshot.avgTalent + '</b></span></div>' +
+    return '<div class="population-effects"><span>TAX YIELD<b>×' + amount(effects.taxEfficiency) + '</b></span><span>BUILDING OUTPUT<b>×' + amount(effects.productivity) + '</b></span><span>LEGITIMACY PRESSURE<b>' + (effects.legitimacyPressure >= 0 ? "+" : "") + amount(effects.legitimacyPressure) + '</b></span><span>SOLDIER QUALITY<b>×' + amount(effects.militaryQuality) + '</b></span><span>HOUSEHOLD WEALTH<b>' + amount(snapshot.wealth) + ' GOLD</b></span><span>AVG TALENT<b>' + snapshot.avgTalent + '</b></span></div>' +
         '<p class="command-note">Annual census year ' + (snapshot.lastCensusYear || "—") + ' · ' + (snapshot.civilians || 0) + ' civilians + ' + (snapshot.soldiers || 0) + ' soldiers · ' + number(snapshot.unhoused) + ' unhoused · ' + number(snapshot.emigration) + ' departures recorded. The panel updates as the simulation advances; no value is forecast or synthesized.</p>' +
-        '<div class="command-section-title">CITIZEN REGISTER · ' + number(snapshot.population) + ' RECORDED</div><div id="population-filter-bar" class="population-filter-bar">' + filterBar + '</div><div class="command-inline"><input id="population-search" type="search" value="' + esc(populationQuery) + '" placeholder="Search name, trade or household" aria-label="Search the citizen register"><span class="command-note">' + visible.length + ' matching · showing ' + (shown.length ? (citizenPage.start + 1) + '–' + citizenPage.end : '0') + ' of ' + visible.length + '</span></div><div id="population-citizen-list" class="population-citizen-list">' + (citizens || '<p class="command-note">No citizen matches this filter.</p>') + '</div>' + pagerMarkup("citizens", citizenPage) +
-        '<div class="command-section-title">HOUSEHOLDS · ' + number(snapshot.households.length) + ' RECORDED</div><div class="command-inline"><span class="command-note">SHOWING ' + (householdRows.length ? (householdPage.start + 1) + '–' + householdPage.end : '0') + ' of ' + snapshot.households.length + '</span></div><div id="population-household-list" class="population-household-list">' + (households || '<p class="command-note">No household has been established yet. A campaign starts with its founding cottages.</p>') + '</div>' + pagerMarkup("households", householdPage) +
-        '<p class="command-note">Household wealth accumulates from employed members and their vocational talent, then is shared by the household. Loyalty and happiness feed the tax yield, political legitimacy and garrison quality. Departures happen only in a collapsing, hungry realm.</p>' +
-        renderAiContactSummary();
+        '<div class="command-section-title">CITIZEN REGISTER · ' + number(snapshot.population) + ' RECORDED</div><div id="population-filter-bar" class="population-filter-bar">' + view.filterBar + '</div><div class="command-inline"><input id="population-search" type="search" value="' + esc(populationQuery) + '" placeholder="Search name, trade or household" aria-label="Search the citizen register"><span class="command-note">' + view.visible.length + ' matching · showing ' + (view.shown.length ? (view.citizenPage.start + 1) + '–' + view.citizenPage.end : '0') + ' of ' + view.visible.length + '</span></div>' +
+        '<div id="population-citizen-list" class="population-citizen-list"' + (staged ? " data-population-citizen-stream" : "") + '>';
+}
+
+function householdOpenMarkup(snapshot, view, staged) {
+    return '<div class="command-section-title">HOUSEHOLDS · ' + number(snapshot.households.length) + ' RECORDED</div><div class="command-inline"><span class="command-note">SHOWING ' + (view.householdRows.length ? (view.householdPage.start + 1) + '–' + view.householdPage.end : '0') + ' of ' + snapshot.households.length + '</span></div>' +
+        '<div id="population-household-list" class="population-household-list"' + (staged ? " data-population-household-stream" : "") + '>';
+}
+
+function populationFooter() {
+    return '<p class="command-note">Household wealth accumulates from employed members and their vocational talent, then is shared by the household. Loyalty and happiness feed the tax yield, political legitimacy and garrison quality. Departures happen only in a collapsing, hungry realm.</p>' + renderAiContactSummary();
+}
+
+// A staged section keeps its shell and pager in the same part so the hydrator
+// mounts them before the one-row parts that follow. The plain string path keeps
+// the original split: rows sit between the open and close of each list.
+function citizenSectionMarkup(snapshot, view, staged, late = {}) {
+    return growthGateNote(late) + registerOpenMarkup(snapshot, view, staged) + '</div>' + pagerMarkup("citizens", view.citizenPage);
+}
+
+function householdSectionMarkup(snapshot, view, staged) {
+    return householdOpenMarkup(snapshot, view, staged) + '</div>' + pagerMarkup("households", view.householdPage);
+}
+
+// Every visible record is its own part; a household card keeps its member and
+// relation buttons inside one coherent record rather than splitting its markup.
+// The gate, its optional relief offer, each section shell and each pager tail
+// are separate continuations so the expensive housing/supply reads never share
+// a task with register markup.
+function populationViewParts(snapshot, view, staged, late = {}) {
+    const parts = [];
+    if (staged) {
+        parts.push(() => {
+            late.gate = getPopulationGrowthGate();
+            late.allowance = getPopulationGrowthAllowance();
+            return { html: "", more: late.gate.ok ? [] : [() => { late.offer = getCrownReliefOffer(); return ""; }] };
+        });
+        parts.push(() => growthGateNote(late));
+        parts.push(() => registerOpenMarkup(snapshot, view, staged));
+        for (const citizen of view.shown) {
+            parts.push({ into: CITIZEN_STREAM, html: () => citizenRow(citizen) });
+        }
+        if (!view.shown.length) parts.push({ into: CITIZEN_STREAM, html: () => '<p class="command-note">No citizen matches this filter.</p>' });
+        parts.push(() => '</div>' + pagerMarkup("citizens", view.citizenPage));
+        parts.push(() => householdOpenMarkup(snapshot, view, staged));
+        for (const household of view.householdRows) {
+            parts.push({ into: HOUSEHOLD_STREAM, html: () => householdRow(household, view.byId) });
+        }
+        if (!view.householdRows.length) parts.push({ into: HOUSEHOLD_STREAM, html: () => '<p class="command-note">No household has been established yet. A campaign starts with its founding cottages.</p>' });
+        parts.push(() => '</div>' + pagerMarkup("households", view.householdPage));
+    } else {
+        parts.push(growthGateNote, () => registerOpenMarkup(snapshot, view, staged));
+        for (const citizen of view.shown) parts.push(() => citizenRow(citizen));
+        if (!view.shown.length) parts.push(() => '<p class="command-note">No citizen matches this filter.</p>');
+        parts.push(() => '</div>' + pagerMarkup("citizens", view.citizenPage));
+        parts.push(() => householdOpenMarkup(snapshot, view, staged));
+        for (const household of view.householdRows) parts.push(() => householdRow(household, view.byId));
+        if (!view.householdRows.length) parts.push(() => '<p class="command-note">No household has been established yet. A campaign starts with its founding cottages.</p>');
+        parts.push(() => '</div>' + pagerMarkup("households", view.householdPage));
+    }
+    parts.push(populationFooter);
+    return parts;
+}
+
+export function renderPopulationPanelParts(staged = false) {
+    if (!state.hasStarted) {
+        return [() => intro("THE LIVING REALM", "Awaiting its people", "Found a realm to create its first households and citizen records. No population is invented before a campaign begins.")];
+    }
+    const late = { snapshot: null, view: null };
+    return [
+        populationIntro,
+        // The register snapshot, the filtered view and the overview strip each
+        // get their own prepared part. A mature census used to build all three
+        // in one 38 ms task on the throttled renderer.
+        () => { late.snapshot = getPopulationSnapshot(); return ""; },
+        () => { late.view = populationView(late.snapshot); return ""; },
+        () => ({
+            html: overviewMarkup(late.snapshot),
+            more: populationViewParts(late.snapshot, late.view, staged, late)
+        })
+    ];
+}
+
+function resolvePopulationPart(part) {
+    const value = typeof part === "function" ? part() : part;
+    const html = typeof value === "string" ? value
+        : typeof value?.html === "function" ? value.html() : value?.html;
+    return {
+        html: typeof html === "string" ? html : "",
+        more: Array.isArray(value?.more) ? value.more : null
+    };
+}
+
+export function renderPopulationPanel() {
+    const parts = renderPopulationPanelParts();
+    let html = "";
+    for (let index = 0; index < parts.length; index++) {
+        const part = resolvePopulationPart(parts[index]);
+        html += part.html;
+        if (part.more) parts.splice(index + 1, 0, ...part.more);
+    }
+    return html;
 }

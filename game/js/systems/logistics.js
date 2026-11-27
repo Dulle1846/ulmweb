@@ -45,6 +45,35 @@ function number(value, fallback = 0) {
 function cleanQuantity(value) {
     return Math.max(0, Math.floor(number(value)));
 }
+// Warehouse totals are read many times per production tick. A tracked map keeps
+// the running sum next to the sparse goods object so a store query is O(1)
+// while direct test or gameplay writes still update it. Hidden properties are
+// non-enumerable and never enter a save snapshot.
+function trackedWarehouseMap(map) {
+    const target = map && typeof map === "object" && !Array.isArray(map) ? map : {};
+    if (target.__kacTracked) return target;
+    let sum = 0;
+    for (const key of GOOD_KEYS) sum += cleanQuantity(target[key]);
+    Object.defineProperty(target, "__kacSum", { value: sum, writable: true, configurable: true, enumerable: false });
+    Object.defineProperty(target, "__kacTracked", { value: true, writable: true, configurable: true, enumerable: false });
+    const tracked = new Proxy(target, {
+        set(store, key, value, receiver) {
+            const updatesSum = typeof key === "string" && key !== "__kacSum" && key !== "__kacTracked";
+            const before = updatesSum ? cleanQuantity(store[key]) : 0;
+            const result = Reflect.set(store, key, value, receiver);
+            if (updatesSum) store.__kacSum += cleanQuantity(value) - before;
+            return result;
+        },
+        deleteProperty(store, key) {
+            const updatesSum = typeof key === "string" && key !== "__kacSum" && key !== "__kacTracked";
+            const before = updatesSum ? cleanQuantity(store[key]) : 0;
+            const result = Reflect.deleteProperty(store, key);
+            if (updatesSum) store.__kacSum -= before;
+            return result;
+        }
+    });
+    return tracked;
+}
 function entityById(id) {
     return state.entities.find(entity => !entity.dead && entity.id === id) || null;
 }
@@ -114,6 +143,20 @@ function markNormalized(target) {
         });
     }
 }
+function warehouseIsNormalized(entity) {
+    // Profile migration is deliberately re-checked. A legacy save or a player
+    // action replaces the profile, capacity or whole filters array; comparing
+    // those references is enough to notice the contract change without walking
+    // forty-eight goods on every store query.
+    const store = entity.warehouse;
+    return Boolean(store && store.__kacNormalized === LOGISTICS_VERSION &&
+        store.stored && typeof store.stored === "object" &&
+        store.reservedIn && typeof store.reservedIn === "object" &&
+        store.reservedOut && typeof store.reservedOut === "object" &&
+        store.__kacProfile === store.profile &&
+        store.__kacCapacity === store.capacity &&
+        store.__kacFilters === store.filters);
+}
 
 export function ensureInventory(entity) {
     if (!entity || !entity.isBuilding?.()) return null;
@@ -123,7 +166,10 @@ export function ensureInventory(entity) {
     if (needsWarehouse && (!entity.warehouse || typeof entity.warehouse !== "object")) entity.warehouse = {};
     // Warehouse profile migration is intentionally always re-checked: legacy
     // saves and tests change filters/profile on an otherwise normalised entity.
-    if (inventory.__kacNormalized === LOGISTICS_VERSION && !needsWarehouse) return inventory;
+    // The signature check keeps that guarantee without re-running the whole
+    // clean-up loop for every store on every simulation tick.
+    if (inventory.__kacNormalized === LOGISTICS_VERSION &&
+        (!needsWarehouse || warehouseIsNormalized(entity))) return inventory;
     inventory.version = LOGISTICS_VERSION;
     inventory.input = inventory.input && typeof inventory.input === "object" ? inventory.input : {};
     inventory.output = inventory.output && typeof inventory.output === "object" ? inventory.output : {};
@@ -172,7 +218,7 @@ export function ensureInventory(entity) {
         entity.warehouse.profile = profile.id;
         const defaultCapacity = entity.type === TYPE.KEEP ? WAREHOUSE_CAPACITY[TYPE.KEEP] : (WAREHOUSE_CAPACITY[entity.type] || profile.capacity);
         entity.warehouse.capacity = Math.max(1, Math.floor(number(entity.warehouse.capacity, defaultCapacity)));
-        entity.warehouse.stored = entity.warehouse.stored && typeof entity.warehouse.stored === "object" ? entity.warehouse.stored : {};
+        entity.warehouse.stored = trackedWarehouseMap(entity.warehouse.stored && typeof entity.warehouse.stored === "object" ? entity.warehouse.stored : {});
         // A timber yard learns the regional timbers even when an old save
         // stored only its three core filters; a recognised legacy profile set
         // is upgraded in the same way. Any other saved filter list is a real
@@ -181,8 +227,8 @@ export function ensureInventory(entity) {
         entity.warehouse.filters = (legacyMatched || upgradeTimber)
             ? [...profile.filters]
             : (savedFilters || [...profile.filters]);
-        entity.warehouse.reservedIn = entity.warehouse.reservedIn && typeof entity.warehouse.reservedIn === "object" ? entity.warehouse.reservedIn : {};
-        entity.warehouse.reservedOut = entity.warehouse.reservedOut && typeof entity.warehouse.reservedOut === "object" ? entity.warehouse.reservedOut : {};
+        entity.warehouse.reservedIn = trackedWarehouseMap(entity.warehouse.reservedIn && typeof entity.warehouse.reservedIn === "object" ? entity.warehouse.reservedIn : {});
+        entity.warehouse.reservedOut = trackedWarehouseMap(entity.warehouse.reservedOut && typeof entity.warehouse.reservedOut === "object" ? entity.warehouse.reservedOut : {});
         for (const key of GOOD_KEYS) {
             const stored = entity.warehouse.stored[key];
             if (!Number.isInteger(stored) || stored < 0) entity.warehouse.stored[key] = cleanQuantity(stored);
@@ -195,6 +241,16 @@ export function ensureInventory(entity) {
                 entity.warehouse.reservedOut[key] = entity.warehouse.stored[key];
             }
         }
+        markNormalized(entity.warehouse);
+        Object.defineProperty(entity.warehouse, "__kacProfile", {
+            value: entity.warehouse.profile, writable: true, configurable: true, enumerable: false
+        });
+        Object.defineProperty(entity.warehouse, "__kacCapacity", {
+            value: entity.warehouse.capacity, writable: true, configurable: true, enumerable: false
+        });
+        Object.defineProperty(entity.warehouse, "__kacFilters", {
+            value: entity.warehouse.filters, writable: true, configurable: true, enumerable: false
+        });
     }
     markNormalized(inventory);
     return inventory;
@@ -237,6 +293,7 @@ export function getWarehouses() {
     return state.entities.filter(entity => isWarehouse(entity)).map(entity => { ensureInventory(entity); return entity; });
 }
 function sumWarehouseMap(map) {
+    if (map?.__kacTracked) return cleanQuantity(map.__kacSum);
     let total = 0;
     for (const key of GOOD_KEYS) total += cleanQuantity(map?.[key]);
     return total;

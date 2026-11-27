@@ -958,7 +958,48 @@ const SYSTEM_SPECS = [
             { file: "css/ui-components.css", symbol: ":focus-visible", role: "presentation" }
         ],
         tests: ["tests/ui/master-ui-contract.test.js", "tests/browser/keyboard-accessibility.mjs"]
-    }),    section("4.0", "Great World and long-running history", [
+    }),
+    section("3.13", "Low-end panel audit and bounded staging", [
+        { id: "3.13.1", label: "Panel activations publish bounded timing history without a per-frame scan", evidence: [
+            { file: "js/presentation/panel-timing.js", symbol: "PANEL_TIMING_HISTORY_LIMIT", role: "bounded history" },
+            { file: "js/presentation/panel-timing.js", symbol: "recordPanelTiming", role: "activation record" },
+            { file: "js/presentation/management-ui.js", symbol: "updatePanelTiming", role: "staged completion" }
+        ], tests: ["tests/presentation/panel-timing.test.js"] },
+        { id: "3.13.2", label: "Heavy new panels use the existing frame-budgeted hydrator on desktop too", evidence: [
+            { file: "js/presentation/management-ui.js", symbol: "STAGED_OPEN_PANELS", role: "desktop allowlist" },
+            { file: "js/presentation/progressive-render.js", symbol: "FRAME_BUDGET_MS", role: "4 ms budget" },
+            { file: "js/presentation/progressive-render.js", symbol: "cardsPerFrame", role: "card cap" }
+        ], tests: ["tests/browser/low-end-panel-audit.mjs", "tests/ui/master-ui-contract.test.js"] },
+        { id: "3.13.3", label: "A four-times-throttled browser opens every panel and sees no long task over budget", evidence: [
+            { file: "tests/browser/low-end-panel-audit.mjs", symbol: "Emulation.setCPUThrottlingRate", role: "real throttle" },
+            { file: "tests/browser/low-end-panel-audit.mjs", symbol: "maxLongTaskMs", role: "long-task proof" },
+            { file: "tests/browser/low-end-panel-audit.mjs", symbol: "MANAGEMENT_TABS", role: "all 29 panels" }
+        ], tests: ["tests/browser/low-end-panel-audit.mjs"] },
+        { id: "3.13.4", label: "Dead culling work is removed without changing rendered content", evidence: [
+            { file: "js/presentation/management-ui.js", symbol: "The old culling observer", role: "dead work removed" },
+            { file: "js/presentation/management-ui.js", symbol: "renderItemLexicon(panel)", role: "lexicon timing" },
+            { file: "docs/LOW_END_PANEL_AUDIT.md", symbol: "Player impact", role: "contract" }
+        ], tests: ["tests/ui/master-ui-contract.test.js", "tests/presentation/panel-timing.test.js"] },
+        { id: "3.13.5", label: "Heavy panel markup is generated in bounded parts without changing any rendered record", evidence: [
+            { file: "js/presentation/management-ui.js", symbol: "PANEL_PART_RENDERERS", role: "part registry" },
+            { file: "js/presentation/management-ui.js", symbol: "splitMarkupForStagedRender", role: "bounded parse for plain renderers" },
+            { file: "js/presentation/progressive-render.js", symbol: "parts.splice(run.partIndex", role: "self-continuing producer" },
+            { file: "js/presentation/progressive-render.js", symbol: "PART_FRAME_BUDGET_MS", role: "bounded generation batches" },
+            { file: "js/presentation/progressive-render.js", symbol: "producers", role: "staging reference release" },
+            { file: "js/presentation/progressive-render.js", symbol: "maxParseMs", role: "parse timing" },
+            { file: "js/presentation/forest-atlas-panel.js", symbol: "createForestAtlasSurveyBuilder", role: "streamed bounded survey" },
+            { file: "js/presentation/population-panel.js", symbol: "renderPopulationPanelParts", role: "citizen and household parts" },
+            { file: "js/presentation/item-lexicon-panel.js", symbol: "renderItemLexiconParts", role: "lexicon row parts" }
+        ], tests: ["tests/presentation/forest-atlas.test.js", "tests/presentation/panel-timing.test.js", "tests/presentation/progressive-render.test.js", "tests/presentation/markup-split.test.js", "tests/ui/master-ui-contract.test.js", "tests/browser/low-end-panel-audit.mjs"] }
+    ], {
+        consumers: [
+            { file: "js/presentation/management-ui.js", symbol: "render", role: "mount funnel" },
+            { file: "js/presentation/progressive-render.js", symbol: "renderProgressive", role: "staged hydration" },
+            { file: "tests/browser/keyboard-accessibility.mjs", symbol: "repairTabSteps", role: "focus after rebuild" }
+        ],
+        tests: ["tests/presentation/panel-timing.test.js", "tests/ui/master-ui-contract.test.js", "tests/browser/low-end-panel-audit.mjs", "tests/browser/keyboard-accessibility.mjs"]
+    }),
+    section("4.0", "Great World and long-running history", [
         {
             id: "4.0.1", label: "Multiple kingdoms and map regions",
             evidence: [
@@ -1421,7 +1462,7 @@ export function runSpecAudit({ write = false } = {}) {
     const result = {
         version: 2,
         generatedBy: "scripts/spec-audit.mjs",
-        scope: "All numbered 1.1 and 1.2.1–1.2.18 requirements, including the 1.2.23.1.151–270 forest economy, culture, warfare and presentation with the field guide, plus the documented 2.x phases, 3.3–4.0 roadmap points, the 3.11 expedition chain, 3.8.14 noble arbitration, 3.9.12 atlas quest follow-ups and the 3.12 keyboard-only play contract.",
+        scope: "All numbered 1.1 and 1.2.1–1.2.18 requirements, including the 1.2.23.1.151–270 forest economy, culture, warfare and presentation with the field guide, plus the documented 2.x phases, 3.3–4.0 roadmap points, the 3.11 expedition chain, 3.8.14 noble arbitration, 3.9.12 atlas quest follow-ups, the 3.12 keyboard-only play contract and the 3.13 low-end panel audit contract.",
         commit: readCommit(),
         sourceHash: hashFiles(allFiles),
         generatedAt: readCommitDate(),

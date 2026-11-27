@@ -1,6 +1,6 @@
 {
   "name": "kings-and-cards",
-  "version": "3.89.3",
+  "version": "3.90.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -10,6 +10,7 @@
     "test:e2e:setup": "node tests/browser/setup-e2e.mjs",
     "test:e2e": "node tests/browser/run-e2e.mjs",
     "test:keyboard": "node tests/browser/keyboard-accessibility.mjs",
+    "test:panel-audit": "node tests/browser/low-end-panel-audit.mjs",
     "test:endurance": "node tests/browser/endurance-60y.mjs",
     "test:endurance:smoke": "ENDURANCE_YEARS=20 node tests/browser/endurance-60y.mjs",
     "test:swamp-live": "node tests/browser/swamp-live-proof.mjs",
@@ -50,8 +51,6 @@
     "test:forest-presentation-ui": "node tests/browser/forest-presentation-ui.mjs",
     "test:forest-presentation-mobile": "node tests/browser/forest-presentation-mobile.mjs",
     "test:forest-war-ui": "node tests/browser/forest-war-ui.mjs",
-    "test:forest-legacy-mobile": "node tests/browser/forest-legacy-mobile.mjs",
-    "test:forest-legacy-soak": "node scripts/forest-legacy-soak.mjs",
     "test:playability": "node tests/browser/playability-audit.mjs",
     "test:core-loop": "node tests/browser/core-loop-audit.mjs",
     "test:first-session-guidance": "node tests/browser/first-session-guidance.mjs",

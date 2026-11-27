@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { resetState, state } from "../../js/core/state.js";
 import { generateResourceGeography } from "../../js/systems/resource-geography.js";
 import {
-    forestAtlasSurvey, renderForestAtlasPanel, invalidateForestAtlasSurvey,
+    createForestAtlasSurveyBuilder, forestAtlasSurvey, renderForestAtlasPanel, invalidateForestAtlasSurvey,
 } from "../../js/presentation/forest-atlas-panel.js";
 import { REGIONAL_FOREST_TYPES } from "../../js/world/regional-forests.js";
 import { getResourceNodeAt } from "../../js/systems/resource-geography.js";
@@ -52,6 +52,37 @@ test("the atlas surveys a bounded, deterministic sample of the realm's forest ti
     assert.equal(first.systems.reduce((sum, row) => sum + row.count, 0), first.sampled,
         "system counts must come from the same bounded atlas sample");
     assert.equal(forestAtlasSurvey(60), first, "a cached survey is reused inside the same window");
+});
+
+test("the streamed survey completes the same sample as the synchronous helper", () => {
+    setup();
+    const expected = forestAtlasSurvey(60);
+    invalidateForestAtlasSurvey();
+    const builder = createForestAtlasSurveyBuilder(60);
+    let steps = 0;
+    while (!builder.done() && steps < 10000) {
+        assert.equal(builder.value(), null, "an incomplete stream must never publish a partial survey");
+        builder.advance();
+        steps++;
+    }
+    assert.ok(builder.done(), "the stream must finish without a hard-coded step cap");
+    assert.ok(steps < 10000);
+    // Wall-clock diagnostics are allowed to differ; every player-visible and
+    // simulation-visible reading must stay identical.
+    const stable = survey => ({
+        available: survey.available, forestTiles: survey.forestTiles, sampled: survey.sampled,
+        counts: survey.counts, transitions: survey.transitions,
+        transitionSamples: survey.transitionSamples, present: survey.present,
+        types: survey.types, regions: survey.regions, chronicle: survey.chronicle,
+        succession: survey.succession, systems: survey.systems, climate: survey.climate,
+        season: survey.season, cache: survey.cache,
+        chunk: survey.chunk ? { ...survey.chunk, elapsedMs: null } : null,
+        // Telemetry counters are live process readings, not survey results:
+        // the second build observes model cache hits earned by the first one.
+        telemetry: null
+    });
+    assert.deepEqual(stable(builder.value()), stable(expected), "streaming must preserve every deterministic survey reading");
+    assert.equal(forestAtlasSurvey(60), builder.value(), "the completed stream becomes the normal cache entry");
 });
 
 test("the rendered atlas lists all 60 types, their effects and their signature timber", () => {

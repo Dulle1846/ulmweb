@@ -59,12 +59,43 @@ function narrowViewport() {
     return typeof window !== "undefined" && window.matchMedia("(max-width: 640px)").matches;
 }
 
-function codexMarkup(seasonSlug) {
-    return CITY_CODEX.map(entry =>
-        '<article class="city-codex-card" data-codex-type="' + entry.type + '">' +
+function codexCard(entry, seasonSlug) {
+    return '<article class="city-codex-card" data-codex-type="' + entry.type + '">' +
         '<img loading="lazy" src="assets/city-codex/' + esc(entry.slug) + '-' + seasonSlug + '.svg" alt="' + esc(entry.name) + '" width="640" height="400">' +
         '<div><span>' + esc(entry.category) + '</span><h4>' + esc(entry.name) + '</h4><p>' + esc(entry.description) + '</p>' +
-        '<small>' + esc(entry.effect) + '</small></div></article>').join("");
+        '<small>' + esc(entry.effect) + '</small></div></article>';
+}
+
+function codexMarkup(seasonSlug) {
+    return CITY_CODEX.map(entry => codexCard(entry, seasonSlug)).join("");
+}
+
+function seasonSlug() {
+    return ["spring", "summer", "autumn", "winter"][Math.max(0, Math.min(3, Number(state.seasonIndex) || 0))];
+}
+
+function chunkRows(rows, size) {
+    const chunks = [];
+    for (let index = 0; index < rows.length; index += size) chunks.push(rows.slice(index, index + size));
+    return chunks;
+}
+
+// Plain callers still receive one string; the management deck receives the
+// ordered thunks. Resolving `more` here keeps both paths byte-identical.
+function resolvePanelParts(parts) {
+    let html = "";
+    for (let index = 0; index < parts.length; index++) {
+        const value = typeof parts[index] === "function" ? parts[index]() : parts[index];
+        const raw = typeof value === "string" ? value
+            : typeof value?.html === "function" ? value.html() : value?.html;
+        if (Array.isArray(value?.more) && value.more.length) parts.splice(index + 1, 0, ...value.more);
+        html += typeof raw === "string" ? raw : "";
+    }
+    return html;
+}
+
+function historyEntry(entry) {
+    return '<div><span>' + esc(String(entry.kind).toUpperCase()) + ' · YEAR ' + entry.year + '</span><p>' + esc(entry.summary) + '</p></div>';
 }
 
 function ensureCodex(details) {
@@ -98,97 +129,177 @@ function policyCard(policy, civic, gold) {
         (active ? "REPEAL" : civic.freeSlots ? "ENACT · " + currency(policy.cost) : "NO FREE SLOT") + '</button></article>';
 }
 
-export function renderCityPanel() {
+// The city deck's codex, ordinances, services and record grow with the living
+// world. Every snapshot read and record-card string is built inside a thunk;
+// only a fixed sequence of bounded descriptors is created in the click task.
+export function renderCityPanelParts() {
     if (!state.hasStarted) {
-        return intro("THE CITY CHARTER", "Awaiting its first ward",
-            "Found a realm to open the civic ledger. Ordinances, city events and the building codex become active with the settlement.");
+        return [() => intro("THE CITY CHARTER", "Awaiting its first ward",
+            "Found a realm to open the civic ledger. Ordinances, city events and the building codex become active with the settlement.")];
     }
-    const civic = getCivicSnapshot();
-    const settlement = getSettlementSnapshot();
-    const summary = getCitySummary();
-    const workforce = getWorkforceSnapshot();
-    const services = settlement.services || {};
-    const needs = settlement.needs || {};
-    const gold = Number(state.resources?.gold) || 0;
-    const seasonSlug = ["spring", "summer", "autumn", "winter"][Math.max(0, Math.min(3, Number(state.seasonIndex) || 0))];
-    const active = civic.activePolicies.length;
-    const modifiers = civic.modifiers;
-    const policies = civic.policies.map(policy => policyCard(policy, civic, gold)).join("");
-    const recovery = getDisasterRecoverySnapshot();
-    const lastWreck = recovery.lastWreck
-        ? esc(String(recovery.lastWreck.label).toUpperCase()) + ' · ' + esc(recovery.lastWreck.causeLabel) + ' · YEAR ' + recovery.lastWreck.year
-        : 'NO WRECK RECORDED';
-    const lastSalvage = recovery.lastSalvage.wrecks
-        ? 'YEAR ' + recovery.lastSalvage.year + ' · ' + number(recovery.lastSalvage.wood) + ' WOOD · ' + number(recovery.lastSalvage.stone) + ' STONE'
-        : 'NONE RECORDED';
-    const disasterSection = '<div class="command-section-title">DISASTER RECOVERY</div>' +
-        '<div class="command-summary">' +
-        '<div><small>WRECKS AWAITING REBUILD</small><strong>' + (recovery.pendingCount ? number(recovery.pendingCount) : 'NONE') + '</strong></div>' +
-        '<div><small>LAST SALVAGE</small><strong>' + lastSalvage + '</strong></div>' +
-        '<div><small>REBUILD DISCOUNT</small><strong>' + recovery.discountPercent + '% NEAR A WRECK</strong></div>' +
-        '<div><small>LAST WRECK</small><strong>' + lastWreck + '</strong></div></div>' +
-        '<p class="command-note">Coastal surges, snowslides and eruptions record the wreck\'s cause, year and site. ' +
-        'The next annual audit salvages a quarter of its timber and stone. Direct construction of the same structure within ' +
-        recovery.radius + ' tiles of a wreck saves ' + recovery.discountPercent + '% of the material cost and clears that wreck from the register. ' +
-        'A fresh realm has no wrecks; once one is recorded, this is where its recovery is decided.</p>';
-    const history = civic.history.length
-        ? '<div class="court-history">' + civic.history.map(entry =>
-            '<div><span>' + esc(String(entry.kind).toUpperCase()) + ' · YEAR ' + entry.year + '</span><p>' +
-            esc(entry.summary) + '</p></div>').join("") + '</div>'
-        : '<p class="command-note">No civic record has been written yet. Enact an ordinance or answer a city event.</p>';
-    const audit = civic.lastAudit
-        ? '<p class="command-note">Last civic audit · year ' + civic.lastAudit.year + ' · ' + civic.lastAudit.active +
-            ' ordinances · ' + civic.lastAudit.paid + '/' + civic.lastAudit.upkeep + ' gold upkeep' +
-            (civic.lastAudit.unpaid ? ' · ' + civic.lastAudit.unpaid + ' gold unpaid' : '') + '.</p>'
-        : '<p class="command-note">The first civic audit occurs at the next year boundary.</p>';
-    const codexSection = narrowViewport()
-        ? '<details class="city-codex" data-city-codex data-season="' + esc(seasonSlug) + '"><summary><span>THE CITY CODEX · ' + CITY_CODEX.length + ' BUILDINGS</span><small>OPEN THE ILLUSTRATED REGISTER</small></summary><div data-city-codex-body></div></details>'
-        : '<div class="command-section-title">THE CITY CODEX · ' + CITY_CODEX.length + ' BUILDINGS</div>' +
-            '<p class="command-note">Illustrated records of every structure in the current season. Portraits are loaded lazily, only as the codex is read.</p>' +
-            '<div class="city-codex-grid">' + codexMarkup(seasonSlug) + '</div>';
-    const serviceCards = [
-        serviceCard("Water", services.water, "Wells and waterworks"),
-        serviceCard("Food", needs.food, "Household stores"),
-        serviceCard("Safety", services.safety, "Watch and walls"),
-        serviceCard("Health", services.health, "Clinics and bathhouses"),
-        serviceCard("Education", services.education, "Staffed schools"),
-        serviceCard("Sanitation", services.sanitation, "Baths, wells and clinics"),
-        serviceCard("Civic order", services.civic, "Town hall and courts"),
-        serviceCard("Trade", services.trade, "Markets and guildhall")
-    ].join("");
-    return intro("THE CITY CHARTER", "A governed town",
-        "The crown does not build a city with one decree. Paid ordinances change work, tax, food demand, service reach and construction; " +
-        "the annual city event forces a real trade-off; the codex records every structure and its effect.") +
-        '<div class="command-summary">' +
-        '<div><small>RESIDENTS</small><strong>' + number(workforce.population) + '</strong></div>' +
-        '<div><small>HOUSEHOLDS</small><strong>' + number(needs.households) + '</strong></div>' +
-        '<div><small>SATISFACTION</small><strong>' + Math.round((Number(needs.satisfaction) || 0) * 100) + '%</strong></div>' +
-        '<div><small>ORDINANCES</small><strong>' + active + ' / ' + civic.slots + '</strong></div>' +
-        '<div><small>CIVIC UPKEEP</small><strong>' + currency(civic.upkeep) + ' / YR</strong></div>' +
-        '<div><small>BUILDINGS</small><strong>' + number(summary.buildings || state.entities.filter(entity => !entity.dead && entity.isBuilding()).length) + '</strong></div>' +
-        '<div><small>TOWN HALLS</small><strong>' + civic.townHalls + '</strong></div>' +
-        '<div><small>ACTIVE EVENTS</small><strong>' + (civic.pendingEvent ? "1" : "0") + '</strong></div></div>' +
-        disasterSection +
-        '<div class="command-section-title">THE CITY EVENT</div>' + eventCard(civic.pendingEvent) +
-        '<div class="command-section-title">LIVE CIVIC EFFECTS</div><div class="court-effect-grid">' +
-        '<span>TAX YIELD<b>' + percent(modifiers.tax) + '</b></span>' +
-        '<span>WORK EFFICIENCY<b>' + percent(modifiers.production) + '</b></span>' +
-        '<span>FOOD DEMAND<b>' + percent(modifiers.foodDemand) + '</b></span>' +
-        '<span>SERVICE REACH<b>' + percent(modifiers.serviceRadius) + '</b></span>' +
-        '<span>CONSTRUCTION<b>' + percent(-modifiers.buildDiscount) + '</b></span>' +
-        '<span>NEWCOMER PULL<b>' + percent(modifiers.immigration) + '</b></span>' +
-        '<span>PUBLIC HEALTH<b>' + percent(modifiers.health) + '</b></span>' +
-        '<span>MARKET TERMS<b>' + percent(modifiers.trade) + '</b></span></div>' +
-        audit +
-        '<div class="command-section-title">CIVIC SERVICES IN THE WARDS</div><div class="city-service-grid">' + serviceCards + '</div>' +
-        '<p class="command-note">Service percentages count occupied homes covered by an operational and staffed provider. ' +
-        'A bathhouse needs a nearby water store; a school and town hall need assigned workers. New service categories do not silently ' +
-        'raise household needs, but education and sanitation feed productivity.</p>' +
-        '<div class="command-section-title">THE CHARTER · ' + active + ' OF ' + civic.slots + ' ORDINANCES IN FORCE</div>' +
-        '<p class="command-note">Each enactment costs gold now and upkeep every year. A town hall adds two slots. ' +
-        'Unpaid upkeep does not delete a policy; it costs morale and is recorded in the next audit.</p>' +
-        '<div class="city-policy-grid">' + policies + '</div>' +
-        '<div class="command-section-title">CIVIC RECORD</div>' + history + codexSection;
+    const late = {
+        civic: null, settlement: null, summary: null,
+        workforce: null, recovery: null, gold: 0, historyOpen: false
+    };
+    const readyCivic = () => late.civic || (late.civic = getCivicSnapshot());
+    const readySettlement = () => late.settlement || (late.settlement = getSettlementSnapshot());
+    const readySummary = () => late.summary || (late.summary = getCitySummary());
+    const readyWorkforce = () => late.workforce || (late.workforce = getWorkforceSnapshot());
+    const readyRecovery = () => late.recovery || (late.recovery = getDisasterRecoverySnapshot());
+    return [
+        () => intro("THE CITY CHARTER", "A governed town",
+            "The crown does not build a city with one decree. Paid ordinances change work, tax, food demand, service reach and construction; " +
+            "the annual city event forces a real trade-off; the codex records every structure and its effect."),
+        // Snapshot acquisition is its own bounded continuation. On a mature
+        // realm reading all five ledgers in one part measured up to 86 ms at
+        // 4x CPU; each read now lands in a separate prepared part while the
+        // cached values keep every later markup part pure.
+        () => { readyCivic(); return ""; },
+        () => { readySettlement(); return ""; },
+        () => { readySummary(); return ""; },
+        () => { readyWorkforce(); return ""; },
+        () => {
+            const civic = late.civic;
+            const settlement = late.settlement;
+            const summary = late.summary;
+            const workforce = late.workforce;
+            const needs = settlement.needs || {};
+            const active = civic.activePolicies.length;
+            late.gold = Number(state.resources?.gold) || 0;
+            return '<div class="command-summary">' +
+                '<div><small>RESIDENTS</small><strong>' + number(workforce.population) + '</strong></div>' +
+                '<div><small>HOUSEHOLDS</small><strong>' + number(needs.households) + '</strong></div>' +
+                '<div><small>SATISFACTION</small><strong>' + Math.round((Number(needs.satisfaction) || 0) * 100) + '%</strong></div>' +
+                '<div><small>ORDINANCES</small><strong>' + active + ' / ' + civic.slots + '</strong></div>' +
+                '<div><small>CIVIC UPKEEP</small><strong>' + currency(civic.upkeep) + ' / YR</strong></div>' +
+                '<div><small>BUILDINGS</small><strong>' + number(summary.buildings || state.entities.filter(entity => !entity.dead && entity.isBuilding()).length) + '</strong></div>' +
+                '<div><small>TOWN HALLS</small><strong>' + civic.townHalls + '</strong></div>' +
+                '<div><small>ACTIVE EVENTS</small><strong>' + (civic.pendingEvent ? "1" : "0") + '</strong></div></div>';
+        },
+        () => { readyRecovery(); return ""; },
+        () => {
+            const recovery = late.recovery;
+            const lastWreck = recovery.lastWreck
+                ? esc(String(recovery.lastWreck.label).toUpperCase()) + ' · ' + esc(recovery.lastWreck.causeLabel) + ' · YEAR ' + recovery.lastWreck.year
+                : 'NO WRECK RECORDED';
+            const lastSalvage = recovery.lastSalvage.wrecks
+                ? 'YEAR ' + recovery.lastSalvage.year + ' · ' + number(recovery.lastSalvage.wood) + ' WOOD · ' + number(recovery.lastSalvage.stone) + ' STONE'
+                : 'NONE RECORDED';
+            return '<div class="command-section-title">DISASTER RECOVERY</div>' +
+                '<div class="command-summary">' +
+                '<div><small>WRECKS AWAITING REBUILD</small><strong>' + (recovery.pendingCount ? number(recovery.pendingCount) : 'NONE') + '</strong></div>' +
+                '<div><small>LAST SALVAGE</small><strong>' + lastSalvage + '</strong></div>' +
+                '<div><small>REBUILD DISCOUNT</small><strong>' + recovery.discountPercent + '% NEAR A WRECK</strong></div>' +
+                '<div><small>LAST WRECK</small><strong>' + lastWreck + '</strong></div></div>';
+        },
+        () => {
+            const recovery = late.recovery;
+            return '<p class="command-note">Coastal surges, snowslides and eruptions record the wreck\'s cause, year and site. ' +
+                'The next annual audit salvages a quarter of its timber and stone. Direct construction of the same structure within ' +
+                recovery.radius + ' tiles of a wreck saves ' + recovery.discountPercent + '% of the material cost and clears that wreck from the register. ' +
+                'A fresh realm has no wrecks; once one is recorded, this is where its recovery is decided.</p>';
+        },
+        () => '<div class="command-section-title">THE CITY EVENT</div>' + eventCard(late.civic.pendingEvent),
+        () => {
+            const modifiers = late.civic.modifiers;
+            const audit = late.civic.lastAudit
+                ? '<p class="command-note">Last civic audit · year ' + late.civic.lastAudit.year + ' · ' + late.civic.lastAudit.active +
+                    ' ordinances · ' + late.civic.lastAudit.paid + '/' + late.civic.lastAudit.upkeep + ' gold upkeep' +
+                    (late.civic.lastAudit.unpaid ? ' · ' + late.civic.lastAudit.unpaid + ' gold unpaid' : '') + '.</p>'
+                : '<p class="command-note">The first civic audit occurs at the next year boundary.</p>';
+            return '<div class="command-section-title">LIVE CIVIC EFFECTS</div><div class="court-effect-grid">' +
+                '<span>TAX YIELD<b>' + percent(modifiers.tax) + '</b></span>' +
+                '<span>WORK EFFICIENCY<b>' + percent(modifiers.production) + '</b></span>' +
+                '<span>FOOD DEMAND<b>' + percent(modifiers.foodDemand) + '</b></span>' +
+                '<span>SERVICE REACH<b>' + percent(modifiers.serviceRadius) + '</b></span>' +
+                '<span>CONSTRUCTION<b>' + percent(-modifiers.buildDiscount) + '</b></span>' +
+                '<span>NEWCOMER PULL<b>' + percent(modifiers.immigration) + '</b></span>' +
+                '<span>PUBLIC HEALTH<b>' + percent(modifiers.health) + '</b></span>' +
+                '<span>MARKET TERMS<b>' + percent(modifiers.trade) + '</b></span></div>' +
+                audit;
+        },
+        () => {
+            const settlement = late.settlement;
+            const services = settlement.services || {};
+            const needs = settlement.needs || {};
+            const rows = [
+                ["Water", services.water, "Wells and waterworks"],
+                ["Food", needs.food, "Household stores"],
+                ["Safety", services.safety, "Watch and walls"],
+                ["Health", services.health, "Clinics and bathhouses"],
+                ["Education", services.education, "Staffed schools"],
+                ["Sanitation", services.sanitation, "Baths, wells and clinics"],
+                ["Civic order", services.civic, "Town hall and courts"],
+                ["Trade", services.trade, "Markets and guildhall"]
+            ];
+            return {
+                html: '<div class="command-section-title">CIVIC SERVICES IN THE WARDS</div><div class="city-service-grid">',
+                more: chunkRows(rows, 4).map(batch => ({
+                    into: ".city-service-grid",
+                    html: () => batch.map(([label, value, note]) => serviceCard(label, value, note)).join("")
+                }))
+            };
+        },
+        () => {
+            const civic = late.civic;
+            const active = civic.activePolicies.length;
+            return {
+                html: '</div><p class="command-note">Service percentages count occupied homes covered by an operational and staffed provider. ' +
+                    'A bathhouse needs a nearby water store; a school and town hall need assigned workers. New service categories do not silently ' +
+                    'raise household needs, but education and sanitation feed productivity.</p>' +
+                    '<div class="command-section-title">THE CHARTER · ' + active + ' OF ' + civic.slots + ' ORDINANCES IN FORCE</div>' +
+                    '<p class="command-note">Each enactment costs gold now and upkeep every year. A town hall adds two slots. ' +
+                    'Unpaid upkeep does not delete a policy; it costs morale and is recorded in the next audit.</p>' +
+                    '<div class="city-policy-grid">',
+                more: chunkRows(civic.policies, 2).map(batch => ({
+                    into: ".city-policy-grid",
+                    html: () => batch.map(policy => policyCard(policy, civic, late.gold)).join("")
+                }))
+            };
+        },
+        () => {
+            const civic = late.civic;
+            late.historyOpen = civic.history.length > 0;
+            if (!late.historyOpen) {
+                return '</div><div class="command-section-title">CIVIC RECORD</div>' +
+                    '<p class="command-note">No civic record has been written yet. Enact an ordinance or answer a city event.</p>';
+            }
+            return {
+                html: '</div><div class="command-section-title">CIVIC RECORD</div><div class="court-history">',
+                more: chunkRows(civic.history, 4).map(batch => ({
+                    into: ".court-history",
+                    html: () => batch.map(historyEntry).join("")
+                }))
+            };
+        },
+        () => {
+            const slug = seasonSlug();
+            const closeHistory = late.historyOpen ? '</div>' : '';
+            if (narrowViewport()) {
+                return closeHistory + '<details class="city-codex" data-city-codex data-season="' + esc(slug) + '">' +
+                    '<summary><span>THE CITY CODEX · ' + CITY_CODEX.length + ' BUILDINGS</span><small>OPEN THE ILLUSTRATED REGISTER</small></summary>' +
+                    '<div data-city-codex-body></div></details>';
+            }
+            // Adjacent codex cards share one bounded part, so a mature codex
+            // mounts fewer distinct roots into its detached grid per frame.
+            const chunks = CITY_CODEX.length
+                ? chunkRows(CITY_CODEX, 4).map((batch, index, all) => ({
+                    into: ".city-codex-grid",
+                    html: () => batch.map(entry => codexCard(entry, slug)).join("") + (index === all.length - 1 ? '</div>' : '')
+                }))
+                : [{ into: ".city-codex-grid", html: () => '</div>' }];
+            return {
+                html: closeHistory + '<div class="command-section-title">THE CITY CODEX · ' + CITY_CODEX.length + ' BUILDINGS</div>' +
+                    '<p class="command-note">Illustrated records of every structure in the current season. Portraits are loaded lazily, only as the codex is read.</p>' +
+                    '<div class="city-codex-grid">',
+                more: chunks
+            };
+        }
+    ];
+}
+
+export function renderCityPanel() {
+    return resolvePanelParts(renderCityPanelParts());
 }
 
 export function handleCityPanelClick(event, { onChanged, toast } = {}) {

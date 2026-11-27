@@ -164,7 +164,7 @@ test("resource details expose real stocks, flows, related buildings and bounded 
 test("the item lexicon exposes base definitions and player-made records",()=>{
   assert.ok(tabIds.has("items"));
   assert.ok(management.includes("renderItemLexicon"));
-  assert.ok(management.includes('if(activePanel==="items")renderItemLexicon(panel)'));
+  assert.ok(management.includes("renderItemLexicon(panel);"));
   assert.ok(gameCss.includes(".item-lexicon"));
   assert.ok(gameCss.includes(".item-lexicon__total{") && gameCss.includes("color:#3a2b1d"), "lexicon headings must use the dark parchment palette");
   assert.ok(gameCss.includes(".item-lexicon__search input{") && gameCss.includes("color:#33261a"), "lexicon search text must remain legible");
@@ -173,7 +173,7 @@ test("the item lexicon exposes base definitions and player-made records",()=>{
 test("diplomacy exposes persistent neighbours, treaties and trade consequences",()=>{
   assert.ok(tabIds.has("diplomacy"));
   assert.ok(html.includes('data-kac-panel="diplomacy"'));
-  assert.ok(management.includes("function diplomacy()"));
+  assert.ok(/function diplomacy\(/.test(management));
   assert.ok(management.includes("data-diplomacy-realm"));
   assert.ok(management.includes('data-command="diplomacy-gift"'));
   assert.ok(management.includes('data-command="diplomacy-pact"'));
@@ -249,7 +249,7 @@ test("settings expose local save slots, import/export and version/credits metada
   assert.ok(html.includes('id="export-save-btn"'));
   assert.ok(html.includes('id="import-save-input"'));
   assert.ok(html.includes('id="save-archive-status"'));
-  assert.ok(html.includes("KINGS &amp; CARDS · <b>v3.89.3</b>"));
+  assert.ok(html.includes("KINGS &amp; CARDS · <b>v3.90.0</b>"));
   assert.ok(management.includes('data-command="crown-grain"'));
   assert.ok(management.includes('data-command="crown-water"'));
   assert.ok(management.includes('data-command="crown-housing"'));
@@ -543,4 +543,33 @@ test("keyboard focus rings survive legacy outline resets and high contrast",()=>
   assert.ok(componentsCss.includes("html.ui-high-contrast body :is(.game-shell,.screen-overlay)"));
   assert.ok(componentsCss.includes("outline-width:3px"));
   assert.ok(componentsCss.includes("#command-panel-content:focus-visible{outline-offset:-2px}"));
+});
+
+test("panel timing is bounded and heavy decks keep staged mounts",async()=>{
+  const timing=await readFile(new URL("js/presentation/panel-timing.js",root),"utf8");
+  const progressive=await readFile(new URL("js/presentation/progressive-render.js",root),"utf8");
+  assert.ok(timing.includes("HISTORY_LIMIT = 64"),"panel timing history must stay bounded");
+  assert.ok(timing.includes("export function recordPanelTiming"));
+  assert.ok(timing.includes("export function updatePanelTiming"));
+  for(const field of ["parts:","prepareMs:","maxPartMs:","maxParseMs:","maxTaskMs:"]){
+    assert.ok(timing.includes(field),"panel timing must publish "+field);
+  }
+  assert.ok(management.includes("STAGED_OPEN_PANELS=new Set(["));
+  for(const id of ["kingdom","population","government","politics","nobility","diplomacy","worldmap","espionage","explore","biome","forest","hazards","decisions","cards","economy","resources","buildings","city","items","military","health","faith","justice","research","endeavours","dynasty","creatures","atelier"]){
+    assert.ok(management.includes('"'+id+'"'),"heavy panel "+id+" must use the staged mount path");
+  }
+  assert.ok(management.includes("PANEL_PART_RENDERERS=new Map("),"heavy panels need bounded part producers");
+  for(const [id,renderer] of [["population","renderPopulationPanelParts"],["forest","renderForestAtlasPanelParts"],["resources","resourcesParts"],["buildings","buildingsParts"],["explore","renderExpeditionsPanelParts"],["biome","renderBiomePanelParts"]]){
+    assert.ok(management.includes('"'+id+'",')&&management.includes(renderer),id+" must expose a bounded part renderer");
+  }
+  assert.ok(management.includes('"items"'),"items must use the staged desktop path");
+  assert.ok(management.includes("recordPanelTiming({panel:activePanel"));
+  assert.ok(management.includes("updatePanelTiming(timingSeq"));
+  assert.ok(progressive.includes("FRAME_BUDGET_MS = 4"),"the 4 ms mount budget may not change");
+  assert.ok(progressive.includes("maxChunkMs"));
+  assert.ok(progressive.includes("parts.splice(run.partIndex"),"producers must be able to continue themselves across frames");
+  assert.ok(progressive.includes("value.html"),"part descriptors must allow generated html");
+  assert.ok(progressive.includes("maxParseMs"),"parse work must count toward the longest staged task");
+  assert.ok(management.includes("splitMarkupForStagedRender"),"single-string renderers must still split parse work");
+  assert.ok(!management.includes("new MutationObserver(records=>"),"dead culling work must stay removed");
 });

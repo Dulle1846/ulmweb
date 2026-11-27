@@ -54,15 +54,18 @@ function sampleTerrain(tx,ty){
         temperature:clamp(Number(state.temperatureMap?.[index] ?? 0.55)||0,0,1),
     };
 }
-let validatedGeography=null,validatedGeographyCells=0;
+let validatedGeography=null,validatedWorldW=0,validatedWorldH=0;
 function ensureGeography(){
     const geo=state.resourceGeography;
+    // The hot path calls this for almost every tile query. Comparing the two
+    // world dimensions directly avoids three nested helper calls on a realm
+    // whose geography has already been validated.
+    if(geo&&geo===validatedGeography&&state.worldW===validatedWorldW&&state.worldH===validatedWorldH)return geo;
     const cells=cellCount();
-    if(geo===validatedGeography&&cells===validatedGeographyCells)return geo;
     if(!geo||geo.version!==VERSION||!(geo.forestStock instanceof Uint16Array)||geo.forestStock.length!==cells){
         throw new Error("Resource geography has not been generated for this realm.");
     }
-    validatedGeography=geo;validatedGeographyCells=cells;
+    validatedGeography=geo;validatedWorldW=state.worldW;validatedWorldH=state.worldH;
     return geo;
 }
 

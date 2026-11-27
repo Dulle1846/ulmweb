@@ -179,11 +179,9 @@ function provinceMarkup(snapshot) {
     }).join("");
 }
 
-function mapFigure(snapshot) {
-    const routes = snapshot.routes;
+function routeLines(snapshot) {
     const realms = snapshot.realms;
-    const provinceLayer = provinceMarkup(snapshot);
-    const routeMarkup = routes.map((route, index) => {
+    return snapshot.routes.map((route, index) => {
         const seat = snapshot.seats.find(row => row.id === route.seatId);
         const realm = realms.find(row => row.id === route.realmId);
         if (!seat || !realm) return "";
@@ -196,7 +194,10 @@ function mapFigure(snapshot) {
             '" x1="' + x1.toFixed(1) + '" y1="' + y1.toFixed(1) + '" x2="' + x2.toFixed(1) + '" y2="' + y2.toFixed(1) +
             '" marker-end="url(#world-map-arrow)"><title>' + esc((route.direction === "import" ? "Import " : "Export ") + route.lot + " " + route.resource + " · " + route.seatName + " ↔ " + route.realmName) + '</title></line>';
     }).join("");
-    const frontierMarkup = realms.map(realm => {
+}
+
+function frontierSymbols(realms) {
+    return realms.map(realm => {
         const cx = realm.anchor.x * 100, cy = realm.anchor.y * 64;
         const radius = 5 + Math.max(0, Math.min(100, realm.pressure)) * 0.11;
         const label = String(realm.region).split(" ")[0].toUpperCase();
@@ -211,20 +212,38 @@ function mapFigure(snapshot) {
             '<text x="' + cx.toFixed(1) + '" y="' + (cy + labelOffset).toFixed(1) + '">' + esc(label) + '</text>' +
             '<title>' + esc(realm.name + " · " + realm.region + " · " + realm.bandLabel + " " + realm.pressure) + '</title></g>';
     }).join("");
-    const seatMarkup = snapshot.seats.map(seat =>
+}
+
+function seatSymbols(snapshot) {
+    return snapshot.seats.map(seat =>
         '<g class="world-map__seat" data-world-map-seat="' + esc(seat.id) + '">' +
             '<circle class="world-map__seat-halo" cx="' + (seat.x * 100).toFixed(1) + '" cy="' + (seat.y * 64).toFixed(1) + '" r="3.1"></circle>' +
             '<circle cx="' + (seat.x * 100).toFixed(1) + '" cy="' + (seat.y * 64).toFixed(1) + '" r="1.5"></circle>' +
             '<title>' + esc(seat.name + " · depot " + amount(seat.stores.wood) + " wood / " + amount(seat.stores.stone) + " stone · " + amount(seat.treasury.gold) + " gold") + '</title>' +
         '</g>'
     ).join("");
-    const grid = Array.from({ length: 7 }, (_, index) => {
+}
+
+function mapGrid() {
+    return Array.from({ length: 7 }, (_, index) => {
         const x = 10 + index * 13.33;
         return '<line class="world-map__grid" x1="' + x.toFixed(1) + '" y1="0" x2="' + x.toFixed(1) + '" y2="64"></line>';
     }).join("") + Array.from({ length: 4 }, (_, index) => {
         const y = 13 + index * 13;
         return '<line class="world-map__grid" x1="0" y1="' + y + '" x2="100" y2="' + y + '"></line>';
     }).join("");
+}
+
+// `layers` lets the staged panel precompute each SVG layer in its own part.
+// The plain path computes them here and still receives one identical string.
+function mapFigure(snapshot, layers = null) {
+    const routes = snapshot.routes;
+    const realms = snapshot.realms;
+    const provinceLayer = layers?.province ?? provinceMarkup(snapshot);
+    const routeMarkup = layers?.routes ?? routeLines(snapshot);
+    const frontierMarkup = layers?.frontiers ?? frontierSymbols(realms);
+    const seatMarkup = layers?.seats ?? seatSymbols(snapshot);
+    const grid = layers?.grid ?? mapGrid();
     const campLabel = routes.length === 0
         ? "No standing caravan yet. Open a route from a settlement depot to one of the four regions below."
         : routes.length + " standing caravan" + (routes.length === 1 ? "" : "s") + " · dashed lines are closed or stalled.";
@@ -247,62 +266,189 @@ function mapFigure(snapshot) {
     '</figure>';
 }
 
+function chunkRows(rows, size) {
+    const chunks = [];
+    for (let index = 0; index < rows.length; index += size) chunks.push(rows.slice(index, index + size));
+    return chunks;
+}
+
+// The plain renderer still returns one string; the same ordered parts are handed
+// to the staged hydrator. A part may hand over more thunks, so snapshots are
+// taken inside the scheduled work rather than in the panel-click task.
+function resolvePanelParts(parts) {
+    let html = "";
+    for (let index = 0; index < parts.length; index++) {
+        const value = typeof parts[index] === "function" ? parts[index]() : parts[index];
+        const raw = typeof value === "string" ? value
+            : typeof value?.html === "function" ? value.html() : value?.html;
+        if (Array.isArray(value?.more) && value.more.length) parts.splice(index + 1, 0, ...value.more);
+        html += typeof raw === "string" ? raw : "";
+    }
+    return html;
+}
+
+function theatreCard(entry) {
+    return '<article class="command-policy" data-world-campaign="' + esc(entry.id) + '"><div>' +
+        '<span class="command-ribbon">' + esc(entry.stageLabel) + ' · ' + esc(entry.aimLabel) + '</span>' +
+        '<strong>' + esc(entry.theatreName) + '</strong>' +
+        '<p>' + esc(entry.houseName || "Crown alone") + ' · power ' + entry.power + ' · risk ' + entry.risk + '/100 · ' +
+        entry.progressPercent + '% complete · ' + entry.daysRemaining + ' days to settlement.</p>' +
+        '<small>A theatre is a real neighbouring kingdom; its control and contest set the contract supply and risk.</small></div>' +
+        '<button type="button" data-kac-panel="military">OPEN MILITARY</button></article>';
+}
+
+function worldHistoryEntry(entry) {
+    return '<div><span>' + esc(String(entry.kind).toUpperCase()) + ' · YEAR ' + entry.year + '</span><p>' + esc(entry.summary) + '</p></div>';
+}
+
+// The world deck builds a schematic map, two kingdom/province grids, complex
+// frontier cards, route records and a campaign list. All snapshot reads and
+// card markup live in thunks: the producer itself only wires bounded part
+// descriptors, and each descriptor holds at most two complex cards.
+export function renderWorldMapPanelParts() {
+    const late = { world: null, campaign: null, routesOpen: false, map: {} };
+    const readyWorld = () => late.world || (late.world = getWorldMapSnapshot());
+    const readyCampaign = () => late.campaign || (late.campaign = getCampaignSnapshot());
+    return [
+        // Snapshot acquisition, the static intro and the snapshot-driven
+        // summary are separate prepared parts. The old opening part did all
+        // three in one 11 ms task on the throttled renderer.
+        () => { readyWorld(); return ""; },
+        () => '<div class="world-map-panel" data-world-map-panel>' +
+            '<div class="command-panel-intro"><span>THE WORLD BEYOND THE REALM</span><h3>Kingdoms, provinces, trade routes &amp; frontiers</h3>' +
+                '<p>Five crowns hold ten provinces. Your crown begins with the heartland and its old chartered march; the four neighbouring powers hold the rest. A province pays its yield into the royal stores while the crown holds it, and can be pressed once a year where a crown border meets a foreign province. A charter trades part of its yearly crown levy for local loyalty and steadier borders; once a province feels secure it petitions for the next tier, and ignoring that petition costs loyalty. Settlements are still your real seats, roads and stores; a standing caravan moves goods through the same market stock and diplomatic ledger, and a frontier can still put raiders over the border.</p></div>',
+        () => {
+            const snapshot = late.world;
+            return '<div class="command-summary">' +
+                '<div><small>SEATS</small><strong>' + snapshot.seats.length + '</strong></div>' +
+                '<div><small>CROWN PROVINCES</small><strong>' + snapshot.totals.crownProvinces + ' / ' + snapshot.limits.provinces + '</strong></div>' +
+                '<div><small>PROVINCE YIELD</small><strong>+' + integer(snapshot.totals.annualYield) + '</strong></div>' +
+                '<div><small>CHARTERS</small><strong>' + snapshot.totals.charteredProvinces + ' / ' + snapshot.totals.crownProvinces + '</strong></div>' +
+                '<div><small>CROWN LEVY</small><strong>+' + integer(snapshot.totals.annualLevy) + 'G</strong></div>' +
+                '<div><small>OPEN PETITIONS</small><strong>' + snapshot.totals.openPetitions + '</strong></div>' +
+                '<div><small>STANDING ROUTES</small><strong>' + snapshot.routes.length + ' / ' + snapshot.limits.routes + '</strong></div>' +
+                '<div><small>GOODS MOVED</small><strong>' + integer(snapshot.totals.delivered) + '</strong></div>' +
+                '<div><small>TRADE EARNED</small><strong>' + integer(snapshot.totals.earned) + 'G</strong></div>' +
+                '<div><small>BORDER INCIDENTS</small><strong>' + integer(snapshot.totals.incidents) + '</strong></div>' +
+                '<div><small>WATCH LEVELS</small><strong>' + snapshot.totals.watchLevels + ' / ' + (snapshot.limits.watch * snapshot.realms.length) + '</strong></div>' +
+            '</div>';
+        },
+        () => {
+            const snapshot = readyWorld();
+            return '<div class="world-map__legend" aria-label="Frontier pressure bands">' +
+                '<span class="is-calm">CALM · 0–24</span><span class="is-watchful">WATCHFUL · 25–44</span>' +
+                '<span class="is-tense">TENSE · 45–64</span><span class="is-contested">CONTESTED · 65+</span>' +
+                '<span class="world-map__legend-note">A raid can cross from 58 unless the frontier is certain above 75.</span></div>' +
+                '<div class="world-map__kingdoms" aria-label="Province owners">' +
+                snapshot.kingdoms.map(kingdom => '<span class="world-map__kingdom-chip world-map__kingdom-chip--' + esc(kingdom.id) + '"><i></i>' + esc(kingdom.name) + ' <b>' + kingdom.regionCount + '</b></span>').join("") +
+                '<span class="world-map__kingdom-chip is-contested"><i></i>CONTESTED BORDER</span>' +
+                '</div>';
+        },
+        // The 6.3k-character map used to be computed in one 15 ms part. Each SVG
+        // layer is now prepared separately; the final part only joins the
+        // cached strings, so both renderers emit the same bytes.
+        () => { late.map.province = provinceMarkup(readyWorld()); return ""; },
+        () => { late.map.grid = mapGrid(); return ""; },
+        () => { late.map.frontiers = frontierSymbols(readyWorld().realms); return ""; },
+        () => { late.map.routes = routeLines(readyWorld()); return ""; },
+        () => { late.map.seats = seatSymbols(readyWorld()); return ""; },
+        () => mapFigure(readyWorld(), late.map),
+        () => {
+            const snapshot = readyWorld();
+            return {
+                html: '<div class="command-section-title">KINGDOMS &amp; PROVINCES · ' + snapshot.totals.crownProvinces + ' / ' + snapshot.limits.provinces + ' HELD BY THE CROWN</div>' +
+                    '<div class="world-kingdom-grid">',
+                more: chunkRows(snapshot.kingdoms, 2).map(batch => ({
+                    into: ".world-kingdom-grid",
+                    html: () => batch.map(kingdom => kingdomCard(kingdom, snapshot)).join("")
+                }))
+            };
+        },
+        // The campaign ledger is a second bounded snapshot read; keeping it out
+        // of the theatre shell avoids pairing another late ledger with markup.
+        () => { readyCampaign(); return ""; },
+        () => {
+            const campaign = late.campaign;
+            const more = campaign.campaigns.length
+                ? chunkRows(campaign.campaigns, 2).map(batch => ({
+                    into: ".command-policy-list",
+                    html: () => batch.map(theatreCard).join("")
+                }))
+                : [{
+                    into: ".command-policy-list",
+                    html: () => '<p class="command-note">No war band is committed to a theatre. Open an aim in Military to bind a neighbouring kingdom to a feudal contract.</p>'
+                }];
+            return {
+                html: '</div>' +
+                    '<div class="command-section-title">THEATRE CAMPAIGNS · ' + campaign.campaigns.length + ' / ' + campaign.limits.active + ' ACTIVE · ' + campaign.counters.settlements + ' SETTLED</div>' +
+                    '<p class="command-note"><strong>AIM → COMMIT → SETTLE.</strong> A war band reads the real control and contest of a neighbouring kingdom, not a forecast. Committing pays the crown and signs the noble contract; progress is one bounded scalar per day and the annual campaign audit settles it with its own random stream.</p>' +
+                    '<div class="command-policy-list">',
+                more
+            };
+        },
+        () => {
+            const snapshot = readyWorld();
+            return {
+                html: '</div>' +
+                    '<p class="command-note">Province control drifts once per year with the owner\'s treaty, relation and morale; hostile borders and low control make a province contested. A claim spends ' + costText(snapshot.costs.claim) + ', resolves deterministically from the current year, control, garrison, loyalty and war status, and can only be pressed once per year. A successful claim lowers the former owner\'s relation and trust; a repulsed claim spends the cost and weakens the province. <strong>A charter</strong> raises yearly loyalty and softens hostile-border control loss; its cost is paid once, but the crown receives a smaller share of that province\'s levy every year. One charter decision can be made per province each year.</p>' +
+                    '<div class="world-province-grid">',
+                more: chunkRows(snapshot.regions, 2).map(batch => ({
+                    into: ".world-province-grid",
+                    html: () => batch.map(region => regionCard(region, snapshot)).join("")
+                }))
+            };
+        },
+        () => {
+            const snapshot = readyWorld();
+            return {
+                html: '</div>' +
+                    '<div class="command-section-title">FRONTIERS · ' + snapshot.realms.filter(realm => realm.pressure >= 45).length + ' PRESSED</div>' +
+                    '<p class="command-note">Pressure is one bounded reading: treaty (+42 at war, +18 neutral, +7 trade, +1 alliance), low relation and trust, the existing crown border levy, then minus nearby settlements, watch levels, active caravans and the standing army\'s dread. It is recomputed once per year and saved.</p>' +
+                    '<div class="world-frontier-grid">',
+                more: chunkRows(snapshot.realms, 1).map(batch => ({
+                    into: ".world-frontier-grid",
+                    html: () => batch.map(realm => frontierCard(realm, snapshot)).join("")
+                }))
+            };
+        },
+        () => {
+            const snapshot = readyWorld();
+            late.routesOpen = snapshot.routes.length > 0;
+            if (!late.routesOpen) {
+                return '</div>' +
+                    '<div class="command-section-title">STANDING CARAVANS · ' + snapshot.routes.length + ' / ' + snapshot.limits.routes + '</div>' +
+                    '<p class="command-note">No standing caravan. Choose a depot, goods and flow in one of the four frontier cards, then open the route. The first caravan leaves at the next year boundary; the panel will name exactly what it moved.</p>';
+            }
+            return {
+                html: '</div>' +
+                    '<div class="command-section-title">STANDING CARAVANS · ' + snapshot.routes.length + ' / ' + snapshot.limits.routes + '</div>' +
+                    '<div class="world-routes">',
+                more: chunkRows(snapshot.routes, 2).map(batch => ({
+                    into: ".world-routes",
+                    html: () => batch.map(route => routeRow(route, snapshot)).join("")
+                }))
+            };
+        },
+        () => {
+            const snapshot = readyWorld();
+            return {
+                html: (late.routesOpen ? '</div>' : '') +
+                    '<div class="command-section-title">WORLD RECORD</div><div class="court-history world-map__record">',
+                more: snapshot.history.length
+                    ? chunkRows(snapshot.history, 4).map(batch => ({
+                        into: ".world-map__record",
+                        html: () => batch.map(worldHistoryEntry).join("")
+                    }))
+                    : [{
+                        into: ".world-map__record",
+                        html: () => '<p class="command-note">The first annual world survey will write its record here.</p>'
+                    }]
+            };
+        },
+        () => '</div><p class="command-note">Timber and stone unload into the settlement depot and are spent by that settlement\'s own road repairs. Food moves through the royal granary. Exports draw from the named depot and pay the crown; the settlement keeps up to 2 gold as a handling fee. War closes the route without moving goods. Province control, ownership, yields and the annual claim lock are saved with the realm; the whole layer settles once per year.</p></div>'
+    ];
+}
+
 export function renderWorldMapPanel() {
-    const snapshot = getWorldMapSnapshot();
-    const summary = '<div class="command-summary">' +
-        '<div><small>SEATS</small><strong>' + snapshot.seats.length + '</strong></div>' +
-        '<div><small>CROWN PROVINCES</small><strong>' + snapshot.totals.crownProvinces + ' / ' + snapshot.limits.provinces + '</strong></div>' +
-        '<div><small>PROVINCE YIELD</small><strong>+' + integer(snapshot.totals.annualYield) + '</strong></div>' +
-        '<div><small>CHARTERS</small><strong>' + snapshot.totals.charteredProvinces + ' / ' + snapshot.totals.crownProvinces + '</strong></div>' +
-        '<div><small>CROWN LEVY</small><strong>+' + integer(snapshot.totals.annualLevy) + 'G</strong></div>' +
-        '<div><small>OPEN PETITIONS</small><strong>' + snapshot.totals.openPetitions + '</strong></div>' +
-        '<div><small>STANDING ROUTES</small><strong>' + snapshot.routes.length + ' / ' + snapshot.limits.routes + '</strong></div>' +
-        '<div><small>GOODS MOVED</small><strong>' + integer(snapshot.totals.delivered) + '</strong></div>' +
-        '<div><small>TRADE EARNED</small><strong>' + integer(snapshot.totals.earned) + 'G</strong></div>' +
-        '<div><small>BORDER INCIDENTS</small><strong>' + integer(snapshot.totals.incidents) + '</strong></div>' +
-        '<div><small>WATCH LEVELS</small><strong>' + snapshot.totals.watchLevels + ' / ' + (snapshot.limits.watch * snapshot.realms.length) + '</strong></div>' +
-    '</div>';
-    const legend = '<div class="world-map__legend" aria-label="Frontier pressure bands">' +
-        '<span class="is-calm">CALM · 0–24</span><span class="is-watchful">WATCHFUL · 25–44</span>' +
-        '<span class="is-tense">TENSE · 45–64</span><span class="is-contested">CONTESTED · 65+</span>' +
-        '<span class="world-map__legend-note">A raid can cross from 58 unless the frontier is certain above 75.</span></div>';
-    const kingdomLegend = '<div class="world-map__kingdoms" aria-label="Province owners">' +
-        snapshot.kingdoms.map(kingdom => '<span class="world-map__kingdom-chip world-map__kingdom-chip--' + esc(kingdom.id) + '"><i></i>' + esc(kingdom.name) + ' <b>' + kingdom.regionCount + '</b></span>').join("") +
-        '<span class="world-map__kingdom-chip is-contested"><i></i>CONTESTED BORDER</span>' +
-    '</div>';
-    const routesSection = snapshot.routes.length
-        ? '<div class="world-routes">' + snapshot.routes.map(route => routeRow(route, snapshot)).join("") + '</div>'
-        : '<p class="command-note">No standing caravan. Choose a depot, goods and flow in one of the four frontier cards, then open the route. The first caravan leaves at the next year boundary; the panel will name exactly what it moved.</p>';
-    const campaign = getCampaignSnapshot();
-    const theatreCards = campaign.campaigns.length
-        ? campaign.campaigns.map(entry => '<article class="command-policy" data-world-campaign="' + esc(entry.id) + '"><div>' +
-            '<span class="command-ribbon">' + esc(entry.stageLabel) + ' · ' + esc(entry.aimLabel) + '</span>' +
-            '<strong>' + esc(entry.theatreName) + '</strong>' +
-            '<p>' + esc(entry.houseName || "Crown alone") + ' · power ' + entry.power + ' · risk ' + entry.risk + '/100 · ' +
-            entry.progressPercent + '% complete · ' + entry.daysRemaining + ' days to settlement.</p>' +
-            '<small>A theatre is a real neighbouring kingdom; its control and contest set the contract supply and risk.</small></div>' +
-            '<button type="button" data-kac-panel="military">OPEN MILITARY</button></article>').join("")
-        : '<p class="command-note">No war band is committed to a theatre. Open an aim in Military to bind a neighbouring kingdom to a feudal contract.</p>';
-    const history = snapshot.history.length
-        ? snapshot.history.map(entry => '<div><span>' + esc(String(entry.kind).toUpperCase()) + ' · YEAR ' + entry.year + '</span><p>' + esc(entry.summary) + '</p></div>').join("")
-        : '<p class="command-note">The first annual world survey will write its record here.</p>';
-    return '<div class="world-map-panel" data-world-map-panel>' +
-        '<div class="command-panel-intro"><span>THE WORLD BEYOND THE REALM</span><h3>Kingdoms, provinces, trade routes &amp; frontiers</h3>' +
-            '<p>Five crowns hold ten provinces. Your crown begins with the heartland and its old chartered march; the four neighbouring powers hold the rest. A province pays its yield into the royal stores while the crown holds it, and can be pressed once a year where a crown border meets a foreign province. A charter trades part of its yearly crown levy for local loyalty and steadier borders; once a province feels secure it petitions for the next tier, and ignoring that petition costs loyalty. Settlements are still your real seats, roads and stores; a standing caravan moves goods through the same market stock and diplomatic ledger, and a frontier can still put raiders over the border.</p></div>' +
-        summary + legend + kingdomLegend + mapFigure(snapshot) +
-        '<div class="command-section-title">KINGDOMS &amp; PROVINCES · ' + snapshot.totals.crownProvinces + ' / ' + snapshot.limits.provinces + ' HELD BY THE CROWN</div>' +
-        '<div class="world-kingdom-grid">' + snapshot.kingdoms.map(kingdom => kingdomCard(kingdom, snapshot)).join("") + '</div>' +
-        '<div class="command-section-title">THEATRE CAMPAIGNS · ' + campaign.campaigns.length + ' / ' + campaign.limits.active + ' ACTIVE · ' + campaign.counters.settlements + ' SETTLED</div>' +
-        '<p class="command-note"><strong>AIM → COMMIT → SETTLE.</strong> A war band reads the real control and contest of a neighbouring kingdom, not a forecast. Committing pays the crown and signs the noble contract; progress is one bounded scalar per day and the annual campaign audit settles it with its own random stream.</p>' +
-        '<div class="command-policy-list">' + theatreCards + '</div>' +
-        '<p class="command-note">Province control drifts once per year with the owner\'s treaty, relation and morale; hostile borders and low control make a province contested. A claim spends ' + costText(snapshot.costs.claim) + ', resolves deterministically from the current year, control, garrison, loyalty and war status, and can only be pressed once per year. A successful claim lowers the former owner\'s relation and trust; a repulsed claim spends the cost and weakens the province. <strong>A charter</strong> raises yearly loyalty and softens hostile-border control loss; its cost is paid once, but the crown receives a smaller share of that province\'s levy every year. One charter decision can be made per province each year.</p>' +
-        '<div class="world-province-grid">' + snapshot.regions.map(region => regionCard(region, snapshot)).join("") + '</div>' +
-        '<div class="command-section-title">FRONTIERS · ' + snapshot.realms.filter(realm => realm.pressure >= 45).length + ' PRESSED</div>' +
-        '<p class="command-note">Pressure is one bounded reading: treaty (+42 at war, +18 neutral, +7 trade, +1 alliance), low relation and trust, the existing crown border levy, then minus nearby settlements, watch levels, active caravans and the standing army\'s dread. It is recomputed once per year and saved.</p>' +
-        '<div class="world-frontier-grid">' + snapshot.realms.map(realm => frontierCard(realm, snapshot)).join("") + '</div>' +
-        '<div class="command-section-title">STANDING CARAVANS · ' + snapshot.routes.length + ' / ' + snapshot.limits.routes + '</div>' +
-        routesSection +
-        '<div class="command-section-title">WORLD RECORD</div><div class="court-history world-map__record">' + history + '</div>' +
-        '<p class="command-note">Timber and stone unload into the settlement depot and are spent by that settlement\'s own road repairs. Food moves through the royal granary. Exports draw from the named depot and pay the crown; the settlement keeps up to 2 gold as a handling fee. War closes the route without moving goods. Province control, ownership, yields and the annual claim lock are saved with the realm; the whole layer settles once per year.</p>' +
-    '</div>';
+    return resolvePanelParts(renderWorldMapPanelParts());
 }

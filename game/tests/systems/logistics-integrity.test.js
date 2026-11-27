@@ -6,7 +6,7 @@ import { spawnEntity } from "../../js/world/entities.js";
 import {
     initializeCityForRealm, ensureInventory, requestHaul, requestSupply, requestConstructionDelivery, getInputCapacity, getInputCapacityUsage, inputSpace, reserveInputCapacity, releaseInputCapacity, cancelJobsForEntity,
     updateLogistics, updateLogisticsMovement, serializeCity, restoreCity, validateCitySnapshot,
-    evacuateBuildingInventory, setWarehouseProfile, getWarehouseProfile, depositGood, withdrawGood,
+    evacuateBuildingInventory, setWarehouseProfile, getWarehouseProfile, depositGood, withdrawGood, getWarehouseSpace,
     addLocalOutput, consumeFromWarehouse, getLocalWarehouseStock, getGoodsAudit, getPhysicalStock, getAvailableOutput,
     getPhysicalStockMap, openGoodsBookForNewRealm,
     normalizeLegacyWarehouseCapacity, recordResourceMovement, MAX_LOGISTICS_JOBS, MAX_CARRIERS, JOB_PRIORITIES
@@ -1149,5 +1149,22 @@ test("52 a crown requisition books every real food good and keeps the audit bala
     assert.equal(ledger.every(entry => GOOD_KEYS.includes(entry.good) || entry.good === "food"), true, "no unregistered good is booked");
     assert.equal(requisitionGranary().requisitioned, 0, "a second call cannot reuse the same stock or keys");
     assert.equal(getGoodsAudit().balanced, true);
+    assertPhysicalBooks();
+});
+
+test("warehouse running totals follow direct writes and a save round-trip", () => {
+    setup();
+    const store = place(TYPE.WAREHOUSE, 30, 30);
+    store.warehouse.capacity = 100;
+    store.warehouse.stored.grain = 40;
+    store.warehouse.stored.planks = 10;
+    store.warehouse.reservedOut.grain = 5;
+    assert.equal(getWarehouseSpace(store), 50, "stored goods occupy the tracked capacity");
+    assert.equal(withdrawGood("grain", 3, 30, 30), 3, "a direct write stays available to logistics");
+    assert.equal(store.warehouse.stored.grain, 37);
+    assert.equal(getWarehouseSpace(store), 53, "the tracked sum follows the withdrawal");
+    restoreCity(serializeCity());
+    const restored = state.entities.find(entity => entity.id === store.id);
+    assert.equal(getWarehouseSpace(restored), 53, "the restored store rebuilds the same total");
     assertPhysicalBooks();
 });

@@ -2,13 +2,13 @@
 export const SPEC_COVERAGE = Object.freeze({
   "version": 2,
   "generatedBy": "scripts/spec-audit.mjs",
-  "commit": "c3e74a14ea03c797209a5d0957fe425692039237",
-  "sourceHash": "a79dda47535871cfce6794cba6562b061aae96d38b9a52b146e7472b816d928b",
+  "commit": "7ccb3c7dbd2b37f3439083c97ed1b306b3e81868",
+  "sourceHash": "e2b7c2143323d80f550e645fd0d4848df829fd0117d2c6ee129f5687a3387a2a",
   "totals": {
-    "total": 1819,
-    "implemented": 1819,
+    "total": 1824,
+    "implemented": 1824,
     "open": 0,
-    "sections": 46
+    "sections": 47
   },
   "nextSection": null,
   "collisions": [
@@ -707,6 +707,14 @@ export const SPEC_COVERAGE = Object.freeze({
       "title": "Keyboard-only play and visible focus",
       "total": 4,
       "implemented": 4,
+      "open": 0,
+      "source": "system registry"
+    },
+    {
+      "id": "3.13",
+      "title": "Low-end panel audit and bounded staging",
+      "total": 5,
+      "implemented": 5,
       "open": 0,
       "source": "system registry"
     },

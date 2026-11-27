@@ -195,6 +195,118 @@ export function getWarehouseProfileSnapshot() {
     };
 }
 
+/**
+ * Staged counterpart of getProductionChainSnapshot(). The read model, ordering
+ * and values are identical; one stage is derived per advance() so a mature
+ * realm never spends one click frame checking every building and carrier order.
+ */
+export function createProductionChainSnapshotBuilder() {
+    const chains = CHAIN_DEFINITIONS.map(chain => ({
+        id: chain.id, label: chain.label, note: chain.note, stages: []
+    }));
+    let buildings = [];
+    let stock = {};
+    let warehouses = { free: 0, rows: [] };
+    let chainIndex = 0;
+    let stageIndex = 0;
+    let failed = false;
+    return {
+        prepare() {
+            try {
+                buildings = aliveBuildings();
+                stock = getPhysicalStockMap() || {};
+                warehouses = getWarehouseSnapshot();
+                if (!warehouses) failed = true;
+            } catch { failed = true; }
+        },
+        get failed() { return failed; },
+        advance() {
+            if (failed || chainIndex >= CHAIN_DEFINITIONS.length) return true;
+            const definition = CHAIN_DEFINITIONS[chainIndex];
+            chains[chainIndex].stages.push(stageSnapshot(definition.stages[stageIndex], buildings, stock, warehouses));
+            stageIndex++;
+            if (stageIndex >= definition.stages.length) {
+                chainIndex++;
+                stageIndex = 0;
+            }
+            return chainIndex >= CHAIN_DEFINITIONS.length;
+        },
+        snapshot() { return { chains }; }
+    };
+}
+
+/**
+ * Staged counterpart of getWarehouseProfileSnapshot(). Profiles and stranded
+ * goods are derived one bounded step at a time, in the same declared order.
+ */
+export function createWarehouseProfileSnapshotBuilder() {
+    const profiles = [];
+    const stranded = [];
+    let snapshot = { rows: [] };
+    let stock = {};
+    let phase = 0;
+    let profileIndex = 0;
+    let goodIndex = 0;
+    let failed = false;
+    return {
+        prepare() {
+            try {
+                snapshot = getWarehouseSnapshot();
+                stock = getPhysicalStockMap() || {};
+                if (!snapshot) failed = true;
+            } catch { failed = true; }
+        },
+        get failed() { return failed; },
+        advance() {
+            if (failed) return true;
+            const rows = snapshot.rows || [];
+            if (phase === 0) {
+                if (profileIndex < WAREHOUSE_PROFILE_IDS.length) {
+                    const id = WAREHOUSE_PROFILE_IDS[profileIndex++];
+                    const profile = WAREHOUSE_PROFILES[id];
+                    if (!profile) { failed = true; return true; }
+                    const stores = rows.filter(row => row.profile === id);
+                    const used = stores.reduce((sum, row) => sum + quantity(row.used), 0);
+                    const free = stores.reduce((sum, row) => sum + quantity(row.free), 0);
+                    const heldGoodKinds = GOOD_KEYS.filter(good => profile.filters.includes(good) && quantity(stock?.[good]) > 0).length;
+                    profiles.push({
+                        id, label: profile.label, description: profile.description,
+                        capacity: profile.capacity, accepts: profile.filters.length,
+                        stores: stores.length, used, free, heldGoodKinds
+                    });
+                    return false;
+                }
+                phase = 1;
+                goodIndex = 0;
+            }
+            if (phase === 1) {
+                if (goodIndex < GOOD_KEYS.length) {
+                    const good = GOOD_KEYS[goodIndex++];
+                    if (quantity(stock?.[good]) > 0) {
+                        const accepting = rows.reduce((sum, row) => sum + (row.filters.includes(good) ? quantity(row.free) : 0), 0);
+                        if (accepting <= 0 && stranded.length < 3) {
+                            stranded.push({ good, label: labelFor(good), stored: quantity(stock[good]) });
+                        }
+                    }
+                    return false;
+                }
+                phase = 2;
+            }
+            return true;
+        },
+        snapshot() {
+            const rows = snapshot.rows || [];
+            return {
+                profiles, stranded,
+                stores: rows.length,
+                used: quantity(snapshot.used),
+                capacity: quantity(snapshot.capacity),
+                free: quantity(snapshot.free)
+            };
+        }
+    };
+}
+
 /** Explain a profile choice without mutating the store to test it. */
 export function warehouseProfileHint(row, profileId) {
     const profile = WAREHOUSE_PROFILES[profileId];

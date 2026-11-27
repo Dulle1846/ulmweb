@@ -1,7 +1,7 @@
 # Kings & Cards
 
-**Production version:** 3.89.3
-**Next development line:** 3.90.0-dev
+**Production version:** 3.90.0
+**Next development line:** 3.90.1-dev
 **Production branch:** `ulmweb-branch`  
 **Production URL:** https://kings-and-cards.pages.dev/
 
@@ -39,11 +39,13 @@
 29. [Royal education](docs/ROYAL_EDUCATION.md) — one Tutor, three authored curricula for royal children, bounded annual tutelage, coming-of-age audiences with political effects and named offices, save-compatible nested DTO, Decisions panel, NEXT MOVE/FIRST SESSION continuation and browser proof.
 30. [Waldkrieg, Diplomatie, Grenzen und Strategie 1.2.23.1.211–240](docs/FOREST_WARFARE.md) — four regional forest fronts with seasonal roads, border posts and watches, scouts and ambushes, sight/movement/cavalry battle modifiers, siege and ship timber, war elephants, abatis and partisans, war fire and slash-and-burn, deportation and refugees, timber quotas, embargoes, forest routes, customs and smuggling, war maps and border treaties, joint preserves and indigenous rights, settler pressure and colonisation, resistance and rebel camps, military colonies and decades-long ecological war scars — all wired into the real world map, diplomacy, army, forest succession and sacred-grove guard (v3.83.1).
 
-31. [Darstellung, Audio, UI und Accessibility 1.2.23.1.241–270](docs/FOREST_PRESENTATION.md) — sixty regional presentation profiles, nine crown silhouettes, layered canopy parallax, regional colours, staggered autumn, snow loads, eight ground weaves, fog and light, wet weather, species stiffness, deadwood, understory, blossom/fruit, fauna, insects, procedural regional ambience with wooden instruments, modal scales, motifs and silence, a four-season phenology calendar, three-layer canopy depth, per-type field marks, eight previewable sound cues, sound subtitles, map icons and filterable legends, tooltips and filters, colour-blind patterns, canopy contrast, forest text scale, reduced motion, performance mode, reduced particles and a symbolic map view, and the card list ahead of the reference guide so the sixty woodlands appear in under a second (v3.87.1).
+31. [Darstellung, Audio, UI und Accessibility 1.2.23.1.241–270](docs/FOREST_PRESENTATION.md) — sixty regional presentation profiles, nine crown silhouettes, layered canopy parallax, regional colours, staggered autumn, snow loads, eight ground weaves, fog and light, wet weather, species stiffness, deadwood, understory, blossom/fruit, fauna, insects, procedural regional ambience with wooden instruments, modal scales, motifs and silence, a four-season phenology calendar, three-layer canopy depth, per-type field marks, eight previewable sound cues, sound subtitles, map icons and filterable legends, tooltips and filters, colour-blind patterns, canopy contrast, forest text scale, reduced motion, performance mode, reduced particles and a symbolic map view (v3.86.2).
 32. [Noble arbitration and atlas follow-ups](docs/NOBLE_FEUD_CHAIN.md) — 3.85.0 grievance → arbitration → compensation/charter settlement, shared penalty tiers, blood-feud escalation, bounded annual relapse, six authored quest follow-ups in Explore with real ledgers, save compatibility and browser proofs.
 33. [Keyboard-only play](docs/KEYBOARD_ACCESSIBILITY.md) - pause from any focused control, real tablists with arrow/Home/End navigation across the information tabs and the 29-panel management deck, focus restoration after Buildings/Bulk-Repair and Market actions, high-contrast-safe focus rings and a Chromium keyboard-only proof (v3.87.0).
 34. [Provincial charters](docs/PROVINCIAL_CHARTERS.md) — three autonomy tiers, yearly crown levy, loyalty-driven petitions, grant/refuse/revoke actions, deterministic 25-year campaign evidence and the 390×844 browser proof (v3.88.0).
 35. [Langfristige Systeme, Events, Modding und QA 1.2.23.1.271–300](docs/FOREST_LEGACY.md) — ten province woods on one annual pass: centuries of succession, climate migration and local extinction, six regional hazards, conservation law and reserves, seed/gene banks, nursery, forest museum and citizen science, reintroduction, natural monuments and tree-ring memory, validated forest data packs and community scenarios, achievements, codex, ten reference seeds, a 300-year soak and the 390×844, 820×1180 and 1440×900 player proofs (v3.89.3).
+
+36. [Low-end panel audit](docs/LOW_END_PANEL_AUDIT.md) - bounded timing history for every panel, staged mounting and part-generated markup for all heavy decks, removal of dead hydration work, a real 4x-throttled Chromium proof across all 29 panels and a deterministic 25-year campaign inside the unchanged CPU budget (v3.90.0).
 
 ## Development rules
 

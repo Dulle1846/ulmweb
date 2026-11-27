@@ -15,7 +15,7 @@ import { describeStanding } from "../systems/diplomatic-standing.js";
 import { startExpedition } from "../systems/expeditions.js";
 import { attuneSpecialBiome, cleanseSpecialBiome, sellSpecialGood } from "../systems/special-biome-state.js";
 import { resolveBiomeQuest, resolveBiomeQuestFollowUp, resolveBlightDecision } from "../systems/special-biome-couplings.js";
-import { refreshTransitionSurvey, refreshVegetationDensity, renderExpeditionsPanel, stepTransitionSurvey } from "./expeditions-panel.js";
+import { refreshTransitionSurvey, refreshVegetationDensity, renderExpeditionsPanel, renderExpeditionsPanelParts, stepTransitionSurvey } from "./expeditions-panel.js";
 import { getRoyalHouse, appointRoyalConsort, createRoyalChild, designateHeir } from "../systems/royal-dynasty.js";
 import { getRoyalEducationSnapshot, appointRoyalTutor, enrollRoyalStudent, holdRoyalAudience, dismissRoyalStudent } from "../systems/royal-education.js";
 import { getForeignMarriageSnapshot, marryForeignRealm } from "../systems/royal-marriage.js";
@@ -33,8 +33,8 @@ import { buildingFormFor } from "../world/building-forms.js";
 import { forestFaunaSummaryAt } from "../systems/forest-fauna.js";
 import { forestFaunaEcologyFor, forestFaunaEcologySummary } from "../world/forest-fauna-ecology.js";
 import { cleanBiomeWater, craftBiomeGoods, drainBiomeRegion, harvestBiomeResource, huntBiomeSpecies, irrigateBiomeRegion, reforestBiomeRegion, reintroduceBiomeSpecies, restoreBiomeRegion, sellBiomeCraft, sellBiomeGoods, setBiomeFocus, setBiomePolicy, setBiomeProtection, slashAndBurnBiomeRegion, surveyBiomeRegion } from "../systems/biome-resource-state.js";
-import { renderBiomePanel } from "./biome-panel.js";
-import { invalidateForestAtlasSurvey, renderForestAtlasPanel } from "./forest-atlas-panel.js";
+import { renderBiomePanel, renderBiomePanelParts } from "./biome-panel.js";
+import { invalidateForestAtlasSurvey, renderForestAtlasPanel, renderForestAtlasPanelParts } from "./forest-atlas-panel.js";
 import { afforestForestRegion, buildForestInstitution, designateForestMonument, fundCitizenScience, protectForestRegion, reintroduceForestSpecies, setForestConservationLaw } from "../systems/forest-legacy.js";
 import { previewForestAmbience } from "../core/forest-ambience.js";
 import { forestPresentationProfile } from "../world/forest-presentation.js";
@@ -47,7 +47,7 @@ import { brewForestRemedies, collectForestLore, consultForestHermit, dedicateSac
 import { burnForFields, clearRebelCamp, colonizeWoodland, commissionWarMaps, createJointPreserve, cutSiegeTimber, deportWoodlanders, fellAbatis, fightForestBattle, foundMilitaryColony, fundWarEcologyRecovery, layForestAmbush, levyTimberQuota, liftForestEmbargo, musterWarElephants, openForestRoad, openForestTradeRoute, pressForestSiege, pressSettlerClaims, raiseBorderPost, raiseForestPartisans, recognizeWoodlandRights, recruitForestScouts, reserveShipTimber, runForestSmuggling, setForestCustoms, setForestEmbargo, setWarFire, settleForestRefugees, signBorderTreaty, strengthenForestWatch, suppressForestResistance } from "../systems/forest-warfare.js";
 import { grandConsumerStatusFor } from "../systems/grand-consumers.js";
 import { renderScenarioPanel } from "./scenario-panel.js";
-import { renderWorldMapPanel } from "./world-map-panel.js";
+import { renderWorldMapPanel, renderWorldMapPanelParts } from "./world-map-panel.js";
 import { closeTradeRoute, getWorldMapSnapshot, grantProvinceCharter, openTradeRoute, pressRegionClaim, refuseProvincePetition, revokeProvinceCharter, setFrontierWatch } from "../systems/world-map.js";
 import { getSettlementSeats, SETTLEMENT_SEAT_LIMIT, SETTLEMENT_TERRITORY_RADIUS } from "../systems/settlement-owners.js";
 import { renderHazardPanel } from "./hazard-panel.js";
@@ -67,7 +67,7 @@ import {
 } from "../systems/forest-succession.js";
 import { renderUI, cardSprite } from "./rendering/ui.js";
 import { getHousingSnapshot, getHouseholdSnapshot } from "../systems/population.js";
-import { renderPopulationPanel, setPopulationFilter, setPopulationQuery, stepPopulationPage } from "./population-panel.js";
+import { renderPopulationPanel, renderPopulationPanelParts, setPopulationFilter, setPopulationQuery, stepPopulationPage } from "./population-panel.js";
 import { renderAiChroniclePanel, renderAiArchiveSection } from "./ai-chronicle-panel.js";
 import { renderLivingTimeline, renderLivingTimelineChunks, renderTimelineDetailCard, renderTimelineCardBatch, MAX_VISIBLE_TIMELINE_CARDS, TIMELINE_INITIAL_CARDS, TIMELINE_CARD_BATCH, focusTimelineEvent, resetTimelineView, setTimelineFilter, setTimelineYear, stepTimelineYear, clearTimelineSelection, getTimelineView } from "./event-timeline-panel.js";
 import { performAiAction } from "../systems/ai-chronicle.js";
@@ -88,22 +88,143 @@ import { constructionSnapshot, isUnderConstruction } from "../systems/constructi
 import { getBulkRepairSnapshot, getBuildingRepairSnapshot, getRealmDamageSnapshot, repairAllDamaged, repairBuilding } from "../systems/building-repair.js";
 import { CARRIER_CAPACITY, getInventorySummary, getBuildingLogisticsStatus, getBuildingSupplyReason, getCitySummary, getGoodsAudit, getLogisticsSnapshot, getPhysicalStockMap, setWarehouseProfile } from "../systems/logistics.js";
 import { getManualLogisticsSnapshot, placeManualOrder } from "./manual-logistics.js";
-import { chainTagsFor, getProductionChainSnapshot, getWarehouseProfileSnapshot, warehouseProfileHint } from "./production-chain.js";
+import { chainTagsFor, createProductionChainSnapshotBuilder, createWarehouseProfileSnapshotBuilder, getProductionChainSnapshot, getWarehouseProfileSnapshot, warehouseProfileHint } from "./production-chain.js";
 import { BUILDING_COSTS, GOODS, GOOD_KEYS, WAREHOUSE_PROFILES } from "../systems/city-config.js";
 import { getSettlementSnapshot, getServiceReason } from "../systems/settlement.js";
 import { foresterRangeSummary } from "../systems/fields.js";
-import { renderCityPanel, handleCityPanelClick } from "./city-panel.js";
+import { renderCityPanel, renderCityPanelParts, handleCityPanelClick } from "./city-panel.js";
 import { openBuildPanel } from "./build-ui.js";
 import { renderItemLexicon } from "./item-lexicon-panel.js";
 import { renderProgressive, cancelProgressiveRender } from "./progressive-render.js";
+import { recordPanelTiming, updatePanelTiming } from "./panel-timing.js";
 let activePanel="kingdom",commandOpenRenderToken=0,panelRenderSeq=0,panelRevealToken=0,expandedBuildingId=null,expandedBuildingLogistics=false,buildingShowAll=false,courtShowAll=false,dynastyStylesRequested=false,endeavourFunding=1,timelineRefreshFrame=0,timelineHydrationToken=0,chronicleProgressToken=0,chronicleSectionsToken=0,detailRefreshToken=0;
 const MANAGEMENT_TAB_IDS=new Set(MANAGEMENT_TABS.map(tab=>tab.id));
 const FRAME_WORK_BUDGET=7;
 // These ledgers carry the most nested cards per open. Their full innerHTML
 // layout measured 52-75 ms at 4x CPU throttle, so they use the existing
-// frame-budgeted hydrator on desktop as well as on a phone. Kingdom is
-// included because opening the deck first paints the previously active tab.
-const STAGED_OPEN_PANELS=new Set(["kingdom","population","nobility","diplomacy"]);
+// frame-budgeted hydrator on desktop as well as on a phone. The newer
+// strategy, atlas, expedition, court and record panels join the same bounded
+// path: their cards grew with the living world while this set stayed small.
+// Chronicle keeps its own timeline hydrator and is deliberately excluded.
+const STAGED_OPEN_PANELS=new Set(["kingdom","population","government","politics","nobility","diplomacy","worldmap","espionage","explore","biome","forest","hazards","decisions","cards","economy","resources","buildings","city","items","military","health","faith","justice","research","endeavours","dynasty","creatures","atelier"]);
+// A few archives are larger than one frame's markup task. They expose bounded
+// part builders; the existing staged hydrator generates and parses one part per
+// frame while the rest of the deck keeps its single-string renderer.
+const PANEL_PART_RENDERERS=new Map([
+ ["government",()=>governmentParts()],
+ ["population",()=>renderPopulationPanelParts(true)],
+ ["diplomacy",()=>diplomacyParts()],
+ ["worldmap",()=>renderWorldMapPanelParts()],
+ ["espionage",()=>espionageParts()],
+ ["forest",()=>renderForestAtlasPanelParts()],
+ ["resources",()=>resourcesParts()],
+ ["buildings",()=>buildingsParts()],
+ ["city",()=>renderCityPanelParts()],
+ ["explore",()=>renderExpeditionsPanelParts()],
+ ["biome",()=>renderBiomePanelParts()]
+]);
+// The Lexicon deliberately stays on the generic splitter. Its full markup is
+// stable and its groups already own skip-contained record boundaries; feeding
+// those same records through one part per group made Chromium repeat the whole
+// dialog layout at 4x CPU (176 ms) instead of one bounded 57 ms insertion.
+// A full renderer string can still be one long parse/layout task even when the
+// node hydrator itself is frame-budgeted. Split it on complete top-level
+// elements so each parse is bounded. Rejoining the parts is byte-identical.
+const VOID_MARKUP_TAGS=new Set(["area","base","br","col","embed","hr","img","input","link","meta","param","source","track","wbr"]);
+export function splitMarkupForStagedRender(html){
+ const text=String(html??"");
+ if(!text)return [];
+ const parts=[];
+ let start=0,depth=0,inTag=false,quote="",closing=false,tagName="";
+ for(let i=0;i<text.length;i++){
+  const ch=text[i];
+  if(!inTag){
+   if(ch!=="<")continue;
+   if(text.startsWith("<!--",i)){
+    const end=text.indexOf("-->",i+4);
+    if(end<0)break;
+    i=end+2;
+    if(depth===0){parts.push(text.slice(start,i+1));start=i+1;}
+    continue;
+   }
+   if(text.startsWith("<!",i)||text.startsWith("<?",i)){
+    const end=text.indexOf(">",i+2);
+    if(end<0)break;
+    i=end;
+    if(depth===0){parts.push(text.slice(start,i+1));start=i+1;}
+    continue;
+   }
+   inTag=true;
+   closing=text[i+1]==="/";
+   tagName="";
+   let cursor=i+(closing?2:1);
+   while(cursor<text.length&&/[A-Za-z0-9:-]/.test(text[cursor])){tagName+=text[cursor].toLowerCase();cursor++;}
+   continue;
+  }
+  if(quote){if(ch===quote)quote="";continue;}
+  if(ch==='"'||ch==="'"){quote=ch;continue;}
+  if(ch!==">")continue;
+  inTag=false;
+  let cursor=i-1;
+  while(cursor>=0&&/\s/.test(text[cursor]))cursor--;
+  const selfClosed=cursor>=0&&text[cursor]==="/";
+  if(closing)depth=Math.max(0,depth-1);
+  else if(!VOID_MARKUP_TAGS.has(tagName)&&!selfClosed)depth++;
+  if(depth===0){parts.push(text.slice(start,i+1));start=i+1;}
+ }
+ if(start<text.length)parts.push(text.slice(start));
+ return parts;
+}
+// One generated grid or register can still be a single oversized task even
+// after its section is separated. Keep the shell intact and hand its complete
+// child elements to the hydrator as bounded row chunks. The row target is the
+// shell's structural position, so no staged-only attribute is added to markup.
+const STAGED_SECTION_ROW_CHARS=2400;
+function createStagedSectionCollector(){
+ const splitShell=(section,selector)=>{
+  const openEnd=section.indexOf(">");
+  const tag=/^<([a-z][\w-]*)\b/i.exec(section)[1].toLowerCase();
+  const close="</"+tag+">";
+  const open=section.slice(0,openEnd+1);
+  const inner=section.slice(openEnd+1,section.length-close.length);
+  const chunks=[];
+  let chunk="";
+  for(const child of splitMarkupForStagedRender(inner)){
+   if(chunk&&chunk.length+child.length>STAGED_SECTION_ROW_CHARS){chunks.push(chunk);chunk="";}
+   chunk+=child;
+  }
+  if(chunk)chunks.push(chunk);
+  if(!chunks.length)return [()=>open+close];
+  const parts=[()=>open];
+  chunks.forEach((rows,index)=>parts.push({into:selector,html:()=>rows+(index===chunks.length-1?close:"")}));
+  return parts;
+ };
+ return {
+  collect(markup){
+   const parts=[];
+   for(const section of splitMarkupForStagedRender(markup)){
+    const tagMatch=/^<([a-z][\w-]*)\b/i.exec(section);
+    const tag=tagMatch?tagMatch[1].toLowerCase():"";
+    if(!tag||section.length<=STAGED_SECTION_ROW_CHARS||!section.toLowerCase().endsWith("</"+tag+">")){
+     parts.push(()=>section);
+     continue;
+    }
+    // The shell's own class is a stable target inside its detached template.
+    // It never appears on the child rows, so the hydrator cannot mistake a row
+    // for the shell when it resolves the `into` target.
+    const open=section.slice(0,section.indexOf(">")+1);
+    const classMatch=/\bclass=["']([^"']+)["']/i.exec(open);
+    const firstClass=classMatch?classMatch[1].trim().split(/\s+/)[0]:"";
+    if(!/^[A-Za-z_][\w-]*$/.test(firstClass)){
+     parts.push(()=>section);
+     continue;
+    }
+    parts.push(...splitShell(section,tag+"."+firstClass));
+   }
+   return parts;
+  }
+ };
+}
 let frameWorkQueue=[],frameWorkFrame=0;
 // At phone width the court and diplomacy selects contain the same long list of
 // named residents once per office/realm. Keep those option sets out of the
@@ -271,7 +392,7 @@ function trendChart(entries,key,label,color="#b99a59"){
 function treasuryCharts(history){
  return '<div class="command-chart-grid">'+trendChart(history,"gold","Treasury stock · gold","#b99a59")+trendChart(history,"netGold","Net treasury change · per settlement","#8eaa7a")+'</div>';
 }
-function resourceCard(key,history){
+function resourceCard(key,history,cycle=getEconomyCycleSnapshot()){
  const meta=RESOURCE_META[key],stock=Math.max(0,Number(state.resources?.[key])||0),flow=Number(state.incomeThisTick?.[key])||0;
  const previous=history.length>1?history[history.length-2]:null;
  const delta=previous?stock-(Number(previous[key])||0):null;
@@ -279,13 +400,43 @@ function resourceCard(key,history){
  for(const entity of state.entities){if(!entity.dead&&entity.isBuilding())counts.set(entity.type,(counts.get(entity.type)||0)+1);}
  const related=meta.buildings.map(type=>({name:CARD_DECK.find(card=>card.type===type)?.name||BUILDING_LABELS[type]||("Building "+type),count:counts.get(type)||0})).filter(item=>item.count>0);
  const ledger=state.economy?.lastLedger;
- const cycle=getEconomyCycleSnapshot();
  let ledgerNote;
  if(key==="gold"&&ledger)ledgerNote="Latest settlement: "+amount(ledger.taxesCollected)+" gold taxes · "+amount((Number(ledger.wagesPaid)||0)+(Number(ledger.upkeepPaid)||0)+(Number(ledger.furnitureUpkeepPaid)||0))+" gold in wages and upkeep · net "+(Number(ledger.netGold)>=0?"+":"")+amount(ledger.netGold)+" gold · debt "+amount(cycle.debt)+"G (interest "+amount(cycle.debtInterest)+"G).";
  else if(key==="food"&&ledger)ledgerNote="Latest settlement: "+amount(ledger.foodInflow)+" gross food inflow · "+amount(ledger.foodDemand)+" demanded · "+amount(ledger.foodConsumed)+" consumed · "+amount(ledger.foodSpoiled)+" spoiled · "+amount(ledger.foodShortage)+" shortage · storage "+amount(cycle.storageCapacity)+".";
  else ledgerNote="The 20-day financial ledger does not settle "+esc(meta.unit)+"; this chart records stock at each completed settlement.";
  return '<article class="resource-detail-card" data-resource="'+esc(key)+'"><header><svg class="resource-detail-art" viewBox="0 0 64 64" aria-hidden="true"><use href="'+meta.art+'"></use></svg><div><small>ROYAL STORE</small><h4>'+esc(meta.label)+'</h4></div><div class="resource-detail-stock"><strong>'+number(stock)+'</strong><span>IN STORE</span></div></header><div class="resource-detail-stats"><div><small>CURRENT TICK FLOW</small><strong class="'+(flow>0?'is-positive':flow<0?'is-negative':'')+'">'+(flow>0?'+':'')+amount(flow)+'</strong></div><div><small>SETTLEMENT CHANGE</small><strong class="'+(delta!==null&&delta>=0?'is-positive':delta!==null?'is-negative':'')+'">'+(delta===null?'AWAITING DATA':(delta>=0?'+':'')+amount(delta))+'</strong></div><div><small>RELATED STRUCTURES</small><strong>'+related.reduce((sum,item)=>sum+item.count,0)+'</strong></div></div>'+trendChart(history,key,meta.label+" stock at settlement")+'<p class="command-note">'+ledgerNote+'</p><div class="resource-related"><span>RECORDED BUILDINGS</span>'+(related.length?related.map(item=>'<b class="resource-building-chip">'+esc(item.name)+' ×'+item.count+'</b>').join(""):'<em>No related structure is recorded.</em>')+'</div><p class="command-note">'+esc(meta.note)+'</p></article>';
 }
+export function resourcesParts(){
+ if(!state.hasStarted)return [()=>intro("ROYAL STORES","Awaiting its founding","Resource detail becomes active when a new campaign begins.")+'<div class="command-note">No campaign is running yet. Found a realm to read its stocks, flows and bounded settlement history.</div>'];
+ const history=Array.isArray(state.economy?.history)?state.economy.history:[];
+ const ctx={};
+ const ensure=(key,build)=>{
+  if(!Object.prototype.hasOwnProperty.call(ctx,key)){
+   try{ctx[key]=build();}catch{ctx[key]=null;}
+  }
+  return ctx[key];
+ };
+ const acquire=(key,build)=>()=>{ensure(key,build);return "";};
+ const cycle=()=>ensure("cycle",getEconomyCycleSnapshot);
+ return [
+  acquire("cycle",getEconomyCycleSnapshot),
+  () => intro("THE ROYAL STORES","Resource detail","Inspect every store together with its current-tick flow, the latest completed settlement and a real, bounded stock history. Charts use stored settlement points only.")+
+   '<div class="command-summary"><div><small>WOOD</small><strong>'+number(state.resources.wood)+'</strong></div><div><small>STONE</small><strong>'+number(state.resources.stone)+'</strong></div><div><small>GOLD</small><strong>'+number(state.resources.gold)+'</strong></div><div><small>FOOD</small><strong>'+number(state.resources.food)+'</strong></div></div>'+
+   '<div class="command-summary"><div><small>FOOD BALANCE / LEDGER</small><strong>'+(cycle().balance>=0?'+':'')+amount(cycle().balance)+'</strong></div><div><small>STORAGE CAP</small><strong>'+number(cycle().storageCapacity)+'</strong></div><div><small>DEBT</small><strong>'+amount(cycle().debt)+'G</strong></div><div><small>CRISIS</small><strong>'+Math.round(cycle().crisis.severity*100)+'%</strong></div></div>'+
+   '<div class="resource-detail-grid">',
+  ...RESOURCE_ORDER.map(key=>({into:".resource-detail-grid",html:()=>resourceCard(key,history,cycle())})),
+  () => '</div>',
+  () => '<p class="command-note">Stock history contains up to 24 completed 20-day settlements. The chart is intentionally blank until two settlements exist; no interpolated or invented points are drawn.</p>',
+  acquire("goodsStock",getPhysicalStockMap),
+  acquire("goodsAudit",getGoodsAudit),
+  ()=>({html:"",more:goodsOverviewParts(cycle(),ensure("goodsStock",getPhysicalStockMap),ensure("goodsAudit",getGoodsAudit))}),
+  ...productionChainParts(),
+  ...warehouseProfileParts(),
+  acquire("timber",timberMarketSummary),
+  ()=>timberMarketMarkup(ensure("timber",timberMarketSummary))
+ ];
+}
+
 export function resources(){
  if(!state.hasStarted)return intro("ROYAL STORES","Awaiting its founding","Resource detail becomes active when a new campaign begins.")+'<div class="command-note">No campaign is running yet. Found a realm to read its stocks, flows and bounded settlement history.</div>';
  const history=Array.isArray(state.economy?.history)?state.economy.history:[];
@@ -306,9 +457,7 @@ export function resources(){
 // physical-stock and audit models the logistics system already maintains, so a
 // player can see what is actually in the realm before ordering another haul.
 // It is presentation-only: no state field, movement or tick work is added.
-function goodsOverviewPanel(cycle){
- let stock,audit;
- try{stock=getPhysicalStockMap();audit=getGoodsAudit();}catch{return "";}
+function goodsOverviewModel(cycle,stock,audit){
  const rows=audit.rows.map(row=>{
   const good=String(row.good||"");
   return {
@@ -332,64 +481,151 @@ function goodsOverviewPanel(cycle){
  const needMarkup=needs.length
   ?needs.map(item=>'<div class="goods-shortage-row" data-good-need="'+esc(item.good)+'"><strong>'+esc(item.label)+'</strong><span>'+esc(item.detail)+'</span></div>').join("")
   :'<div class="goods-shortage-row is-clear"><strong>NOTHING URGENT</strong><span>No audited store is empty while consumption is recorded.</span></div>';
- const goodsMarkup=rows.map(row=>'<article class="goods-detail-card" data-good="'+esc(row.good)+'"><header><strong>'+esc(row.label)+'</strong><span>'+esc(row.scope)+'</span></header><div><small>IN REALM</small><b>'+number(row.physical)+'</b></div><div><small>PRODUCED</small><b>'+number(row.produced)+'</b></div><div><small>CONSUMED</small><b>'+number(row.consumed)+'</b></div><footer>'+(row.balanced?'<span class="is-balanced">BALANCED</span>':'<span class="is-unbalanced">AUDIT DIFFERENCE</span>')+'</footer></article>').join("");
  const auditNote=audit.balanced
   ?"The goods audit reconciles opening stock plus production minus consumption with the physical stock in warehouses, building inventories and carrier loads."
   :"Some rows do not reconcile with opening stock plus production minus consumption; the Buildings register opens the full movement and delivery archive.";
- return '<div class="command-section-title">PHYSICAL GOODS · '+number(rows.length)+' LEDGER LINES · '+number(GOOD_KEYS.length)+' NAMED GOODS</div>'+
-  '<div class="goods-shortage-board"><span>NEEDS ATTENTION</span>'+needMarkup+'</div>'+
-  '<div class="goods-detail-grid">'+goodsMarkup+'</div>'+
-  '<p class="command-note">'+esc(auditNote)+' Stock and audit totals are read from live state; this board never moves goods or changes a price.</p>';
+ return {rows,needMarkup,auditNote};
+}
+function goodsOverviewHead(model){
+ return '<div class="command-section-title">PHYSICAL GOODS · '+number(model.rows.length)+' LEDGER LINES · '+number(GOOD_KEYS.length)+' NAMED GOODS</div>'+
+  '<div class="goods-shortage-board"><span>NEEDS ATTENTION</span>'+model.needMarkup+'</div>'+
+  '<div class="goods-detail-grid">';
+}
+function goodsOverviewCard(row){
+ return '<article class="goods-detail-card" data-good="'+esc(row.good)+'"><header><strong>'+esc(row.label)+'</strong><span>'+esc(row.scope)+'</span></header><div><small>IN REALM</small><b>'+number(row.physical)+'</b></div><div><small>PRODUCED</small><b>'+number(row.produced)+'</b></div><div><small>CONSUMED</small><b>'+number(row.consumed)+'</b></div><footer>'+(row.balanced?'<span class="is-balanced">BALANCED</span>':'<span class="is-unbalanced">AUDIT DIFFERENCE</span>')+'</footer></article>';
+}
+function goodsOverviewTail(model){
+ return '</div><p class="command-note">'+esc(model.auditNote)+' Stock and audit totals are read from live state; this board never moves goods or changes a price.</p>';
+}
+function goodsOverviewMarkup(cycle,stock,audit){
+ const model=goodsOverviewModel(cycle,stock,audit);
+ return goodsOverviewHead(model)+model.rows.map(goodsOverviewCard).join("")+goodsOverviewTail(model);
+}
+function goodsOverviewPanel(cycle){
+ let stock,audit;
+ try{stock=getPhysicalStockMap();audit=getGoodsAudit();}catch{return "";}
+ return goodsOverviewMarkup(cycle,stock,audit);
+}
+function goodsOverviewParts(cycle,stock,audit){
+ if(stock===null||audit===null)return [];
+ const cache={};
+ const model=()=>{
+  if(!Object.prototype.hasOwnProperty.call(cache,"value"))cache.value=goodsOverviewModel(cycle,stock,audit);
+  return cache.value;
+ };
+ const rows=()=>model().rows.length
+  ?model().rows.map(row=>({into:".goods-detail-grid",html:()=>goodsOverviewCard(row)}))
+  :[];
+ return [
+  ()=>{
+   const value=model();
+   return {html:goodsOverviewHead(value),more:rows()};
+  },
+  ()=>goodsOverviewTail(model())
+ ];
 }
 
 // Regional timber is physical warehouse stock, so its market lives beside the
 // royal stores rather than in a separate trade screen. Each row shows the real
 // unit quote and lets the crown sell a bounded lot from the timber yards.
-function timberMarketPanel(){
- let market;
- try{market=timberMarketSummary();}catch{return "";}
+function timberMarketMarkup(market){
  if(!market?.rows?.length)return "";
  const rows=market.rows.map(row=>'<div class="timber-market__row" data-timber-good="'+esc(row.id)+'"><div class="timber-market__name"><strong>'+esc(row.label)+'</strong><small>'+esc(row.speciesLabel)+' · '+row.planks+' planks per 2 · '+row.stock+' in store</small></div><span class="timber-market__price">'+amount(row.price)+'G</span><button type="button" class="command-choice timber-market__sell" data-command="timber-sell" data-value="'+esc(row.id)+'"'+(row.stock>0?'':' disabled')+'>SELL '+TIMBER_SALE_LOT+'</button></div>').join("");
  return '<div class="command-section-title">REGIONAL TIMBER MARKET · '+number(market.kinds)+' / '+number(market.totalKinds)+' KINDS IN STORE · '+amount(market.value)+'G VALUE</div>'+
   '<div class="timber-market">'+rows+'</div>'+
   '<p class="command-note">A sawmill turns two units of a named timber into its own plank and firewood batch. Timbers reach the yard from a delivered forester haul or from a lumber camp working a regional stand. Selling removes real warehouse stock at the current seasonal quote.</p>';
 }
+function timberMarketPanel(){
+ let market;
+ try{market=timberMarketSummary();}catch{return "";}
+ return timberMarketMarkup(market);
+}
 
 // The chain register is a read model, not a second economy. It shows the real
 // structures, their declared recipe, physical stock and the same ready carrier
 // orders the Buildings register offers. Chains are collapsed so the Stores tab
 // stays within the low-end panel budget until a player opens one.
-function productionChainPanel(){
- let snapshot;
- try{snapshot=getProductionChainSnapshot();}catch{return "";}
+function productionChainSnapshot(){
+ try{return getProductionChainSnapshot();}catch{return null;}
+}
+function productionChainShell(snapshot){
  const chains=snapshot?.chains||[];
- const chainRows=chains.map(chain=>{
-  const stages=chain.stages.map(stage=>{
-   const orders=(stage.orders||[]).slice(0,4).map(order=>'<button type="button" class="command-choice chain-order" data-command="manual-order" data-manual-order="'+esc(order.kind)+'" data-value="'+esc(order.buildingId)+'" data-good="'+esc(order.good)+'" data-quantity="'+number(order.quantity)+'">'+esc((order.kind==="supply"?"SUPPLY ":"HAUL ")+order.quantity+" "+order.label).toUpperCase()+'</button>').join("");
-   const focus=stage.focusBuildingId!==null?'<button type="button" class="command-choice chain-focus" data-chain-focus="'+esc(stage.focusBuildingId)+'">SHOW BUILDING</button>':"";
-   return '<div class="chain-stage" data-chain-stage="'+esc(stage.id)+'" data-chain-status="'+esc(stage.status)+'"><span class="chain-stage-head"><strong>'+esc(stage.label)+'</strong><b>'+esc(stage.status)+'</b></span><small>'+number(stage.count)+' structures · '+number(stage.ready)+' ready · '+number(stage.sites)+' sites · '+number(stage.stock)+' goods in realm</small><small>'+esc(stage.recipe)+' · '+esc(stage.goods.join(", "))+'</small>'+orders+focus+'</div>';
-  }).join("");
-  const active=chain.stages.filter(stage=>stage.ready>0).length;
-  return '<details class="chain-record" data-chain-id="'+esc(chain.id)+'"><summary><span><strong>'+esc(chain.label)+'</strong><small>'+number(active)+' / '+number(chain.stages.length)+' stages have a ready structure</small></span><b>'+number(active)+' ACTIVE</b></summary><div class="chain-detail"><p class="command-note">'+esc(chain.note)+'</p><div class="chain-stage-grid">'+stages+'</div></div></details>';
- }).join("");
  const stageTotal=chains.reduce((sum,chain)=>sum+(chain.stages?.length||0),0);
  return '<div class="command-section-title">PRODUCTION CHAINS · '+number(chains.length)+' ROUTES · '+number(stageTotal)+' STAGES</div>'+
-  '<div class="chain-register">'+(chainRows||'<p class="command-note">No chain is declared yet.</p>')+'</div>'+
-  '<p class="command-note">Every row reads live structures, recipes and physical stock. READY counts structures with no current supply block; it is not a forecast. A carrier button or SHOW BUILDING uses the same verified path as the Buildings register.</p>';
+  '<div class="chain-register">';
+}
+function chainRecordMarkup(chain){
+ const stages=chain.stages.map(stage=>{
+  const orders=(stage.orders||[]).slice(0,4).map(order=>'<button type="button" class="command-choice chain-order" data-command="manual-order" data-manual-order="'+esc(order.kind)+'" data-value="'+esc(order.buildingId)+'" data-good="'+esc(order.good)+'" data-quantity="'+number(order.quantity)+'">'+esc((order.kind==="supply"?"SUPPLY ":"HAUL ")+order.quantity+" "+order.label).toUpperCase()+'</button>').join("");
+  const focus=stage.focusBuildingId!==null?'<button type="button" class="command-choice chain-focus" data-chain-focus="'+esc(stage.focusBuildingId)+'">SHOW BUILDING</button>':"";
+  return '<div class="chain-stage" data-chain-stage="'+esc(stage.id)+'" data-chain-status="'+esc(stage.status)+'"><span class="chain-stage-head"><strong>'+esc(stage.label)+'</strong><b>'+esc(stage.status)+'</b></span><small>'+number(stage.count)+' structures · '+number(stage.ready)+' ready · '+number(stage.sites)+' sites · '+number(stage.stock)+' goods in realm</small><small>'+esc(stage.recipe)+' · '+esc(stage.goods.join(", "))+'</small>'+orders+focus+'</div>';
+ }).join("");
+ const active=chain.stages.filter(stage=>stage.ready>0).length;
+ return '<details class="chain-record" data-chain-id="'+esc(chain.id)+'"><summary><span><strong>'+esc(chain.label)+'</strong><small>'+number(active)+' / '+number(chain.stages.length)+' stages have a ready structure</small></span><b>'+number(active)+' ACTIVE</b></summary><div class="chain-detail"><p class="command-note">'+esc(chain.note)+'</p><div class="chain-stage-grid">'+stages+'</div></div></details>';
+}
+function productionChainTail(){
+ return '</div><p class="command-note">Every row reads live structures, recipes and physical stock. READY counts structures with no current supply block; it is not a forecast. A carrier button or SHOW BUILDING uses the same verified path as the Buildings register.</p>';
+}
+function productionChainPanel(){
+ const snapshot=productionChainSnapshot();
+ if(!snapshot)return "";
+ const chains=snapshot.chains||[];
+ return productionChainShell(snapshot)+(chains.map(chainRecordMarkup).join("")||'<p class="command-note">No chain is declared yet.</p>')+productionChainTail();
+}
+export function productionChainParts(){
+ const builder=createProductionChainSnapshotBuilder();
+ const step=()=>builder.advance()?"":{html:"",more:[step]};
+ const snapshot=()=>builder.failed?null:builder.snapshot();
+ const rows=()=>{
+  const chains=snapshot()?.chains||[];
+  return chains.length?chains.map(chain=>({into:".chain-register",html:()=>chainRecordMarkup(chain)}))
+   :[()=>'<p class="command-note">No chain is declared yet.</p>'];
+ };
+ return [
+  ()=>{builder.prepare();return builder.failed?"":{html:"",more:[step]};},
+  ()=>{const value=snapshot();return value?{html:productionChainShell(value),more:rows()}:"";},
+  ()=>snapshot()?productionChainTail():""
+ ];
 }
 
 // Warehouse profiles are a filter and capacity setting on an existing store.
 // This board explains the settings and names any good that currently has stock
 // but no accepting free space; it never changes a profile by itself.
-function warehouseProfilePanel(){
- let snapshot;
- try{snapshot=getWarehouseProfileSnapshot();}catch{return "";}
- const rows=(snapshot?.profiles||[]).map(profile=>'<div class="warehouse-profile-card" data-profile-id="'+esc(profile.id)+'"><strong>'+esc(profile.label)+'</strong><small>'+esc(profile.description)+'</small><small>'+number(profile.stores)+' stores · '+number(profile.used)+' used · '+number(profile.free)+' free · '+number(profile.heldGoodKinds)+' matching realm kinds · '+number(profile.accepts)+' accepted goods</small></div>').join("");
- const stranded=(snapshot?.stranded||[]).map(item=>'<span class="warehouse-stranded" data-stranded-good="'+esc(item.good)+'">'+esc(item.label)+' · '+number(item.stored)+' held, no accepting space</span>').join("");
+function warehouseProfileSnapshot(){
+ try{return getWarehouseProfileSnapshot();}catch{return null;}
+}
+function warehouseProfileShell(snapshot){
  return '<div class="command-section-title">WAREHOUSE PROFILES · '+number(snapshot?.stores||0)+' STORES · '+number(snapshot?.free||0)+' / '+number(snapshot?.capacity||0)+' SPACE FREE</div>'+
-  '<div class="warehouse-profile-grid">'+(rows||'<p class="command-note">No profile is declared yet.</p>')+'</div>'+
-  (stranded?'<div class="warehouse-stranded-board"><span>NO ACCEPTING STORE</span>'+stranded+'</div>':'')+
+  '<div class="warehouse-profile-grid">';
+}
+function warehouseProfileRow(profile){
+ return '<div class="warehouse-profile-card" data-profile-id="'+esc(profile.id)+'"><strong>'+esc(profile.label)+'</strong><small>'+esc(profile.description)+'</small><small>'+number(profile.stores)+' stores · '+number(profile.used)+' used · '+number(profile.free)+' free · '+number(profile.heldGoodKinds)+' matching realm kinds · '+number(profile.accepts)+' accepted goods</small></div>';
+}
+function warehouseProfileTail(snapshot){
+ const stranded=(snapshot?.stranded||[]).map(item=>'<span class="warehouse-stranded" data-stranded-good="'+esc(item.good)+'">'+esc(item.label)+' · '+number(item.stored)+' held, no accepting space</span>').join("");
+ return '</div>'+(stranded?'<div class="warehouse-stranded-board"><span>NO ACCEPTING STORE</span>'+stranded+'</div>':'')+
   '<p class="command-note">A profile narrows which goods a store accepts and how much it holds. Granary, timber yard, stone depot and cistern only accept their named goods; the royal keep stays a general store. Change a profile on an individual store in the Buildings register.</p>';
+}
+function warehouseProfilePanel(){
+ const snapshot=warehouseProfileSnapshot();
+ if(!snapshot)return "";
+ const rows=(snapshot.profiles||[]).map(warehouseProfileRow).join("");
+ return warehouseProfileShell(snapshot)+(rows||'<p class="command-note">No profile is declared yet.</p>')+warehouseProfileTail(snapshot);
+}
+export function warehouseProfileParts(){
+ const builder=createWarehouseProfileSnapshotBuilder();
+ const step=()=>builder.advance()?"":{html:"",more:[step]};
+ const snapshot=()=>builder.failed?null:builder.snapshot();
+ const rows=()=>{
+  const profiles=snapshot()?.profiles||[];
+  return profiles.length?profiles.map(profile=>({into:".warehouse-profile-grid",html:()=>warehouseProfileRow(profile)}))
+   :[()=>'<p class="command-note">No profile is declared yet.</p>'];
+ };
+ return [
+  ()=>{builder.prepare();return builder.failed?"":{html:"",more:[step]};},
+  ()=>{const value=snapshot();return value?{html:warehouseProfileShell(value),more:rows()}:"";},
+  ()=>{const value=snapshot();return value?warehouseProfileTail(value):"";}
+ ];
 }
 function realmCycleStatus(){
  const c=getRealmCycleSnapshot();
@@ -432,8 +668,8 @@ function kingdom(){
  '<div class="command-section-title">RECENT CHRONICLE</div><div class="command-history-list">'+(recent||'<p class="command-note">No recent realm records are available.</p>')+'</div>'+
  '<p class="command-note">The seat network above is read from the settlement registry; no separate capital field is recorded.</p>';
 }
-function advisorSection(){
- const a=getAdvisorSnapshot(),gold=Number(state.resources?.gold)||0;
+function advisorSection(a=getAdvisorSnapshot()){
+ const gold=Number(state.resources?.gold)||0;
  const costText=cost=>Object.entries(cost||{}).map(([key,value])=>value+" "+key).join(" + ")||"no treasury cost";
  const evidence=advice=>(advice?.evidence||[]).map(item=>'<span>'+esc(item.label)+'<b>'+esc(item.value)+'</b></span>').join("");
  const memory=(a.memory||[]).slice(0,4).map(item=>'<div><span>'+esc(String(item.kind).toUpperCase())+' · YEAR '+item.year+'</span><p>'+esc(item.text)+'</p></div>').join("");
@@ -446,8 +682,8 @@ function advisorSection(){
  const candidates=(a.candidates||[]).filter(candidate=>candidate.personId!==a.advisor.personId).map(candidate=>'<option value="'+esc(candidate.personId)+'">'+esc(candidate.name)+' · '+esc(candidate.faction)+' · fit '+candidate.fit+'</option>').join("");
  return '<div class="command-section-title">ROYAL ADVISOR</div><article class="advisor-card" data-advisor="'+esc(a.advisor.personId)+'"><div class="advisor-card__head"><div><span class="advisor-kicker">'+esc(a.advisor.factionLabel.toUpperCase())+' ALIGNMENT · APPOINTED YEAR '+a.advisor.appointedYear+'</span><h4>'+esc(a.advisor.name)+'</h4><p>'+esc(a.advisor.biasReason)+'</p></div><span class="advisor-card__badge">ADVISOR</span></div><div class="advisor-stats"><span>COMPETENCE<b>'+Math.round(a.advisor.competence)+'</b></span><span>LOYALTY<b>'+Math.round(a.advisor.loyalty)+'</b></span><span>RELATIONSHIP<b>'+Math.round(a.advisor.relationship)+'</b></span><span>AMBITION<b>'+Math.round(a.advisor.ambition)+'</b></span></div>'+adviceCard+'<div class="advisor-replace"><select id="advisor-select" aria-label="Replace the royal advisor"><option value="">Choose a replacement…</option>'+candidates+'</select><button data-command="advisor-appoint"'+((gold<a.appointmentCost||!candidates)?" disabled":"")+'>REPLACE · '+a.appointmentCost+'G</button></div></article><div class="command-section-title">ADVISOR MEMORY · '+(a.memory||[]).length+' SIGNALS</div>'+(memory?'<div class="court-history">'+memory+'</div>':'<p class="command-note">No counsel has been recorded yet.</p>');
 }
-function courtSection(){
- const c=getCourtSnapshot(),gold=Number(state.resources?.gold)||0;
+function courtHeader(c){
+ const gold=Number(state.resources?.gold)||0;
  const courtLazy=narrowViewport();
  const courtCollapsed=courtLazy&&!courtShowAll;
  const visibleOffices=courtCollapsed?c.offices.slice(0,1):c.offices;
@@ -463,16 +699,39 @@ function courtSection(){
   const selectLazy=courtLazy?' data-lazy-options="'+esc(optionKey)+'"':'';
   return '<article class="court-office court-office--vacant" data-court-office="'+esc(office.id)+'"><div class="court-office__head"><div><span class="court-office__role">'+esc(office.label)+'</span><h4>Office vacant</h4><p>'+esc(office.description)+'</p></div><span class="court-office__badge">VACANT</span></div><div class="command-inline"><select id="court-office-'+esc(office.id)+'" aria-label="Choose '+esc(office.label)+'"'+selectLazy+'><option value="">Choose a resident…</option>'+selectOptions+'</select><button data-command="court-appoint" data-value="'+esc(office.id)+'"'+((gold<c.appointmentCost||!c.candidates.length)?" disabled":"")+'>APPOINT · '+c.appointmentCost+'G</button></div><p class="court-office__effect">'+esc(office.effect)+'</p></article>';
  }).join("");
+ return '<div class="command-section-title">ROYAL COURT · '+c.modifiers.officesFilled+' OF '+c.offices.length+' OFFICES FILLED</div><p class="command-note">Appoint named residents to six offices. Competence, loyalty and integrity come from their real traits, needs and relationship with the crown. Salaries and corruption settle once per year; every office changes a live system, not only a label.</p><div class="court-office-grid">'+offices+'</div>'+(courtCollapsed&&c.offices.length>visibleOffices.length?'<p class="command-note">Showing the first '+visibleOffices.length+' of '+c.offices.length+' crown offices on this screen. Salaries, vacancies and court effects still count every office.</p><button type="button" class="command-choice" data-court-show-all>SHOW ALL '+c.offices.length+' CROWN OFFICES</button>':'');
+}
+function courtPetition(c){
  const affordable=c.demand&&Object.entries(c.demand.cost).every(([key,value])=>(Number(state.resources?.[key])||0)>=value);
  const demand=c.demand?'<article class="court-demand"><div><span class="command-ribbon">'+esc(c.demand.factionLabel.toUpperCase())+' PETITION · EXPIRES YEAR '+c.demand.expiresYear+'</span><h4>'+esc(c.demand.title)+'</h4><p>'+esc(c.demand.description)+'</p><small>'+esc(costLabel(c.demand.cost))+'</small></div><button data-command="court-demand" data-value="'+esc(c.demand.faction)+'"'+(affordable?"":" disabled")+'>GRANT PETITION</button></article>':'<p class="command-note">No petition is waiting. The next annual court session will raise one.</p>';
+ return '<div class="command-section-title">THE ANNUAL PETITION</div>'+demand;
+}
+function courtEffects(c){
  const m=c.modifiers;
  const effects='<div class="court-effect-grid"><span>TAX EFFICIENCY<b>+'+Math.round((m.taxEfficiency-1)*100)+'%</b></span><span>DIPLOMATIC GAIN<b>+'+Math.round((m.diplomacyGain-1)*100)+'%</b></span><span>TRADE TERMS<b>+'+(m.tradeBonus*100).toFixed(1)+'%</b></span><span>INCIDENT REDUCTION<b>'+Math.round(m.incidentReduction*100)+'%</b></span><span>MILITARY READINESS<b>+'+Math.round((m.militaryReadiness-1)*100)+'%</b></span><span>DISEASE CONTAINMENT<b>-'+Math.round(m.healthContainment*100)+'%</b></span><span>ANNUAL LEGITIMACY<b>+'+m.legitimacyGain.toFixed(2)+'</b></span><span>CORRUPTION RESISTANCE<b>'+Math.round(m.corruptionResistance*100)+'%</b></span></div>';
- const audit=c.lastAudit?'<p class="command-note">Last audit · year '+c.lastAudit.year+' · '+c.lastAudit.paid+'/'+c.lastAudit.salaries+' gold salaries · '+c.lastAudit.corruption+' gold lost to corruption · '+c.lastAudit.vacancies+' vacancies · '+c.lastAudit.estateSavings+' gold estate savings.</p>':'<p class="command-note">No annual court audit has been completed yet.</p>';
- const history=c.history.length?'<div class="court-history">'+c.history.map(entry=>'<div><span>'+esc(String(entry.kind).toUpperCase())+' · YEAR '+entry.year+'</span><p>'+esc(entry.summary)+'</p></div>').join("")+'</div>':'<p class="command-note">No court record has been written yet.</p>';
- return '<div class="command-section-title">ROYAL COURT · '+m.officesFilled+' OF '+c.offices.length+' OFFICES FILLED</div><p class="command-note">Appoint named residents to six offices. Competence, loyalty and integrity come from their real traits, needs and relationship with the crown. Salaries and corruption settle once per year; every office changes a live system, not only a label.</p><div class="court-office-grid">'+offices+'</div>'+(courtCollapsed&&c.offices.length>visibleOffices.length?'<p class="command-note">Showing the first '+visibleOffices.length+' of '+c.offices.length+' crown offices on this screen. Salaries, vacancies and court effects still count every office.</p><button type="button" class="command-choice" data-court-show-all>SHOW ALL '+c.offices.length+' CROWN OFFICES</button>':'')+'<div class="command-section-title">THE ANNUAL PETITION</div>'+demand+advisorSection()+'<div class="command-section-title">COURT EFFECTS</div>'+effects+'<div class="command-section-title">LAST AUDIT</div>'+audit+'<div class="command-section-title">COURT RECORD</div>'+history;
+ return '<div class="command-section-title">COURT EFFECTS</div>'+effects;
 }
-function councilSection(){
- const c=getCouncilSnapshot();
+function courtAudit(c){
+ const audit=c.lastAudit?'<p class="command-note">Last audit · year '+c.lastAudit.year+' · '+c.lastAudit.paid+'/'+c.lastAudit.salaries+' gold salaries · '+c.lastAudit.corruption+' gold lost to corruption · '+c.lastAudit.vacancies+' vacancies · '+c.lastAudit.estateSavings+' gold estate savings.</p>':'<p class="command-note">No annual court audit has been completed yet.</p>';
+ return '<div class="command-section-title">LAST AUDIT</div>'+audit;
+}
+function courtHistory(c){
+ const history=c.history.length?'<div class="court-history">'+c.history.map(entry=>'<div><span>'+esc(String(entry.kind).toUpperCase())+' · YEAR '+entry.year+'</span><p>'+esc(entry.summary)+'</p></div>').join("")+'</div>':'<p class="command-note">No court record has been written yet.</p>';
+ return '<div class="command-section-title">COURT RECORD</div>'+history;
+}
+function courtSection(c=getCourtSnapshot()){
+ return courtHeader(c)+courtPetition(c)+advisorSection()+courtEffects(c)+courtAudit(c)+courtHistory(c);
+}
+function councilHeader(c){
+ return '<div class="command-section-title">COUNCIL DOCKET · '+c.docket.length+' / '+c.limits.docket+' BILLS · '+c.seats+' SEATS</div>'+
+  '<p class="command-note">A bill is proposed once a year. Its supporters and opponents come from the four political factions; paying the lobby raises support, and the next council session votes with a small deterministic swing. Enactment changes real legitimacy, faction standing, morale and the government record. '+number(c.totals.votes)+' vote(s) recorded.</p>'+
+  '<div class="command-summary"><div><small>DOCKET</small><strong>'+c.docket.length+' / '+c.limits.docket+'</strong></div><div><small>ENACTED</small><strong>'+c.totals.enacted+'</strong></div><div><small>REJECTED</small><strong>'+c.totals.rejected+'</strong></div><div><small>LAST SESSION</small><strong>'+(c.lastVoteYear||"—")+'</strong></div></div>';
+}
+function councilBills(c){
+ const bills=c.bills.filter(bill=>!bill.onDocket).map(bill=>'<button class="command-choice" data-command="council-propose" data-value="'+esc(bill.id)+'"'+(bill.proposable?'':' disabled')+'><strong>'+esc(bill.label)+'</strong><small>'+esc(bill.description)+' · '+esc(costLabel(bill.cost))+' · LOBBY COST · FOR '+bill.supporters.map(name=>esc(String(name).toUpperCase())).join(" · ")+' / AGAINST '+bill.opponents.map(name=>esc(String(name).toUpperCase())).join(" · ")+'</small></button>').join("");
+ return '<div class="command-section-title">PROPOSE A BILL</div><div class="command-choice-grid">'+bills+'</div>';
+}
+function councilDocket(c){
  const docket=c.docket.map(entry=>{
   const supporters=entry.supporters.map(name=>esc(String(name).toUpperCase())).join(" · ");
   const opponents=entry.opponents.map(name=>esc(String(name).toUpperCase())).join(" · ");
@@ -481,22 +740,85 @@ function councilSection(){
    :'<button type="button" data-command="council-vote" data-value="'+esc(entry.id)+'"'+(entry.canVote?'':' disabled')+'>CALL VOTE</button>';
   return '<article class="command-policy" data-council-bill="'+esc(entry.id)+'"><div><span class="command-ribbon">'+esc(String(entry.stage).toUpperCase())+' · PROPOSED YEAR '+entry.proposedYear+'</span><strong>'+esc(entry.title)+'</strong><p>'+esc(entry.description)+'</p><small>SUPPORT '+entry.support+' / '+entry.threshold+' · AGAINST '+entry.opposition+' · FOR '+supporters+' / AGAINST '+opponents+'</small><p class="command-note">'+esc(entry.voteNote)+'</p></div><div class="noble-house__actions">'+action+'</div></article>';
  }).join("")||'<p class="command-note">No bill is on the docket. Propose one from the standing bills below; a realm may carry at most '+c.limits.docket+'.</p>';
- const bills=c.bills.filter(bill=>!bill.onDocket).map(bill=>'<button class="command-choice" data-command="council-propose" data-value="'+esc(bill.id)+'"'+(bill.proposable?'':' disabled')+'><strong>'+esc(bill.label)+'</strong><small>'+esc(bill.description)+' · '+esc(costLabel(bill.cost))+' · LOBBY COST · FOR '+bill.supporters.map(name=>esc(String(name).toUpperCase())).join(" · ")+' / AGAINST '+bill.opponents.map(name=>esc(String(name).toUpperCase())).join(" · ")+'</small></button>').join("");
- const history=c.history.slice(0,4).map(row=>'<div class="command-history"><strong>'+esc(String(row.stage).toUpperCase())+' · '+esc(row.title)+' · YEAR '+row.settledYear+'</strong><p>'+esc(row.summary)+'</p><small>SUPPORT '+row.support+' / '+row.threshold+' · MARGIN '+(row.margin>=0?'+':'')+row.margin+' · ROLL '+row.roll.toFixed(3)+'</small></div>').join("")||'<p class="command-note">No council session has settled a bill yet. A lobbied bill is voted in the next annual session.</p>';
- return '<div class="command-section-title">COUNCIL DOCKET · '+c.docket.length+' / '+c.limits.docket+' BILLS · '+c.seats+' SEATS</div>'+
-  '<p class="command-note">A bill is proposed once a year. Its supporters and opponents come from the four political factions; paying the lobby raises support, and the next council session votes with a small deterministic swing. Enactment changes real legitimacy, faction standing, morale and the government record. '+number(c.totals.votes)+' vote(s) recorded.</p>'+
-  '<div class="command-summary"><div><small>DOCKET</small><strong>'+c.docket.length+' / '+c.limits.docket+'</strong></div><div><small>ENACTED</small><strong>'+c.totals.enacted+'</strong></div><div><small>REJECTED</small><strong>'+c.totals.rejected+'</strong></div><div><small>LAST SESSION</small><strong>'+(c.lastVoteYear||"—")+'</strong></div></div>'+
-  '<div class="command-section-title">PROPOSE A BILL</div><div class="command-choice-grid">'+bills+'</div>'+
-  '<div class="command-section-title">ON THE DOCKET</div><div class="command-policy-list">'+docket+'</div>'+
-  '<div class="command-section-title">COUNCIL RECORD · LAST '+Math.min(4,c.history.length)+'</div><div class="command-history-list">'+history+'</div>';
+ return '<div class="command-section-title">ON THE DOCKET</div><div class="command-policy-list">'+docket+'</div>';
 }
-function government(){
- const g=getGovernmentSnapshot(),f=GOVERNMENT_FORMS[g.form],identity=getIdentitySnapshot(),forms=Object.entries(GOVERNMENT_FORMS).map(([id,x])=>'<button class="command-choice'+(id===g.form?' is-current':'')+'" data-command="government-form" data-value="'+id+'"><strong>'+esc(x.label)+'</strong><small>Tax baseline '+x.tax+'% · Research ×'+((1+Number(x.research||0)).toFixed(2))+' · Trade ×'+((1+Number(x.trade||0)).toFixed(2))+' · Cost 20 gold</small></button>').join("");
- const successionCards=Object.entries(SUCCESSION_LAWS).map(([id,law])=>'<button class="command-choice'+(id===g.succession?' is-current':'')+'" data-command="government-succession" data-value="'+id+'"'+(id===g.succession?' disabled':'')+'><strong>'+esc(law.label)+'</strong><small>'+esc(law.description)+' · cost 15 gold · one change per year</small></button>').join("");
+function councilHistory(c){
+ const history=c.history.slice(0,4).map(row=>'<div class="command-history"><strong>'+esc(String(row.stage).toUpperCase())+' · '+esc(row.title)+' · YEAR '+row.settledYear+'</strong><p>'+esc(row.summary)+'</p><small>SUPPORT '+row.support+' / '+row.threshold+' · MARGIN '+(row.margin>=0?'+':'')+row.margin+' · ROLL '+row.roll.toFixed(3)+'</small></div>').join("")||'<p class="command-note">No council session has settled a bill yet. A lobbied bill is voted in the next annual session.</p>';
+ return '<div class="command-section-title">COUNCIL RECORD · LAST '+Math.min(4,c.history.length)+'</div><div class="command-history-list">'+history+'</div>';
+}
+function councilSection(c=getCouncilSnapshot()){
+ return councilHeader(c)+councilBills(c)+councilDocket(c)+councilHistory(c);
+}
+function governmentIntro(){
+ return intro("THE CROWN & ITS INSTITUTIONS","Government","Choose how authority is organized. Changing the constitution costs 20 gold and shifts faction support. The royal court below turns those factions into named offices and annual petitions.");
+}
+function governmentIdentitySection(identity){
+ return '<div class="command-section-title">REALM IDENTITY</div><div class="command-summary"><div><small>REALM</small><strong>'+esc(identity.kingdomName)+'</strong></div><div><small>ROYAL HOUSE</small><strong>'+esc(identity.dynastyName)+'</strong></div><div><small>RULER TITLE</small><strong>'+esc(identity.rulerTitle)+'</strong></div><div><small>HERALDRY</small><strong>'+esc(identity.emblem.toUpperCase())+' ON '+esc(identity.banner.toUpperCase())+'</strong></div></div><div class="command-note"><strong>'+esc(identity.cultureDetails.label.toUpperCase())+' CULTURE</strong> · '+esc(identity.cultureDetails.description)+' · tax '+(identity.cultureDetails.tax>=0?"+":"")+Math.round(identity.cultureDetails.tax*100)+'% · trade '+(identity.cultureDetails.trade>=0?"+":"")+Math.round(identity.cultureDetails.trade*100)+'% · research '+(identity.cultureDetails.research>=0?"+":"")+Math.round(identity.cultureDetails.research*100)+'% · food demand '+Math.round(-identity.cultureDetails.food*100)+'% · legitimacy '+(identity.cultureDetails.legitimacy>=0?"+":"")+Math.round(identity.cultureDetails.legitimacy*100)+'%.</div>';
+}
+function governmentCharterSection(identity){
+ return '<div class="command-section-title">FOUNDING CHARTER</div><div class="command-summary"><div><small>RELIGION</small><strong>'+esc(identity.religionDetails.label)+'</strong></div><div><small>TRADITION</small><strong>'+esc(identity.traditionDetails.label)+'</strong></div><div><small>LAW</small><strong>'+esc(identity.lawDetails.label)+'</strong></div><div><small>LEGITIMACY</small><strong>'+esc(identity.legitimacyDetails.label)+'</strong></div></div><div class="command-summary"><div><small>STARTING CHARTER</small><strong>'+esc(identity.foundingDetails.label)+'</strong></div><div><small>TAX</small><strong>'+((identity.modifiers.tax>=0?"+":"")+Math.round(identity.modifiers.tax*100))+'%</strong></div><div><small>TRADE</small><strong>'+((identity.modifiers.trade>=0?"+":"")+Math.round(identity.modifiers.trade*100))+'%</strong></div><div><small>RESEARCH</small><strong>'+((identity.modifiers.research>=0?"+":"")+Math.round(identity.modifiers.research*100))+'%</strong></div></div><p class="command-note">'+esc(identity.religionDetails.description)+' · '+esc(identity.traditionDetails.description)+' · '+esc(identity.lawDetails.description)+' · '+esc(identity.legitimacyDetails.description)+'</p>'+(identity.background?'<p class="command-note"><strong>FOUNDING CHRONICLE</strong><br>'+esc(identity.background)+'</p>':'')+'<p class="command-note">The starting charter added '+esc(identity.foundingDetails.description)+'</p>';
+}
+function governmentSummary(g,f){
+ return '<div class="command-summary"><div><small>IN FORCE</small><strong>'+esc(f.label)+'</strong></div><div><small>TAX BASELINE</small><strong>'+g.taxRate+'%</strong></div><div><small>COUNCIL SEATS</small><strong>'+g.councilSeats+'</strong></div><div><small>DECREE COUNT</small><strong>'+g.decrees+'</strong></div></div>';
+}
+function governmentTaxSection(g){
  const taxButtons='<div class="command-choice-grid">'+[5,10,15,20,25,30].map(rate=>'<button class="command-choice'+(rate===g.taxRate?' is-current':'')+'" data-command="government-tax" data-value="'+rate+'"'+(rate===g.taxRate?' disabled':'')+'><strong>'+rate+'%</strong><small>Assessed on employed households · one change per year</small></button>').join('')+'</div>';
- const identitySection='<div class="command-section-title">REALM IDENTITY</div><div class="command-summary"><div><small>REALM</small><strong>'+esc(identity.kingdomName)+'</strong></div><div><small>ROYAL HOUSE</small><strong>'+esc(identity.dynastyName)+'</strong></div><div><small>RULER TITLE</small><strong>'+esc(identity.rulerTitle)+'</strong></div><div><small>HERALDRY</small><strong>'+esc(identity.emblem.toUpperCase())+' ON '+esc(identity.banner.toUpperCase())+'</strong></div></div><div class="command-note"><strong>'+esc(identity.cultureDetails.label.toUpperCase())+' CULTURE</strong> · '+esc(identity.cultureDetails.description)+' · tax '+(identity.cultureDetails.tax>=0?"+":"")+Math.round(identity.cultureDetails.tax*100)+'% · trade '+(identity.cultureDetails.trade>=0?"+":"")+Math.round(identity.cultureDetails.trade*100)+'% · research '+(identity.cultureDetails.research>=0?"+":"")+Math.round(identity.cultureDetails.research*100)+'% · food demand '+Math.round(-identity.cultureDetails.food*100)+'% · legitimacy '+(identity.cultureDetails.legitimacy>=0?"+":"")+Math.round(identity.cultureDetails.legitimacy*100)+'%.</div>';
- const charterSection='<div class="command-section-title">FOUNDING CHARTER</div><div class="command-summary"><div><small>RELIGION</small><strong>'+esc(identity.religionDetails.label)+'</strong></div><div><small>TRADITION</small><strong>'+esc(identity.traditionDetails.label)+'</strong></div><div><small>LAW</small><strong>'+esc(identity.lawDetails.label)+'</strong></div><div><small>LEGITIMACY</small><strong>'+esc(identity.legitimacyDetails.label)+'</strong></div></div><div class="command-summary"><div><small>STARTING CHARTER</small><strong>'+esc(identity.foundingDetails.label)+'</strong></div><div><small>TAX</small><strong>'+((identity.modifiers.tax>=0?"+":"")+Math.round(identity.modifiers.tax*100))+'%</strong></div><div><small>TRADE</small><strong>'+((identity.modifiers.trade>=0?"+":"")+Math.round(identity.modifiers.trade*100))+'%</strong></div><div><small>RESEARCH</small><strong>'+((identity.modifiers.research>=0?"+":"")+Math.round(identity.modifiers.research*100))+'%</strong></div></div><p class="command-note">'+esc(identity.religionDetails.description)+' · '+esc(identity.traditionDetails.description)+' · '+esc(identity.lawDetails.description)+' · '+esc(identity.legitimacyDetails.description)+'</p>'+(identity.background?'<p class="command-note"><strong>FOUNDING CHRONICLE</strong><br>'+esc(identity.background)+'</p>':'')+'<p class="command-note">The starting charter added '+esc(identity.foundingDetails.description)+'</p>';
- return intro("THE CROWN & ITS INSTITUTIONS","Government","Choose how authority is organized. Changing the constitution costs 20 gold and shifts faction support. The royal court below turns those factions into named offices and annual petitions.")+identitySection+charterSection+'<div class="command-summary"><div><small>IN FORCE</small><strong>'+esc(f.label)+'</strong></div><div><small>TAX BASELINE</small><strong>'+g.taxRate+'%</strong></div><div><small>COUNCIL SEATS</small><strong>'+g.councilSeats+'</strong></div><div><small>DECREE COUNT</small><strong>'+g.decrees+'</strong></div></div><div class="command-section-title">TAX RATE · CURRENT '+g.taxRate+'%</div><p class="command-note">The tax rate is charged against employed households at every 20-day settlement. Raising it lifts revenue but embitters the commons and guilds; lowering it buys goodwill and leaves less for wages. Last changed in year '+(g.lastTaxChangeYear||"—")+'.</p>'+taxButtons+'<div class="command-section-title">CONSTITUTIONAL MODELS</div><div class="command-choice-grid">'+forms+'</div><div class="command-section-title">SUCCESSION LAW · '+g.succession.toUpperCase()+'</div><p class="command-note">The law decides which claimant the next succession actually reads. Designated refuses every silent fallback; elective lets the adult residents and great houses choose; primogeniture prefers the eldest eligible child.</p><div class="command-choice-grid">'+successionCards+'</div>'+councilSection()+'<div class="command-note">The six offices and the council docket are live. Regional autonomy beyond this court remains a future module.</div>'+courtSection();
+ return '<div class="command-section-title">TAX RATE · CURRENT '+g.taxRate+'%</div><p class="command-note">The tax rate is charged against employed households at every 20-day settlement. Raising it lifts revenue but embitters the commons and guilds; lowering it buys goodwill and leaves less for wages. Last changed in year '+(g.lastTaxChangeYear||"—")+'.</p>'+taxButtons;
+}
+function governmentFormsSection(g){
+ const forms=Object.entries(GOVERNMENT_FORMS).map(([id,x])=>'<button class="command-choice'+(id===g.form?' is-current':'')+'" data-command="government-form" data-value="'+id+'"><strong>'+esc(x.label)+'</strong><small>Tax baseline '+x.tax+'% · Research ×'+((1+Number(x.research||0)).toFixed(2))+' · Trade ×'+((1+Number(x.trade||0)).toFixed(2))+' · Cost 20 gold</small></button>').join("");
+ return '<div class="command-section-title">CONSTITUTIONAL MODELS</div><div class="command-choice-grid">'+forms+'</div>';
+}
+function governmentSuccessionSection(g){
+ const successionCards=Object.entries(SUCCESSION_LAWS).map(([id,law])=>'<button class="command-choice'+(id===g.succession?' is-current':'')+'" data-command="government-succession" data-value="'+id+'"'+(id===g.succession?' disabled':'')+'><strong>'+esc(law.label)+'</strong><small>'+esc(law.description)+' · cost 15 gold · one change per year</small></button>').join("");
+ return '<div class="command-section-title">SUCCESSION LAW · '+g.succession.toUpperCase()+'</div><p class="command-note">The law decides which claimant the next succession actually reads. Designated refuses every silent fallback; elective lets the adult residents and great houses choose; primogeniture prefers the eldest eligible child.</p><div class="command-choice-grid">'+successionCards+'</div>';
+}
+function governmentBridgeNote(){
+ return '<div class="command-note">The six offices and the council docket are live. Regional autonomy beyond this court remains a future module.</div>';
+}
+export function government(){
+ const g=getGovernmentSnapshot(),f=GOVERNMENT_FORMS[g.form],identity=getIdentitySnapshot();
+ return governmentIntro()+governmentIdentitySection(identity)+governmentCharterSection(identity)+governmentSummary(g,f)+governmentTaxSection(g)+governmentFormsSection(g)+governmentSuccessionSection(g)+councilSection()+governmentBridgeNote()+courtSection();
+}
+export function governmentParts(){
+ const ctx={};
+ const ensure=(key,build)=>{
+  if(!Object.prototype.hasOwnProperty.call(ctx,key))ctx[key]=build();
+  return ctx[key];
+ };
+ const sections=createStagedSectionCollector();
+ const acquire=(key,build)=>()=>{ensure(key,build);return "";};
+ const emit=build=>()=>({html:"",more:sections.collect(build())});
+ const g=()=>ensure("government",getGovernmentSnapshot);
+ const identity=()=>ensure("identity",getIdentitySnapshot);
+ const council=()=>ensure("council",getCouncilSnapshot);
+ const court=()=>ensure("court",getCourtSnapshot);
+ const advisor=()=>ensure("advisor",getAdvisorSnapshot);
+ return [
+  acquire("government",getGovernmentSnapshot),
+  emit(governmentIntro),
+  acquire("identity",getIdentitySnapshot),
+  emit(()=>governmentIdentitySection(identity())),
+  emit(()=>governmentCharterSection(identity())),
+  emit(()=>governmentSummary(g(),GOVERNMENT_FORMS[g().form])),
+  emit(()=>governmentTaxSection(g())),
+  emit(()=>governmentFormsSection(g())),
+  emit(()=>governmentSuccessionSection(g())),
+  acquire("council",getCouncilSnapshot),
+  emit(()=>councilHeader(council())),
+  emit(()=>councilBills(council())),
+  emit(()=>councilDocket(council())),
+  emit(()=>councilHistory(council())),
+  emit(governmentBridgeNote),
+  acquire("court",getCourtSnapshot),
+  emit(()=>courtHeader(court())),
+  emit(()=>courtPetition(court())),
+  acquire("advisor",getAdvisorSnapshot),
+  emit(()=>advisorSection(advisor())),
+  emit(()=>courtEffects(court())),
+  emit(()=>courtAudit(court())),
+  emit(()=>courtHistory(court()))
+ ];
 }
 function realmCycleSection(){
  const c=getRealmCycleSnapshot();
@@ -582,7 +904,7 @@ function politics(){
  const petition=court.demand?'<p class="command-note"><strong>COURT PETITION</strong><br>'+esc(court.demand.factionLabel)+' asks: '+esc(court.demand.title)+'. Grant or ignore it in Government → Royal Court.</p>':'';
  return intro("FACTIONS & PUBLIC ORDER","Politics","Legitimacy and faction support respond to decrees and the realm's material conditions. The living realm cycle below connects granary scarcity to market prices, household unrest and real petitions.")+'<div class="command-summary"><div><small>LEGITIMACY</small><strong>'+Math.round(p.legitimacy)+'/100</strong></div><div><small>AVERAGE SUPPORT</small><strong>'+Math.round(p.averageSupport)+'/100</strong></div><div><small>DECISIONS</small><strong>'+p.settlements+'</strong></div></div><div class="command-section-title">LIVING REALM CYCLE</div>'+realmCycleSection()+'<div class="command-section-title">FACTION SUPPORT</div><div class="command-meter-list">'+f+'</div>'+nobleRealmNote()+petition+'<div class="command-section-title">ROYAL DECREES · ONE PER YEAR</div><div class="command-policy-list">'+policies+'</div>';
 }
-function diplomacy(){
+function diplomacy(collect=null){
  const d=getDiplomacySnapshot(),c=d.costs,gold=Number(state.resources?.gold)||0,food=Number(state.resources?.food)||0,court=getCourtSnapshot(),g=d.guarantees,ta=d.tradeAgreements;
  const envoyOptions=court.candidates.map(p=>'<option value="'+esc(p.personId)+'">'+esc(p.name)+' · '+esc(p.species)+' · '+Math.round(p.fits.chancellor||0)+' fit</option>').join("");
  const envoyLazy=narrowViewport();
@@ -594,7 +916,7 @@ function diplomacy(){
   const missionCost=Number(d.missionLimits?.costGold)||6;
   const missionGoalLabel=goal=>goal==="trade"?"TRADE PACT":"ALLIANCE";
  const callBanner=pendingCalls.length?'<div class="diplomacy-guarantee-call"><strong>GUARANTEE CALLS · '+pendingCalls.length+'</strong><span>'+pendingCalls.map(r=>esc(r.name)+' is threatened by '+esc(r.guaranteeCall.attackerName)+' · answer by year '+r.guaranteeCall.deadlineYear).join(' · ')+'</span></div>':'';
- const rows=d.realms.map(r=>{
+ const rowBuilders=d.realms.map(r=>()=>{
   const actions=[];
   const guarantee=r.guarantee;
   const guaranteeActive=Boolean(guarantee?.active);
@@ -655,8 +977,8 @@ function diplomacy(){
    '<p class="diplomacy-realm__hint">'+esc(r.relationLabel+" · "+hint)+'</p>'+
    (latest?'<p class="diplomacy-realm__record">'+esc(latest.summary)+' · year '+latest.year+'</p>':'')+
    '<div class="diplomacy-actions">'+actions.join("")+'</div></article>';
- }).join("");
- return intro("THE NEIGHBOURING COURTS","Diplomacy","Relationships persist between years and connect trade, faction politics, war pressure and royal prestige. Guarantees now bind the crown to a neighbour: standing earns trust, a call demands an answer, and every refusal outlives the crisis.")+
+ });
+ const head=intro("THE NEIGHBOURING COURTS","Diplomacy","Relationships persist between years and connect trade, faction politics, war pressure and royal prestige. Guarantees now bind the crown to a neighbour: standing earns trust, a call demands an answer, and every refusal outlives the crisis.")+
   '<div class="command-summary"><div><small>NEIGHBOURS</small><strong>'+d.realms.length+'</strong></div><div><small>AVG RELATION</small><strong>'+Math.round(d.averageRelation)+'</strong></div><div><small>TRADE PACTS</small><strong>'+d.counts.trade+'</strong></div><div><small>ALLIANCES</small><strong>'+d.counts.alliance+'</strong></div><div><small>ENVOYS</small><strong>'+d.envoys+'</strong></div><div><small>ENVOY MISSIONS</small><strong>'+d.missions.length+' / '+d.missionLimits.active+'</strong></div><div><small>AT WAR</small><strong>'+d.counts.war+'</strong></div><div><small>GUARANTEES</small><strong>'+g.active+'</strong></div><div><small>TRADE ACCORDS</small><strong>'+ta.active+'</strong></div></div>'+
   '<div class="command-note"><strong>CROWN DREAD · '+d.dread.dread+'/100 '+esc(d.dread.band)+'</strong> · '+d.dread.soldiers+' soldiers at '+d.dread.power+' power · border levy ×'+(1+d.pressure.percent/100).toFixed(2)+' ('+d.pressure.wars+' war(s), '+d.pressure.hostile+' hostile court(s)). Fear drifts toward this reading once a year: a strong garrison deters border incidents and shortens wars, while fear above 60 erodes trust and worsens buy and sell terms.</div>'+
   '<div class="command-note"><strong>ENTENTE STANDING · '+(d.standing.longest?esc(String(d.standing.longest.name).toUpperCase())+' '+d.standing.longest.years+' '+ (d.standing.longest.years===1?'YEAR':'YEARS'):'NO TREATY HAS AGED YET')+'</strong> · '+d.standing.realms+(d.standing.realms===1?' court':' courts')+' with standing · average '+d.standing.averageYears+' years · '+d.standing.ententes+(d.standing.ententes===1?' entente':' ententes')+'. Every year a treaty or peace holds adds trust, improves buy and sell terms (up to 3%) and makes a border incident less likely (up to 4 points); a long alliance also raises its annual aid by up to 3 gold and 4 food. Declaring war resets that court’s clock to zero, so a long peace is an asset worth protecting. Standing caps at '+d.standing.yearLimit+' years.</div>'+
@@ -664,8 +986,27 @@ function diplomacy(){
   '<div class="command-note"><strong>GUARANTEE STANDING · '+g.credibility+'/100</strong> · '+g.active+' active · '+g.pending+' call(s) pending · '+g.honored+' honoured · '+g.refused+' refused. A guarantee lasts '+g.termYears+' years. An unanswered call is refused by the annual court, breaking the guarantee and lowering standing.</div>'+callBanner+
   '<div class="command-note"><strong>FOREIGN TRADE AGREEMENTS · '+ta.active+' ACTIVE</strong> · '+number(ta.imports)+' goods imported · '+number(ta.exports)+' exported · '+number(ta.goldPaid)+'G paid in fees and signing costs · '+number(ta.goldEarned)+'G earned. Each court makes one authored offer; a royal marriage lowers its signing cost, annual fee and thresholds. The annual court settles every agreement once, using the same partner stock and treasury as the market.</div>'+
   '<div class="command-note"><strong>ENVOY MISSIONS · '+d.missions.length+' / '+d.missionLimits.active+' ACTIVE</strong> · one mandate per court, one send per year, '+missionCost+'G to send, '+d.missionLimits.lifetimeYears+' years to finish. Send → Negotiate → Report → Ratify: negotiation rolls once on the dedicated diplomacy stream from envoy skill, Chancellor quality, foreign-desk insight, a targeted foreign agent and the realm’s relation and trust. An accepted trade pact or alliance changes the same treaty record as a direct agreement without paying its signing fee again; a refusal leaves a bounded political scar.</div>'+
-  '<div class="command-section-title">'+d.realms.length+' NEIGHBOURING REALMS · LAST REVIEW YEAR '+d.lastUpdateYear+'</div><div class="diplomacy-grid">'+rows+'</div>'+
-  '<p class="command-note">Gifts improve trust. Trade raises relation and improves prices through the market. Trade pacts deepen that advantage; alliances send annual aid. A royal guarantee costs '+c.guarantee+'G and binds the crown for '+g.termYears+' years: an attack on the protected court becomes a call that costs '+c.guaranteeAidGold+'G and '+c.guaranteeAidFood+'F to honour. Honouring raises standing and trust across the courts; refusing or ignoring the call breaks the guarantee, lowers legitimacy and makes every court warier. A standing guarantee also bars declaring war on its protected realm until it is withdrawn. Treaty standing is read from the year each pact, war or peace began: keep a treaty in force and it deepens; declare war and that court’s clock resets. Diplomacy resolves once per year, so its cost stays bounded to four realms.</p>';
+  '<div class="command-section-title">'+d.realms.length+' NEIGHBOURING REALMS · LAST REVIEW YEAR '+d.lastUpdateYear+'</div><div class="diplomacy-grid">';
+ const tail='</div>'+
+    '<p class="command-note">Gifts improve trust. Trade raises relation and improves prices through the market. Trade pacts deepen that advantage; alliances send annual aid. A royal guarantee costs '+c.guarantee+'G and binds the crown for '+g.termYears+' years: an attack on the protected court becomes a call that costs '+c.guaranteeAidGold+'G and '+c.guaranteeAidFood+'F to honour. Honouring raises standing and trust across the courts; refusing or ignoring the call breaks the guarantee, lowers legitimacy and makes every court warier. A standing guarantee also bars declaring war on its protected realm until it is withdrawn. Treaty standing is read from the year each pact, war or peace began: keep a treaty in force and it deepens; declare war and that court’s clock resets. Diplomacy resolves once per year, so its cost stays bounded to four realms.</p>';
+ if(typeof collect==="function"){
+  collect(head);
+  rowBuilders.forEach(build=>collect({into:".diplomacy-grid",html:build}));
+  collect(tail);
+  return "";
+ }
+ return head+rowBuilders.map(build=>build()).join("")+tail;
+}
+
+export function diplomacyParts(){
+ const parts=[];
+ return [()=>({
+  html:()=>{
+   diplomacy(section=>parts.push(section));
+   return "";
+  },
+  more:parts
+ })];
 }
 
 function royalCrisisPanel(){
@@ -788,37 +1129,8 @@ function foresterStewardship(building){
   return '<section class="forester-stewardship" aria-label="Forester stewardship" data-forester-stewardship="'+esc(building.id)+'" data-forest-stock="'+range.stock+'" data-forest-capacity="'+range.capacity+'" data-forest-restorable="'+range.restorable+'" data-forest-status="'+esc(status)+'"><div class="forester-stewardship-heading"><span>FOREST STEWARDSHIP · '+range.radius+'-TILE RANGE</span><strong>'+number(range.stock)+' / '+number(range.capacity)+'</strong></div><div class="forester-stewardship-meter" role="img" aria-label="'+percent+' percent of the stewardship range stocked"><span><i style="width:'+percent+'%"></i></span><strong>'+percent+'%</strong></div><div class="forester-stewardship-facts"><span>RESTORABLE STANDS<strong>'+number(range.restorable)+'</strong></span><span>STATUS<strong>'+esc(status)+'</strong></span></div></section>';
  }catch{return "";}
 }
-function buildings(){
- const workforce=getWorkforceSnapshot();const city=getCitySummary(),settlement=getSettlementSnapshot(),logistics=getLogisticsSnapshot();
- const allRecords=state.entities.filter(entity=>!entity.dead&&entity.isBuilding()).slice().sort((a,b)=>{
-  const an=CARD_DECK.find(card=>card.type===a.type)?.name||BUILDING_LABELS[a.type]||String(a.type),bn=CARD_DECK.find(card=>card.type===b.type)?.name||BUILDING_LABELS[b.type]||String(b.type);
-  return an.localeCompare(bn)||String(a.id).localeCompare(String(b.id));
- });
- const records=narrowViewport()&&!buildingShowAll?allRecords.slice(0,8):allRecords;
- const counts=new Map();
- for(const building of allRecords)counts.set(building.type,(counts.get(building.type)||0)+1);
- const typeSummary=[...counts.entries()].map(([type,count])=>{
-  const card=CARD_DECK.find(item=>item.type===type);
-  return '<span class="building-type-chip">'+esc(card?.name||BUILDING_LABELS[type]||("Building "+type))+' <strong>'+count+'</strong></span>';
- }).join("");
- const repairCostText=cost=>Object.entries(cost||{}).filter(([,value])=>Number(value)>0).map(([resource,value])=>amount(value)+" "+resource).join(" · ")||"no materials";
- const bulkRepair=getBulkRepairSnapshot();
- const bulkRepairMarkup=bulkRepair.count?('<div class="command-section-title">STRUCTURE DAMAGE · '+number(bulkRepair.count)+' NEED REPAIR</div>'+
-  '<p class="command-note">These finished structures are missing '+number(bulkRepair.missingHp)+' HP in total. The bill below is the exact sum of their individual repairs; the order spends nothing at all when stores are short.</p>'+
-  '<div class="command-summary"><div><small>DAMAGED STRUCTURES</small><strong>'+number(bulkRepair.count)+'</strong></div><div><small>MISSING HP</small><strong>'+number(bulkRepair.missingHp)+'</strong></div><div><small>MATERIAL BILL</small><strong>'+esc(repairCostText(bulkRepair.cost))+'</strong></div></div>'+
-  '<button type="button" class="command-choice" data-command="repair-all"'+(bulkRepair.ok?'':' disabled title="'+esc(bulkRepair.reason.replaceAll("-"," "))+'"')+'>REPAIR ALL DAMAGED STRUCTURES</button>'):"";
- const buildingSprite=(type)=>({
-  [TYPE.KEEP]:"keep",[TYPE.HOUSE]:"cottage",[TYPE.FARM]:"farm",[TYPE.LUMBER]:"lumber-yard",
-  [TYPE.QUARRY]:"quarry",[TYPE.TOWER]:"watchtower",[TYPE.WALL]:"wall",[TYPE.TAVERN]:"tavern",
-  [TYPE.TEMPLE]:"temple",[TYPE.BARRACKS]:"barracks",[TYPE.MILL]:"windmill",[TYPE.STABLE]:"stable",
-  [TYPE.WONDER]:"wonder",[TYPE.GOLDMINE]:"goldmine",[TYPE.BARREL]:"storehouse",
-  [TYPE.TENT]:"cottage",[TYPE.STONE_HOUSE]:"cottage",[TYPE.WAREHOUSE]:"storehouse",[TYPE.SAWMILL]:"lumber-yard",
-  [TYPE.BAKERY]:"windmill",[TYPE.WELL]:"windmill",[TYPE.MASON]:"quarry",[TYPE.FORESTER]:"lumber-yard",
-  [TYPE.CLINIC]:"temple",[TYPE.MARKET]:"tavern",
-  [TYPE.SMITHY]:"windmill",[TYPE.SCRIPTORIUM]:"temple",[TYPE.FOREST_WORKS]:"lumber-yard",
-  [TYPE.SHIPYARD]:"lumber-yard",[TYPE.PAPER_MILL]:"windmill"
- }[type]||"cottage");
- const rows=records.map((building,index)=>{
+function buildingRecord(building,index,workforce,city,logistics,repairCostText,buildingSprite){
+
   const card=CARD_DECK.find(item=>item.type===building.type);
   const name=card?.name||BUILDING_LABELS[building.type]||("Building "+building.type);
   const footprint=BUILDING_SIZE[building.type]||{w:1,h:1};
@@ -939,7 +1251,44 @@ function buildings(){
   const fieldText=building.field?" · field "+building.field.stage+" ("+Math.round(building.field.growth)+"%) · soil "+Math.round(building.field.fertility)+"%"+(building.field.resting?" · resting":""):"";
   const stewardship=foresterStewardship(building);
   return '<details class="building-record" data-building-name="'+esc(name.toLowerCase())+'" data-building-id="'+esc(building.id)+'"'+(String(building.id)===String(expandedBuildingId)?' open':'')+'><summary><svg class="building-record-art" viewBox="0 0 64 64" aria-hidden="true"><use href="assets/royal-building-atlas.svg#'+buildingSprite(building.type)+'"></use></svg><span class="building-record-title"><strong>'+esc(name)+'</strong><small>'+esc(building.id||("record-"+index))+' · '+Math.round(building.x)+', '+Math.round(building.y)+'</small></span><span class="building-record-status"><b>'+(isUnderConstruction(building)?site.percent+'%':condition+'%')+'</b><small>'+(isUnderConstruction(building)?"built":"condition")+'</small></span></summary><div class="building-record-details"><p>'+esc(detail)+'</p>'+chainTagMarkup+stewardship+'<div class="building-detail-grid"><span>Footprint<strong>'+amount(width)+' × '+amount(height)+' tiles</strong></span><span>Health<strong>'+amount(hp)+' / '+amount(maxHp)+'</strong></span><span>Construction<strong>'+esc(site.status)+' · '+site.percent+'%</strong></span><span>Staff<strong>'+staff+(capacity?' / '+capacity:' · not staffed')+'</strong></span><span>Workforce efficiency<strong>'+(efficiency===null?'not applicable':efficiency+'%')+'</strong></span><span>Recorded card cost<strong>'+esc(costs)+'</strong></span><span>Local store<strong>'+esc(storeText)+'</strong></span>'+(sawInfo?'<span>Timber recipe<strong>'+esc(sawInfo)+'</strong></span>':'')+sawField+forestWorksField+grandConsumerField+profileField+profileHint+'<span>Active haul<strong>'+esc(haulText)+'</strong></span><span>Supply / service<strong>'+esc(supply||"Operating")+'</strong></span><span>Building form<strong>'+esc(formText)+'</strong></span><span>Site data<strong>'+esc(siteNote)+esc(fieldText)+'</strong></span>'+manualOrderMarkup+repairButton+forestGather+forestPannage+meadowGather+wetlandWorks+mountainWorks+volcanoWorks+coastWorks+'</div></div></details>';
+
+}
+
+export function buildings(staged=false,onRecords=null){
+ const workforce=getWorkforceSnapshot();const city=getCitySummary(),settlement=getSettlementSnapshot(),logistics=getLogisticsSnapshot();
+ const allRecords=state.entities.filter(entity=>!entity.dead&&entity.isBuilding()).slice().sort((a,b)=>{
+  const an=CARD_DECK.find(card=>card.type===a.type)?.name||BUILDING_LABELS[a.type]||String(a.type),bn=CARD_DECK.find(card=>card.type===b.type)?.name||BUILDING_LABELS[b.type]||String(b.type);
+  return an.localeCompare(bn)||String(a.id).localeCompare(String(b.id));
+ });
+ const records=narrowViewport()&&!buildingShowAll?allRecords.slice(0,8):allRecords;
+ const counts=new Map();
+ for(const building of allRecords)counts.set(building.type,(counts.get(building.type)||0)+1);
+ const typeSummary=[...counts.entries()].map(([type,count])=>{
+  const card=CARD_DECK.find(item=>item.type===type);
+  return '<span class="building-type-chip">'+esc(card?.name||BUILDING_LABELS[type]||("Building "+type))+' <strong>'+count+'</strong></span>';
  }).join("");
+ const repairCostText=cost=>Object.entries(cost||{}).filter(([,value])=>Number(value)>0).map(([resource,value])=>amount(value)+" "+resource).join(" · ")||"no materials";
+ const bulkRepair=getBulkRepairSnapshot();
+ const bulkRepairMarkup=bulkRepair.count?('<div class="command-section-title">STRUCTURE DAMAGE · '+number(bulkRepair.count)+' NEED REPAIR</div>'+
+  '<p class="command-note">These finished structures are missing '+number(bulkRepair.missingHp)+' HP in total. The bill below is the exact sum of their individual repairs; the order spends nothing at all when stores are short.</p>'+
+  '<div class="command-summary"><div><small>DAMAGED STRUCTURES</small><strong>'+number(bulkRepair.count)+'</strong></div><div><small>MISSING HP</small><strong>'+number(bulkRepair.missingHp)+'</strong></div><div><small>MATERIAL BILL</small><strong>'+esc(repairCostText(bulkRepair.cost))+'</strong></div></div>'+
+  '<button type="button" class="command-choice" data-command="repair-all"'+(bulkRepair.ok?'':' disabled title="'+esc(bulkRepair.reason.replaceAll("-"," "))+'"')+'>REPAIR ALL DAMAGED STRUCTURES</button>'):"";
+ const buildingSprite=(type)=>({
+  [TYPE.KEEP]:"keep",[TYPE.HOUSE]:"cottage",[TYPE.FARM]:"farm",[TYPE.LUMBER]:"lumber-yard",
+  [TYPE.QUARRY]:"quarry",[TYPE.TOWER]:"watchtower",[TYPE.WALL]:"wall",[TYPE.TAVERN]:"tavern",
+  [TYPE.TEMPLE]:"temple",[TYPE.BARRACKS]:"barracks",[TYPE.MILL]:"windmill",[TYPE.STABLE]:"stable",
+  [TYPE.WONDER]:"wonder",[TYPE.GOLDMINE]:"goldmine",[TYPE.BARREL]:"storehouse",
+  [TYPE.TENT]:"cottage",[TYPE.STONE_HOUSE]:"cottage",[TYPE.WAREHOUSE]:"storehouse",[TYPE.SAWMILL]:"lumber-yard",
+  [TYPE.BAKERY]:"windmill",[TYPE.WELL]:"windmill",[TYPE.MASON]:"quarry",[TYPE.FORESTER]:"lumber-yard",
+  [TYPE.CLINIC]:"temple",[TYPE.MARKET]:"tavern",
+  [TYPE.SMITHY]:"windmill",[TYPE.SCRIPTORIUM]:"temple",[TYPE.FOREST_WORKS]:"lumber-yard",
+  [TYPE.SHIPYARD]:"lumber-yard",[TYPE.PAPER_MILL]:"windmill"
+ }[type]||"cottage");
+  const buildRecord=(building,index)=>buildingRecord(building,index,workforce,city,logistics,repairCostText,buildingSprite);
+  const rows=staged?"":records.map(buildRecord).join("");
+  const emptyNote='<p class="command-note">No buildings are recorded in this realm yet.</p>';
+  const registerMarkup=staged?(records.length?"":emptyNote):(rows||emptyNote);
+  if(staged&&typeof onRecords==="function")onRecords(records,buildRecord);
  const logisticsClosed=narrowViewport()&&!expandedBuildingLogistics;
  const rejection=!logisticsClosed&&logistics.lastRejection?'<p class="command-note logistics-rejection">LAST ORDER REJECTED · '+esc(logistics.lastRejection.reason)+' · '+esc(logistics.lastRejection.kind||"job")+' '+(logistics.lastRejection.good?esc(logistics.lastRejection.good):"")+' · tick '+number(logistics.lastRejection.tick)+'</p>':"";
  const jobRows=logisticsClosed?"":[...(logistics.jobs||[]),...(logistics.completed||[])].map(job=>'<div class="logistics-job'+(job.status==="blocked"?' is-blocked':'')+'" data-job-status="'+esc(job.status)+'"><strong>'+esc((job.id||"job")+" · "+job.quantity+" "+job.good+" · "+job.status)+'</strong><small>'+esc((job.from?.kind||"?")+" "+(job.from?.id||"?")+" → "+(job.to?.kind||"?")+" "+(job.to?.id||"?")+" · reserved "+number(job.reserved)+" · picked "+number(job.picked)+" · delivered "+number(job.delivered))+(job.carrierId?" · carrier "+esc(job.carrierId):"")+(job.attempts?" · attempts "+esc(job.attempts):"")+(job.reason?" · "+esc(job.reason):"")+'</small></div>').join("");
@@ -960,8 +1309,108 @@ function buildings(){
  '<div class="command-summary"><div><small>STRUCTURES</small><strong>'+allRecords.length+'</strong></div><div><small>DAMAGED STRUCTURES</small><strong>'+number(bulkRepair.count)+'</strong></div><div><small>CONSTRUCTION SITES</small><strong>'+city.construction+'</strong></div><div><small>CARRIERS</small><strong>'+city.carriers+'</strong></div><div><small>ACTIVE HAULS</small><strong>'+city.activeJobs+'</strong></div><div><small>BLOCKED HAULS</small><strong>'+number(city.blockedJobs||0)+'</strong></div><div><small>WAREHOUSE SPACE USED</small><strong>'+number(city.warehouses?.used||0)+' / '+number(city.warehouses?.capacity||0)+'</strong></div><div><small>WAREHOUSE RESERVED</small><strong>'+number(city.warehouses?.reservedIn||0)+' in · '+number(city.warehouses?.reservedOut||0)+' out</strong></div><div><small>WATER COVERAGE</small><strong>'+(settlement.needs?Math.round(settlement.needs.water*100)+'%':'—')+'</strong></div></div>'+
  logisticsSections+bulkRepairMarkup+
  '<div class="building-type-summary">'+typeSummary+'</div>'+(records.length<allRecords.length?'<p class="command-note">Showing the first '+records.length+' of '+allRecords.length+' structures on this screen. Counts above include every structure.</p><button type="button" class="command-choice" data-building-show-all>SHOW ALL '+allRecords.length+' STRUCTURES</button>':'')+'<label class="building-search-label" for="building-search">FILTER STRUCTURES</label><input id="building-search" class="building-search" type="search" maxlength="80" placeholder="Search by building type or name">'+
- '<div class="building-register">'+(rows||'<p class="command-note">No buildings are recorded in this realm yet.</p>')+'</div>'+
+ '<div class="building-register"'+(staged?' data-building-register':'')+'>'+registerMarkup+'</div>'+
  '<p class="command-note">Construction, local stores, field stages and active hauls are read from live simulation state. Site resource values are taken from the structure centre tile only; they are not a production rate. Construction and demolition remain in the build interface.</p>';
+}
+
+export function buildingsParts(){
+ // The register grows with every structure and reads several whole-realm
+ // archives. Each snapshot and each section is acquired in its own scheduled
+ // part so no 4x-CPU task has to build the whole register at once. The plain
+ // renderer above stays byte-identical; this producer only changes the cadence.
+ const ctx={};
+ const ensure=(key,build)=>{
+  if(!Object.prototype.hasOwnProperty.call(ctx,key))ctx[key]=build();
+  return ctx[key];
+ };
+ const repairCostText=cost=>Object.entries(cost||{}).filter(([,value])=>Number(value)>0).map(([resource,value])=>amount(value)+" "+resource).join(" · ")||"no materials";
+ const buildingSprite=type=>({
+  [TYPE.KEEP]:"keep",[TYPE.HOUSE]:"cottage",[TYPE.FARM]:"farm",[TYPE.LUMBER]:"lumber-yard",
+  [TYPE.QUARRY]:"quarry",[TYPE.TOWER]:"watchtower",[TYPE.WALL]:"wall",[TYPE.TAVERN]:"tavern",
+  [TYPE.TEMPLE]:"temple",[TYPE.BARRACKS]:"barracks",[TYPE.MILL]:"windmill",[TYPE.STABLE]:"stable",
+  [TYPE.WONDER]:"wonder",[TYPE.GOLDMINE]:"goldmine",[TYPE.BARREL]:"storehouse",
+  [TYPE.TENT]:"cottage",[TYPE.STONE_HOUSE]:"cottage",[TYPE.WAREHOUSE]:"storehouse",[TYPE.SAWMILL]:"lumber-yard",
+  [TYPE.BAKERY]:"windmill",[TYPE.WELL]:"windmill",[TYPE.MASON]:"quarry",[TYPE.FORESTER]:"lumber-yard",
+  [TYPE.CLINIC]:"temple",[TYPE.MARKET]:"tavern",
+  [TYPE.SMITHY]:"windmill",[TYPE.SCRIPTORIUM]:"temple",[TYPE.FOREST_WORKS]:"lumber-yard",
+  [TYPE.SHIPYARD]:"lumber-yard",[TYPE.PAPER_MILL]:"windmill"
+ }[type]||"cottage");
+ const recordsFor=()=>ensure("records",()=>{
+  const all=state.entities.filter(entity=>!entity.dead&&entity.isBuilding()).slice().sort((a,b)=>{
+   const an=CARD_DECK.find(card=>card.type===a.type)?.name||BUILDING_LABELS[a.type]||String(a.type),bn=CARD_DECK.find(card=>card.type===b.type)?.name||BUILDING_LABELS[b.type]||String(b.type);
+   return an.localeCompare(bn)||String(a.id).localeCompare(String(b.id));
+  });
+  return {all,visible:narrowViewport()&&!buildingShowAll?all.slice(0,8):all};
+ });
+ const buildRecord=(building,index)=>buildingRecord(building,index,
+  ensure("workforce",getWorkforceSnapshot),ensure("city",getCitySummary),ensure("logistics",getLogisticsSnapshot),
+  repairCostText,buildingSprite);
+ const head=()=>{
+  const city=ensure("city",getCitySummary),settlement=ensure("settlement",getSettlementSnapshot);
+  return intro("SETTLEMENT ARCHITECTURE","Building register","Inspect every surviving structure using its actual simulation entity, health, footprint, staffing and site data.")+
+  '<div class="command-summary"><div><small>STRUCTURES</small><strong>'+recordsFor().all.length+'</strong></div><div><small>DAMAGED STRUCTURES</small><strong>'+number(ensure("bulkRepair",getBulkRepairSnapshot).count)+'</strong></div><div><small>CONSTRUCTION SITES</small><strong>'+city.construction+'</strong></div><div><small>CARRIERS</small><strong>'+city.carriers+'</strong></div><div><small>ACTIVE HAULS</small><strong>'+city.activeJobs+'</strong></div><div><small>BLOCKED HAULS</small><strong>'+number(city.blockedJobs||0)+'</strong></div><div><small>WAREHOUSE SPACE USED</small><strong>'+number(city.warehouses?.used||0)+' / '+number(city.warehouses?.capacity||0)+'</strong></div><div><small>WAREHOUSE RESERVED</small><strong>'+number(city.warehouses?.reservedIn||0)+' in · '+number(city.warehouses?.reservedOut||0)+' out</strong></div><div><small>WATER COVERAGE</small><strong>'+(settlement.needs?Math.round(settlement.needs.water*100)+'%':'—')+'</strong></div></div>';
+ };
+ const logisticsParts=()=>{
+  const logistics=ensure("logistics",getLogisticsSnapshot);
+  const closed=narrowViewport()&&!expandedBuildingLogistics;
+  if(closed)return [()=>'<div class="command-section-title">LOGISTICS ARCHIVE</div><button type="button" class="command-choice" data-building-logistics>OPEN STORES, HAULS, AUDIT &amp; MOVEMENT ARCHIVE</button><p class="command-note">The archive is measured from live simulation state. It is folded on this screen to keep the first building register frame inside the low-end budget.</p>'];
+  const rejection=logistics.lastRejection?'<p class="command-note logistics-rejection">LAST ORDER REJECTED · '+esc(logistics.lastRejection.reason)+' · '+esc(logistics.lastRejection.kind||"job")+' '+(logistics.lastRejection.good?esc(logistics.lastRejection.good):"")+' · tick '+number(logistics.lastRejection.tick)+'</p>':"";
+  const warehouseRows=()=>(logistics.warehouses?.rows||[]).map(row=>{
+   const stored=Object.entries(row.stored||{}).filter(([,value])=>Number(value)>0).map(([good,value])=>value+" "+good).join(" · ")||"empty";
+   return '<div class="logistics-job warehouse-row" data-warehouse-profile="'+esc(row.profile)+'"><strong>'+esc((row.type===TYPE.KEEP?"Royal Keep":"Warehouse")+" · "+(row.profileLabel||"General store")+" · "+row.used+" / "+row.capacity)+'</strong><small>'+esc(row.id+" · "+Math.round(row.x)+", "+Math.round(row.y)+" · "+stored+" · reserved in "+row.reservedIn+" / out "+row.reservedOut)+'</small></div>';
+  }).join("");
+  const jobRows=()=>[...(logistics.jobs||[]),...(logistics.completed||[])].map(job=>'<div class="logistics-job'+(job.status==="blocked"?' is-blocked':'')+'" data-job-status="'+esc(job.status)+'"><strong>'+esc((job.id||"job")+" · "+job.quantity+" "+job.good+" · "+job.status)+'</strong><small>'+esc((job.from?.kind||"?")+" "+(job.from?.id||"?")+" → "+(job.to?.kind||"?")+" "+(job.to?.id||"?")+" · reserved "+number(job.reserved)+" · picked "+number(job.picked)+" · delivered "+number(job.delivered))+(job.carrierId?" · carrier "+esc(job.carrierId):"")+(job.attempts?" · attempts "+esc(job.attempts):"")+(job.reason?" · "+esc(job.reason):"")+'</small></div>').join("");
+  const auditRows=()=>(logistics.audit?.rows||[]).map(row=>'<div class="logistics-job logistics-audit'+(row.balanced?'':' is-blocked')+'" data-audit-good="'+esc(row.good)+'"><strong>'+esc(row.good.toUpperCase()+" · "+(row.balanced?"BALANCED":"DIFFERENCE "+row.difference))+'</strong><small>opening '+number(row.opening)+" + produced "+number(row.produced)+" − consumed "+number(row.consumed)+" = expected "+number(row.expected)+" · physical "+number(row.physical)+" · "+esc(row.scope)+'</small></div>').join("");
+  const movementRows=()=>[...(logistics.ledger||[])].reverse().slice(0,40).map(entry=>'<div class="logistics-job logistics-movement" data-movement-type="'+esc(entry.type||"move")+'"><strong>'+esc(String(entry.type||"move").toUpperCase())+" · "+esc(entry.quantity+" "+(entry.good||"stock"))+(entry.scope==="resource"?" · RESOURCE":"")+'</strong><small>'+esc((entry.from||"—")+" → "+(entry.to||"—")+" · tick "+entry.tick+" · "+(entry.cause||entry.type||"move"))+(entry.jobId?" · job "+esc(entry.jobId):"")+(entry.houseId?" · household "+esc(entry.houseId):"")+(entry.key?" · key "+esc(entry.key):"")+'</small></div>').join("");
+  return [
+   ()=>'<div class="command-section-title">ALL STORES</div><div class="logistics-overview">'+(warehouseRows()||'<p class="command-note">No warehouse exists yet.</p>')+'</div>',
+   ()=>'<div class="command-section-title">DELIVERY JOBS · '+number(logistics.jobCount||0)+' / '+number(logistics.jobLimit||0)+'</div>'+rejection+'<div class="logistics-overview">'+(jobRows()||'<p class="command-note">No delivery jobs are recorded.</p>')+'</div>',
+   ()=>'<div class="command-section-title">GOODS AUDIT · '+((logistics.audit?.balanced)?"ALL BOOKS BALANCED":"CHECK DIFFERENCES")+'</div><div class="logistics-overview">'+(auditRows()||'<p class="command-note">No goods audit is recorded yet.</p>')+'</div>',
+   ()=>'<div class="command-section-title">MOVEMENT ARCHIVE · '+number(logistics.ledgerSize||0)+' / '+number(logistics.ledgerLimit||0)+' ENTRIES</div><div class="logistics-overview">'+(movementRows()||'<p class="command-note">No good movement is recorded yet.</p>')+'</div>'
+  ];
+ };
+ const repair=()=>{
+  const bulkRepair=ensure("bulkRepair",getBulkRepairSnapshot);
+  return bulkRepair.count?('<div class="command-section-title">STRUCTURE DAMAGE · '+number(bulkRepair.count)+' NEED REPAIR</div>'+
+   '<p class="command-note">These finished structures are missing '+number(bulkRepair.missingHp)+' HP in total. The bill below is the exact sum of their individual repairs; the order spends nothing at all when stores are short.</p>'+
+   '<div class="command-summary"><div><small>DAMAGED STRUCTURES</small><strong>'+number(bulkRepair.count)+'</strong></div><div><small>MISSING HP</small><strong>'+number(bulkRepair.missingHp)+'</strong></div><div><small>MATERIAL BILL</small><strong>'+esc(repairCostText(bulkRepair.cost))+'</strong></div></div>'+
+   '<button type="button" class="command-choice" data-command="repair-all"'+(bulkRepair.ok?'':' disabled title="'+esc(bulkRepair.reason.replaceAll("-"," "))+'"')+'>REPAIR ALL DAMAGED STRUCTURES</button>'):"";
+ };
+ const filter=()=>{
+  const {all,visible}=recordsFor(),counts=new Map();
+  for(const building of all)counts.set(building.type,(counts.get(building.type)||0)+1);
+  const typeSummary=[...counts.entries()].map(([type,count])=>{
+   const card=CARD_DECK.find(item=>item.type===type);
+   return '<span class="building-type-chip">'+esc(card?.name||BUILDING_LABELS[type]||("Building "+type))+' <strong>'+count+'</strong></span>';
+  }).join("");
+  return '<div class="building-type-summary">'+typeSummary+'</div>'+(visible.length<all.length?'<p class="command-note">Showing the first '+visible.length+' of '+all.length+' structures on this screen. Counts above include every structure.</p><button type="button" class="command-choice" data-building-show-all>SHOW ALL '+all.length+' STRUCTURES</button>':'')+'<label class="building-search-label" for="building-search">FILTER STRUCTURES</label><input id="building-search" class="building-search" type="search" maxlength="80" placeholder="Search by building type or name">';
+ };
+ const tail=()=>'<p class="command-note">Construction, local stores, field stages and active hauls are read from live simulation state. Site resource values are taken from the structure centre tile only; they are not a production rate. Construction and demolition remain in the build interface.</p>';
+ // Every whole-realm snapshot has its own empty top-level part. The markup
+ // thunks below read the same cached values, so the joined string is unchanged.
+ const deferredLogs=()=>({html:"",more:logisticsParts()});
+ const deferredRows=()=>{
+  const visible=recordsFor().visible,rows=[];
+  if(!visible.length)rows.push(()=>'<p class="command-note">No buildings are recorded in this realm yet.</p>');
+  else visible.forEach((record,index)=>rows.push({into:".building-register",html:()=>buildRecord(record,index)}));
+  return {html:"",more:rows};
+ };
+ return [
+  ()=>{ensure("records",recordsFor);return "";},
+  ()=>{ensure("city",getCitySummary);return "";},
+  ()=>{ensure("settlement",getSettlementSnapshot);return "";},
+  ()=>{ensure("bulkRepair",getBulkRepairSnapshot);return "";},
+  ()=>{ensure("logistics",getLogisticsSnapshot);return "";},
+  ()=>{ensure("workforce",getWorkforceSnapshot);return "";},
+  head,
+  deferredLogs,
+  repair,
+  filter,
+  ()=>'<div class="building-register">',
+  deferredRows,
+  ()=>'</div>',
+  tail
+ ];
 }
 function familyRecord(id){
  const key=String(id||"");
@@ -1268,16 +1717,18 @@ function healthPanel(){
  '<div class="command-section-title">FIELD MEDICINE · '+h.fieldMedicine+' / '+h.fieldMedicineLimit+' PRACTICE</div><div class="command-summary"><div><small>TREATED CASES</small><strong>'+h.fieldTreatedLastYear+'</strong></div><div><small>GATHERED REMEDIES</small><strong>'+h.fieldStock+'</strong></div><div><small>OUTBREAK RISK</small><strong>'+(h.fieldOutbreakReduction>0?'−'+h.fieldOutbreakReduction+'%':'0%')+'</strong></div><div><small>ILLNESS MORTALITY</small><strong>'+(h.fieldMortalityReduction>0?'−'+h.fieldMortalityReduction+'%':'0%')+'</strong></div><div><small>NEW OUTBREAK SEVERITY</small><strong>'+(h.fieldSeverityRelief?'−1 STEP':'FULL')+'</strong></div></div><div class="health-medicine-actions"><button data-command="health-field" '+(h.sick<=0||h.fieldStock<=0?'disabled':'')+'>TREAT WITH FIELD REMEDIES'+(h.fieldStock>0?' · '+h.fieldStock+' IN STORE':'')+'</button></div><p class="command-note">'+(h.fieldMedicine>0?'At this practice, the next outbreak risk is '+h.fieldOutbreakReduction+'% lower and illness deaths are '+h.fieldMortalityReduction+'% lower'+(h.fieldSeverityRelief?', and a new outbreak begins one severity step milder':'')+'. Every annual audit turns treatments actually given with gathered herbs into remembered practice, then fades 28% of it. Keep gathering and treating to renew it.':'No field practice yet. Gather herbs or lichen and treat the sick; the next annual audit will turn last year\'s treated cases into remembered practice. It then fades 28% each year.')+'</p>'+'<div class="health-mortality-grid"><div><span>CHILDREN<b>'+age.child+'</b></span><span>ADULTS<b>'+age.adult+'</b></span><span>ELDERS<b>'+age.elder+'</b></span></div><div>'+occupations.map(([name,count])=>'<span>'+esc(name.toUpperCase())+'<b>'+count+'</b></span>').join("")+'</div></div><div class="health-death-list">'+(deaths||'<p class="command-note">No deaths have been recorded in the health ledger.</p>')+'</div>'+
  '<div class="command-section-title">ANNUAL HEALTH AUDIT</div>'+history+'<p class="command-note">Mortality is resolved once per year by age, occupation, illness, immunity, sanitation, healers and medicine stock. The audit is bounded to residents and the latest records.</p>';
 }
-function espionagePanel(){
- const s=getEspionageSnapshot(),gold=Number(state.resources?.gold)||0;
- const agentCards=s.agents.length?s.agents.map(a=>{
+export function espionagePanel(collect=null,snapshot=null){
+ const s=snapshot||getEspionageSnapshot(),gold=Number(state.resources?.gold)||0;
+ const agentBuilders=s.agents.map(a=>()=>{
   const deskOptions=ESPIONAGE_DESKS.map(desk=>'<option value="'+desk+'"'+(a.desk===desk?' selected':'')+'>'+esc(ESPIONAGE_DESK_LABELS[desk])+'</option>').join("");
   const targetOptions='<option value="">No target needed</option>'+s.realms.map(realm=>'<option value="'+esc(realm.id)+'"'+(a.desk==="foreign"&&a.targetId===realm.id?' selected':'')+'>REALM · '+esc(realm.name)+'</option>').join("")+s.houses.map(house=>'<option value="'+esc(house.id)+'"'+(a.desk==="nobles"&&a.targetId===house.id?' selected':'')+'>HOUSE · '+esc(house.familyName)+'</option>').join("");
   return '<article class="spy-agent"><header><div><span class="command-ribbon">'+esc(a.deskLabel)+'</span><h4>'+esc(a.name)+'</h4><p>Guile '+a.guile+' · Loyalty '+a.loyalty+' · Cover '+a.cover+' ('+esc(a.coverLabel)+') · '+a.missions+' missions · '+a.successes+' successes</p></div><button data-command="spy-dismiss" data-value="'+esc(a.id)+'">DISMISS</button></header><div class="spy-agent-target"><small>'+esc(a.targetLabel)+'</small><strong>'+(a.successRate>0?a.successRate+'% SUCCESS':"NO FIELD MISSION")+'</strong></div><div class="command-inline"><select id="spy-desk-'+esc(a.id)+'" aria-label="Choose a desk for '+esc(a.name)+'">'+deskOptions+'</select><select id="spy-target-'+esc(a.id)+'" aria-label="Choose a target for '+esc(a.name)+'">'+targetOptions+'</select><button data-command="spy-assign" data-value="'+esc(a.id)+'">ASSIGN</button></div><p class="command-note">Foreign and noble desks need a named target. Market, watch and counter-intelligence work the realm itself.</p></article>';
- }).join(""):'<p class="command-note">No agents serve yet. Recruit a resident below; every agent costs '+s.recruitCost.gold+' gold and draws '+s.wages+' gold a year in wages.</p>';
+ });
+ const agentCards=typeof collect==="function"?"":agentBuilders.length?agentBuilders.map(build=>build()).join(""):'<p class="command-note">No agents serve yet. Recruit a resident below; every agent costs '+s.recruitCost.gold+' gold and draws '+s.wages+' gold a year in wages.</p>';
  const candidateOptions=s.candidates.map(c=>'<option value="'+esc(c.personId)+'">'+esc(c.name)+' · '+esc(c.job)+' · age '+c.age+' · guile '+c.guile+'</option>').join("");
  const canRecruit=s.agentCount<s.capacity&&s.candidates.length>0&&gold>=s.recruitCost.gold;
- const reports=s.reports.length?s.reports.map(report=>'<div class="spy-report"><span>YEAR '+report.year+' · '+esc(ESPIONAGE_DESK_LABELS[report.desk]||"COURT")+' · '+esc(String(report.kind).toUpperCase())+'</span><strong>'+esc(report.targetName||"Intelligence report")+'</strong><small>'+esc(report.detail)+'</small></div>').join(""):'<p class="command-note">No reports yet. The first missions resolve at the next annual audit.</p>';
+ const reportBuilders=s.reports.map(report=>()=>'<div class="spy-report"><span>YEAR '+report.year+' · '+esc(ESPIONAGE_DESK_LABELS[report.desk]||"COURT")+' · '+esc(String(report.kind).toUpperCase())+'</span><strong>'+esc(report.targetName||"Intelligence report")+'</strong><small>'+esc(report.detail)+'</small></div>');
+ const reports=typeof collect==="function"?"":reportBuilders.length?reportBuilders.map(build=>build()).join(""):'<p class="command-note">No reports yet. The first missions resolve at the next annual audit.</p>';
  const playNote=(key,pool,cost,target)=>s.plays[key]>=s.year?'Used this year; available again next year.':s[pool]<cost?'Need '+(cost-s[pool])+' more '+pool.replace('Insight',' insight').toLowerCase()+'.':!target?'No eligible target.':'';
  const lastPlayLine=play=>play?'Last: year '+play.year+' · '+esc(play.detail):'No play has been made yet.';
  const warnOptions=s.warnCandidates.length?s.warnCandidates.map(house=>'<option value="'+esc(house.id)+'">'+esc(house.familyName)+' · loyalty '+house.loyalty+(house.feudSeverity?' · feud '+house.feudSeverity:'')+'</option>').join(""):'<option value="">No threatened houses</option>';
@@ -1286,16 +1737,48 @@ function espionagePanel(){
   '<article class="spy-agent spy-play"><header><div><span class="command-ribbon">FOREIGN DESK</span><h4>DEMAND A CONCESSION</h4><p>'+s.costs.concession+' foreign insight · once a year</p></div></header><p class="command-note">Takes gold and food from the realm\'s existing trade treasury and stock. The realm resents it: relation falls 4 and fear rises 3.</p><div class="command-inline"><select id="spy-concession-realm" aria-label="Choose a realm to demand from">'+concessionOptions+'</select><button data-command="spy-concession" '+(s.canConcession?'':'disabled')+'>DEMAND · '+s.costs.concession+' FOREIGN</button></div><small class="spy-play-note">'+esc(playNote("concession","foreignInsight",s.costs.concession,s.realms.length))+'</small><small class="spy-play-last">'+lastPlayLine(s.lastPlays.concession)+'</small></article>'+
   '<article class="spy-agent spy-play"><header><div><span class="command-ribbon">MARKET DESK</span><h4>PLANT A FALSE TRAIL</h4><p>'+s.costs.falseTrail+' market insight · once a year</p></div></header><p class="command-note">Cuts rival pressure by '+18+', reduces suspicion by 4, and gives every mission in next year\'s audit +8% success odds.</p><div class="command-inline"><button data-command="spy-false-trail" '+(s.canFalseTrail?'':'disabled')+'>PLANT TRAIL · '+s.costs.falseTrail+' MARKET</button><strong>'+(s.missionBonusActive?'NEXT AUDIT +'+Math.round(s.missionBonus*100)+'% ODDS':'NO TRAIL ACTIVE')+'</strong></div><small class="spy-play-note">'+esc(playNote("falseTrail","marketInsight",s.costs.falseTrail,true))+'</small><small class="spy-play-last">'+lastPlayLine(s.lastPlays.falseTrail)+'</small></article>';
  const history=s.history.length?'<div class="spy-history">'+s.history.map(entry=>'<div><span>YEAR '+entry.year+'</span><strong>'+entry.successes+' / '+entry.missions+' MISSIONS · '+entry.seizedGold+' GOLD SEIZED</strong><small>Agents '+entry.agents+' paid '+entry.paid+' · suspicion '+entry.suspicion+' · foreign insight '+entry.foreignInsight+' · market '+entry.marketInsight+' · nobles '+entry.nobleInsight+'</small></div>').join("")+'</div>':'<p class="command-note">No annual intelligence audit has been recorded.</p>';
- return intro("THE WHISPER COURT","Shadow network","Recruit living residents, set them to a desk and let the annual audit turn their work into warning, leverage and quiet influence. Every mission is bounded to the roster, and every report says who paid for it.")+
+ const head=intro("THE WHISPER COURT","Shadow network","Recruit living residents, set them to a desk and let the annual audit turn their work into warning, leverage and quiet influence. Every mission is bounded to the roster, and every report says who paid for it.")+
  '<div class="command-summary"><div><small>AGENTS</small><strong>'+s.agentCount+' / '+s.capacity+'</strong></div><div><small>YEARLY WAGES</small><strong>'+s.annualWages+' G</strong></div><div><small>SUSPICION</small><strong>'+s.suspicion+' · '+esc(s.suspicionLabel)+'</strong></div><div><small>RIVAL PRESSURE</small><strong>'+s.rivalPressure+' / 100</strong></div><div><small>FOREIGN INSIGHT</small><strong>'+s.foreignInsight+' / 100</strong></div><div><small>MARKET INSIGHT</small><strong>'+s.marketInsight+' / 100</strong></div><div><small>NOBLE INSIGHT</small><strong>'+s.nobleInsight+' / 100</strong></div></div>'+
  '<div class="command-section-title">WHAT THE COURT CHANGES</div><div class="command-summary"><div><small>RAID WARNING</small><strong>'+(s.effects.raidReductionPercent>0?'−'+s.effects.raidReductionPercent+'% RAID DAMAGE':'0%')+'</strong></div><div><small>MARKET TERMS</small><strong>'+(s.effects.marketTermPercent>0?'+'+s.effects.marketTermPercent+'% TRADE':'0%')+'</strong></div><div><small>PLOTS EXPOSED</small><strong>'+s.totals.plotsExposed+'</strong></div><div><small>STREET CALM</small><strong>'+(s.moraleBonus>0?'+'+s.moraleBonus+' MORALE':'0')+'</strong></div><div><small>NEXT AUDIT</small><strong>'+(s.missionBonusActive?'+'+Math.round(s.missionBonus*100)+'% MISSION ODDS':'—')+'</strong></div></div><p class="command-note">Foreign insight warns the garrison, lowering raid damage. Market insight improves the terms the crown gets when it buys and sells. A noble report can expose a plot and return a wavering house to the crown\'s peace. Watch reports calm the streets.</p>'+
- '<div class="command-section-title">ACTIONABLE INTELLIGENCE · SPEND WHAT THE DESKS BRING HOME</div><div class="spy-agent-list">'+playCards+'</div>'+ '<p class="command-note">Each play spends one insight pool and can be used once a year. Warning a house feeds noble loyalty and feud risk; a concession moves real gold and food out of a realm\'s trade treasury; a false trail buys down rival pressure and improves the next annual missions. The last result of each play stays on its card.</p>'+ '<div class="command-section-title">AGENT ROSTER · '+s.agentCount+' / '+s.capacity+'</div><div class="spy-agent-list">'+agentCards+'</div>'+
+ '<div class="command-section-title">ACTIONABLE INTELLIGENCE · SPEND WHAT THE DESKS BRING HOME</div><div class="spy-agent-list">'+playCards+'</div>'+ '<p class="command-note">Each play spends one insight pool and can be used once a year. Warning a house feeds noble loyalty and feud risk; a concession moves real gold and food out of a realm\'s trade treasury; a false trail buys down rival pressure and improves the next annual missions. The last result of each play stays on its card.</p>';
+ const rosterHead='<div class="command-section-title">AGENT ROSTER · '+s.agentCount+' / '+s.capacity+'</div><div class="spy-agent-list">';
+ const rosterTail='</div>'+
  '<div class="command-section-title">RECRUIT FROM THE REALM · '+s.recruitCost.gold+' GOLD · '+s.wages+' GOLD A YEAR</div><div class="command-inline"><select id="spy-recruit-select" aria-label="Choose a resident to recruit"><option value="">Choose an adult resident…</option>'+candidateOptions+'</select><button data-command="spy-recruit" '+(canRecruit?'':'disabled')+'>RECRUIT AGENT</button></div><p class="command-note">'+(s.agentCount>=s.capacity?'The court is full; dismiss an agent before recruiting another.':s.candidates.length?'Recruits are drawn from living adults. Their learning, trade and command skills become guile.':'No free adult residents are available; the register must grow first.')+'</p>'+
- '<div class="command-section-title">LATEST REPORTS</div><div class="spy-report-list">'+reports+'</div>'+
+ '<div class="command-section-title">LATEST REPORTS</div><div class="spy-report-list">';
+ const reportsTail='</div>'+
  '<div class="command-section-title">SUSPICION · '+s.suspicion+' / 100 · '+esc(s.suspicionLabel)+'</div><p class="command-note">'+(s.suspicion>=50?'Foreign courts are watching. A failed mission can now cost the agent and trigger a diplomatic incident. Counter-intelligence agents lower the risk.':'The court is still quiet. Each field mission adds suspicion; counter-intelligence agents reduce it before missions resolve.')+'</p>'+
  '<div class="command-section-title">RIVAL COUNTER-INTELLIGENCE · PRESSURE '+s.rivalPressure+' / 100</div><div class="command-summary"><div><small>RIVAL PRESSURE</small><strong>'+s.rivalPressure+' / 100</strong></div><div><small>TURNED LAST SCREEN</small><strong>'+(s.lastScreen?s.lastScreen.revealed:0)+'</strong></div><div><small>FALSE REPORTS</small><strong>'+s.totals.falseReports+'</strong></div><div><small>GOLD LEAKED</small><strong>'+s.totals.goldLost+' G</strong></div><div><small>SCREENING COST</small><strong>'+s.screenCost+' G</strong></div></div><div class="health-medicine-actions"><button data-command="spy-screen" '+(s.canScreen?'':'disabled')+'>SCREEN THE COURT · '+s.screenCost+' GOLD</button></div><p class="command-note">'+(s.lastScreen?(s.lastScreen.clean?'The last screening found no turned agents; a clean court is not a guarantee.':'The last screening unmasked '+s.lastScreen.revealed+' turned agent'+(s.lastScreen.revealed===1?'':'s')+' and turned them back.'):'No screening has been ordered yet.')+' Rival pressure builds from active missions and suspicion. A turned agent keeps reporting, but sends false reports and leaks gold until the court is screened. Counter-intelligence agents lower the pressure and the odds of turning. Screening can be ordered once a year.'+(s.screenedYear&&s.screenedYear>=s.year?' The court has already been screened this year.':'')+'</p>'+
  '<div class="command-section-title">AGENT COVER</div><p class="command-note">Cover grows with successful missions and falls after failures. Thin cover signals an agent under pressure; a report that cannot be corroborated is the other warning. Screening is the only certain cure.</p>'+
  '<div class="command-section-title">ANNUAL INTELLIGENCE AUDIT</div>'+history+'<p class="command-note">Once a year the court pays every wage, resolves one mission per field agent and fades 12% of unused insight. Nothing here runs per frame or per tick.</p>';
+ if(typeof collect==="function"){
+  collect(head);
+  collect(rosterHead);
+  if(agentBuilders.length)agentBuilders.forEach(build=>collect({into:".spy-agent-list",html:build}));
+  else collect('<p class="command-note">No agents serve yet. Recruit a resident below; every agent costs '+s.recruitCost.gold+' gold and draws '+s.wages+' gold a year in wages.</p>');
+  collect(rosterTail);
+  if(reportBuilders.length)reportBuilders.forEach(build=>collect({into:".spy-report-list",html:build}));
+  else collect('<p class="command-note">No reports yet. The first missions resolve at the next annual audit.</p>');
+  collect(reportsTail);
+  return "";
+ }
+ return head+rosterHead+agentCards+rosterTail+reports+reportsTail;
+}
+export function espionageParts(){
+ const collected=[];
+ let snapshot=null;
+ return [
+  ()=>{snapshot=getEspionageSnapshot();return "";},
+  ()=>({
+   html:()=>{
+    espionagePanel(section=>{
+     if(typeof section==="string")collected.push(...splitMarkupForStagedRender(section));
+     else collected.push(section);
+    },snapshot);
+    return "";
+   },
+   more:collected
+  })
+ ];
 }
 function faithPanel(){
  const f=getFaithSnapshot(),m=f.modifiers,gold=Number(state.resources?.gold)||0,food=Number(state.resources?.food)||0;
@@ -1477,7 +1960,11 @@ function scheduleTimelineHydration(){
   current.dataset.timelineRendered=String(end);
   const elapsed=performance.now()-started;
   if(elapsed>FRAME_WORK_BUDGET)batchSize=Math.max(1,Math.floor(batchSize/2));
-  else if(elapsed<FRAME_WORK_BUDGET/2)batchSize=Math.min(2,batchSize+1);
+  // One card per frame keeps a late reveal from becoming one whole-dialog
+   // layout at 4x CPU; the earlier adaptive batch of two measured 268 ms on a
+   // mature timeline while every single-card step stayed below the long-task
+   // line. The visible card cap and every timeline control are unchanged.
+   else if(elapsed<FRAME_WORK_BUDGET/2)batchSize=1;
   if(end<total)requestAnimationFrame(step);
  };
  requestAnimationFrame(step);
@@ -1652,22 +2139,36 @@ function render(resetScroll=false){
  // entire incoming panel on the click task.
  let progressiveDynasty=false;
  const biomePanelState=activePanel==="biome"&&!resetScroll?captureBiomePanelState(panel):null;
- if(activePanel==="items")renderItemLexicon(panel);
- else {
+ const stagedOpen=resetScroll&&activePanel!=="chronicle"&&(narrowViewport()||STAGED_OPEN_PANELS.has(activePanel));
+ const timingSeq=recordPanelTiming({panel:activePanel,staged:stagedOpen,complete:false});
+ const itemsStaged=stagedOpen&&activePanel==="items"&&!narrowViewport();
+ if(activePanel==="items"&&!itemsStaged){
+  const __t0=performance.now();
+  renderItemLexicon(panel);
+  updatePanelTiming(timingSeq,{renderMs:(performance.now()-__t0),stages:1,mountedNodes:1,complete:true});
+ }else {
   // Opening a ledger on a mature realm used to insert the whole archive in
   // one click task. The markup itself is small; font, style and layout for
   // hundreds of rows were the 60-170 ms task. Reuse the existing chunked
   // renderer for every opened tab, not only phones. Chronicle already owns a
   // timeline hydrator and needs its slots synchronously.
   const __t0=performance.now();
-  const markup=(renderers[activePanel]||kingdom)();
-  window.__panelTiming={panel:activePanel,renderMs:Math.round((performance.now()-__t0)*10)/10};
+  const partRenderer=stagedOpen?PANEL_PART_RENDERERS.get(activePanel):null;
+  // Panels without a dedicated part builder still get bounded parsing: the
+  // renderer runs in the first staged frame and its complete top-level sections
+  // are handed to the hydrator one at a time.
+  const markup=partRenderer?partRenderer(panel):(()=>{
+   const render=renderers[activePanel]||kingdom;
+   return [()=>({html:"",more:splitMarkupForStagedRender(render())})];
+  })();
+  const renderMs=(performance.now()-__t0);
+  updatePanelTiming(timingSeq,{renderMs,parts:Array.isArray(markup)?markup.length:0});
   // Every phone panel is hydrated progressively. On desktop, the heavy
   // ledgers named above use the same scheduler: one full innerHTML insertion
   // spent 52-75 ms in style and layout on a 4x-throttled renderer. The parse
   // and mount tasks stay inside the existing 4 ms frame budget, so the panel
   // still fills in a few frames without blocking the click or the game loop.
-  if(resetScroll&&activePanel!=="chronicle"&&(narrowViewport()||STAGED_OPEN_PANELS.has(activePanel))){
+  if(stagedOpen){
    progressiveDynasty=false;
    // Building a mature ledger and parsing it in one frame left a 50-57 ms
    // task at 4x CPU throttle. Let the markup generation settle in this task;
@@ -1678,21 +2179,22 @@ function render(resetScroll=false){
    // neighbouring courts in one task still forced a 55-60 ms style/layout pass
    // at 4x CPU. Phones keep their existing chunk size; their cards are already
    // narrower and their hydration is bounded by the same 4 ms frame budget.
-   // The population register is mostly small chunks; batch them up to the
-   // scheduler's 4 ms budget. The larger noble houses and neighbouring courts
-   // still mount two chunks at a time: eight let two whole cards land in one
-   // task and produced a 54-69 ms long task at 4x CPU. Phones keep their
-   // existing smaller count-based slices.
-   const nodesPerFrame=narrowViewport()?(activePanel==="nobility"?3:2):4;
-   const cardsPerFrame=narrowViewport()?Infinity:(activePanel==="population"?4:(activePanel==="nobility"?1:2));
+   // The population register and every other archive stay at one record card
+   // and two generic nodes per frame at desktop width. Bigger batches put two
+   // whole houses or courts in one lifecycle and generated 54-69 ms style and
+   // layout passes at 4x CPU. Phones keep their narrower slices.
+   const nodesPerFrame=narrowViewport()?(activePanel==="nobility"?3:2):2;
+   const cardsPerFrame=1;
    requestAnimationFrame(()=>{
     if(mountToken!==panelRevealToken)return;
-    renderProgressive(panel,markup,{resetScroll,nodesPerFrame,cardsPerFrame,immediate:narrowViewport()?1:0,onDone:()=>{
+    renderProgressive(panel,markup,{resetScroll,nodesPerFrame,cardsPerFrame,immediate:narrowViewport()?1:0,onDone:stats=>{
+     updatePanelTiming(timingSeq,{...stats,complete:true});
      if(activePanel==="dynasty")requestAnimationFrame(drawDynastyConnectors);
     }});
    });
   }else {
    panel.innerHTML=markup;
+   updatePanelTiming(timingSeq,{stages:1,mountedNodes:1,totalMs:renderMs,complete:true});
    if(biomePanelState)restoreBiomePanelState(panel,biomePanelState);
    if(resetScroll)requestAnimationFrame(()=>{if(panel.isConnected)panel.scrollTop=0;});
   }
@@ -1951,9 +2453,10 @@ export function setupManagementUI(){
  commandContent?.addEventListener("focusin",e=>hydrateLazySelect(e.target.closest("select[data-lazy-options]")));
  commandContent?.addEventListener("pointerdown",e=>hydrateLazySelect(e.target.closest("select[data-lazy-options]")));
  commandContent?.addEventListener("keydown",e=>{if(e.key==="ArrowDown"||e.key==="Enter"||e.key===" ")hydrateLazySelect(e.target.closest("select[data-lazy-options]"));});
- if(commandContent)new MutationObserver(records=>{
-  if(records.some(record=>record.addedNodes.length||record.removedNodes.length))schedulePanelCulling();
- }).observe(commandContent,{childList:true,subtree:true});
+ // The old culling observer only called a disabled function. Staged hydration
+ // appends many bounded chunks, so leaving it installed generated mutation
+ // records for no player-visible work. The narrow renderers keep their own
+ // row caps as the single low-end strategy.
 
  document.querySelectorAll("[data-command-tab]").forEach(b=>b.addEventListener("click",()=>{const nextPanel=b.dataset.commandTab||"government";if(nextPanel==="chronicle")resetTimelineView(state.year);activePanel=nextPanel;render(true);setCommandModalOpen(true);}));
   document.querySelector("#command-modal .command-deck")?.addEventListener("keydown",event=>{
