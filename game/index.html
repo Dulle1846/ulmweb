@@ -54,7 +54,7 @@
             <button id="road-build-cancel" class="control-button hidden" type="button">EXIT BUILD</button>
             <button id="command-open-btn" class="control-button" type="button" aria-haspopup="dialog" aria-controls="command-modal">MANAGEMENT</button>
             <button id="settings-btn" class="control-button settings-button" type="button" title="Settings" aria-label="Settings"><svg class="settings-glyph" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V21h-4v-.09A1.7 1.7 0 0 0 9 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1.03H3v-4h.09A1.7 1.7 0 0 0 4.6 8.96a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-1.56V3h4v.09A1.7 1.7 0 0 0 15 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 8.96 1.7 1.7 0 0 0 20.96 10H21v4h-.04A1.7 1.7 0 0 0 19.4 15Z"/></svg></button>
-            <button id="pause-btn" class="control-button" type="button" aria-label="Pause simulation" title="Pause · P"><span id="pause-text">PAUSE</span></button>
+            <button id="pause-btn" class="control-button" type="button" aria-label="Pause simulation · P" aria-pressed="false" title="Pause · P"><span id="pause-text">PAUSE</span></button>
             <div class="speed-group" role="group" aria-label="Simulation speed">
                 <button id="speed-0-5" class="speed-button" data-speed="0.5" type="button">0.5×</button>
                 <button id="speed-1" class="speed-button is-active" data-speed="1" type="button">1×</button>
@@ -239,12 +239,12 @@
                 <div class="card-instruction">DRAW IN THE CARDS TAB, THEN DRAG OR TAP THE SELECTED CARD ONTO THE WORLD MAP</div>
             </section>
 
-            <nav class="tabs" aria-label="Kingdom information">
-                <button id="tab-0" class="tab-button is-active" type="button">EVENT LOG</button>
-                <button id="tab-1" class="tab-button" type="button">STATISTICS</button>
-                <button id="tab-2" class="tab-button" type="button">TRADE</button>
+            <nav class="tabs" role="tablist" aria-label="Kingdom information">
+                <button id="tab-0" class="tab-button is-active" type="button" role="tab" aria-controls="tab-content" aria-selected="true" tabindex="0">EVENT LOG</button>
+                <button id="tab-1" class="tab-button" type="button" role="tab" aria-controls="tab-content" aria-selected="false" tabindex="-1">STATISTICS</button>
+                <button id="tab-2" class="tab-button" type="button" role="tab" aria-controls="tab-content" aria-selected="false" tabindex="-1">TRADE</button>
             </nav>
-            <section id="tab-content" class="tab-content" aria-live="polite"></section>
+            <section id="tab-content" class="tab-content" role="tabpanel" aria-live="polite" tabindex="-1" aria-labelledby="tab-0"></section>
             <footer class="panel-footer">
                 <span>SIM TICK <strong id="tick-count">0</strong></span>
                 <button id="help-btn" class="footer-help" type="button" aria-label="How to play">?</button><button id="people-btn" class="footer-people-button" type="button" aria-label="Open character dossiers">PEOPLE</button>
@@ -592,9 +592,10 @@
             <div><span>Zoom detail levels</span><kbd>1–4</kbd></div><div><span>Zoom in / out</span><kbd>+ / −</kbd></div>
             <div><span>Pan the world</span><kbd>W A S D / ARROWS</kbd></div><div><span>Toggle music</span><kbd>M</kbd></div>
             <div><span>Save / Load</span><kbd>CTRL+S / CTRL+O</kbd></div><div><span>Help / close</span><kbd>? / ESC</kbd></div>
+            <div><span>Navigate panels</span><kbd>TAB / ← →</kbd></div>
         </div>
         <div class="profile-note">Saves are currently stored per local browser profile. Do not use this as secure multi-user authentication or cloud backup.</div>
-        <div class="settings-meta"><span>KINGS &amp; CARDS · <b>v3.86.2</b></span><span>ORIGINAL INTERFACE · LOCAL-FIRST · VANILLA HTML / CSS / JS</span></div>
+        <div class="settings-meta"><span>KINGS &amp; CARDS · <b>v3.87.0</b></span><span>ORIGINAL INTERFACE · LOCAL-FIRST · VANILLA HTML / CSS / JS</span></div>
     </div>
 </div>
 
@@ -633,7 +634,7 @@
 </div>
 
 
-<div id="command-modal" class="screen-overlay command-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="command-title"><section class="ui-panel ui-window ui-window--large modal-panel command-panel"><header class="ui-window__header ui-panel__header command-panel-header"><div class="command-header-brand"><img class="command-crest" src="assets/royal-crest.svg" alt=""><div><span class="command-ribbon">KINGDOM STRATEGY</span><h2 id="command-title">REALM MANAGEMENT</h2></div></div><button id="command-close" class="ui-button ui-button--icon modal-close" type="button" aria-label="Close management" autofocus>×</button></header><nav class="command-deck command-modal-tabs" aria-label="Strategic management"></nav><label class="command-tab-select" for="command-tab-select"><span>OPEN MANAGEMENT PANEL</span><select id="command-tab-select" aria-label="Choose management panel"></select></label><div id="command-panel-content" class="ui-window__body command-panel-content"></div></section></div>
+<div id="command-modal" class="screen-overlay command-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="command-title"><section class="ui-panel ui-window ui-window--large modal-panel command-panel"><header class="ui-window__header ui-panel__header command-panel-header"><div class="command-header-brand"><img class="command-crest" src="assets/royal-crest.svg" alt=""><div><span class="command-ribbon">KINGDOM STRATEGY</span><h2 id="command-title">REALM MANAGEMENT</h2></div></div><button id="command-close" class="ui-button ui-button--icon modal-close" type="button" aria-label="Close management" autofocus>×</button></header><nav class="command-deck command-modal-tabs" role="tablist" aria-label="Strategic management"></nav><label class="command-tab-select" for="command-tab-select"><span>OPEN MANAGEMENT PANEL</span><select id="command-tab-select" aria-label="Choose management panel"></select></label><div id="command-panel-content" class="ui-window__body command-panel-content" role="tabpanel" tabindex="-1"></div></section></div>
 <div id="card-drag-ghost" aria-hidden="true"><span id="drag-ghost-icon" class="drag-ghost-icon"></span><span id="drag-ghost-name" class="drag-ghost-name"></span></div>
 <div id="forest-subtitle" class="forest-subtitle hidden" role="status" aria-live="polite"></div>
 <div id="forest-tip" class="forest-tip hidden" role="tooltip" aria-hidden="true"></div>

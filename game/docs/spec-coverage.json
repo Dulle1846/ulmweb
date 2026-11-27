@@ -1,15 +1,15 @@
 {
   "version": 2,
   "generatedBy": "scripts/spec-audit.mjs",
-  "scope": "All numbered 1.1 and 1.2.1–1.2.18 requirements, including the 1.2.23.1.151–210 forest economy and forest culture, plus the documented 2.x phases, 3.3–4.0 roadmap points, the 3.11 expedition follow-up chain contract, the 3.12 royal education contract, the 3.13 noble arbitration contract and the atlas quest follow-up contract.",
-  "commit": "6a25c971392322197be084a2d3bd954ae00cf894",
-  "sourceHash": "2432c40157c49530433dbd3bd5ccbf9fa5fbfb9d7c670ca16a6e21496b575faa",
-  "generatedAt": "2026-11-27T17:16:10+00:00",
+  "scope": "All numbered 1.1 and 1.2.1–1.2.18 requirements, including the 1.2.23.1.151–270 forest economy, culture, warfare and presentation with the field guide, plus the documented 2.x phases, 3.3–4.0 roadmap points, the 3.11 expedition chain, 3.8.14 noble arbitration, 3.9.12 atlas quest follow-ups and the 3.12 keyboard-only play contract.",
+  "commit": "1556baf8e2782799fb9fc3b2063d1cb40f2e9c1d",
+  "sourceHash": "2752aa8a32268de1549a349910f45270f78a28c3f882fb0854d24c365ba4c0a1",
+  "generatedAt": "2026-11-27T17:47:13Z",
   "totals": {
-    "total": 1785,
-    "implemented": 1785,
+    "total": 1789,
+    "implemented": 1789,
     "open": 0,
-    "sections": 44
+    "sections": 45
   },
   "collisions": [
     {
@@ -47903,6 +47903,202 @@
       "implemented": 6,
       "open": 0,
       "total": 6
+    },
+    {
+      "id": "3.12",
+      "title": "Keyboard-only play and visible focus",
+      "points": [
+        {
+          "id": "3.12.1",
+          "label": "Pause stays reachable while a control owns focus and announces its state",
+          "evidence": [
+            {
+              "file": "index.html",
+              "symbol": "aria-pressed=\"false\"",
+              "role": "markup"
+            },
+            {
+              "file": "js/presentation/input.js",
+              "symbol": "function togglePause",
+              "role": "command"
+            },
+            {
+              "file": "js/presentation/input.js",
+              "symbol": "SIMULATION PAUSED",
+              "role": "status"
+            }
+          ],
+          "tests": [
+            "tests/ui/master-ui-contract.test.js",
+            "tests/browser/keyboard-accessibility.mjs",
+            "tests/ui/master-ui-contract.test.js",
+            "tests/browser/keyboard-accessibility.mjs"
+          ],
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/presentation/input.js#function togglePause (pause)",
+            "js/presentation/management-ui.js#function restoreCommandFocus (focus)",
+            "css/ui-components.css#:focus-visible (presentation)",
+            "index.html#aria-pressed=\"false\" (markup)",
+            "js/presentation/input.js#function togglePause (command)",
+            "js/presentation/input.js#SIMULATION PAUSED (status)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "3.12.2",
+          "label": "Both panel decks expose real tablist, arrow keys and roving focus",
+          "evidence": [
+            {
+              "file": "index.html",
+              "symbol": "role=\"tablist\"",
+              "role": "markup"
+            },
+            {
+              "file": "js/presentation/management-ui.js",
+              "symbol": "button.setAttribute(\"role\",\"tab\")",
+              "role": "command deck"
+            },
+            {
+              "file": "js/presentation/input.js",
+              "symbol": "function switchTab",
+              "role": "information tabs"
+            }
+          ],
+          "tests": [
+            "tests/ui/master-ui-contract.test.js",
+            "tests/browser/keyboard-accessibility.mjs",
+            "tests/ui/master-ui-contract.test.js",
+            "tests/browser/keyboard-accessibility.mjs"
+          ],
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/presentation/input.js#function togglePause (pause)",
+            "js/presentation/management-ui.js#function restoreCommandFocus (focus)",
+            "css/ui-components.css#:focus-visible (presentation)",
+            "index.html#role=\"tablist\" (markup)",
+            "js/presentation/management-ui.js#button.setAttribute(\"role\",\"tab\") (command deck)",
+            "js/presentation/input.js#function switchTab (information tabs)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "3.12.3",
+          "label": "Repair All, per-building repair and market orders keep focus after a rebuild",
+          "evidence": [
+            {
+              "file": "js/presentation/management-ui.js",
+              "symbol": "function captureCommandFocus",
+              "role": "focus capture"
+            },
+            {
+              "file": "js/presentation/management-ui.js",
+              "symbol": "function restoreCommandFocus",
+              "role": "focus restore"
+            },
+            {
+              "file": "js/presentation/management-ui.js",
+              "symbol": "repair-all",
+              "role": "bulk repair"
+            },
+            {
+              "file": "js/presentation/input.js",
+              "symbol": "#tab-content [data-trade]",
+              "role": "market"
+            }
+          ],
+          "tests": [
+            "tests/ui/master-ui-contract.test.js",
+            "tests/browser/keyboard-accessibility.mjs",
+            "tests/ui/master-ui-contract.test.js",
+            "tests/browser/keyboard-accessibility.mjs"
+          ],
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/presentation/input.js#function togglePause (pause)",
+            "js/presentation/management-ui.js#function restoreCommandFocus (focus)",
+            "css/ui-components.css#:focus-visible (presentation)",
+            "js/presentation/management-ui.js#function captureCommandFocus (focus capture)",
+            "js/presentation/management-ui.js#function restoreCommandFocus (focus restore)",
+            "js/presentation/management-ui.js#repair-all (bulk repair)",
+            "js/presentation/input.js##tab-content [data-trade] (market)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "3.12.4",
+          "label": "High-specificity focus rings survive legacy outline resets",
+          "evidence": [
+            {
+              "file": "css/ui-components.css",
+              "symbol": ":focus-visible",
+              "role": "ring"
+            },
+            {
+              "file": "css/ui-components.css",
+              "symbol": "html.ui-high-contrast",
+              "role": "contrast mode"
+            }
+          ],
+          "tests": [
+            "tests/ui/master-ui-contract.test.js",
+            "tests/browser/keyboard-accessibility.mjs",
+            "tests/ui/master-ui-contract.test.js",
+            "tests/browser/keyboard-accessibility.mjs"
+          ],
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/presentation/input.js#function togglePause (pause)",
+            "js/presentation/management-ui.js#function restoreCommandFocus (focus)",
+            "css/ui-components.css#:focus-visible (presentation)",
+            "css/ui-components.css#:focus-visible (ring)",
+            "css/ui-components.css#html.ui-high-contrast (contrast mode)"
+          ],
+          "probe": null
+        }
+      ],
+      "consumers": [
+        {
+          "file": "js/presentation/input.js",
+          "symbol": "function togglePause",
+          "role": "pause",
+          "valid": true
+        },
+        {
+          "file": "js/presentation/management-ui.js",
+          "symbol": "function restoreCommandFocus",
+          "role": "focus",
+          "valid": true
+        },
+        {
+          "file": "css/ui-components.css",
+          "symbol": ":focus-visible",
+          "role": "presentation",
+          "valid": true
+        }
+      ],
+      "tests": [
+        {
+          "file": "tests/ui/master-ui-contract.test.js",
+          "valid": true
+        },
+        {
+          "file": "tests/browser/keyboard-accessibility.mjs",
+          "valid": true
+        }
+      ],
+      "source": "",
+      "note": "",
+      "probeFunction": null,
+      "probeClimate": "temperate",
+      "probeExtra": {},
+      "implemented": 4,
+      "open": 0,
+      "total": 4
     },
     {
       "id": "4.0",

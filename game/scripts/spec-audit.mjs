@@ -902,7 +902,35 @@ const SYSTEM_SPECS = [
         ],
         tests: ["tests/systems/expeditions.test.js", "tests/systems/special-biome-couplings.test.js", "tests/browser/expeditions-ui.mjs", "tests/browser/biome-atlas-ui.mjs"]
     }),
-    section("4.0", "Great World and long-running history", [
+    section("3.12", "Keyboard-only play and visible focus", [
+        { id: "3.12.1", label: "Pause stays reachable while a control owns focus and announces its state", evidence: [
+            { file: "index.html", symbol: "aria-pressed=\"false\"", role: "markup" },
+            { file: "js/presentation/input.js", symbol: "function togglePause", role: "command" },
+            { file: "js/presentation/input.js", symbol: "SIMULATION PAUSED", role: "status" }
+        ], tests: ["tests/ui/master-ui-contract.test.js", "tests/browser/keyboard-accessibility.mjs"] },
+        { id: "3.12.2", label: "Both panel decks expose real tablist, arrow keys and roving focus", evidence: [
+            { file: "index.html", symbol: "role=\"tablist\"", role: "markup" },
+            { file: "js/presentation/management-ui.js", symbol: "button.setAttribute(\"role\",\"tab\")", role: "command deck" },
+            { file: "js/presentation/input.js", symbol: "function switchTab", role: "information tabs" }
+        ], tests: ["tests/ui/master-ui-contract.test.js", "tests/browser/keyboard-accessibility.mjs"] },
+        { id: "3.12.3", label: "Repair All, per-building repair and market orders keep focus after a rebuild", evidence: [
+            { file: "js/presentation/management-ui.js", symbol: "function captureCommandFocus", role: "focus capture" },
+            { file: "js/presentation/management-ui.js", symbol: "function restoreCommandFocus", role: "focus restore" },
+            { file: "js/presentation/management-ui.js", symbol: "repair-all", role: "bulk repair" },
+            { file: "js/presentation/input.js", symbol: "#tab-content [data-trade]", role: "market" }
+        ], tests: ["tests/ui/master-ui-contract.test.js", "tests/browser/keyboard-accessibility.mjs"] },
+        { id: "3.12.4", label: "High-specificity focus rings survive legacy outline resets", evidence: [
+            { file: "css/ui-components.css", symbol: ":focus-visible", role: "ring" },
+            { file: "css/ui-components.css", symbol: "html.ui-high-contrast", role: "contrast mode" }
+        ], tests: ["tests/ui/master-ui-contract.test.js", "tests/browser/keyboard-accessibility.mjs"] }
+    ], {
+        consumers: [
+            { file: "js/presentation/input.js", symbol: "function togglePause", role: "pause" },
+            { file: "js/presentation/management-ui.js", symbol: "function restoreCommandFocus", role: "focus" },
+            { file: "css/ui-components.css", symbol: ":focus-visible", role: "presentation" }
+        ],
+        tests: ["tests/ui/master-ui-contract.test.js", "tests/browser/keyboard-accessibility.mjs"]
+    }),    section("4.0", "Great World and long-running history", [
         {
             id: "4.0.1", label: "Multiple kingdoms and map regions",
             evidence: [
@@ -1342,7 +1370,7 @@ export function runSpecAudit({ write = false } = {}) {
     const result = {
         version: 2,
         generatedBy: "scripts/spec-audit.mjs",
-        scope: "All numbered 1.1 and 1.2.1–1.2.18 requirements, including the 1.2.23.1.151–210 forest economy and forest culture, plus the documented 2.x phases, 3.3–4.0 roadmap points, the 3.11 expedition follow-up chain contract, the 3.12 royal education contract, the 3.13 noble arbitration contract and the atlas quest follow-up contract.",
+        scope: "All numbered 1.1 and 1.2.1–1.2.18 requirements, including the 1.2.23.1.151–270 forest economy, culture, warfare and presentation with the field guide, plus the documented 2.x phases, 3.3–4.0 roadmap points, the 3.11 expedition chain, 3.8.14 noble arbitration, 3.9.12 atlas quest follow-ups and the 3.12 keyboard-only play contract.",
         commit: readCommit(),
         sourceHash: hashFiles(allFiles),
         generatedAt: readCommitDate(),

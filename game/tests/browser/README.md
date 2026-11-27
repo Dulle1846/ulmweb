@@ -12,12 +12,16 @@ From `game/`:
 npm install
 npm run test:e2e:setup
 npm run test:e2e
+npm run test:keyboard
 npm run test:forester-stewardship
 npm run test:forester-stewardship-longrun
 npm run test:forest-stewardship-ui
-npm run test:jungle-raid
 ```
 
+`test:keyboard` is the keyboard-only player proof: pause with `P` from a
+focused control, arrow through both tablists, activate Bulk Repair and a market
+order with `Enter`, close with `Escape`, and verify the rendered focus rings.
+It is part of the explicit browser gate and needs no pointer input.
 `test:jungle-raid` starts a real tropical realm, recruits local levies, launches the
 production war front and plays the complete raid through `updateSimulation()`. It
 verifies ambush, supply attrition, cover and the local guerrilla bonus against the
@@ -237,6 +241,7 @@ Example shape (adapt the paths to the packages available on the host):
 export LD_LIBRARY_PATH="$HOME/.local/playwright-libs/usr/lib/x86_64-linux-gnu:$HOME/.local/playwright-libs/lib/x86_64-linux-gnu"
 export FONTCONFIG_FILE="$HOME/.local/playwright-fonts/fonts.conf"
 npm run test:e2e
+npm run test:keyboard
 ```
 
 If Chromium starts but the preflight crashes, inspect the launch error first;

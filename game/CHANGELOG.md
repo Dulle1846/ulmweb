@@ -1,7 +1,7 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.86.2`
-**Next development line:** `3.87.0-dev`
+**Current production version:** `3.87.0`
+**Next development line:** `3.88.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
@@ -9,6 +9,26 @@
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
 
+## 3.87.0 - Keyboard-only play and visible focus
+
+A full keyboard path now covers the two things players do most: stop the world
+and change a panel. This is presentation and input only - no save schema bump,
+no new RNG stream and no extra simulation or frame work.
+
+- Pause is always reachable. P works while a control has focus, updates
+  aria-pressed and the accessible name, and announces the change in the
+  existing live status region.
+- Both decks are real tablists. Arrow, Home and End keys move across the
+  three information tabs and the 29 management panels; the active tab keeps a
+  single focus stop and aria-selected.
+- Actions keep the player's place. Bulk repair, per-building repair and
+  market orders restore focus to the control that was activated after the panel
+  rebuild, with a bounded fallback that is always a connected control.
+- Focus is visible everywhere. A high-specificity :focus-visible ring beats
+  legacy outline resets and widens in high-contrast mode.
+- Proof. npm run test:keyboard drives a real Chromium session with keys only
+  and checks rendered focus styles, state announcements and the repair and
+  trade outcomes. See docs/KEYBOARD_ACCESSIBILITY.md.
 ## 3.86.2 — Lesbare Tinte im symbolischen Atlas
 
 Die Screenshot-Kontrolle auf 390×844 zeigte zwei echte Kontrastfehler. Im

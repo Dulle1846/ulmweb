@@ -22,6 +22,17 @@
 .ui-button--tab:hover:not(:disabled){background:linear-gradient(180deg,#66543c,#3d3024)}
 .ui-button:active:not(:disabled){transform:translateY(1px);box-shadow:inset 0 2px 4px #1b140f66}
 .ui-button:focus-visible{outline:2px solid var(--ui-control-focus);outline-offset:2px;box-shadow:0 0 0 3px #34281d99}
+/* Keyboard focus must stay visible even where legacy skins clear outlines.
+   :focus-visible keeps pointer clicks quiet while Tab/arrow focus is ringed. */
+html body :is(.game-shell,.screen-overlay)
+ :is(button,a[href],summary,select,input,[role="button"],[role="tab"]):focus-visible{
+ outline:2px solid var(--ui-control-focus);outline-offset:2px;box-shadow:0 0 0 3px #17120c;
+}
+html.ui-high-contrast body :is(.game-shell,.screen-overlay)
+ :is(button,a[href],summary,select,input,[role="button"],[role="tab"]):focus-visible{
+ outline-width:3px;outline-offset:3px;
+}
+#command-panel-content:focus-visible{outline-offset:-2px}
 .ui-button:disabled,.ui-button[aria-disabled="true"]{opacity:.46;filter:grayscale(.45);cursor:not-allowed;transform:none;box-shadow:none}
 .ui-button[aria-pressed="true"],.ui-button.is-active,.ui-button.is-selected{border-color:#d4b36e;background:linear-gradient(180deg,#80623e,#493725);color:#fff0cc;box-shadow:inset 0 0 0 1px #d9bd7b55}
 .ui-panel{border:1px solid var(--ui-line,#8d7046);box-shadow:0 12px 32px #0007,inset 0 1px #f6e8c155}

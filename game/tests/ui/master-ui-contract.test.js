@@ -4,7 +4,7 @@ import {readFile} from "node:fs/promises";
 import {MANAGEMENT_TABS} from "../../js/presentation/management-tabs.js";
 
 const root=new URL("../../",import.meta.url);
-const [html,css,cardCss,ui,management,populationPanel,dossier,main,saveRuntime,saveValidation,economy,economyCycle,renderer,hud,gameCss]=await Promise.all([
+const [html,css,cardCss,ui,management,populationPanel,dossier,main,saveRuntime,saveValidation,economy,economyCycle,renderer,hud,gameCss,inputJs,componentsCss]=await Promise.all([
   readFile(new URL("index.html",root),"utf8"),
   readFile(new URL("css/ui-design-system.css",root),"utf8"),
   readFile(new URL("css/medieval.css",root),"utf8"),
@@ -19,7 +19,9 @@ const [html,css,cardCss,ui,management,populationPanel,dossier,main,saveRuntime,s
   readFile(new URL("js/systems/economy-cycle.js",root),"utf8"),
   readFile(new URL("js/presentation/rendering/renderer.js",root),"utf8"),
   readFile(new URL("css/hud-v3.css",root),"utf8"),
-  readFile(new URL("css/game.css",root),"utf8")
+  readFile(new URL("css/game.css",root),"utf8"),
+  readFile(new URL("js/presentation/input.js",root),"utf8"),
+  readFile(new URL("css/ui-components.css",root),"utf8")
 ]);
 const tabIds=new Set(MANAGEMENT_TABS.map(tab=>tab.id));
 
@@ -247,7 +249,7 @@ test("settings expose local save slots, import/export and version/credits metada
   assert.ok(html.includes('id="export-save-btn"'));
   assert.ok(html.includes('id="import-save-input"'));
   assert.ok(html.includes('id="save-archive-status"'));
-  assert.ok(html.includes("KINGS &amp; CARDS · <b>v3.86.2</b>"));
+  assert.ok(html.includes("KINGS &amp; CARDS · <b>v3.87.0</b>"));
   assert.ok(management.includes('data-command="crown-grain"'));
   assert.ok(management.includes('data-command="crown-water"'));
   assert.ok(management.includes('data-command="crown-housing"'));
@@ -270,7 +272,7 @@ test("advertised keyboard shortcuts match the wired commands",()=>{
   assert.ok(shortcutStart>=0&&shortcutEnd>shortcutStart);
   const shortcuts=html.slice(shortcutStart,shortcutEnd);
   assert.ok(!shortcuts.includes("<kbd>SPACE</kbd>"),"Space places a card, it must not be advertised as pause");
-  for(const binding of ["<kbd>P</kbd>","<kbd>ENTER / SPACE</kbd>","<kbd>1–4</kbd>","<kbd>+ / −</kbd>","<kbd>W A S D / ARROWS</kbd>","<kbd>CTRL+S / CTRL+O</kbd>","<kbd>? / ESC</kbd>"]){
+  for(const binding of ["<kbd>P</kbd>","<kbd>ENTER / SPACE</kbd>","<kbd>1–4</kbd>","<kbd>+ / −</kbd>","<kbd>W A S D / ARROWS</kbd>","<kbd>CTRL+S / CTRL+O</kbd>","<kbd>? / ESC</kbd>","<kbd>TAB / ← →</kbd>"]){
     assert.ok(shortcuts.includes(binding),"shortcut list is missing "+binding);
   }
 });
@@ -508,4 +510,37 @@ test("accessibility preferences are visible, persistent and applied as document 
   assert.ok(css.includes("html.ui-hide-tooltips [data-tooltip]::after"));
   assert.ok(css.includes("html.ui-hide-tooltips [data-ui-tooltip]::after"));
   assert.ok(css.includes(".settings-accessibility"));
+});
+
+test("panel navigation is a real tablist with arrow keys and restored focus",()=>{
+  assert.ok(html.includes('<nav class="tabs" role="tablist"'),"information tabs need tablist semantics");
+  for(const id of [0,1,2])assert.ok(html.includes('id="tab-'+id+'"')&&html.includes('role="tab"'),"tab "+id+" needs tab semantics");
+  assert.ok(html.includes('id="tab-content" class="tab-content" role="tabpanel"'),"the panel needs tabpanel semantics");
+  assert.ok(html.includes('<nav class="command-deck command-modal-tabs" role="tablist"'),"the command deck needs tablist semantics");
+  assert.ok(html.includes('id="command-panel-content" class="ui-window__body command-panel-content" role="tabpanel" tabindex="-1"'),"command panel must be programmatically focusable");
+  assert.ok(management.includes('button.setAttribute("role","tab")'));
+  assert.ok(management.includes('button.setAttribute("aria-controls","command-panel-content")'));
+  assert.ok(management.includes('b.setAttribute("aria-selected",String(active))'));
+  assert.ok(management.includes("if(b.tabIndex!==tabIndex)b.tabIndex=tabIndex;"));
+  assert.ok(management.includes('event.key==="ArrowRight"')&&management.includes('event.key==="Home"'));
+  assert.ok(management.includes("function captureCommandFocus(button)")&&management.includes("function restoreCommandFocus(saved)"));
+  assert.ok(management.includes("data-command=\"repair-all\"")&&management.includes("data-command=\"repair-building\"")&&management.includes("data-command=\"timber-sell\""));
+  assert.ok(inputJs.includes('const tabs=[...document.querySelectorAll(".tabs [role=\'tab\']")]'));
+  assert.ok(inputJs.includes('document.querySelector("#tab-content [data-trade]")')||inputJs.includes('"#tab-content [data-trade]"'));
+});
+
+test("pause is announced and reachable while a control has focus",()=>{
+  assert.ok(html.includes('id="pause-btn" class="control-button" type="button" aria-label="Pause simulation · P" aria-pressed="false"'));
+  assert.ok(inputJs.includes('button?.setAttribute("aria-pressed",String(state.isPaused))'));
+  assert.ok(inputJs.includes('showToast(state.isPaused?"SIMULATION PAUSED":"SIMULATION RESUMED")'));
+  assert.ok(inputJs.includes('pauseIntent?.togglePause&&!event.ctrlKey'));
+  assert.ok(inputJs.includes('!isTextEntryTarget(event.target)'));
+});
+
+test("keyboard focus rings survive legacy outline resets and high contrast",()=>{
+  assert.ok(componentsCss.includes(":is(button,a[href],summary,select,input,[role=\"button\"],[role=\"tab\"]):focus-visible"));
+  assert.ok(componentsCss.includes("outline:2px solid var(--ui-control-focus)"));
+  assert.ok(componentsCss.includes("html.ui-high-contrast body :is(.game-shell,.screen-overlay)"));
+  assert.ok(componentsCss.includes("outline-width:3px"));
+  assert.ok(componentsCss.includes("#command-panel-content:focus-visible{outline-offset:-2px}"));
 });

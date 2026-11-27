@@ -1598,6 +1598,25 @@ function restoreBiomePanelState(panel,saved){
   next?.focus({preventScroll:true});
  }
 }
+// Every successful command rebuilds the panel. Keep the activated control's
+// identity so a keyboard player never lands on <body> after Repair All,
+// Repair Building or a timber sale. Nothing here runs without a real action.
+function captureCommandFocus(button){
+ if(!button||!button.dataset?.command)return null;
+ return {command:button.dataset.command,value:button.dataset.value||null,order:button.dataset.order||null};
+}
+function restoreCommandFocus(saved){
+ if(!saved||$("command-modal")?.classList.contains("hidden"))return false;
+ const panel=$("command-panel-content");if(!panel)return false;
+ const nodes=[...panel.querySelectorAll("[data-command]")].filter(node=>!node.disabled);
+ const exact=nodes.find(node=>node.dataset.command===saved.command&&(node.dataset.value||null)===saved.value&&(node.dataset.order||null)===saved.order);
+ const same=nodes.find(node=>node.dataset.command===saved.command);
+ const fallback=nodes.find(node=>node.dataset.command==="repair-all")||$("command-close");
+ const target=exact||same||fallback;
+ if(!target)return false;
+ target.focus({preventScroll:true});
+ return true;
+}
 function render(resetScroll=false){
  commandOpenRenderToken++;
  clearFrameWork();
@@ -1680,12 +1699,18 @@ function render(resetScroll=false){
  if(activePanel==="dynasty"&&!narrowViewport())requestAnimationFrame(drawDynastyConnectors);
  if(activePanel==="chronicle")startProgressiveTimeline();
  const syncTabState=()=>{
-  if(!narrowViewport())document.querySelectorAll("[data-command-tab]").forEach(b=>{
+  document.querySelectorAll("[data-command-tab]").forEach(b=>{
    const active=b.dataset.commandTab===activePanel;
-   if(b.classList.contains("is-active")!==active)b.classList.toggle("is-active",active);
+   if(!narrowViewport()&&b.classList.contains("is-active")!==active)b.classList.toggle("is-active",active);
+   if(b.getAttribute("aria-selected")!==String(active))b.setAttribute("aria-selected",String(active));
+   const tabIndex=active?0:-1;
+   if(b.tabIndex!==tabIndex)b.tabIndex=tabIndex;
    if(active){if(b.getAttribute("aria-current")!=="page")b.setAttribute("aria-current","page");}
    else if(b.hasAttribute("aria-current"))b.removeAttribute("aria-current");
   });
+  const activeTab=document.querySelector('[data-command-tab="'+activePanel+'"]');
+  const activePanelEl=$("command-panel-content");
+  if(activePanelEl&&activeTab&&activePanelEl.getAttribute("aria-labelledby")!==activeTab.id)activePanelEl.setAttribute("aria-labelledby",activeTab.id);
   const tabSelect=$("command-tab-select");
   if(tabSelect&&tabSelect.value!==activePanel)tabSelect.value=activePanel;
   setNavigationActive(activePanel);
@@ -1702,7 +1727,7 @@ function render(resetScroll=false){
   });
  }
 }
-function act(b){ const a=b.dataset.command,v=b.dataset.value;let r={ok:false,reason:"unknown-action"};
+function act(b){ const a=b.dataset.command,v=b.dataset.value;let r={ok:false,reason:"unknown-action"}; const focus=captureCommandFocus(b);
 
  if(a==="realm-cycle")r=resolveRealmCyclePetition(v);
  else if(a==="noble-charter")r=grantNobleCharter(v);
@@ -1815,6 +1840,9 @@ function act(b){ const a=b.dataset.command,v=b.dataset.value;let r={ok:false,rea
   else toast("DECISION RECORDED");
   if(a.startsWith("special-"))window.dispatchEvent(new CustomEvent("kac:special-biome-change"));
   renderUI();render();
+ if(focus&&(!document.activeElement||document.activeElement===document.body||!document.activeElement.isConnected)){
+  if(!restoreCommandFocus(focus))requestAnimationFrame(()=>{if(!document.activeElement||document.activeElement===document.body)restoreCommandFocus(focus);});
+ }
  }else toast((r.reason||"ACTION FAILED").replaceAll("-"," ").toUpperCase());
 }
 async function runAiCommand(kind){
@@ -1848,6 +1876,9 @@ function renderManagementTabs(){
   button.type="button";
   button.className="ui-button ui-button--tab";
   button.dataset.commandTab=tab.id;
+  button.id="command-tab-"+tab.id;
+  button.setAttribute("role","tab");
+  button.setAttribute("aria-controls","command-panel-content");
   button.innerHTML='<svg aria-hidden="true"><use href="assets/command-emblems.svg#'+esc(tab.icon)+'"></use></svg><span>'+esc(tab.label)+'</span>';
   fragment.append(button);
  }
@@ -1924,6 +1955,23 @@ export function setupManagementUI(){
  }).observe(commandContent,{childList:true,subtree:true});
 
  document.querySelectorAll("[data-command-tab]").forEach(b=>b.addEventListener("click",()=>{const nextPanel=b.dataset.commandTab||"government";if(nextPanel==="chronicle")resetTimelineView(state.year);activePanel=nextPanel;render(true);setCommandModalOpen(true);}));
+  document.querySelector("#command-modal .command-deck")?.addEventListener("keydown",event=>{
+   if(event.ctrlKey||event.metaKey||event.altKey||event.repeat)return;
+   const tabs=[...document.querySelectorAll("#command-modal .command-deck [data-command-tab]")];
+   const current=tabs.indexOf(document.activeElement);
+   if(current<0)return;
+   let next=-1;
+   if(event.key==="Home")next=0;
+   else if(event.key==="End")next=tabs.length-1;
+   else if(event.key==="ArrowRight")next=(current+1)%tabs.length;
+   else if(event.key==="ArrowLeft")next=(current-1+tabs.length)%tabs.length;
+   if(next<0||!tabs[next])return;
+   event.preventDefault();
+   const id=tabs[next].dataset.commandTab||"government";
+   if(id==="chronicle")resetTimelineView(state.year);
+   activePanel=id;render(true);setCommandModalOpen(true);
+   document.querySelector('[data-command-tab="'+id+'"]')?.focus({preventScroll:true});
+  });
  const commandTabSelect=$("command-tab-select");
  if(commandTabSelect&&!commandTabSelect.options.length){
   document.querySelectorAll("[data-command-tab]").forEach(b=>{
@@ -2463,7 +2511,16 @@ export function setupManagementUI(){
   else if(action==="events")$("tab-0")?.click();
   else if(action==="save")$("save-btn")?.click();
  }));
- document.addEventListener("keydown",e=>{if(e.key==="Escape"){hideForestTip();setCommandModalOpen(false);}});
+ document.addEventListener("keydown",e=>{
+  if(e.key!=="Escape")return;
+  hideForestTip();
+  // A nested dossier owns Escape; management must not close underneath it.
+  const commandModal=$("command-modal");
+  if(!commandModal||commandModal.classList.contains("hidden"))return;
+  const above=[...document.querySelectorAll('[role="dialog"][aria-modal="true"]')].some(dialog=>
+   dialog!==commandModal&&!dialog.classList.contains("hidden"));
+  if(!above)setCommandModalOpen(false);
+ });
  // The closed shell is kept in the layout tree, but Chromium still defers some
  // of its first style/layout work while it is invisible: opening the empty
  // dialog then cost 55-60 ms on a 4x-throttled device. Pay that layout once

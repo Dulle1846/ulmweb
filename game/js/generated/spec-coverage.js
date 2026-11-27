@@ -2,13 +2,13 @@
 export const SPEC_COVERAGE = Object.freeze({
   "version": 2,
   "generatedBy": "scripts/spec-audit.mjs",
-  "commit": "6a25c971392322197be084a2d3bd954ae00cf894",
-  "sourceHash": "2432c40157c49530433dbd3bd5ccbf9fa5fbfb9d7c670ca16a6e21496b575faa",
+  "commit": "1556baf8e2782799fb9fc3b2063d1cb40f2e9c1d",
+  "sourceHash": "2752aa8a32268de1549a349910f45270f78a28c3f882fb0854d24c365ba4c0a1",
   "totals": {
-    "total": 1785,
-    "implemented": 1785,
+    "total": 1789,
+    "implemented": 1789,
     "open": 0,
-    "sections": 44
+    "sections": 45
   },
   "nextSection": null,
   "collisions": [
@@ -691,6 +691,14 @@ export const SPEC_COVERAGE = Object.freeze({
       "title": "Royal expeditions and biome follow-up chains",
       "total": 6,
       "implemented": 6,
+      "open": 0,
+      "source": "system registry"
+    },
+    {
+      "id": "3.12",
+      "title": "Keyboard-only play and visible focus",
+      "total": 4,
+      "implemented": 4,
       "open": 0,
       "source": "system registry"
     },

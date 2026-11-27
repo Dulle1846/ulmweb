@@ -12,7 +12,7 @@ import { getRoadBuildMode,placeRoad,removeRoad } from "../systems/roads.js";
 import { isWorkshopOpen,handleWorkshopClick,cancelWorkshopTool,closeWorkshop } from "./build-mode.js";
 import { placeDirectBuilding,constructionStatus } from "../systems/construction.js";
 import { cancelBuildPlacement } from "./build-ui.js";
-import { mapKeyboardIntent, mapModifiedKeyboardIntent, isInteractiveTarget } from "./keyboard-map.js";
+import { mapKeyboardIntent, mapModifiedKeyboardIntent, isInteractiveTarget, isTextEntryTarget } from "./keyboard-map.js";
 
 export function setupInput(){
     const canvas=state.canvas;
@@ -201,6 +201,16 @@ export function setupInput(){
             closeTopModal();
             return;
         }
+        // Pause must remain reachable while a control owns focus. A keyboard
+        // player lands on buttons constantly; hiding P behind the interactive
+        // guard made the world impossible to stop without tabbing to the header.
+        // Text entry and modifier shortcuts keep their own handling.
+        const pauseIntent=mapKeyboardIntent(event.key);
+        if(pauseIntent?.togglePause&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&!event.repeat&&!isTextEntryTarget(event.target)){
+            event.preventDefault();
+            togglePause();
+            return;
+        }
         if(isInteractiveTarget(event.target))return;
         const modifiedIntent=mapModifiedKeyboardIntent(event.key,event);
         if(modifiedIntent){
@@ -258,6 +268,22 @@ export function setupInput(){
     document.getElementById("tab-0")?.addEventListener("click",()=>switchTab(0));
     document.getElementById("tab-1")?.addEventListener("click",()=>switchTab(1));
     document.getElementById("tab-2")?.addEventListener("click",()=>switchTab(2));
+    // Arrow/Home/End move between the three information tabs as a real tablist.
+    // Only three buttons are ever scanned, so this stays cheaper than one frame.
+    document.querySelector(".tabs")?.addEventListener("keydown",event=>{
+        const tabs=[...document.querySelectorAll(".tabs [role='tab']")];
+        const current=tabs.indexOf(document.activeElement);
+        if(current<0||event.ctrlKey||event.metaKey||event.altKey)return;
+        let next=-1;
+        if(event.key==="Home")next=0;
+        else if(event.key==="End")next=tabs.length-1;
+        else if(event.key==="ArrowRight")next=(current+1)%tabs.length;
+        else if(event.key==="ArrowLeft")next=(current-1+tabs.length)%tabs.length;
+        if(next<0||!tabs[next])return;
+        event.preventDefault();
+        tabs[next].focus({preventScroll:true});
+        switchTab(next);
+    });
     document.getElementById("big-message")?.addEventListener("click",()=>document.getElementById("big-message").classList.add("hidden"));
     document.getElementById("big-message-close")?.addEventListener("click",event=>{event.stopImmediatePropagation();document.getElementById("big-message").classList.add("hidden");});
 
@@ -268,7 +294,15 @@ export function setupInput(){
                 ? executeGoodTrade(trade.dataset.partner,trade.dataset.good,trade.dataset.trade,Number(trade.dataset.quantity))
                 : executeTrade(trade.dataset.partner,trade.dataset.resource,trade.dataset.trade,Number(trade.dataset.quantity));
             showToast(result.ok?(trade.dataset.good?"GOODS TRADE COMPLETED":"TRADE COMPLETED"):result.reason);
+            // renderUI() rebuilds the market rows. Restore the same trade button
+            // so Enter does not silently drop a keyboard player back to <body>.
+            const signature={trade:trade.dataset.trade,good:trade.dataset.good||"",resource:trade.dataset.resource||"",partner:trade.dataset.partner||"",quantity:trade.dataset.quantity||""};
             renderUI();
+            const row=[...document.querySelectorAll("#tab-content [data-trade]")].find(button=>
+                button.dataset.trade===signature.trade&&(button.dataset.good||"")===signature.good&&
+                (button.dataset.resource||"")===signature.resource&&(button.dataset.partner||"")===signature.partner&&
+                (button.dataset.quantity||"")===signature.quantity);
+            (row||document.getElementById("tab-0"))?.focus({preventScroll:true});
         }
     });
     document.getElementById("realm-event-choices")?.addEventListener("click",event=>{
@@ -379,11 +413,28 @@ export function setupInput(){
 
 function togglePause(){
     state.isPaused=!state.isPaused;
-    document.getElementById("pause-btn")?.classList.toggle("is-paused",state.isPaused);
+    const button=document.getElementById("pause-btn");
+    button?.classList.toggle("is-paused",state.isPaused);
+    button?.setAttribute("aria-pressed",String(state.isPaused));
+    const label=state.isPaused?"Resume simulation · P":"Pause simulation · P";
+    button?.setAttribute("aria-label",label);
+    if(button)button.title=label;
     const text=document.getElementById("pause-text");if(text)text.textContent=state.isPaused?"RESUME":"PAUSE";
+    showToast(state.isPaused?"SIMULATION PAUSED":"SIMULATION RESUMED");
 }
 function setSpeed(speed){state.gameSpeed=speed;document.querySelectorAll(".speed-button").forEach(button=>button.classList.toggle("is-active",Number(button.dataset.speed)===speed));}
-function switchTab(tab){state.selectedTab=tab;document.querySelectorAll(".tab-button").forEach((button,index)=>button.classList.toggle("is-active",index===tab));renderUI();}
+function switchTab(tab){
+    state.selectedTab=tab;
+    const tabs=[...document.querySelectorAll(".tabs [role='tab']")];
+    tabs.forEach((button,index)=>{
+        const active=index===tab;
+        button.classList.toggle("is-active",active);
+        button.setAttribute("aria-selected",String(active));
+        button.tabIndex=active?0:-1;
+    });
+    document.getElementById("tab-content")?.setAttribute("aria-labelledby","tab-"+tab);
+    renderUI();
+}
 function showHelp(){
     showBigMessage("HOW TO PLAY",
         "• Drag anywhere on the map to pan; scroll to change detail level<br>• Arrow keys or WASD pan; Enter or Space places a selected card on the centre tile<br>• P pauses, 1–4 and +/− change detail level, ? opens this sheet and Esc closes dialogs<br>• Open the Cards tab and draw a card when you want one<br>• Select it, then drag it from the Selected Card panel onto the map, or tap a map tile on a touch device<br><br><strong>Build. Protect. Prosper.</strong>",0);

@@ -1,6 +1,6 @@
 {
   "name": "kings-and-cards",
-  "version": "3.86.2",
+  "version": "3.87.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -9,6 +9,7 @@
     "build:runtime": "node scripts/build-runtime.mjs",
     "test:e2e:setup": "node tests/browser/setup-e2e.mjs",
     "test:e2e": "node tests/browser/run-e2e.mjs",
+    "test:keyboard": "node tests/browser/keyboard-accessibility.mjs",
     "test:endurance": "node tests/browser/endurance-60y.mjs",
     "test:endurance:smoke": "ENDURANCE_YEARS=20 node tests/browser/endurance-60y.mjs",
     "test:swamp-live": "node tests/browser/swamp-live-proof.mjs",
