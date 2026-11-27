@@ -95,7 +95,7 @@ import { renderCityPanel, handleCityPanelClick } from "./city-panel.js";
 import { openBuildPanel } from "./build-ui.js";
 import { renderItemLexicon } from "./item-lexicon-panel.js";
 import { renderProgressive, cancelProgressiveRender } from "./progressive-render.js";
-let activePanel="kingdom",panelRevealToken=0,expandedBuildingId=null,expandedBuildingLogistics=false,buildingShowAll=false,courtShowAll=false,dynastyStylesRequested=false,endeavourFunding=1,timelineRefreshFrame=0,timelineHydrationToken=0,chronicleProgressToken=0,chronicleSectionsToken=0,detailRefreshToken=0;
+let activePanel="kingdom",commandOpenRenderToken=0,panelRenderSeq=0,panelRevealToken=0,expandedBuildingId=null,expandedBuildingLogistics=false,buildingShowAll=false,courtShowAll=false,dynastyStylesRequested=false,endeavourFunding=1,timelineRefreshFrame=0,timelineHydrationToken=0,chronicleProgressToken=0,chronicleSectionsToken=0,detailRefreshToken=0;
 const MANAGEMENT_TAB_IDS=new Set(MANAGEMENT_TABS.map(tab=>tab.id));
 const FRAME_WORK_BUDGET=7;
 // These ledgers carry the most nested cards per open. Their full innerHTML
@@ -1599,6 +1599,7 @@ function restoreBiomePanelState(panel,saved){
  }
 }
 function render(resetScroll=false){
+ commandOpenRenderToken++;
  clearFrameWork();
  lowEndRevealQueue=[];
  if(lowEndRevealFrame){cancelAnimationFrame(lowEndRevealFrame);lowEndRevealFrame=0;}
@@ -1606,6 +1607,7 @@ function render(resetScroll=false){
  chronicleSectionsToken++;
  cancelTimelineRefresh();
  const panel=$("command-panel-content");if(!panel)return;
+ panel.dataset.renderSeq=String(++panelRenderSeq);
  // A previous tab may still be hydrating across frames. Cancel it before the
  // incoming renderer replaces the panel, otherwise late chunks can append the
  // old ledger over the newly selected tab (most visible when returning to the
@@ -1618,6 +1620,11 @@ function render(resetScroll=false){
  const splitPanelPaint=resetScroll&&narrowViewport();
  const revealToken=++panelRevealToken;
  if(splitPanelPaint)panel.style.visibility="hidden";
+ // A second render can arrive before the split-paint reveal (opening the
+ // panel and selecting its tab). That render owns the new token and must not
+ // inherit the previous frame's hidden state; otherwise the whole atlas stays
+ // invisible even though its sixty cards are in the DOM.
+ else panel.style.visibility="";
  const renderers={kingdom,government,politics,nobility:nobilityPanel,diplomacy,worldmap:renderWorldMapPanel,espionage:espionagePanel,decisions,cards,economy,resources,buildings,city,military,health:healthPanel,faith:faithPanel,justice:justicePanel,research:researchPanel,endeavours:()=>renderEndeavoursPanel(endeavourFunding),population:renderPopulationPanel,dynasty,creatures,biome:renderBiomePanel,forest:renderForestAtlasPanel,hazards:renderHazardPanel,chronicle,atelier:renderAiChroniclePanel,explore:renderExpeditionsPanel};
  // A new tab starts at its title, not at the scroll offset of the previous
  // panel. Reset the old, already-laid-out view before inserting the new DOM:
@@ -1898,8 +1905,12 @@ export function setupManagementUI(){
    // 60-90 ms block on a throttled device; these are separate tasks now. Keep
    // the warm height spacer until the renderer replaces it, so revealing the
    // shell does not collapse and re-grow the flex pane in the click task.
+   // If the player picks a tab before that frame, its render invalidates this
+   // token: otherwise the deferred open render replaced the freshly selected
+   // atlas, reset its scroll and briefly removed all sixty cards.
+   const openToken=++commandOpenRenderToken;
    setCommandModalOpen(true);
-   requestAnimationFrame(()=>render(true));
+   requestAnimationFrame(()=>{if(openToken!==commandOpenRenderToken)return;render(true);});
    return;
   }
   render(true);

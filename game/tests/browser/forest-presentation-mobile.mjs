@@ -85,18 +85,40 @@ async function selectPanel(page, panel) {
 }
 
 async function openAtlas(page) {
+    const previousRender = await page.evaluate(() => Number(document.querySelector("#command-panel-content")?.dataset.renderSeq || 0));
     await page.locator("#command-open-btn").tap();
     await page.locator("#command-modal").waitFor({ state: "visible", timeout: 10000 });
     await selectPanel(page, "forest");
-    await page.waitForFunction(() => document.querySelectorAll("#command-panel-content .forest-atlas__card").length === 60, null, { timeout: 45000 });
+    // The closed panel keeps the previous atlas in the DOM. Wait for the render
+    // sequence to advance before counting cards, then wait until sixty cards
+    // have stayed mounted for a full second. Counting the retained tree made
+    // the second open race the incoming progressive render.
+    await page.waitForFunction(previous => Number(document.querySelector("#command-panel-content")?.dataset.renderSeq || 0) > previous, previousRender, { timeout: 45000 });
+    let stableCards = 0;
+    let lastSequence = -1;
+    for (let attempt = 0; attempt < 240; attempt += 1) {
+        const snapshot = await page.evaluate(() => {
+            const panel = document.querySelector("#command-panel-content");
+            return { sequence: Number(panel?.dataset.renderSeq || 0), cards: panel?.querySelectorAll(".forest-atlas__card").length || 0 };
+        });
+        if (snapshot.cards === 60 && snapshot.sequence === lastSequence) stableCards += 1;
+        else stableCards = 0;
+        lastSequence = snapshot.sequence;
+        if (stableCards >= 7) break;
+        await page.waitForTimeout(150);
+    }
+    assert.equal(stableCards >= 7, true, "sixty atlas cards must stay mounted before interaction");
     // On a 390px screen the intro and summary can push the first card below the
     // fold, where content-visibility keeps it unlaid-out until it is scrolled
-    // into view. A tab switch can replace the progressive tree once more after
-    // the sixtieth card lands, so scroll the live node by expression instead of
-    // holding a locator across that replacement.
-    await page.waitForTimeout(1200);
-    await page.evaluate(() => document.querySelector("#command-panel-content .forest-atlas__card")?.scrollIntoView({ block: "center" }));
-    await page.waitForTimeout(150);
+    // into view. Scroll the live node by expression so the check does not hold
+    // a locator across a replacement.
+    const scrolled = await page.evaluate(() => {
+        const card = document.querySelector("#command-panel-content .forest-atlas__card");
+        if (!card) return false;
+        card.scrollIntoView({ block: "center" });
+        return true;
+    });
+    assert.equal(scrolled, true, "the first atlas card must exist after the render settles");
     await page.locator("#command-panel-content .forest-atlas__card").first().waitFor({ state: "visible", timeout: 10000 });
 }
 

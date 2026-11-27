@@ -1,6 +1,6 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.86.0`
+**Current production version:** `3.86.1`
 **Next development line:** `3.87.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
@@ -8,6 +8,25 @@
 **Last repository verification:** 2026-11-27 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.86.1 — Atlas öffnet ohne Doppel-Render
+
+Der Live-Touchlauf auf 390×844 fand ein Rennen beim Öffnen des Atlas: Der
+Open-Handler zeigt die Hülle sofort und baut das Panel im nächsten Frame. Wählt
+der Spieler in diesem Moment FORESTS, lief der verspätete Open-Render noch
+einmal über die frische Auswahl, ersetzte den progressiven Baum und setzte den
+Scroll zurück. Die sechzig Karten waren kurzzeitig weg.
+
+- Der verspätete Open-Render trägt jetzt einen Token; jeder echte Render
+  entwertet ihn. Eine schnelle Tabwahl baut das Panel damit genau einmal.
+- Ein Render, der nicht selbst im Split-Paint wartet, hebt ein geerbtes
+  `visibility:hidden` auf. Der Frame-Budget-Pfad der schmalen Panels bleibt
+  unverändert.
+- Jedes Panel trägt eine Render-Sequenz. Der 390×844-Test wartet nach dem
+  Tabwechsel auf diesen frischen Aufbau und auf sechzig für eine Sekunde
+  stabile Karten, statt den noch sichtbaren alten Atlas zu zählen.
+
+Keine Sim-, Wirtschafts- oder Save-Änderung.
 
 ## 3.86.0 — Lebendige Waldtiefe: belegte Ebenen, echte Filter, messbare Gates
 
