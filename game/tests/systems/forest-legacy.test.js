@@ -74,6 +74,8 @@ test("the ledger starts ten linked province woods with species, rings and centur
     assert.equal(model.regions.every(region => region.species.some(species => species.kind === "tree")), true);
     assert.equal(model.regions.every(region => region.species.some(species => species.kind === "animal")), true);
     assert.equal(model.regions.every(region => region.atlasRegionId), true);
+    assert.equal(model.stats.rings, model.regions.reduce((sum, region) => sum + region.rings.length, 0));
+    assert.ok(model.stats.rings > 0, "founding rings must be counted in the headline ledger");
     for (const region of model.regions) {
         const archive = forestLegacyRingArchive(region.id, 8);
         const century = forestLegacyCentury(region.id);

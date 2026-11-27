@@ -2,9 +2,9 @@
   "version": 2,
   "generatedBy": "scripts/spec-audit.mjs",
   "scope": "All numbered 1.1 and 1.2.1–1.2.18 requirements, including the 1.2.23.1.151–270 forest economy, culture, warfare and presentation with the field guide, plus the documented 2.x phases, 3.3–4.0 roadmap points, the 3.11 expedition chain, 3.8.14 noble arbitration, 3.9.12 atlas quest follow-ups and the 3.12 keyboard-only play contract.",
-  "commit": "840c8f271f27104babf6dd14b4bcf706ae10b5a6",
-  "sourceHash": "84aaeddc48bc7732baf0495bd3bf298c6bedd26670336e3f96f60c167ac6995f",
-  "generatedAt": "2026-11-27T19:32:58+00:00",
+  "commit": "72c22d4573c5ac98c42ca397c87cda3782266035",
+  "sourceHash": "cd358a7a465fc5177ac1650cf1483ff3dfbb7af64a8445a6d26a69b615776ac6",
+  "generatedAt": "2026-11-27T20:46:48+00:00",
   "totals": {
     "total": 1819,
     "implemented": 1819,

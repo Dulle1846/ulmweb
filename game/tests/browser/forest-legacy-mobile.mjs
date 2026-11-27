@@ -91,6 +91,7 @@ try {
             actions: root.querySelectorAll("[data-legacy-region-action]").length,
             points: root.querySelectorAll("[data-legacy-point]").length,
             institutions: root.querySelectorAll("[data-legacy-institution]").length,
+            rings: Number((root.querySelector(".forest-legacy__summary > div:nth-child(4) strong")?.textContent || "").replace(/[^0-9]/g, "")),
             protected: Number(root.dataset.legacyProtected),
             guide: Boolean(root.querySelector('[data-legacy-guide="30"]')),
             labels: regions.map(region => region.querySelector(".forest-legacy__region-title b")?.textContent?.trim() || ""),
@@ -109,6 +110,7 @@ try {
     assert.equal(initial.actions, 40, "four real actions must mount on every province");
     assert.equal(initial.points, 30, "all thirty long-term requirements must be present");
     assert.equal(initial.institutions, 4);
+    assert.ok(initial.rings > 0, "founding rings must already be counted in the headline ledger");
     assert.equal(initial.guide, true);
     assert.ok(initial.labels.every(Boolean), "every province needs a readable name");
     assert.ok(initial.overflow <= 1, "the page must not scroll horizontally at 390px");

@@ -308,7 +308,7 @@ function baseState(year = yearNow()) {
             planted: 0,
             protected: 0,
             monuments: 0,
-            rings: 0,
+            rings: regions.reduce((sum, region) => sum + region.rings.length, 0),
             observations: 0,
             laws: 0,
         },
@@ -484,6 +484,10 @@ function normalizeModel(snapshot) {
             if (species.kind === "tree" && species.share <= 0 && species.status === "living") species.status = "extinct";
         }
     }
+    // The headline count and the per-region archives are one ledger. Reconcile
+    // them on restore as well as on the annual pass so a saved or newly founded
+    // realm never reports zero while its woods already hold founding rings.
+    model.stats.rings = model.regions.reduce((sum, region) => sum + region.rings.length, 0);
     return model;
 }
 

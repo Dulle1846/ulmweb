@@ -1,6 +1,6 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.89.0`
+**Current production version:** `3.89.1`
 **Next development line:** `3.90.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
@@ -8,6 +8,14 @@
 **Last repository verification:** 2026-11-27 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.89.1 — Jahresringe im Kopfzähler
+
+Ein neu gegründetes Reich zeigte in den ersten Waldregionen bereits einen
+Gründungsjahresring, während der Kopfzähler noch `RINGS KEPT 0` meldete. Der
+Zähler wird jetzt beim Anlegen und beim Laden direkt aus den begrenzten
+Regionalarchiven abgeleitet; der Jahrespass hält beide Werte weiterhin
+zusammen. Nur eine Anzeige-/Ledger-Korrektur, keine neue Simulation.
 
 ## 3.89.0 — Langfristige Wälder, regionale Großereignisse und Modding
 
