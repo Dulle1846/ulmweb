@@ -53,6 +53,24 @@ function createStaticServer() {
     });
 }
 
+async function completedRender(page, minRevision = 0, ready = () => true) {
+    let last = null;
+    for (let attempt = 0; attempt < 50; attempt += 1) {
+        await page.waitForTimeout(500);
+        last = await page.evaluate(async () => {
+            const { state } = await import("./js/core/state.js");
+            return {
+                ...(state.terrainForestBuildStats || {}),
+                liveRevision: state.terrainCacheRevision || 0,
+                weather: state.weather,
+                day: state.dayOfYear,
+            };
+        });
+        if (last && last.at && last.revision >= minRevision && last.detailTiles > 0 && ready(last)) return last;
+    }
+    return last;
+}
+
 const probe = await checkBrowser();
 if (!probe.ok) {
     printBrowserHelp(probe.error);
@@ -82,6 +100,19 @@ try {
     await page.locator("#start-new-game-btn").click();
     await page.locator("#start-screen").waitFor({ state: "hidden", timeout: 30000 });
     if (await page.locator("#realm-event-modal").isVisible()) await page.locator("#realm-event-dismiss").click();
+    // Put the deterministic realm into a real spring rain morning at the
+    // reference wood's blossom day. This is a normal in-game weather/season
+    // state, used so the visual and work counters exercise the deepest forest
+    // pass instead of an empty clear-sky frame.
+    await page.evaluate(async () => {
+        const { state } = await import("./js/core/state.js");
+        state.dayOfYear = 56;
+        state.seasonIndex = 0;
+        state.weather = "rain";
+        state.timeOfDay = 7;
+        state.terrainCacheRevision = (Number(state.terrainCacheRevision) || 0) + 1;
+    });
+    await page.waitForTimeout(1200);
 
     // Open the real player atlas. The presentation block is part of the panel,
     // not a test-only fixture.
@@ -192,7 +223,25 @@ try {
     // The accessibility controls live in the real settings dialog.
     await page.locator("#command-close").click();
     await page.locator("#command-modal").waitFor({ state: "hidden", timeout: 5000 });
-    const revisionBefore = await page.evaluate(async () => (await import("./js/core/state.js")).state.terrainCacheRevision || 0);
+    // The normal path must be measured at a zoom that really draws the close
+    // forest detail, otherwise a landscape overview legitimately has no floor
+    // passes and the performance comparison would be meaningless.
+    await page.locator('[data-zoom-level="3"]').click();
+    await page.waitForTimeout(1200);
+    const primeRainySpring = () => page.evaluate(async () => {
+        const { state } = await import("./js/core/state.js");
+        state.dayOfYear = 56;
+        state.seasonIndex = 0;
+        state.weather = "rain";
+        state.timeOfDay = 7;
+        state.terrainCacheRevision = (Number(state.terrainCacheRevision) || 0) + 1;
+        return state.terrainCacheRevision;
+    });
+    const normalRevision = await primeRainySpring();
+    const normalRender = await completedRender(page, normalRevision, render => render.detailPasses > 0);
+    assert.ok(normalRender?.detailPasses > 0, "the detailed normal pass must draw real forest decoration work");
+    evidence.normalRender = normalRender;
+    const revisionBefore = normalRender.liveRevision;
     await page.locator("#settings-btn").click();
     await page.locator("#settings-modal").waitFor({ state: "visible", timeout: 5000 });
     await page.locator("#settings-forest-colorblind-toggle").check({ force: true });
@@ -201,10 +250,34 @@ try {
     await page.locator("#settings-forest-performance-toggle").check({ force: true });
     await page.locator("#settings-motion-toggle").check({ force: true });
     await page.locator("#settings-forest-particles-toggle").check({ force: true });
-    await page.locator("#settings-forest-map-view").selectOption("symbolic");
     await page.locator("#settings-forest-subtitles-toggle").check({ force: true });
     await page.locator("#settings-close").click();
     await page.locator("#settings-modal").waitFor({ state: "hidden", timeout: 5000 });
+
+    // Performance mode is still on the detailed map here. The counters are
+    // written by the real cached raster, so the lower number is measured work,
+    // not a copy of the settings flags.
+    const performanceRevision = await primeRainySpring();
+    const performanceRender = await completedRender(page, performanceRevision, render => render.detailPasses > 0);
+    assert.ok(performanceRender.detailPasses < normalRender.detailPasses,
+        "performance mode must schedule fewer decorative forest passes: " + performanceRender.detailPasses + " vs " + normalRender.detailPasses);
+    assert.ok(performanceRender.mistPasses < normalRender.mistPasses,
+        "performance mode must skip the far mist pass: " + performanceRender.mistPasses + " vs " + normalRender.mistPasses);
+    assert.ok(normalRender.mistPasses > 0, "the normal rainy morning must draw mist");
+    evidence.performanceRender = performanceRender;
+    await page.screenshot({ path: resolve(outputDir, "forest-presentation-map-performance.png") });
+
+    // Symbolic view is a separate second step so the performance counters
+    // above are measured on the real detailed map, not on the flat fallback.
+    await page.locator("#settings-btn").click();
+    await page.locator("#settings-modal").waitFor({ state: "visible", timeout: 5000 });
+    const symbolicRevision = await page.evaluate(async () => (await import("./js/core/state.js")).state.terrainCacheRevision || 0);
+    await page.locator("#settings-forest-map-view").selectOption("symbolic");
+    await page.locator("#settings-close").click();
+    await page.locator("#settings-modal").waitFor({ state: "hidden", timeout: 5000 });
+    const symbolicRender = await completedRender(page, symbolicRevision + 1, render => render.detailPasses === 0);
+    assert.equal(symbolicRender.detailPasses, 0, "symbolic view must replace the detailed forest pass with one flat patch");
+    evidence.symbolicRender = symbolicRender;
 
     const classes = await page.evaluate(async () => {
         const [{ state }, presentation] = await Promise.all([
@@ -267,6 +340,8 @@ try {
     assert.ok(active.pointFont > baseline.pointFont, "forest text scale must enlarge guide text");
     assert.ok(active.settingsText.includes("SYMBOLIC"));
     assert.ok(active.settingsText.includes("ON"));
+    await page.locator("[data-forest-presentation]").scrollIntoViewIfNeeded();
+    await page.waitForTimeout(250);
     await page.screenshot({ path: screenshotPath, fullPage: false });
 
     // Subtitle live region: dispatch and read synchronously so a scheduled

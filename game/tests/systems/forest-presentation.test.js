@@ -17,8 +17,8 @@ import {
     FOREST_PRESENTATION_SETTINGS, forestCanopyContrast, forestDangerLegend,
     FOREST_CUE_KINDS, forestFilterOptions, forestLegendEntries, forestMapFilters,
     forestMapSymbol, forestMatchesFilters, forestMotionScale, forestParticleScale,
-    forestPresentationGuide, forestPresentationProfileForStand as systemProfileForStand,
-    forestPresentationSettings, forestPresentationSummary, forestRenderTuning,
+    forestPhenologyAt, forestPresentationGuide, forestPresentationProfileForStand as systemProfileForStand,
+    forestPresentationSettings, forestPresentationSummary, forestProtectionForStand, forestRenderTuning,
     forestSoundCue, forestSoundPreview, forestSoundscape, forestSymbolicMap,
     forestTypeSoundPreview, forestUseLegend, normalizeForestPresentationSettings,
     resetForestMapFilters, setForestMapFilter,
@@ -301,6 +301,59 @@ test("every sound cue can be previewed and weather changes the cue", () => {
     assert.equal(summary.seasons.length, 4);
     assert.equal(summary.canopyLayers.length, 3);
     assert.ok(summary.fieldMarks.length >= 2);
+});
+
+test("phenology drives blossom, mast and bare crowns by regional day", () => {
+    const profile = FOREST_PRESENTATION_LIST.find(entry => entry.family === "broadleaf") || FOREST_PRESENTATION_LIST[0];
+    const atBlossom = forestPhenologyAt(profile, profile.phenology.blossom);
+    assert.ok(atBlossom.blossom > 0.98, "the regional blossom day must be the peak");
+    assert.equal(forestPhenologyAt(profile, profile.phenology.blossom + 19).blossom, 0);
+    assert.ok(forestPhenologyAt(profile, profile.phenology.fruit).fruit > 0.98);
+    assert.equal(forestPhenologyAt(profile, profile.phenology.fruit + 27).fruit, 0);
+    // A winter day inside the bare window is a skeleton, while the peak of
+    // spring is leafed. This is the data the close renderer now reads.
+    const winter = forestPhenologyAt(profile, profile.phenology.leafFall + 5);
+    assert.ok(winter.bare >= 0.35, "leaf fall must open a bare-crown window");
+    assert.equal(forestPhenologyAt(profile, profile.phenology.blossom).bare, 0);
+    const blossomDays = new Set(FOREST_PRESENTATION_LIST.map(entry => entry.phenology.blossom));
+    assert.ok(blossomDays.size >= 20, "blossom must not be one global calendar day");
+});
+
+test("protection filtering can really reach protected groves", () => {
+    assert.equal(forestProtectionForStand(null), "unmanaged");
+    assert.equal(forestProtectionForStand({}, {}), "unmanaged");
+    assert.equal(forestProtectionForStand({ disturbance: "windthrow" }, {}), "disturbed");
+    assert.equal(forestProtectionForStand({ dynamics: { silviculture: { system: "coppice" } } }, {}), "managed");
+    assert.equal(forestProtectionForStand({ disturbance: "burned" }, {}, { kind: "sacred" }), "protected",
+        "a sacred grove must win over a disturbance marker");
+    assert.equal(forestProtectionForStand({ protected: true }, {}, null), "protected");
+});
+
+test("performance and reduced-motion settings gate real render passes", () => {
+    const stand = { regionalTypeId: FOREST_PRESENTATION_LIST[0].id };
+    withSettings({ forestPerformance: true, forestReducedParticles: false, reduceMotion: false }, () => {
+        const tuning = forestRenderTuning(stand);
+        assert.equal(tuning.performance, true);
+        assert.equal(tuning.skipInsectCloud, true);
+        assert.equal(tuning.skipFarFauna, true);
+        assert.equal(tuning.skipRegionBirds, true);
+        assert.equal(tuning.skipCloseInsects, true);
+        assert.equal(tuning.motion, 0.55);
+    });
+    withSettings({ forestPerformance: false, forestReducedParticles: true, reduceMotion: true }, () => {
+        const tuning = forestRenderTuning(stand);
+        assert.equal(tuning.skipInsectCloud, true);
+        assert.equal(tuning.skipFallingLeaves, true);
+        assert.equal(tuning.stillInsects, true);
+        assert.ok(tuning.motion < 0.3);
+        assert.ok(forestParticleScale() < 0.4);
+    });
+    withSettings({ forestPerformance: false, forestReducedParticles: false, reduceMotion: false }, () => {
+        const tuning = forestRenderTuning(stand);
+        assert.equal(tuning.skipInsectCloud, false);
+        assert.equal(tuning.skipFallingLeaves, false);
+        assert.equal(tuning.motion, 1);
+    });
 });
 
 test("the soundscape chooses deterministic cues and can hold its silence", () => {

@@ -50,8 +50,8 @@ import { getResourceNodeAt } from '../../systems/resource-geography.js';
 import { forestFaunaAt, forestFaunaSignAt, forestInsectAt } from '../../systems/forest-fauna.js';
 import { forestMistFactor, solarVector } from './daylight.js';
 import {
-    forestBareShare, forestCanopyContrast, forestMotionScale, forestParticleScale,
-    forestPresentationProfileForStand, forestRenderTuning, forestSnowRetention,
+    forestBareShare, forestCanopyContrast, forestColorblind, forestMotionScale, forestParticleScale,
+    forestPhenologyAt, forestPresentationProfileForStand, forestRenderTuning, forestSnowRetention,
     forestSwayAmplitude, forestSwayFrequency, forestSymbolicMap,
 } from '../../systems/forest-presentation.js';
 import { FOREST_DANGER_ICONS, FOREST_USE_ICONS } from '../../world/forest-presentation.js';
@@ -100,13 +100,19 @@ function forestUnderstoryBias(profile, id) {
     return share == null ? 1 : 0.45 + share * 1.15;
 }
 
-function forestParallaxOffset(camX, camY, cellPx, profile, strength = 0.1) {
+// 1.2.23.1.241: the three authored depths are rendered, not only printed in
+// the atlas. Understorey, trunks and the crown roof each use their own factor
+// from the same profile, with no array allocation on the cached draw path.
+function forestLayerOffset(camX, camY, cellPx, profile, layerId, strength) {
     if (!profile || !(cellPx > 0)) return { x: 0, y: 0 };
-    const px = ((Number(camX) || 0) * profile.parallax) / cellPx * Math.PI * 2;
-    const py = ((Number(camY) || 0) * profile.parallax) / cellPx * Math.PI * 2;
+    const index = layerId === 'floor' ? 0 : layerId === 'trunk' ? 1 : 2;
+    const factor = Number(profile.canopyLayers?.[index]?.parallax)
+        || Number(profile.parallax) || 0;
+    const phaseX = ((Number(camX) || 0) * factor) / cellPx * Math.PI * 2;
+    const phaseY = ((Number(camY) || 0) * factor) / cellPx * Math.PI * 2;
     return {
-        x: Math.sin(px) * cellPx * strength,
-        y: Math.cos(py) * cellPx * strength * 0.55,
+        x: Math.sin(phaseX) * cellPx * strength,
+        y: Math.cos(phaseY) * cellPx * strength * 0.55,
     };
 }
 
@@ -481,6 +487,31 @@ const FOREST_SIGHT_MIN_DISTANCE = 2.1;
 // Cache-build diagnostics. These are written only while a decoration raster is
 // being built, never on a presented frame, and keep the close pass honest about
 // how many visible tiles it actually visited.
+function snapshotForestRenderStats(revision = Number(state.terrainCacheRevision) || 0) {
+    // One frozen record per completed raster. Browser proofs can read the work
+    // of a finished build instead of sampling a half-reset live counter. The
+    // revision is captured when the build starts, so an old detailed raster
+    // finishing after a settings change cannot masquerade as the new one.
+    state.terrainForestBuildStats = Object.freeze({
+        revision: Number(revision) || 0,
+        at: Date.now(),
+        detailTiles: Number(state.terrainDetailTiles) || 0,
+        detailPasses: Number(state.terrainForestDetailPasses) || 0,
+        canopyPasses: Number(state.terrainForestCanopyPasses) || 0,
+        understoryPasses: Number(state.terrainForestUnderstoryPasses) || 0,
+        mistPasses: Number(state.terrainForestMistPasses) || 0,
+        blossomPasses: Number(state.terrainForestBlossomPasses) || 0,
+        mastPasses: Number(state.terrainForestMastPasses) || 0,
+        insectPasses: Number(state.terrainForestInsectPasses) || 0,
+        birdPasses: Number(state.terrainForestBirdPasses) || 0,
+        faunaPasses: Number(state.terrainForestFaunaPasses) || 0,
+        closeDetailTiles: Number(state.terrainCloseDetailTiles) || 0,
+        closeInsectTiles: Number(state.terrainCloseInsectTiles) || 0,
+        closeFaunaTiles: Number(state.terrainCloseFaunaTiles) || 0,
+        treeDraws: Number(state.terrainTreeDraws) || 0,
+    });
+}
+
 function resetTerrainDetailStats() {
     state.terrainDetailTiles = 0;
     state.terrainCloseDetailTiles = 0;
@@ -488,6 +519,17 @@ function resetTerrainDetailStats() {
     state.terrainCloseInsectTiles = 0;
     state.terrainCloseFaunaTiles = 0;
     state.terrainFaunaDrawnTiles = 0;
+    // 1.2.23.1.268: counters are reset per raster build. They are the real
+    // number of decorative forest passes scheduled, not a copy of the flags.
+    state.terrainForestCanopyPasses = 0;
+    state.terrainForestUnderstoryPasses = 0;
+    state.terrainForestMistPasses = 0;
+    state.terrainForestBlossomPasses = 0;
+    state.terrainForestMastPasses = 0;
+    state.terrainForestInsectPasses = 0;
+    state.terrainForestBirdPasses = 0;
+    state.terrainForestDetailPasses = 0;
+    state.terrainForestFaunaPasses = 0;
 }
 
 function detailWorldKey() {
@@ -582,6 +624,7 @@ function beginDetailBuild(zoom, cam, canvas, key, worldKey, surfaceCtx = null) {
         staging, stagingCtx, zoom,
         camX: cam.x, camY: cam.y,
         key, worldKey,
+        revision: Number(state.terrainCacheRevision) || 0,
         renderScale: Number(state.renderScale) || 1,
         width: canvas.width, height: canvas.height,
         cursor: { x: null, y: null },
@@ -624,6 +667,7 @@ function finishDetailBuild(surfaceCtx) {
     state.terrainCanvasEl.style.transformOrigin = "0 0";
     state.terrainCanvasEl.style.transform = "translate(0px, 0px) scale(1)";
     state.terrainCanvasEl.style.opacity = "1";
+    snapshotForestRenderStats(build.revision);
     detailBuild = null;
     return true;
 }
@@ -757,6 +801,7 @@ function startOverlayBuild(zoom, cam, canvas, key, worldKey, renderScale, signat
     resetTerrainDetailStats();
     overlayBuild = {
         stage, zoom, camX: cam.x, camY: cam.y, key, worldKey, renderScale,
+        revision: Number(state.terrainCacheRevision) || 0,
         width: canvas.width, height: canvas.height, signature,
         cursor: { x: null, y: null }, startedAt: performance.now(), workMs: 0,
     };
@@ -787,6 +832,7 @@ function advanceOverlayBuild(canvas) {
         width: build.width, height: build.height,
     };
     state.terrainCacheMisses = (Number(state.terrainCacheMisses) || 0) + 1;
+    snapshotForestRenderStats(build.revision);
     overlayBuild = null;
     return true;
 }
@@ -1605,9 +1651,12 @@ function drawForestGrove({
     });
     const mass = clusterLod === "mass";
     // The canopy layer shifts against the trunk layer by the regional parallax
-    // factor. The offset is phase-wrapped to one cell, never cumulative.
+    // factor. The offset is phase-wrapped to one cell, never cumulative. A mass
+    // crown uses the roof depth; the authored close tree uses the trunk depth,
+    // so the floor and understorey can slide underneath it.
     const profile = stand?.forest ? forestPresentationProfileForStand(stand) : null;
-    const depth = forestParallaxOffset(camX, camY, cellPx, profile, mass ? 0.11 : 0.035);
+    const depth = forestLayerOffset(camX, camY, cellPx, profile, mass ? 'roof' : 'trunk',
+        mass ? 0.11 : 0.035);
     for (const point of points) {
         state.terrainTreeDraws = (Number(state.terrainTreeDraws) || 0) + 1;
         if (mass) {
@@ -1646,7 +1695,7 @@ function drawCanopyScatter({
         disturbance: stand.disturbance,
     });
     const profile = stand?.forest ? forestPresentationProfileForStand(stand) : null;
-    const depth = forestParallaxOffset(cam.x, cam.y, cellPx, profile, 0.03);
+    const depth = forestLayerOffset(cam.x, cam.y, cellPx, profile, 'trunk', 0.03);
     for (let sy = 0; sy < 2; sy++) {
         for (let sx = 0; sx < 2; sx++) {
             const seed = treeClusterSeed(x * 2 + sx, y * 2 + sy, worldSeed);
@@ -2018,12 +2067,15 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas, cursor = null, deadline 
                     if (detail) drawSymbolicForestTile(ctx, px, py, cellPx, stand, climate, s1);
                     continue;
                 }
+                const tuning = forestRenderTuning(stand);
                 if (detail && zoom >= 0.55) {
                     drawForestGround(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, climateKey);
                     drawForestFloor(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, climateKey, tick, zoom);
-                    if (zoom >= 2.8) {
+                    state.terrainForestDetailPasses = (Number(state.terrainForestDetailPasses) || 0) + 2;
+                    if (zoom >= 2.8 && !tuning.performance) {
                         drawCloseForestFloor(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, climateKey, zoom);
                         state.terrainCloseDetailTiles = (Number(state.terrainCloseDetailTiles) || 0) + 1;
+                        state.terrainForestDetailPasses = (Number(state.terrainForestDetailPasses) || 0) + 1;
                     }
                     // The canopy shade belongs on the floor, below trunks and
                     // understorey. One cached soft sprite per tile is far cheaper
@@ -2031,12 +2083,24 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas, cursor = null, deadline 
                     // lattice as the floor it darkens.
                     drawCanopyShade(ctx, px, py, cellPx, stand, sun, climate.snowCover,
                         zoom >= 3 ? 0.46 : 1);
-                    if (zoom >= 0.8) drawMast(ctx, px, py, cellPx, stand, dayOfYear, climateKey);
-                    if (zoom >= 0.62) drawBlossoms(ctx, px, py, cellPx, stand, s2, dayOfYear, climateKey);
+                    if (zoom >= 0.8) {
+                        drawMast(ctx, px, py, cellPx, stand, dayOfYear, climateKey);
+                        state.terrainForestDetailPasses = (Number(state.terrainForestDetailPasses) || 0) + 1;
+                    }
+                    if (zoom >= 0.62) {
+                        drawBlossoms(ctx, px, py, cellPx, stand, s2, dayOfYear, climateKey);
+                        state.terrainForestDetailPasses = (Number(state.terrainForestDetailPasses) || 0) + 1;
+                    }
                     const mist = forestMistFactor(Number.isFinite(hour) ? hour : 12, m, seasonName, state.weather)
                         * (Number(stand.regionalRender?.mist) || 1);
-                    if (zoom >= 0.85 && mist > 0.04) drawForestMist(ctx, px, py, cellPx, stand, s2, tick,
-                        mist * (zoom >= 3 ? 0.45 : 1));
+                    // 1.2.23.1.268: performance mode suppresses the far mist
+                    // pass completely; a close study still keeps the weather
+                    // that gives the wood its identity.
+                    if (zoom >= 0.85 && mist > 0.04 && (!tuning.performance || zoom >= 2.8)) {
+                        drawForestMist(ctx, px, py, cellPx, stand, s2, tick,
+                            mist * (zoom >= 3 ? 0.45 : 1));
+                        state.terrainForestDetailPasses = (Number(state.terrainForestDetailPasses) || 0) + 1;
+                    }
                 }
                 // Close LOD samples a half-tile crown lattice; far LOD draws
                 // one canopy grove per world-anchored 2x2 (or coarser) cell.
@@ -2062,7 +2126,7 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas, cursor = null, deadline 
                             if (elapsed > jungleProbe.understoryMaxMs) jungleProbe.understoryMaxMs = elapsed;
                         }
                     }
-                    if (zoom >= 0.9 && s3 > 0.7) {
+                    if (zoom >= 0.9 && s3 > 0.7 && !tuning.skipFarFauna) {
                         drawForestFaunaScene(ctx, px + cellPx * 0.5, py + cellPx * 0.5, cellPx, stand,
                             dayOfYear, climateKey, s2, zoom, x, y, tick);
                     }
@@ -2075,10 +2139,10 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas, cursor = null, deadline 
                     // crowns, so they are drawn after the cluster layer.
                     if (detail) {
                         drawForestMapIcons(ctx, px, py, cellPx, stand, s1);
-                        if (zoom >= 1.05 && s2 > 0.46) {
+                        if (zoom >= 1.05 && s2 > 0.46 && !tuning.skipInsectCloud) {
                             drawInsectCloud(ctx, px, py, cellPx, stand, s2, tick, zoom);
                         }
-                        if (zoom >= 0.95 && s3 > 0.5) {
+                        if (zoom >= 0.95 && s3 > 0.5 && !tuning.skipRegionBirds) {
                             drawRegionBirds(ctx, px, py, cellPx, stand, s2, tick, zoom);
                         }
                     }
@@ -2120,11 +2184,12 @@ function drawTerrainDecorations(ctx, zoom, cam, canvas, cursor = null, deadline 
                     drawForestGoods(ctx, px, py, cellPx, stand, dayOfYear, climateKey, s1, s2, s3, zoom);
                     state.terrainCloseGoodsTiles = (Number(state.terrainCloseGoodsTiles) || 0) + 1;
                 }
-                if (zoom >= 3.0 && s1 > 0.18) {
+                if (zoom >= 3.0 && s1 > 0.18 && !tuning.skipCloseInsects) {
                     drawCloseInsects(ctx, px, py, cellPx, stand, dayOfYear, climateKey, s2, zoom, x, y);
                     state.terrainCloseInsectTiles = (Number(state.terrainCloseInsectTiles) || 0) + 1;
+                    state.terrainForestDetailPasses = (Number(state.terrainForestDetailPasses) || 0) + 1;
                 }
-                if (zoom >= 0.75 && s1 > 0.95) {
+                if (zoom >= 0.75 && s1 > 0.95 && (!tuning.performance || zoom >= 2.8)) {
                     drawForestFaunaScene(ctx, px, py, cellPx, stand, dayOfYear, climateKey, s3, zoom, x, y, tick);
                     state.terrainCloseFaunaTiles = (Number(state.terrainCloseFaunaTiles) || 0) + 1;
                 }
@@ -3344,7 +3409,8 @@ function drawBroadleaf(ctx, px, py, s, sway, tick, seed, dayOfYear, variant = 0,
 
     // Thinning crowns drop visible leaves around the trunk; this is the local
     // expression of the same seasonal leaf curve used by the larger canopy.
-    if (foliage.leaf > 0.2 && foliage.leaf < 0.78 && forestParticleScale() > 0.45) {
+    if (foliage.leaf > 0.2 && foliage.leaf < 0.78 && forestParticleScale() > 0.45
+        && forestMotionScale() > 0.3 && !forestRenderTuning(stand).skipFallingLeaves) {
         ctx.save();
         ctx.globalAlpha = 0.7 * (1 - foliage.leaf);
         ctx.fillStyle = mixHex(definition.autumn[0], "#6d4c24", 0.4);
@@ -3792,14 +3858,23 @@ function drawBramble(ctx, px, py, s, seed, turn, snow) {
 }
 
 function drawMast(ctx, px, py, cellPx, stand, dayOfYear, climateKey) {
+    const profile = stand?.forest ? forestPresentationProfileForStand(stand) : null;
+    if (!profile) return;
     const season = seasonalState(dayOfYear, climateKey);
-    if (season.snowCover > 0.4 || season.foliageTurn < 0.35) return;
-    const fruits = (stand.goods || []).filter(id => ["acorns", "beechnuts", "chestnuts", "berries", "spruce-cones", "fir-cones", "pine-cones", "juniper-berries", "blueberries", "lingonberries"].includes(id));
+    if (season.snowCover > 0.4) return;
+    // 1.2.23.1.253: mast follows the type's own fruit day, not one autumn
+    // threshold. Oak acorns, beech mast, spruce cones and savanna pods each
+    // ripen in their own window, and late-summer fruit is no longer invisible.
+    const phenology = forestPhenologyAt(profile, dayOfYear);
+    if (phenology.fruit < 0.08) return;
+    const fruits = (stand.goods || []).filter(id => ["acorns", "beechnuts", "chestnuts", "berries", "spruce-cones", "fir-cones", "pine-cones", "juniper-berries", "blueberries", "lingonberries", "pods", "acacia-pods", "carob", "olives", "figs", "dates"].includes(id));
     if (!fruits.length) return;
+    state.terrainForestMastPasses = (Number(state.terrainForestMastPasses) || 0) + 1;
     const s = cellPx / 48;
-    const colors = { acorns: "#9b6a32", beechnuts: "#8b5c34", chestnuts: "#7d432b", berries: "#8f3e4a", "spruce-cones": "#6b4e34", "fir-cones": "#76543b", "pine-cones": "#9b6a32", "juniper-berries": "#5b476f", blueberries: "#4f527e", lingonberries: "#9a3e46" };
+    const colors = { acorns: "#9b6a32", beechnuts: "#8b5c34", chestnuts: "#7d432b", berries: "#8f3e4a", "spruce-cones": "#6b4e34", "fir-cones": "#76543b", "pine-cones": "#9b6a32", "juniper-berries": "#5b476f", blueberries: "#4f527e", lingonberries: "#9a3e46", pods: "#8f7434", "acacia-pods": "#8f7434", carob: "#67452b", olives: "#555b34", figs: "#6d4a35", dates: "#8d4f2f" };
+    const count = Math.max(2, Math.round(9 * phenology.fruit * (0.7 + profile.bloom.fruit * 0.3)));
     ctx.save();
-    for (let i = 0; i < 9; i++) {
+    for (let i = 0; i < count; i++) {
         const id = fruits[i % fruits.length];
         const ox = px + ((i * 17) % 29 - 14) * s * 0.62;
         const oy = py + ((i * 11) % 17 - 7) * s * 0.5 + 3 * s;
@@ -4577,7 +4652,15 @@ function drawDeerTrail(ctx, px, py, cellPx, stand, seed) {
 function drawForestMist(ctx, px, py, cellPx, stand, seed, tick, strength = 1) {
     const s = cellPx / 48;
     if (strength <= 0.02) return;
-    const drift = Math.sin(tick * 0.006 + seed * 9) * 4 * s;
+    const profile = stand?.forest ? forestPresentationProfileForStand(stand) : null;
+    // Mist hangs in the trunk layer while the crown roof moves at its own
+    // depth. Reduced motion freezes the bank in place, not merely its alpha.
+    const depth = forestLayerOffset(state.camera?.x, state.camera?.y, cellPx, profile, 'trunk', 0.014);
+    const motion = forestMotionScale();
+    const drift = Math.sin((motion > 0.3 ? tick : 0) * 0.006 + seed * 9) * 4 * s;
+    px += depth.x;
+    py += depth.y;
+    state.terrainForestMistPasses = (Number(state.terrainForestMistPasses) || 0) + 1;
     const close = cellPx > 68;
     // Dense stands trap more vapour. Visibility is a derived stand property,
     // so mist and the canopy-light pass agree about which woods are closed.
@@ -4586,7 +4669,6 @@ function drawForestMist(ctx, px, py, cellPx, stand, seed, tick, strength = 1) {
     // Nine fog behaviours: coastal veil, valley mist, ground fog, river steam,
     // canopy breath, dry haze, dust, wood mist and ash fall. The profile owns
     // the colour, how high the bank rises and how far it spreads sideways.
-    const profile = stand?.forest ? forestPresentationProfileForStand(stand) : null;
     const fog = profile?.fog;
     const [fr, fg, fb] = rgbTriplet(fog?.color || "#dce6df");
     const fogColor = alpha => `rgba(${fr}, ${fg}, ${fb}, ${alpha})`;
@@ -4792,16 +4874,19 @@ function canopyShadeSpriteFor(color) {
 function drawCanopyShade(ctx, px, py, cellPx, stand, sun, snowCover, opacityScale = 1) {
     const shade = forestCanopyShade(stand, { sun, snowCover });
     if (shade.alpha <= 0.004) return;
+    const profile = stand?.forest ? forestPresentationProfileForStand(stand) : null;
+    const depth = forestLayerOffset(state.camera?.x, state.camera?.y, cellPx, profile, 'roof', 0.022);
     const sprite = canopyShadeSpriteFor(shade.color);
     const size = cellPx * (1.7 + shade.reach * 1.25);
     ctx.save();
+    state.terrainForestCanopyPasses = (Number(state.terrainForestCanopyPasses) || 0) + 1;
     // Canopy contrast is a map-legibility mode, separate from the interface
     // high-contrast switch: it lifts the ambient shade and inks the mass edge.
     ctx.globalAlpha = shade.alpha * Math.max(0, Math.min(1, opacityScale))
         * forestRenderTuning(stand).shade;
     ctx.drawImage(sprite,
-        px + shade.offsetX * cellPx - size * 0.5,
-        py + shade.offsetY * cellPx - size * 0.5,
+        px + depth.x + shade.offsetX * cellPx - size * 0.5,
+        py + depth.y + shade.offsetY * cellPx - size * 0.5,
         size, size);
     ctx.restore();
 }
@@ -5049,11 +5134,14 @@ function drawBlossoms(ctx, px, py, cellPx, stand, seed, dayOfYear, climateKey) {
     if (!profile || profile.bloom.blossom <= 0.12) return;
     const season = seasonalState(dayOfYear, climateKey);
     if (season.snowCover > 0.35) return;
-    const blooming = profile.bloom.season === 0 ? season.season === 0
-        : season.season === 0 || season.season === 1;
-    if (!blooming) return;
+    // 1.2.23.1.253: the regional blossom day is the window. A mangrove, an
+    // almond grove and a lime wood no longer bloom together just because the
+    // integer season is spring.
+    const phenology = forestPhenologyAt(profile, dayOfYear);
+    if (phenology.blossom < 0.06) return;
+    state.terrainForestBlossomPasses = (Number(state.terrainForestBlossomPasses) || 0) + 1;
     const s = cellPx / 48;
-    const pct = profile.bloom.blossom * (season.season === 0 ? 1 : 0.55);
+    const pct = profile.bloom.blossom * phenology.blossom;
     const count = Math.max(2, Math.round(9 * pct));
     ctx.save();
     ctx.globalAlpha = 0.55 + pct * 0.3;
@@ -5086,7 +5174,10 @@ function drawInsectCloud(ctx, px, py, cellPx, stand, seed, tick, zoom) {
     const density = Math.max(0, Math.min(1, profile.fauna.richness * 0.8 + 0.1));
     const count = Math.round(8 * density * forestParticleScale());
     if (count < 2) return;
-    const t = Number(tick) || 0;
+    state.terrainForestInsectPasses = (Number(state.terrainForestInsectPasses) || 0) + 1;
+    // Reduced motion holds the cloud in place instead of leaving a fast-moving
+    // haze that the setting claims to have removed.
+    const t = forestMotionScale() > 0.3 ? (Number(tick) || 0) : 0;
     const s = cellPx / 48;
     ctx.save();
     ctx.globalAlpha = 0.5;
@@ -5113,8 +5204,10 @@ function drawInsectCloud(ctx, px, py, cellPx, stand, seed, tick, zoom) {
 function drawRegionBirds(ctx, px, py, cellPx, stand, seed, tick, zoom) {
     const profile = stand?.forest ? forestPresentationProfileForStand(stand) : null;
     if (!profile || profile.fauna.birds.length === 0) return;
+    state.terrainForestBirdPasses = (Number(state.terrainForestBirdPasses) || 0) + 1;
     const s = cellPx / 48;
-    const flap = Math.sin((Number(tick) || 0) * 0.06 + seed * 8) * 0.6;
+    const flapTime = forestMotionScale() > 0.3 ? (Number(tick) || 0) : 0;
+    const flap = Math.sin(flapTime * 0.06 + seed * 8) * 0.6;
     const count = zoom >= 1.6 ? 3 : 2;
     ctx.save();
     ctx.globalAlpha = 0.6;
@@ -5135,41 +5228,168 @@ function drawRegionBirds(ctx, px, py, cellPx, stand, seed, tick, zoom) {
 
 // Small map marks: family glyph, use and danger. They are drawn from simple
 // paths rather than text so a landscape rebuild never pays for font shaping.
-function drawForestMapIcons(ctx, px, py, cellPx, stand, seed) {
-    const profile = stand?.forest ? forestPresentationProfileForStand(stand) : null;
-    if (!profile) return;
-    const s = cellPx / 48;
-    const x = px + cellPx * 0.27;
-    const y = py - cellPx * 0.3;
-    ctx.save();
-    ctx.globalAlpha = 0.72;
-    ctx.fillStyle = profile.leaves.summer;
-    ctx.strokeStyle = forestCanopyContrast() ? "#0e1710" : "rgba(20, 30, 20, 0.55)";
-    ctx.lineWidth = Math.max(0.5, 0.55 * s);
-    ctx.beginPath();
-    if (profile.family === "conifer") {
-        ctx.moveTo(x, y - 3.4 * s);
-        ctx.lineTo(x - 2.5 * s, y + 2.4 * s);
-        ctx.lineTo(x + 2.5 * s, y + 2.4 * s);
+function traceForestTypeGlyph(ctx, x, y, s, family) {
+    if (family === "conifer") {
+        ctx.moveTo(x, y - 3.6 * s);
+        ctx.lineTo(x - 2.6 * s, y + 2.4 * s);
+        ctx.lineTo(x + 2.6 * s, y + 2.4 * s);
         ctx.closePath();
-    } else if (profile.family === "emergent" || profile.family === "broadleaf") {
-        ctx.arc(x, y - 0.4 * s, 2.7 * s, 0, Math.PI * 2);
-    } else if (profile.family === "umbrella" || profile.family === "thorn" || profile.family === "baobab") {
-        ctx.ellipse(x, y - 0.2 * s, 3.4 * s, 1.4 * s, 0, 0, Math.PI * 2);
-    } else if (profile.family === "mangrove" || profile.family === "riparian") {
+    } else if (family === "emergent") {
+        // A tall dominant crown with a second emergent leader, not a plain dot.
+        ctx.ellipse(x, y + 0.4 * s, 2.1 * s, 2.8 * s, 0, 0, Math.PI * 2);
+        ctx.moveTo(x + 1.8 * s, y - 1.4 * s);
+        ctx.arc(x + 1.8 * s, y - 1.9 * s, 1.25 * s, 0, Math.PI * 2);
+    } else if (family === "umbrella" || family === "thorn" || family === "baobab") {
+        ctx.ellipse(x, y - 0.2 * s, 3.4 * s, 1.3 * s, 0, 0, Math.PI * 2);
+        if (family === "baobab") ctx.rect(x - 0.65 * s, y, 1.3 * s, 3.1 * s);
+    } else if (family === "mangrove" || family === "riparian") {
         ctx.moveTo(x - 3 * s, y + 1.6 * s);
         ctx.quadraticCurveTo(x, y + 3 * s, x + 3 * s, y + 1.6 * s);
         ctx.quadraticCurveTo(x, y + 0.4 * s, x - 3 * s, y + 1.6 * s);
+        if (family === "mangrove") {
+            ctx.moveTo(x - 1.8 * s, y + 1.9 * s);
+            ctx.lineTo(x - 2.8 * s, y + 3.6 * s);
+            ctx.moveTo(x + 1.8 * s, y + 1.9 * s);
+            ctx.lineTo(x + 2.8 * s, y + 3.6 * s);
+        }
+    } else if (family === "columnar") {
+        ctx.rect(x - 1.4 * s, y - 3.6 * s, 2.8 * s, 6.2 * s);
+    } else if (family === "bamboo") {
+        for (const side of [-1, 0, 1]) {
+            const top = y - (2.4 + Math.abs(side) * 0.4) * s;
+            ctx.rect(x + side * 1.35 * s - 0.35 * s, top, 0.7 * s, y + 3.2 * s - top);
+        }
+    } else if (family === "scrub") {
+        ctx.ellipse(x, y + 1.3 * s, 3 * s, 1.7 * s, 0, Math.PI, Math.PI * 2);
+    } else if (family === "airy" || family === "willow") {
+        ctx.ellipse(x, y - 0.4 * s, 2.8 * s, 2.2 * s, 0, 0, Math.PI * 2);
+        ctx.moveTo(x - 2.2 * s, y + 0.4 * s);
+        ctx.quadraticCurveTo(x - 3.2 * s, y + 2.2 * s, x - 2.4 * s, y + 3.4 * s);
+        ctx.moveTo(x + 2.2 * s, y + 0.4 * s);
+        ctx.quadraticCurveTo(x + 3.2 * s, y + 2.2 * s, x + 2.4 * s, y + 3.4 * s);
     } else {
-        ctx.rect(x - 2.2 * s, y - 2.6 * s, 4.4 * s, 5 * s);
+        ctx.arc(x, y - 0.4 * s, 2.7 * s, 0, Math.PI * 2);
     }
+}
+
+// 1.2.23.1.263: the family pattern is clipped into the real map glyph. CSS
+// already patterns legends and chips, but the map is where colour-blind mode
+// matters most. The mark is drawn from the same profile.pattern the atlas
+// prints, so the key and the map cannot describe different symbols.
+function drawForestIconPattern(ctx, x, y, s, family, pattern, color) {
+    ctx.save();
+    ctx.beginPath();
+    traceForestTypeGlyph(ctx, x, y, s, family);
+    ctx.clip();
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.globalAlpha = 0.72;
+    ctx.lineWidth = Math.max(0.38, 0.42 * s);
+    if (pattern === "chevron") {
+        for (let row = -2; row <= 2; row += 2) {
+            ctx.beginPath();
+            ctx.moveTo(x - 3 * s, y + row * s);
+            ctx.lineTo(x, y + (row - 1.2) * s);
+            ctx.lineTo(x + 3 * s, y + row * s);
+            ctx.stroke();
+        }
+    } else if (pattern === "dots") {
+        for (let row = -2; row <= 2; row += 2) {
+            for (let col = -2; col <= 2; col += 2) {
+                ctx.beginPath();
+                ctx.arc(x + col * s, y + row * s, Math.max(0.3, 0.38 * s), 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+    } else if (pattern === "diamond") {
+        for (const row of [-2, 0, 2]) {
+            ctx.beginPath();
+            ctx.moveTo(x, y + (row - 1) * s);
+            ctx.lineTo(x + 1.1 * s, y + row * s);
+            ctx.lineTo(x, y + (row + 1) * s);
+            ctx.lineTo(x - 1.1 * s, y + row * s);
+            ctx.closePath();
+            ctx.stroke();
+        }
+    } else if (pattern === "rays") {
+        for (let ray = 0; ray < 6; ray++) {
+            const angle = ray * Math.PI / 3 + 0.2;
+            ctx.beginPath();
+            ctx.moveTo(x + Math.cos(angle) * 0.9 * s, y + Math.sin(angle) * 0.9 * s);
+            ctx.lineTo(x + Math.cos(angle) * 4 * s, y + Math.sin(angle) * 4 * s);
+            ctx.stroke();
+        }
+    } else if (pattern === "waves") {
+        for (let row = -1; row <= 2; row++) {
+            ctx.beginPath();
+            ctx.moveTo(x - 4 * s, y + row * 2 * s);
+            ctx.quadraticCurveTo(x - 2 * s, y + (row * 2 - 0.9) * s, x, y + row * 2 * s);
+            ctx.quadraticCurveTo(x + 2 * s, y + (row * 2 + 0.9) * s, x + 4 * s, y + row * 2 * s);
+            ctx.stroke();
+        }
+    } else if (pattern === "cross") {
+        ctx.beginPath();
+        ctx.moveTo(x - 2.6 * s, y - 2.6 * s);
+        ctx.lineTo(x + 2.6 * s, y + 2.6 * s);
+        ctx.moveTo(x + 2.6 * s, y - 2.6 * s);
+        ctx.lineTo(x - 2.6 * s, y + 2.6 * s);
+        ctx.moveTo(x - 2.6 * s, y);
+        ctx.lineTo(x + 2.6 * s, y);
+        ctx.stroke();
+    } else if (pattern === "bars") {
+        for (let col = -2; col <= 2; col += 2) {
+            ctx.beginPath();
+            ctx.moveTo(x + col * s, y - 3.4 * s);
+            ctx.lineTo(x + col * s, y + 3.4 * s);
+            ctx.stroke();
+        }
+    } else if (pattern === "rings") {
+        for (const radius of [1.1, 2.5]) {
+            ctx.beginPath();
+            ctx.arc(x, y, radius * s, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+    }
+    ctx.restore();
+}
+
+function drawForestMapIcons(ctx, px, py, cellPx, stand, seed, emphasis = 1) {
+    const profile = stand?.forest ? forestPresentationProfileForStand(stand) : null;
+    if (!profile) return;
+    // Map icons need their own scale rather than the crop scale: at a phone's
+    // district zoom a 48-based glyph shrinks to a barely visible speck. The
+    // symbolic view draws only one flat patch, so it can spend more pixels on
+    // the family glyph than the detailed crown mosaic can.
+    const s = Math.max(1, cellPx / 38) * emphasis;
+    const x = px + cellPx * 0.27;
+    const y = py - cellPx * 0.3;
+    const colorblind = forestColorblind();
+    ctx.save();
+    // A dark cartographic boss keeps a pale family glyph readable on every
+    // regional green, including the symbolic view where the tile behind the
+    // icon is the same canopy colour as the glyph used to be.
+    ctx.globalAlpha = 0.86;
+    ctx.fillStyle = "rgba(18, 25, 18, 0.64)";
+    ctx.beginPath();
+    ctx.arc(x, y - 0.2 * s, 5.3 * s, 0, Math.PI * 2);
     ctx.fill();
+    ctx.fillStyle = "#f1dfb4";
+    ctx.strokeStyle = forestCanopyContrast() ? "#0e1710" : "rgba(14, 20, 14, 0.9)";
+    ctx.lineWidth = Math.max(0.55, 0.6 * s);
+    ctx.beginPath();
+    traceForestTypeGlyph(ctx, x, y, s, profile.family);
+    ctx.fill();
+    if (colorblind) drawForestIconPattern(ctx, x, y, s, profile.family, profile.pattern, "#6b4423");
+    // Redraw the outline after the pattern so the family silhouette survives
+    // the extra ink instead of becoming a patterned smudge.
+    ctx.beginPath();
+    traceForestTypeGlyph(ctx, x, y, s, profile.family);
     ctx.stroke();
     // Use mark: a tiny axe head or basket arc.
     const use = FOREST_USE_ICONS[profile.useIcon];
-    ctx.globalAlpha = 0.62;
-    ctx.strokeStyle = use?.id === "axe" ? "#d9c9a4" : "#c9d9ae";
-    ctx.lineWidth = Math.max(0.45, 0.5 * s);
+    ctx.globalAlpha = 0.9;
+    ctx.strokeStyle = use?.id === "axe" ? "#f1dfb4" : "#cfe2ab";
+    ctx.lineWidth = Math.max(0.55, 0.6 * s);
     ctx.beginPath();
     if (use?.id === "axe") {
         ctx.moveTo(x - 5 * s, y + 4.2 * s);
@@ -5181,8 +5401,8 @@ function drawForestMapIcons(ctx, px, py, cellPx, stand, seed) {
     }
     ctx.stroke();
     if (profile.danger !== "none") {
-        ctx.globalAlpha = 0.66;
-        ctx.fillStyle = profile.danger === "fire" ? "#d79a52"
+        ctx.globalAlpha = 0.92;
+        ctx.fillStyle = profile.danger === "fire" ? "#f0ae5d"
             : profile.danger === "flood" ? "#8ebbc0" : "#c9c3a2";
         ctx.beginPath();
         if (profile.danger === "fire") {
@@ -5211,17 +5431,34 @@ function drawSymbolicForestTile(ctx, px, py, cellPx, stand, climate, seed) {
     const light = mixHex(palette[1] || profile.leaves.summerLight, fill, 0.2);
     const s = cellPx / 48;
     ctx.save();
-    ctx.globalAlpha = 0.82;
+    // A near-tile patch reads as a continuous cartographic canopy instead of
+    // isolated green polka dots; the irregular corner radius keeps the lattice
+    // from looking like a spreadsheet. Still one flat shape and one icon per
+    // sampled tile, so the weak-device path stays cheaper than a crown pass.
+    const inset = cellPx * 0.015;
+    ctx.globalAlpha = 0.78;
     ctx.fillStyle = fill;
     ctx.beginPath();
-    ctx.ellipse(px, py + 2 * s, cellPx * 0.52, cellPx * 0.36, (seed - 0.5) * 0.2, 0, Math.PI * 2);
+    ctx.roundRect(px - cellPx * 0.5 + inset, py - cellPx * 0.5 + inset,
+        cellPx - inset * 2, cellPx - inset * 2,
+        cellPx * (0.2 + (seed - 0.5) * 0.04));
     ctx.fill();
-    ctx.globalAlpha = 0.45;
+    ctx.globalAlpha = 0.38;
     ctx.fillStyle = light;
     ctx.beginPath();
-    ctx.ellipse(px - cellPx * 0.12, py - cellPx * 0.04, cellPx * 0.28, cellPx * 0.16, -0.2, 0, Math.PI * 2);
+    ctx.ellipse(px - cellPx * 0.12, py - cellPx * 0.16, cellPx * 0.3, cellPx * 0.18, -0.2, 0, Math.PI * 2);
     ctx.fill();
-    drawForestMapIcons(ctx, px, py, cellPx, stand, seed);
+    // A fine ink border keeps adjacent regional types distinguishable even
+    // when their summer palettes are close.
+    ctx.globalAlpha = 0.3;
+    ctx.strokeStyle = "#1c281c";
+    ctx.lineWidth = Math.max(0.35, 0.45 * s);
+    ctx.beginPath();
+    ctx.roundRect(px - cellPx * 0.5 + inset, py - cellPx * 0.5 + inset,
+        cellPx - inset * 2, cellPx - inset * 2,
+        cellPx * (0.2 + (seed - 0.5) * 0.04));
+    ctx.stroke();
+    drawForestMapIcons(ctx, px, py, cellPx, stand, seed, 1.35);
     if (climate.snowCover > 0.35) {
         ctx.globalAlpha = Math.min(0.7, climate.snowCover * 0.7);
         ctx.fillStyle = "#eef6fb";
@@ -5501,6 +5738,12 @@ function drawUnderstory(ctx, px, py, cellPx, stand, s1, s2, s3, dayOfYear, clima
     const season = seasonalState(dayOfYear, climateKey);
     const s = cellPx / 48;
     const profile = stand?.forest ? forestPresentationProfileForStand(stand) : null;
+    // 1.2.23.1.241: the low layer is drawn at the floor depth, so a pan moves
+    // ferns and shrubs less than trunks and much less than the crown roof.
+    const floorDepth = forestLayerOffset(state.camera?.x, state.camera?.y, cellPx, profile, 'floor', 0.012);
+    px += floorDepth.x;
+    py += floorDepth.y;
+    state.terrainForestUnderstoryPasses = (Number(state.terrainForestUnderstoryPasses) || 0) + 1;
     const canSapling = allowSapling || stand.type === "regenerating" || stand.type === "cutover";
     if (stand.tropical) {
         // A third of the floor stays low herb and leaf litter. Without the
@@ -5958,6 +6201,7 @@ function drawForestFaunaScene(ctx, px, py, cellPx, stand, dayOfYear, climateKey,
         })), ...fallbackMicro].slice(0, 3)
         : [];
     if (!herds.length && !micro.length) return;
+    state.terrainForestFaunaPasses = (Number(state.terrainForestFaunaPasses) || 0) + 1;
     const s = cellPx / 56;
     const jitter = (hashA, hashB) => ((hashA * 37 + hashB * 17 + Math.floor(seed * 997)) % 100) / 100 - 0.5;
 

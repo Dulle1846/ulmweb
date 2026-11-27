@@ -36,8 +36,9 @@ import {
 import {
     forestDangerLegend, forestFilterOptions, forestLegendEntries, forestMapFilters,
     forestMatchesFilters, forestPresentationGuide, forestPresentationSettings,
-    forestPresentationSummary, forestUseLegend,
+    forestPresentationSummary, forestProtectionForStand, forestUseLegend,
 } from "../systems/forest-presentation.js";
+import { sacredGroveTileAt } from "../world/sacred-groves.js";
 import { FOREST_PROTECTION_STATES, forestPresentationProfile } from "../world/forest-presentation.js";
 
 const esc = value => String(value ?? "").replace(/[&<>"']/g, character => ({
@@ -138,10 +139,18 @@ export function forestAtlasSurvey(limit = SURVEY_LIMIT) {
             const regeneration = forestRegenerationFor(stand);
             const water = forestWaterFlowFor(stand);
             const stewardship = forestStewardshipAt(x, y);
+            // 1.2.23.1.262: protection is sampled from the same live tile the
+            // renderer reads, including sacred groves and joint preserves. The
+            // old derivation only knew disturbance and silviculture, so the
+            // protected filter could never match a real stand.
+            const grove = sacredGroveTileAt(x, y);
+            const protection = forestProtectionForStand(stand, stewardship, grove);
             regionSamples[id] = {
                 x, y,
                 typeId: id, typeLabel: stand.regionalLabel || null,
                 ageClass: stand.ageClass || null,
+                protection, protected: protection === "protected",
+                grove: Boolean(grove),
                 biodiversity: biodiversity.index,
                 biodiversityClass: biodiversity.class,
                 erosion: erosion.risk, erosionClass: erosion.class,
@@ -1187,8 +1196,9 @@ export function renderForestAtlasPanel() {
         const profile = forestPresentationProfile(type.id);
         const row = survey.types.find(entry => entry.id === type.id);
         const region = survey.regions.find(entry => entry.id === type.id);
-        const protection = region?.disturbances?.active > 0 ? 'disturbed'
-            : row?.dynamics?.silviculture?.system ? 'managed' : 'unmanaged';
+        const protection = region?.sample?.protection
+            || (region?.disturbances?.active > 0 ? 'disturbed'
+                : row?.dynamics?.silviculture?.system ? 'managed' : 'unmanaged');
         return forestMatchesFilters({
             family: profile?.family,
             resources: profile?.resources || [],

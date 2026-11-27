@@ -88,8 +88,16 @@ async function openAtlas(page) {
     await page.locator("#command-open-btn").tap();
     await page.locator("#command-modal").waitFor({ state: "visible", timeout: 10000 });
     await selectPanel(page, "forest");
-    await page.locator("#command-panel-content .forest-atlas__card").first().waitFor({ state: "visible", timeout: 40000 });
     await page.waitForFunction(() => document.querySelectorAll("#command-panel-content .forest-atlas__card").length === 60, null, { timeout: 45000 });
+    // On a 390px screen the intro and summary can push the first card below the
+    // fold, where content-visibility keeps it unlaid-out until it is scrolled
+    // into view. A tab switch can replace the progressive tree once more after
+    // the sixtieth card lands, so scroll the live node by expression instead of
+    // holding a locator across that replacement.
+    await page.waitForTimeout(1200);
+    await page.evaluate(() => document.querySelector("#command-panel-content .forest-atlas__card")?.scrollIntoView({ block: "center" }));
+    await page.waitForTimeout(150);
+    await page.locator("#command-panel-content .forest-atlas__card").first().waitFor({ state: "visible", timeout: 10000 });
 }
 
 async function closeAtlas(page) {

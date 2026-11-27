@@ -1,6 +1,6 @@
 # Wald-Darstellung, Audio, UI und Accessibility 1.2.23.1.241–270
 
-**Status: implementiert, vertieft, verdrahtet und im Browser geprüft (v3.85.1).**
+**Status: implementiert, vertieft, verdrahtet und im Browser geprüft (v3.86.0).**
 
 Die dreißig Punkte bilden eine gemeinsame Präsentations-, Audio- und
 Zugänglichkeitsschicht über dem vorhandenen Waldmodell. Sie verändern keine
@@ -24,6 +24,73 @@ Alle 60 Profile werden deterministisch aus `REGIONAL_FOREST_TYPES`,
 `render.silhouette`, Klima und einem stabilen Hash abgeleitet. Es gibt keinen
 zweiten Waldgenerator und keinen Per-Frame-Scan. Die Referenzszene wird alle
 1,8 Sekunden neu gesampled; Render-Tuning und Ambience lesen nur dieses Ergebnis.
+
+## Audit 241–270 (Stand 3.86.0)
+
+Die Einordnung entstand vor dem Tiefenpass gegen den echten Code, nicht gegen
+CHANGELOG oder diese Dokumentation. „Nominell“ heißt: sichtbar vorhanden, aber
+ohne echten Effekt im laufenden Spiel.
+
+| Punkt | Audit vor 3.86.0 | Beleg nach dem Tiefenpass |
+| --- | --- | --- |
+| 241 Kronenparallaxe | nominell (nur Massenkrone, drei Ebenen nur UI) | `forestLayerOffset()` für Boden, Stamm und Dach; Atlaswert = Renderwert |
+| 242 Silhouetten | real | neun Familien im Renderer, Screenshot Waldkante |
+| 243 Blattfarben/Licht | real | Regionalpalette in Krone, Boden und Licht |
+| 244 Herbststaffelung | nominell (nur Baum-Jitter) | `forestPhenologyAt()` verschiebt regional; Atlas zeigt dieselben Tage |
+| 245 Schnee/kahle Krone | nominell (UI) | regionale Schneeretention und Kahlanteil im Raster |
+| 246 Bodenwehen | real | acht Wehen pro Regionalprofil |
+| 247 Lichtstrahlen | real | zwei Schäfte, Solarvektor, Nebeldichte |
+| 248 Nebel/Sichtweite | real | neun Nebelarten, Performance-Gate misst 514 → 0 |
+| 249 Regen/Nässe | real | nasse Oberfläche, Pfützen, Tropfen |
+| 250 Windsteifheit | real | artweise Amplitude und Frequenz |
+| 251 Totholz/Wurzelteller | real | Windwurf und Altbestand am Boden |
+| 252 Unterholz | real | Farn/Gras/Strauch-Gewichte pro Typ |
+| 253 Blüte/Frucht | nominell (UI) | `drawBlossoms`/`drawMast` lesen die Phänologiefenster |
+| 254 Tiere/Vögel | real | regionale Fauna + Kronenvögel |
+| 255 Insekten/Schmetterlinge | real | Wolke und Nahpass aus Regionaldichte |
+| 256 Regionale Geräuschbetten | real | prozedurale WebAudio-Betten |
+| 257 Holz-Instrumente | real | Timbre, Modus, Motiv und Tempo pro Familie |
+| 258 Stille | real | Altbestand-Silence und Cue-Historie |
+| 259 Kartenicons | nominell (im Waldton unsichtbar) | dunkler Träger, helle Glyphe, Muster; Screenshot 390×844 |
+| 260 Legende | real | 23 ökologische Einträge aus denselben Tabellen |
+| 261 Tooltips | real | Art-/Gut-Chips, Touch und Tastatur |
+| 262 Schutzfilter | fehlend (toter Zweig) | Survey klassifiziert `sacredGrove`/`preserve`/`disturbance` |
+| 263 Farbenblind-Muster | nominell (nur CSS/Legende) | echte Familienmuster im Kartenicon |
+| 264 Kronenkontrast | real | Schatten, Outline und Nebel-Wash getrennt schaltbar |
+| 265 Waldschriftgröße | real | drei Stufen auf Karten, Notizen und Chips |
+| 266 Reduced Motion | nominell (nicht alle Pfade) | Insekten, Vögel, Nebel und Blattmoten frieren ein |
+| 267 Untertitel | real | Live-Region, Cue-Historie, Stumm-Fall |
+| 268 Performance-Modus | nominell (Flags ohne Messung) | 2.594 → 2.080 Deko-Pässe, 514 → 0 Nebel, 24 → 0 Ferntiere |
+| 269 Weniger Partikel | nominell (nur Flag) | 8 → 2,7 Insekten, keine Blattmoten, 34 % Regen |
+| 270 Symbolische Karte | real, aber flach | zusammenhängende Regionalfläche, Typ-/Nutzungs-/Gefahrenicons, 0 Kronen |
+
+## Tiefenpass gegen den echten Code (v3.86.0)
+
+Der Audit der dreißig Punkte gegen Renderer, Ambience, Atlas und Settings fand
+fünf nominelle Stellen. Sie sind jetzt echte Spielmechanik der Darstellung:
+
+- **Phänologie statt Kalenderetikett.** `forestPhenologyAt()` liefert Blüte,
+  Frucht und kahle Kronen aus den regionalen Klimakurven. `drawBlossoms`,
+  `drawMast` und die Kahlkrone lesen dieses Fenster, nicht mehr nur die grobe
+  Jahreszeit. Der Atlas und die Karte zeigen damit dieselben Tage.
+- **Drei Kronenebenen im Bild.** `forestLayerOffset()` verschiebt Boden, Stamm
+  und Dach getrennt. Massenkrone, Streu, Unterholz und Nebel verwenden den
+  passenden Faktor; der Atlaswert ist der tatsächlich gezeichnete Wert.
+- **Schutzfilter mit Substanz.** Der Survey klassifiziert jede Probe aus
+  `sacredGroveTileAt()` und der Störungsmatrix. `sacredGrove`, `preserve` und
+  `disturbance` sind erreichbare Filterwerte, keine toten Zweige.
+- **Karte, die man liest.** Jedes Kartenicon hat einen dunklen Träger, eine
+  helle Familien-Glyphe, Nutzungs- und Gefahrenmarke und im Farbenblind-Modus
+  das echte Muster. Die symbolische Karte zeichnet eine zusammenhängende,
+  gerundete Regionalfläche pro Probe und dieselben Zeichen; sie bleibt damit
+  auch auf einem schwachen Gerät kartografisch lesbar.
+- **Gates mit Messung.** `terrainForestBuildStats` hält den abgeschlossenen
+  Rasterlauf fest. Die Desktop-Referenz belegt 2.594 Deko-Pässe im Detailmodus
+  gegen 2.080 im Performance-Modus, 514 gegen 0 Nebelpässe, 24 gegen 0
+  Ferntiere und 0 Kronen in der symbolischen Karte. Reduced Motion stoppt
+  Insekten, Vögel, Nebel und Blattmoten.
+- **Kontrast.** Die Jahreszeiten-Überschrift des Atlas nutzt dunkle Tinte auf
+  dem hellen Pergament; die Karten-Glyphen sind gegen den Waldton abgesetzt.
 
 ## Waldkunde-Erweiterung (v3.85.1)
 

@@ -29,6 +29,12 @@ function schedule(run, callback) {
 // bar or summary strip is not a record, and appending its ten controls in one
 // task still forced a 25 ms layout at 4x CPU even though each control is tiny.
 const RECORD_CARD_SELECTOR = "article, button.population-citizen, details.population-household";
+// A closed forest-atlas card is one coherent record: its summary and hidden
+// body are only useful together. Splitting its ~100 nodes across frames made
+// the phone atlas take over 45 seconds to expose the first of sixty cards.
+// The card is still closed while it mounts, so the browser does not lay out
+// the hidden body; one card per work item keeps the queue bounded and short.
+const ATOMIC_RECORD_SELECTOR = "details.forest-atlas__card";
 const RECORD_CARD_LIMIT = 96;
 const SPLIT_CARD_NODES = 24;
 const BLOCK_LIMIT = 8;
@@ -69,6 +75,14 @@ function isSimple(node) {
 }
 
 function enqueueTree(parent, node, queue, token, run) {
+    if (node.nodeType === 1 && node.matches(ATOMIC_RECORD_SELECTOR)) {
+        queue.push(() => {
+            if (token !== run.token) return false;
+            parent.appendChild(node);
+            return true;
+        });
+        return;
+    }
     if (node.nodeType !== 1) {
         queue.push(() => {
             if (token !== run.token) return false;

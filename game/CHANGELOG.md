@@ -1,13 +1,51 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.85.1`
-**Next development line:** `3.86.0-dev`
+**Current production version:** `3.86.0`
+**Next development line:** `3.87.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
 **Last repository verification:** 2026-11-27 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.86.0 — Lebendige Waldtiefe: belegte Ebenen, echte Filter, messbare Gates
+
+Der Audit gegen den echten Code zeigte, dass die dreißig Punkte vorhanden waren,
+aber einige nur nominell: Der Schutzfilter konnte nie einen geschützten Bestand
+treffen, die Kartenicons trugen im Farbenblind-Modus kein Familienmuster, die
+drei Kronenebenen waren nur eine Atlasanzeige, und Performance- sowie
+Reduced-Motion-Flags änderten nicht überall die tatsächlich gezeichnete Arbeit.
+
+- **Jahreslauf im Renderer.** Blüte, Frucht/Mast und kahle Kronen folgen jetzt
+  `forestPhenologyAt()` und damit denselben regionalen Klimakurven wie der
+  Atlas. Ein Laubwald blüht an seinem Tag, ein Nadelwald trägt Zapfen, und die
+  kahle Krone erscheint im regionalen Winterfenster statt ganzjährig.
+- **Echte Kronentiefe.** Boden, Stamm und Kronendach verschieben sich mit den
+  drei Profilfaktoren; die Massenkrone, das Unterholz und der Nebel folgen
+  derselben Parallaxe. Der Atlaswert ist damit keine Dekoration mehr.
+- **Schutz ist filterbar.** Der Survey berechnet den Schutzstatus pro Probe aus
+  `sacredGroveTileAt()` und der Störungsmatrix. Schutzfilter und Legende treffen
+  jetzt real geschützte Haine, Bannwälder und gestörte Bestände.
+- **Lesbare Karte.** Kartenicons bekommen einen dunklen cartografischen Träger,
+  helle Glyphen, größere Symbole und im Farbenblind-Modus das echte
+  Familienmuster. Die symbolische Karte zeichnet zusammenhängende, gerundete
+  Regionalflächen mit Typ-, Nutzungs- und Gefahrenzeichen statt loser Blätter.
+- **Messbare Gates.** Jeder abgeschlossene Rasterlauf hinterlässt einen
+  Arbeitssnapshot. Der Desktop-Beleg misst 2.594 Deko-Pässe im Detailmodus,
+  2.080 im Performance-Modus, 514 Nebelpässe gegen 0 und 24 Ferntiere gegen 0;
+  die symbolische Karte zeichnet 0 Kronen. Reduced Motion friert Insekten,
+  Vögel und Nebel ein und unterdrückt Blattmoten.
+- **Atlas auf dem Telefon.** Der progressive Renderer mountet eine
+  geschlossene Atlas-Karte als eine Einheit. Vorher zerfiel die 390-px-Liste in
+  hunderte Knoten und der erste der sechzig Typen erschien erst nach über 45
+  Sekunden; jetzt steht die Liste in wenigen Frames, ohne die übrigen Panels
+  oder den 4-ms-Frame-Budgetpfad zu ändern.
+- **Lesbarkeit.** Die Jahreszeiten-Überschrift des Atlas liegt jetzt in dunkler
+  Tinte auf dem Pergament, statt als goldener Text zu verschwinden.
+
+Keine Simulations-, Wirtschafts- oder Save-Änderung; die deterministische
+25-Jahres-Kampagne bleibt unberührt.
 
 ## 3.85.1 — Waldkunde: Jahreslauf, Kronentiefe und Hörprobe
 

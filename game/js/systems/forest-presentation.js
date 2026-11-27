@@ -8,7 +8,7 @@ import { state } from '../core/state.js';
 import { CELL } from '../core/config.js';
 import { getHeightAt, getMoistureAt, getTemperatureAt } from '../world/world.js';
 import { forestStandAt } from '../world/forest-ecology.js';
-import { seasonalState } from '../world/season.js';
+import { seasonalState, wrapDay } from '../world/season.js';
 import {
     FOREST_DANGER_ICONS, FOREST_FILTER_GROUPS, FOREST_FOG_TYPES,
     FOREST_PRESENTATION_LIST, FOREST_PRESENTATION_POINTS, FOREST_PRESENTATION_PROFILES,
@@ -144,7 +144,8 @@ export function forestRenderTuning(stand) {
     let tuning = tuningCache.get(profile.id);
     if (tuning) return tuning;
     const settings = forestPresentationSettings();
-    const motion = settings.forestPerformance ? 0.55 : (forestReducedMotion() ? 0.18 : 1);
+    const still = forestReducedMotion();
+    const motion = settings.forestPerformance ? 0.55 : (still ? 0.18 : 1);
     const particles = settings.forestReducedParticles ? 0.34 : (settings.forestPerformance ? 0.6 : 1);
     tuning = Object.freeze({
         revision: tuningRevision,
@@ -154,6 +155,16 @@ export function forestRenderTuning(stand) {
         symbolic: settings.forestMapView === 'symbolic',
         contrast: settings.forestCanopyContrast,
         performance: settings.forestPerformance,
+        // These are real draw gates, not labels in the settings panel. The
+        // terrain loop reads them before scheduling decorative forest passes.
+        skipInsectCloud: settings.forestPerformance || settings.forestReducedParticles,
+        skipFarFauna: settings.forestPerformance,
+        skipRegionBirds: settings.forestPerformance,
+        skipCloseInsects: settings.forestPerformance || settings.forestReducedParticles,
+        skipLeafMotes: settings.forestReducedParticles || still,
+        skipFallingLeaves: settings.forestReducedParticles || still,
+        stillMist: still,
+        stillInsects: still,
         windScale: profile.wind.gust * (settings.forestPerformance ? 0.55 : (forestReducedMotion() ? 0.2 : 1)),
         windFrequency: 0.045 * profile.wind.speed,
         shaft: profile.light.shaft * (settings.forestPerformance ? 0.65 : 1),
@@ -202,6 +213,47 @@ export function forestSnowRetention(stand) {
 
 export function forestBareShare(stand) {
     return forestPresentationProfileForStand(stand).snow.bareShare;
+}
+
+// 1.2.23.1.244/245/253: one shared phenology reading for the renderer, the
+// survey and the browser probes. It wraps the regional dates onto the 400-day
+// realm year and returns smooth intensities instead of a coarse season flag, so
+// blossom, mast and bare crowns can begin and end on different days inside the
+// same season. This is a pure read: no state, no RNG and no per-tile allocation.
+export function forestPhenologyAt(profile, dayOfYear) {
+    const phenology = profile?.phenology;
+    if (!phenology) return { day: 0, blossom: 0, fruit: 0, bare: 0, leafOut: 0, leafFall: 0, snowHold: 0 };
+    const day = wrapDay(dayOfYear);
+    const distance = target => {
+        const direct = Math.abs(day - wrapDay(target));
+        return Math.min(direct, 400 - direct);
+    };
+    // A cosine window gives a soft shoulder at both ends. A tree starts to
+    // flower before its key day and has shed the last petal after it, without
+    // snapping on a calendar boundary.
+    const pulse = (target, windowDays) => {
+        const gap = distance(target);
+        if (gap >= windowDays) return 0;
+        return 0.5 + 0.5 * Math.cos(Math.PI * gap / windowDays);
+    };
+    const leafOut = wrapDay(phenology.leafOut);
+    const leafFall = wrapDay(phenology.leafFall);
+    // The bare window crosses New Year for most temperate woods. When a type
+    // holds its leaves into winter (marcescent oak, mangrove) bareShare keeps
+    // the crown legible instead of forcing a full skeleton.
+    const winter = leafFall >= leafOut
+        ? (day >= leafFall || day <= leafOut)
+        : (day >= leafFall && day <= leafOut);
+    const bareShare = Math.max(0, Math.min(1, Number(profile.snow?.bareShare) || 0));
+    return {
+        day,
+        blossom: pulse(phenology.blossom, 18),
+        fruit: pulse(phenology.fruit, 26),
+        bare: winter ? Math.min(1, 0.35 + bareShare * 0.65) : 0,
+        leafOut,
+        leafFall,
+        snowHold: phenology.snowHold == null ? 0 : pulse(phenology.snowHold, 20),
+    };
 }
 
 // ── Reference scene and live sampling ───────────────────────────────
@@ -347,10 +399,13 @@ export function forestFilterOptions() {
     return FOREST_FILTER_GROUPS;
 }
 
-export function forestProtectionForStand(stand, stewardship = null) {
+export function forestProtectionForStand(stand, stewardship = null, sacredGrove = null) {
     if (!stand) return 'unmanaged';
-    if (stand.protected || stand.preserve) return 'protected';
-    if ((Number(stand.disturbance) || 0) > 0.02 || stand.disturbance) return 'disturbed';
+    // A sacred grove or a joint border preserve is the strongest promise on the
+    // tile: the axe and the fire are refused. It must win over a disturbance
+    // marker, otherwise the atlas can never offer the protected filter.
+    if (sacredGrove || stand.protected || stand.preserve || stand.sacredGrove) return 'protected';
+    if (stand.disturbance || (Number(stand.disturbance) || 0) > 0.02) return 'disturbed';
     if (stewardship?.firebreak || stewardship?.drained || stewardship?.planted) return 'managed';
     const system = stand.dynamics?.silviculture?.system;
     if (system) return 'managed';
