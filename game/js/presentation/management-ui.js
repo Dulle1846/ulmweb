@@ -2187,7 +2187,7 @@ export function setupManagementUI(){
    else toast(String(result.reason||"FOREST INSTITUTION FAILED").replaceAll("-"," ").toUpperCase());
    return;
   }
-  const legacyLaw=e.target.closest("[data-legacy-law]");
+  const legacyLaw=e.target.closest(".forest-legacy__law[data-legacy-law]");
   if(legacyLaw){
    const result=setForestConservationLaw(legacyLaw.dataset.legacyLaw);
    if(result.ok){toast(String(result.message||"FOREST LAW ENACTED").toUpperCase());renderUI();render();}

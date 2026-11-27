@@ -1,6 +1,6 @@
 # Kings & Cards
 
-**Production version:** 3.89.2
+**Production version:** 3.89.3
 **Next development line:** 3.90.0-dev
 **Production branch:** `ulmweb-branch`  
 **Production URL:** https://kings-and-cards.pages.dev/
@@ -43,7 +43,7 @@
 32. [Noble arbitration and atlas follow-ups](docs/NOBLE_FEUD_CHAIN.md) — 3.85.0 grievance → arbitration → compensation/charter settlement, shared penalty tiers, blood-feud escalation, bounded annual relapse, six authored quest follow-ups in Explore with real ledgers, save compatibility and browser proofs.
 33. [Keyboard-only play](docs/KEYBOARD_ACCESSIBILITY.md) - pause from any focused control, real tablists with arrow/Home/End navigation across the information tabs and the 29-panel management deck, focus restoration after Buildings/Bulk-Repair and Market actions, high-contrast-safe focus rings and a Chromium keyboard-only proof (v3.87.0).
 34. [Provincial charters](docs/PROVINCIAL_CHARTERS.md) — three autonomy tiers, yearly crown levy, loyalty-driven petitions, grant/refuse/revoke actions, deterministic 25-year campaign evidence and the 390×844 browser proof (v3.88.0).
-35. [Langfristige Systeme, Events, Modding und QA 1.2.23.1.271–300](docs/FOREST_LEGACY.md) — ten province woods on one annual pass: centuries of succession, climate migration and local extinction, six regional hazards, conservation law and reserves, seed/gene banks, nursery, forest museum and citizen science, reintroduction, natural monuments and tree-ring memory, validated forest data packs and community scenarios, achievements, codex, ten reference seeds, a 300-year soak and the 390×844 player proof (v3.89.0).
+35. [Langfristige Systeme, Events, Modding und QA 1.2.23.1.271–300](docs/FOREST_LEGACY.md) — ten province woods on one annual pass: centuries of succession, climate migration and local extinction, six regional hazards, conservation law and reserves, seed/gene banks, nursery, forest museum and citizen science, reintroduction, natural monuments and tree-ring memory, validated forest data packs and community scenarios, achievements, codex, ten reference seeds, a 300-year soak and the 390×844, 820×1180 and 1440×900 player proofs (v3.89.3).
 
 ## Development rules
 

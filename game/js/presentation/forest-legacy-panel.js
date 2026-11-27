@@ -79,14 +79,15 @@ function regionCard(region, summary, index) {
     const rules = region.protection === "reserve" ? "NO SALVAGE" : region.protection === "community" ? "COMMUNITY USE" : region.protection === "monument" ? "MONUMENT GUARD" : "OPEN WOOD";
     const nursery = summary.institutions.find(entry => entry.id === "nursery")?.level || 0;
     const hasExtinct = region.extinct > 0;
+    const actedThisYear = Boolean(region.actedThisYear);
     const protectDisabled = region.protection !== "none" || !canPay(FOREST_LEGACY_PROTECTION_COST);
-    const afforestDisabled = nursery < 1 || summary.stocks.seedlings < FOREST_LEGACY_AFFOREST_COST.seedlings || !canPay(FOREST_LEGACY_AFFOREST_COST);
-    const reintroDisabled = !hasExtinct || (summary.stocks.gene < 1 && summary.stocks.seed < 1) || !canPay(FOREST_LEGACY_REINTRODUCTION_COST);
-    const monumentDisabled = region.ageYears < 100 || !canPay(FOREST_LEGACY_MONUMENT_COST);
+    const afforestDisabled = actedThisYear || nursery < 1 || summary.stocks.seedlings < FOREST_LEGACY_AFFOREST_COST.seedlings || !canPay(FOREST_LEGACY_AFFOREST_COST);
+    const reintroDisabled = actedThisYear || !hasExtinct || (summary.stocks.gene < 1 && summary.stocks.seed < 1) || !canPay(FOREST_LEGACY_REINTRODUCTION_COST);
+    const monumentDisabled = actedThisYear || region.ageYears < 100 || !canPay(FOREST_LEGACY_MONUMENT_COST);
     const protectReason = region.protection !== "none" ? "Already protected." : !canPay(FOREST_LEGACY_PROTECTION_COST) ? "Needs 18 gold." : "";
-    const afforestReason = nursery < 1 ? "Build a tree nursery first." : summary.stocks.seedlings < FOREST_LEGACY_AFFOREST_COST.seedlings ? "Needs 8 nursery seedlings." : !canPay(FOREST_LEGACY_AFFOREST_COST) ? "Needs 10 gold and 8 wood." : "";
-    const reintroReason = !hasExtinct ? "No locally extinct species." : summary.stocks.gene < 1 && summary.stocks.seed < 1 ? "Needs seed or gene material." : !canPay(FOREST_LEGACY_REINTRODUCTION_COST) ? "Needs 14 gold." : "";
-    const monumentReason = region.ageYears < 100 ? "The stand is younger than 100 years." : !canPay(FOREST_LEGACY_MONUMENT_COST) ? "Needs 16 gold and 6 wood." : "";
+    const afforestReason = actedThisYear ? "One wood action per year. The next annual pass reopens it." : nursery < 1 ? "Build a tree nursery first." : summary.stocks.seedlings < FOREST_LEGACY_AFFOREST_COST.seedlings ? "Needs 8 nursery seedlings." : !canPay(FOREST_LEGACY_AFFOREST_COST) ? "Needs 10 gold and 8 wood." : "";
+    const reintroReason = actedThisYear ? "One wood action per year. The next annual pass reopens it." : !hasExtinct ? "No locally extinct species." : summary.stocks.gene < 1 && summary.stocks.seed < 1 ? "Needs seed or gene material." : !canPay(FOREST_LEGACY_REINTRODUCTION_COST) ? "Needs 14 gold." : "";
+    const monumentReason = actedThisYear ? "One wood action per year. The next annual pass reopens it." : region.ageYears < 100 ? "The stand is younger than 100 years." : !canPay(FOREST_LEGACY_MONUMENT_COST) ? "Needs 16 gold and 6 wood." : "";
     return '<details class="forest-legacy__region" data-legacy-region="' + esc(region.id) + '" data-legacy-phase="' + esc(region.phase) + '" data-legacy-protection="' + esc(region.protection) + '" data-legacy-species-count="' + number(region.living) + '"' + (index === 0 ? ' open' : '') + '>'
         + '<summary><span class="forest-legacy__region-icon">' + (region.rare ? '✦' : '◆') + '</span>'
         + '<span class="forest-legacy__region-title"><b>' + esc(region.name) + '</b><small>' + esc(region.typeLabel) + ' · ' + esc(region.phaseLabel) + ' · ' + number(region.ageYears) + ' years</small></span>'

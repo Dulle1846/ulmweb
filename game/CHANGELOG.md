@@ -1,6 +1,6 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.89.2`
+**Current production version:** `3.89.3`
 **Next development line:** `3.90.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
@@ -8,6 +8,32 @@
 **Last repository verification:** 2026-11-27 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.89.3 — Waldregister auf Desktop und Tablet
+
+Der Wald-Langzeitpfad war bisher nur bei 390×844 als Spieler geprüft. Der neue
+responsive Browserlauf für 1440×900, 820×1180 und 390×844 fand zwei echte
+Interaktionsfehler und schließt sie im bestehenden Panel-Muster:
+
+- Der Wurzelcontainer trug `data-legacy-law`; dadurch fing der Gesetzes-Handler
+  jeden Klick im Ledger ab, bevor Bürgerwissenschaft ihn erreichte. Der Handler
+  hört jetzt nur noch auf die echten Gesetzesbuttons.
+- Aufforstung, Wiederansiedlung und Naturdenkmal blieben nach einer Aktion im
+  selben Jahr anklickbar. Die Anzeige übernimmt jetzt den vorhandenen
+  `lastActionYear`-Vorbehalt und erklärt „One wood action per year“, bevor der
+  nächste Jahrespass die Aktion wieder öffnet.
+
+Der Test öffnet alle zehn Regionen mit 60 Kohorten, 60 Gefahrenchroniken, zehn
+Jahresringarchiven und 30 Projektionen, baut alle vier Institutionen, führt
+Schutzgebiet, Bürgerwissenschaft, Aufforstung und Naturdenkmal über echte
+Buttons aus und prüft Zähler, Bestände, Aktionssperren, horizontalen Overflow,
+Button-Überlappungen und abgeschnittene Ringe. Save-Schema 15, der additive
+Ledger und der jährliche Simulationsschritt bleiben unverändert.
+
+**Nachweise:** `npm test` 1732/1732 grün, `npm run spec:audit` ohne offene
+Punkte, `npm run test:e2e` grün. Der neue Browserlauf bestand lokal bei
+1440×900, 820×1180 und 390×844 mit je 20 Screenshots und ohne Konsolen-,
+Lade- oder Layoutfehler.
 
 ## 3.89.2 — Wald-Ledger bleibt reine Zustandsdaten
 

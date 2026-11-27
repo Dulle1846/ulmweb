@@ -123,9 +123,12 @@ Plugin-Ausführung, keine URLs und keine DOM-Inhalte.
 - `tests/systems/scenario.test.js` — `forestType` über Definition, Start und
   Normalisierung.
 - `tests/core/save-validation.test.js` — optionaler Ledger und alte Saves.
-- `tests/browser/forest-legacy-mobile.mjs` — 390×844, alle zehn Regionen
-  geöffnet, 30 Punkte, echte Samenbank- und Schutzgebietsaktion, kein
-  horizontaler Overflow und keine Konsolenfehler.
+- `tests/browser/forest-legacy-mobile.mjs` — responsive Spielerpfad für
+  390×844, 820×1180 und 1440×900: alle zehn Regionen geöffnet, 30 Punkte und
+  zehn Jahresringarchive geprüft, alle vier Institutionen und alle acht
+  Aktionen ausgeführt (inklusive Bürgerwissenschaft und Naturdenkmal),
+  Ein-Aktion-pro-Jahr-Sperre, kein horizontaler Overflow, keine Überlappungen,
+  keine abgeschnittenen Ringe und keine Konsolen-/Ladefehler.
 - `npm run test:forest-legacy-soak` — zehn Referenz-Seeds × 300 Jahre.
 
 ## Leitplanken für neue Waldtypen

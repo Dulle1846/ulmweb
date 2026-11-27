@@ -709,6 +709,7 @@ export function forestLegacySummary() {
             phaseLabel: FOREST_LEGACY_STAGES.find(stage => stage.id === region.phase)?.label || title(region.phase),
             canopy: region.canopy, protection: region.protection,
             protectionLabel: region.protection === "none" ? "Unprotected" : title(region.protection),
+            actedThisYear: region.lastActionYear === yearNow(),
             living: living.length, extinct: extinct.length,
             treeShare: round(treeShare(region)), observations: region.observations,
             climatePressure: region.climatePressure, climate: region.climate, elevationM: region.elevationM,
