@@ -1227,13 +1227,19 @@ export function renderForestAtlasPanel() {
         + '<div><small>TRANSITION EDGES</small><strong>' + number(survey.transitionSamples) + '</strong></div>'
         + '<div><small>SEASON</small><strong>' + esc(survey.season.toUpperCase()) + '</strong></div></div>'
         + processBlock
+        // The regional types are the reason the player opens the atlas. Keep
+        // them directly below the live counts; the presentation, industry,
+        // culture, warfare and fauna reference sections belong after the list.
+        // In document order the old layout queued every reference block before
+        // the first card, so a phone showed the field guide for seconds before
+        // the first of the sixty woodlands.
+        + '<div class="forest-atlas">' + (cards || '<p class="command-note" data-forest-filter-empty="1">No regional type matches the active filters. Reset the filter bar above to show all sixty types.</p>') + '</div>'
         + presentationBlock()
         + industryBlock()
         + cultureBlock()
         + warfareBlock()
         + regionHistoryBlock(survey)
         + faunaFieldGuide(survey)
-        + '<div class="forest-atlas">' + (cards || '<p class="command-note" data-forest-filter-empty="1">No regional type matches the active filters. Reset the filter bar above to show all sixty types.</p>') + '</div>'
         + '<p class="command-note">The realm count comes from a bounded deterministic sample of up to ' + number(SURVEY_LIMIT)
         + ' forest tiles; it is a survey, not a per-frame scan. Timber, regrowth, wildlife, forage and work are live simulation inputs: they price lumber batches, gathering yields, regrowth and habitat. Flood raises the spoilage of a perishable harvest, and a signature good pays a bonus in its own season. The ecology block is taken from the first surveyed tile of each type: it reports the actual mixture class, succession phase, seed bank, mother trees, genetic breadth, site fitness, disease resistance, silvicultural system, roots, humus, mycorrhiza, understorey, lianas, epiphytes and canopy gaps. Timber prices are the current seasonal base quote of the regional timber market in the Royal Stores.</p>';
 }

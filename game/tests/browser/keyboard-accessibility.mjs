@@ -117,6 +117,15 @@ try {
         await page.keyboard.press("ArrowRight");
     }
     assert.ok(buildings, "ArrowRight must reach the Buildings tab");
+    // The tablist updates aria-selected in the render frame after focus moves;
+    // wait for that state rather than racing the render with a single read.
+    await page.waitForFunction(
+        () => document.activeElement?.dataset.commandTab === "buildings"
+            && document.activeElement?.getAttribute("aria-selected") === "true",
+        null,
+        { timeout: 5000 }
+    );
+    buildings = await active();
     assert.equal(buildings.selected, "true", "the active command tab must expose aria-selected");
     assert.notEqual(buildings.outline, "none", "keyboard focus on a command tab must be visible");
     await page.locator('[data-command="repair-all"]').waitFor({ state: "visible", timeout: 15000 });

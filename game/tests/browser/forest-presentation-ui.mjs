@@ -120,6 +120,9 @@ try {
     await page.locator("#command-modal").waitFor({ state: "visible", timeout: 10000 });
     await page.locator('[data-command-tab="forest"]').click();
     await page.locator("#command-panel-content .forest-atlas__card").first().waitFor({ state: "visible", timeout: 15000 });
+    // Cards are the primary atlas content and mount before the reference
+    // sections; wait for the guide before reading its rendered values.
+    await page.waitForFunction(() => document.querySelectorAll("#command-panel-content [data-presentation-point]").length === 30, null, { timeout: 45000 });
     const baseline = await page.evaluate(() => {
         const guide = document.querySelector("[data-presentation-guide]");
         const point = guide?.querySelector("[data-presentation-point] p");

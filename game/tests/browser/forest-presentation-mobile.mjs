@@ -108,6 +108,15 @@ async function openAtlas(page) {
         await page.waitForTimeout(150);
     }
     assert.equal(stableCards >= 3, true, "sixty atlas cards must stay mounted before interaction");
+    // The card list mounts first; the reference sections follow it in document
+    // order. Wait for the complete atlas before asserting its guide contents.
+    await page.waitForFunction(() => document.querySelectorAll("#command-panel-content [data-presentation-point]").length === 30, null, { timeout: 45000 });
+    const cardBeforeGuide = await page.evaluate(() => {
+        const card = document.querySelector("#command-panel-content .forest-atlas__card");
+        const guide = document.querySelector("#command-panel-content .forest-atlas__field-guide");
+        return Boolean(card && guide && (card.compareDocumentPosition(guide) & Node.DOCUMENT_POSITION_FOLLOWING));
+    });
+    assert.equal(cardBeforeGuide, true, "the regional cards must precede the reference guide");
     // On a 390px screen the intro and summary can push the first card below the
     // fold, where content-visibility keeps it unlaid-out until it is scrolled
     // into view. Scroll the live node by expression so the check does not hold

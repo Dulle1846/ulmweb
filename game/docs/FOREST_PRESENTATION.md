@@ -1,6 +1,6 @@
 # Wald-Darstellung, Audio, UI und Accessibility 1.2.23.1.241–270
 
-**Status: implementiert, vertieft, verdrahtet und im Browser geprüft (v3.86.2).**
+**Status: implementiert, vertieft, verdrahtet und im Browser geprüft (v3.87.1).**
 
 Die dreißig Punkte bilden eine gemeinsame Präsentations-, Audio- und
 Zugänglichkeitsschicht über dem vorhandenen Waldmodell. Sie verändern keine
@@ -24,6 +24,15 @@ Alle 60 Profile werden deterministisch aus `REGIONAL_FOREST_TYPES`,
 `render.silhouette`, Klima und einem stabilen Hash abgeleitet. Es gibt keinen
 zweiten Waldgenerator und keinen Per-Frame-Scan. Die Referenzszene wird alle
 1,8 Sekunden neu gesampled; Render-Tuning und Ambience lesen nur dieses Ergebnis.
+
+## Atlas-Reihenfolge (v3.87.1)
+
+Die sechzig regionalen Karten stehen im DOM direkt nach den Live-Kennzahlen
+und dem Ökologie-Puls; Feldguide, Industrie, Kultur, Krieg, Regionenchronik
+und Fauna folgen darunter. Der progressive Renderer baut den Baum in
+Dokumentreihenfolge auf. Auf 390×844 erscheint die erste Karte dadurch nach
+393 ms und alle sechzig nach 863 ms (vorher rund acht Sekunden). Der
+Mobile-Test wartet auf den vollständigen Guide und prüft die Reihenfolge.
 
 ## Audit 241–270 (Stand 3.86.2)
 

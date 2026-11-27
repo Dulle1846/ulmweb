@@ -1,6 +1,6 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.87.0`
+**Current production version:** `3.87.1`
 **Next development line:** `3.88.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
@@ -8,6 +8,23 @@
 **Last repository verification:** 2026-11-27 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.87.1 — Waldtypen vor dem Feldguide
+
+Der Atlas baute seine Referenzblöcke in Dokumentreihenfolge auf: Zuerst kamen
+Jahreslauf, Feldguide, Industrie, Kultur, Krieg und Fauna, danach erst die
+sechzig regionalen Waldtypen. Auf 390×844 erschien die erste Karte deshalb
+erst nach rund acht Sekunden; wer FORESTS öffnete, sah zunächst einen langen
+Feldguide statt der Waldliste.
+
+- Die Kartenliste steht jetzt direkt unter den Live-Kennzahlen und dem
+  Ökologie-Puls. Feldguide, Industrie, Kultur, Krieg und Fauna folgen darunter.
+- Messung im 390×844-Software-GL-Lauf: erste Karte nach 393 ms, alle sechzig
+  nach 863 ms statt nach rund acht Sekunden. Der progressive Aufbau bleibt
+  unverändert; nur seine Reihenfolge folgt jetzt der Spielerabsicht.
+- Der Mobile-Test wartet auf den vollständigen Feldguide und prüft, dass die
+  Karten im DOM vor dem Guide liegen. Keine Sim-, Wirtschafts- oder
+  Save-Änderung.
 
 ## 3.87.0 - Keyboard-only play and visible focus
 
