@@ -25,6 +25,10 @@ Scroll zurück. Die sechzig Karten waren kurzzeitig weg.
 - Jedes Panel trägt eine Render-Sequenz. Der 390×844-Test wartet nach dem
   Tabwechsel auf diesen frischen Aufbau und auf sechzig für eine Sekunde
   stabile Karten, statt den noch sichtbaren alten Atlas zu zählen.
+- Die Browser-Mutationsprobe vergleicht weiterhin den vollständigen
+  persistenten Realm. Die reinen Terrain-Renderzähler und ihr Build-Snapshot
+  sind als Telemetrie ausgenommen, weil sie zwischen zwei Frames wechseln und
+  nie im Save liegen.
 
 Keine Sim-, Wirtschafts- oder Save-Änderung.
 
