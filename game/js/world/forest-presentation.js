@@ -8,6 +8,7 @@
 // accessibility settings all read the same profile, so a spruce wood looks,
 // sounds and reads as one thing.
 import { REGIONAL_FOREST_TYPES } from './regional-forests.js';
+import { CLIMATE_SEASONS, DAYS_PER_SEASON, wrapDay } from './season.js';
 
 const clamp01 = value => Math.max(0, Math.min(1, Number(value) || 0));
 const clamp = (value, min, max) => Math.max(min, Math.min(max, Number(value) || 0));
@@ -254,6 +255,243 @@ const CLIMATE_PRESENTATION = Object.freeze({
     volcanic: { fog: 'ash', visibility: 0.66, snow: 0.4, ground: 'ash', hue: '#d9d0bd', wind: 1.06, bed: null },
 });
 
+// ── Seasonal and acoustic identity ─────────────────────────────────
+// The phenology is data, not a second calendar: it reuses the climate curves
+// in season.js and only adds the regional shift the renderer already applies.
+// Every date is a day of the 400-day realm year, so the atlas can print it and
+// a player can compare two woods without opening a simulation panel.
+const SEASON_IDS = Object.freeze(['spring', 'summer', 'autumn', 'winter']);
+
+const FAMILY_SEASON_NOTES = Object.freeze({
+    conifer: Object.freeze({
+        spring: 'New needles push from the leader while meltwater runs through the {species} litter.',
+        summer: 'The tiers close into a dark, resinous roof and the floor stays cool all day.',
+        autumn: 'Older needles yellow inside the stand; the crown keeps its spire.',
+        winter: 'Snow loads the tiers and bends the lowest branches toward the ground.',
+    }),
+    emergent: Object.freeze({
+        spring: 'A pale flush breaks through the {species} roof and the understorey answers at once.',
+        summer: 'The high crown closes over the wood and only scattered shafts reach the floor.',
+        autumn: 'The upper storey turns late while the understorey colours beneath it.',
+        winter: 'The emergent crowns stay green above a floor of wet, heavy litter.',
+    }),
+    broadleaf: Object.freeze({
+        spring: 'Budburst opens the {species} canopy and the floor warms before the leaves harden.',
+        summer: 'A broad, layered roof filters the light into moving patches.',
+        autumn: 'The crown turns from the outside in, tree by tree across the stand.',
+        winter: 'Bare branches and marcescent leaves hold the shape of the wood.',
+    }),
+    airy: Object.freeze({
+        spring: 'Light spring leaf breaks on open {species} branches and the floor greens early.',
+        summer: 'The crown stays porous, so sun and wind reach the understorey.',
+        autumn: 'Dry leaves colour quickly and rattle before they fall.',
+        winter: 'A thin, open crown lets the low winter light through to the ground.',
+    }),
+    coastal: Object.freeze({
+        spring: 'Salt wind prunes the {species} buds and the new leaves come in wind-shaped.',
+        summer: 'The crown is clipped by the sea wind and never closes into a still roof.',
+        autumn: 'Colours stay muted; salt and spray dull the turn.',
+        winter: 'Cold fog and wind keep the wood moving even when the sap is down.',
+    }),
+    riparian: Object.freeze({
+        spring: 'The {species} roots are in moving water and the first leaves follow the flood.',
+        summer: 'Reeds and branches share the light above a wet, cool floor.',
+        autumn: 'Yellow leaves drop into the current and collect along the bank.',
+        winter: 'Bare stems stand in mist and the water keeps the wood audible.',
+    }),
+    dry: Object.freeze({
+        spring: 'A short, bright flush covers the {species} twigs after the first rain.',
+        summer: 'The canopy thins to save water and the floor cracks in the heat.',
+        autumn: 'Warm days hold the colour late and the leaves fall dry.',
+        winter: 'The wood stands open; bark, dust and thorn carry the silhouette.',
+    }),
+    columnar: Object.freeze({
+        spring: 'Narrow {species} buds open close to the stem and the column greens from the base.',
+        summer: 'The vertical crown casts a thin, striped shadow across the floor.',
+        autumn: 'The column turns evenly and drops its leaves in a short window.',
+        winter: 'Bare upright stems read as a fence of dark lines against the snow.',
+    }),
+    umbrella: Object.freeze({
+        spring: 'Flat {species} buds open on the outer edge of the umbrella crown.',
+        summer: 'The crown holds a level roof and the ground beneath stays open and hot.',
+        autumn: 'Pods and small leaves colour together on the flat top.',
+        winter: 'The umbrella stays legible as a crown of bare, level branches.',
+    }),
+    baobab: Object.freeze({
+        spring: 'The {species} flushes late, after the first heavy rain.',
+        summer: 'A sparse crown sits above a massive trunk and a dry, open floor.',
+        autumn: 'Leaves and fruit colour together on the short branches.',
+        winter: 'The bare trunk and stubby crown dominate a silent, dry wood.',
+    }),
+    thorn: Object.freeze({
+        spring: 'Tiny {species} leaves and thorns appear together after the rain.',
+        summer: 'The crown stays low and open, and the ground is bright between the stems.',
+        autumn: 'Small leaves turn and drop quickly; thorns remain.',
+        winter: 'The wood is a lattice of thorn and bare twig with no closed roof.',
+    }),
+    mangrove: Object.freeze({
+        spring: 'New {species} leaves open above the breathing roots and the tide moves through.',
+        summer: 'The low crown closes over black mud and the water stays warm beneath it.',
+        autumn: 'The wood stays largely green; only the oldest leaves colour.',
+        winter: 'Stilt roots and evergreen crowns stand in cold, quiet water.',
+    }),
+    bamboo: Object.freeze({
+        spring: 'New {species} shoots rise through the litter and the grove thickens fast.',
+        summer: 'The hollow stems knock together above a bright, shallow understorey.',
+        autumn: 'The grove keeps its green while dry leaves gather below.',
+        winter: 'Bare stems and dry leaf litter make the grove sound hollow in the wind.',
+    }),
+    scrub: Object.freeze({
+        spring: 'Low {species} buds break close to the ground and the scrub greens early.',
+        summer: 'The low wood stays open and the ground carries most of the colour.',
+        autumn: 'Small leaves and berries colour together across the scrub.',
+        winter: 'Twig, moss and snow carry the wood when the low canopy is bare.',
+    }),
+    willow: Object.freeze({
+        spring: 'Pale {species} leaves open on flexible shoots above the wet ground.',
+        summer: 'The crown hangs and moves even in a light breeze over the water.',
+        autumn: 'Long yellow leaves drop steadily into the marsh.',
+        winter: 'Bare, supple shoots stay coloured and readable against the grey.',
+    }),
+    heath: Object.freeze({
+        spring: 'Low {species} growth and heather tips colour the open ground first.',
+        summer: 'The wood stays wind-combed, with a low crown and a wide sky.',
+        autumn: 'Heather, bracken and small leaves turn together across the heath.',
+        winter: 'Bare stems and evergreen heath hold the shape under a thin snow load.',
+    }),
+});
+
+const CLIMATE_FIELD_MARK = Object.freeze({
+    temperate: 'oak and beech leaf litter under a four-season canopy',
+    northern: 'a long snow pack and a late, sudden spring',
+    taiga: 'deep needle litter and a short, intense growing season',
+    tundra: 'stunted growth, exposed rock and a very short summer',
+    snow: 'permanent cold, low crowns and a buried floor',
+    mediterranean: 'dry summer scent, cork bark and a spring flush',
+    arid: 'dust, thorn and a canopy that opens to the sun',
+    savanna: 'fire-shaped grass, flat crowns and a dry-season drop',
+    coastal: 'salt-pruned crowns and fog that hides the far stems',
+    mountain: 'steep ground, wind-shaped crowns and a late snow line',
+    swamp: 'standing water, buttressed roots and a green, humid floor',
+    tropical: 'a closed multi-storey roof and constant leaf fall',
+    enchanted: 'still air, pale light and a wood that holds its mist',
+    volcanic: 'ash on the leaves and pioneer growth on old flows',
+});
+
+const FAMILY_FIELD_MARKS = Object.freeze({
+    conifer: Object.freeze(['straight {species} spires', 'needle carpet and resin seams', 'snow-bent lower tiers']),
+    emergent: Object.freeze(['emergent {species} crowns', 'buttress roots and lianas', 'a dark, layered understorey']),
+    broadleaf: Object.freeze(['a rounded {species} dome', 'leaf litter and mast cups', 'epiphytes on old bark']),
+    airy: Object.freeze(['an open, porous crown', 'dry leaf drift and sun flecks', 'low scrub between the stems']),
+    coastal: Object.freeze(['wind-sheared {species} crowns', 'salt-burnt leaf edges', 'moss and fog on the windward side']),
+    riparian: Object.freeze(['{species} roots in moving water', 'sedge and reed banks', 'flood-cut soil and gravel bars']),
+    dry: Object.freeze(['a low, water-saving crown', 'cracked ground and dry grass', 'thorn and dust in the understorey']),
+    columnar: Object.freeze(['upright {species} columns', 'narrow shadows on the floor', 'a thin, even leaf fall']),
+    umbrella: Object.freeze(['a flat, level crown', 'open ground beneath the canopy', 'pods and fine leaf litter']),
+    baobab: Object.freeze(['a massive {species} trunk', 'a short, stubby crown', 'dry, bare ground between the stems']),
+    thorn: Object.freeze(['a low thorn lattice', 'bright ground between the stems', 'small leaves and hard seed']),
+    mangrove: Object.freeze(['stilt and breathing roots', 'black tidal mud', 'salt crust and evergreen crowns']),
+    bamboo: Object.freeze(['hollow {species} stems', 'dry leaf litter below', 'a bright, shallow understorey']),
+    scrub: Object.freeze(['low, wind-combed growth', 'moss and lichen on the ground', 'berry and twig in the low layer']),
+    willow: Object.freeze(['hanging {species} shoots', 'wet marsh soil', 'long leaves along the waterline']),
+    heath: Object.freeze(['open, wind-combed crowns', 'heather and bracken below', 'thin soil over rock']),
+});
+
+const FAMILY_WINTER_TINT = Object.freeze({
+    conifer: '#3a4a3a', emergent: '#3f4f3a', broadleaf: '#6b5540', airy: '#7a6b4a',
+    coastal: '#4e5c50', riparian: '#6a5d42', dry: '#8a7a55', columnar: '#6b5a42',
+    umbrella: '#7d6d4e', baobab: '#6f6048', thorn: '#7b7050', mangrove: '#3f5746',
+    bamboo: '#6f7a48', scrub: '#5f5c48', willow: '#6b5d48', heath: '#6f6650',
+});
+
+// Wooden modes. The ambience engine reads the same degrees, so a spruce wood
+// and an oak wood do not improvise in the same scale even when they share a
+// root note.
+const FAMILY_SCALE = Object.freeze({
+    conifer: Object.freeze({ mode: 'Dorian', degrees: Object.freeze([0, 2, 3, 5, 7, 9, 10]), tempo: 54 }),
+    emergent: Object.freeze({ mode: 'Pentatonic', degrees: Object.freeze([0, 2, 4, 7, 9]), tempo: 62 }),
+    broadleaf: Object.freeze({ mode: 'Ionian', degrees: Object.freeze([0, 2, 4, 5, 7, 9, 11]), tempo: 58 }),
+    airy: Object.freeze({ mode: 'Lydian', degrees: Object.freeze([0, 2, 4, 6, 7, 9, 11]), tempo: 66 }),
+    coastal: Object.freeze({ mode: 'Aeolian', degrees: Object.freeze([0, 2, 3, 5, 7, 8, 10]), tempo: 50 }),
+    riparian: Object.freeze({ mode: 'Mixolydian', degrees: Object.freeze([0, 2, 4, 5, 7, 9, 10]), tempo: 60 }),
+    dry: Object.freeze({ mode: 'Phrygian', degrees: Object.freeze([0, 1, 3, 5, 7, 8, 10]), tempo: 68 }),
+    columnar: Object.freeze({ mode: 'Ionian', degrees: Object.freeze([0, 2, 4, 5, 7, 9, 11]), tempo: 56 }),
+    umbrella: Object.freeze({ mode: 'Pentatonic', degrees: Object.freeze([0, 2, 4, 7, 9]), tempo: 64 }),
+    baobab: Object.freeze({ mode: 'Pentatonic', degrees: Object.freeze([0, 3, 5, 7, 10]), tempo: 48 }),
+    thorn: Object.freeze({ mode: 'Phrygian', degrees: Object.freeze([0, 1, 3, 5, 7, 8, 10]), tempo: 70 }),
+    mangrove: Object.freeze({ mode: 'Aeolian', degrees: Object.freeze([0, 2, 3, 5, 7, 8, 10]), tempo: 52 }),
+    bamboo: Object.freeze({ mode: 'Pentatonic', degrees: Object.freeze([0, 2, 5, 7, 9]), tempo: 72 }),
+    scrub: Object.freeze({ mode: 'Dorian', degrees: Object.freeze([0, 2, 3, 5, 7, 9, 10]), tempo: 52 }),
+    willow: Object.freeze({ mode: 'Mixolydian', degrees: Object.freeze([0, 2, 4, 5, 7, 9, 10]), tempo: 50 }),
+    heath: Object.freeze({ mode: 'Dorian', degrees: Object.freeze([0, 2, 3, 5, 7, 9, 10]), tempo: 56 }),
+});
+
+function phenologyFor(type, climateKey, leaves, snow, oldGrowth) {
+    const climate = CLIMATE_SEASONS[climateKey] || CLIMATE_SEASONS.temperate;
+    const shift = name => Math.round((unit(type.id, name) - 0.5) * 14);
+    const leafOut = wrapDay(24 + (climate.greenShift || 0) + leaves.springShift + shift('leafout'));
+    const blossom = wrapDay(leafOut + 18 + Math.round(unit(type.id, 'blossomday') * 28));
+    const canopy = wrapDay(leafOut + 36 + Math.round(unit(type.id, 'canopyday') * 24));
+    const fruit = wrapDay(142 + Math.round(unit(type.id, 'fruitday') * 74) + Math.round(oldGrowth * 12));
+    const turn = wrapDay(205 + (climate.foliageShift || 0) + leaves.turnShift + shift('turnday'));
+    const leafFall = wrapDay(turn + 22 + Math.round(unit(type.id, 'fall') * 26) + Math.round(snow.bareShare * 12));
+    const deepWinter = wrapDay(330 + Math.round(unit(type.id, 'winterday') * 28));
+    const snowHold = (climate.snowScale || 0) > 0.05
+        ? wrapDay((climate.snowStart || 0) + 8 + Math.round(unit(type.id, 'snowday') * 18))
+        : null;
+    return Object.freeze({ leafOut, blossom, canopy, fruit, turn, leafFall, deepWinter, snowHold });
+}
+
+function seasonsFor(type, familyId, climateKey, leaves, snow, bloom, ground, phenology) {
+    const notes = FAMILY_SEASON_NOTES[familyId] || FAMILY_SEASON_NOTES.broadleaf;
+    const species = speciesLabel(dominantSpecies(type)).toLowerCase();
+    const winter = FAMILY_WINTER_TINT[familyId] || FAMILY_WINTER_TINT.broadleaf;
+    const climateMark = CLIMATE_FIELD_MARK[climateKey] || CLIMATE_FIELD_MARK.temperate;
+    const keyDays = [
+        phenology.leafOut,
+        phenology.canopy,
+        phenology.turn,
+        phenology.deepWinter,
+    ];
+    const leaf = [leaves.spring, leaves.summer, leaves.autumn, winter];
+    const accent = [leaves.summerLight, leaves.summer, leaves.autumnLight, '#d9e0d4'];
+    return Object.freeze(SEASON_IDS.map((id, index) => Object.freeze({
+        id,
+        label: id[0].toUpperCase() + id.slice(1),
+        startDay: index * DAYS_PER_SEASON,
+        endDay: index * DAYS_PER_SEASON + DAYS_PER_SEASON - 1,
+        keyDay: keyDays[index],
+        leaf: leaf[index],
+        accent: accent[index],
+        ground: ground.label,
+        blossom: id === 'spring' ? bloom.blossom : 0,
+        fruit: id === 'autumn' ? bloom.fruit : id === 'summer' ? bloom.fruit * 0.55 : 0,
+        snow: id === 'winter' ? clamp01(snow.retention / 1.8) : id === 'autumn' ? clamp01(snow.retention / 4) : 0,
+        bare: id === 'winter' ? snow.bareShare : id === 'autumn' ? snow.bareShare * 0.35 : 0,
+        note: String(notes[id] || '').replace(/\{species\}/g, species)
+            + (id === 'summer' ? ' ' + climateMark + '.' : ''),
+    })));
+}
+
+function canopyLayersFor(familyId, leaves, parallax) {
+    return Object.freeze([
+        Object.freeze({ id: 'floor', label: 'Understorey', parallax: Number((parallax * 0.34).toFixed(3)), opacity: 0.42, tint: leaves.spring }),
+        Object.freeze({ id: 'trunk', label: 'Trunk layer', parallax: Number((parallax * 0.68).toFixed(3)), opacity: 0.66, tint: leaves.summerLight }),
+        Object.freeze({ id: 'roof', label: 'Crown roof', parallax: Number(parallax.toFixed(3)), opacity: 0.92, tint: leaves.summer }),
+    ]);
+}
+
+function fieldMarksFor(type, familyId, climateKey) {
+    const family = FAMILY_FIELD_MARKS[familyId] || FAMILY_FIELD_MARKS.broadleaf;
+    const species = speciesLabel(dominantSpecies(type)).toLowerCase();
+    const climate = CLIMATE_FIELD_MARK[climateKey] || CLIMATE_FIELD_MARK.temperate;
+    return Object.freeze([
+        String(family[0] || '').replace(/\{species\}/g, species),
+        family[1] || '',
+        climate,
+    ].filter(Boolean));
+}
+
 const GROUND_TEXTURES = Object.freeze({
     needle: Object.freeze({ id: 'needle', label: 'Needle carpet', detail: 'rust-brown needle fall, resin flecks, deep moss hollows' }),
     leaf: Object.freeze({ id: 'leaf', label: 'Broadleaf litter', detail: 'layered species leaves, mast cups, exposed humus' }),
@@ -377,6 +615,7 @@ function profileFor(type) {
         retention: clamp(family.snow * (climate.snow || 1) * (0.9 + unit(type.id, 'snow') * 0.2), 0, 1.8),
         bareShare: clamp01((1 - (family.snow / 1.5)) * 0.45 + unit(type.id, 'bare') * 0.3),
     };
+    const scale = FAMILY_SCALE[familyId] || FAMILY_SCALE.broadleaf;
     const sound = {
         bed: family.bed,
         density: clamp01(density * 0.7 + unit(type.id, 'sound') * 0.3),
@@ -386,6 +625,10 @@ function profileFor(type) {
         water: faunaFor(type).water,
         silence: clamp01(family.silence + oldGrowth * 0.34),
         oldGrowth: clamp01(oldGrowth),
+        mode: scale.mode,
+        scale: Object.freeze({ mode: scale.mode, degrees: Object.freeze([...scale.degrees]) }),
+        motif: Object.freeze([0, 1, 2].map(index => Math.floor(unit(type.id, 'motif' + index) * scale.degrees.length))),
+        tempo: Math.round(scale.tempo + (unit(type.id, 'tempo') - 0.5) * 10),
     };
     const bloom = {
         blossom: clamp01(family.bloom * (0.6 + unit(type.id, 'blossom') * 0.8)),
@@ -404,6 +647,16 @@ function profileFor(type) {
     const dangerLabel = danger === 'fire' ? 'Fire-prone'
         : danger === 'flood' ? 'Flood-prone'
             : danger === 'lost' ? 'Easy to lose the path' : 'No exceptional danger';
+    const parallax = clamp(family.parallax * (0.86 + unit(type.id, 'parallax') * 0.32), 0.015, 0.095);
+    const phenology = phenologyFor(type, baseClimate, leaves, snow, oldGrowth);
+    const seasons = seasonsFor(type, familyId, baseClimate, leaves, snow, bloom, ground, phenology);
+    const canopyLayers = canopyLayersFor(familyId, leaves, parallax);
+    const fieldMarks = fieldMarksFor(type, familyId, baseClimate);
+    const weatherReaction = Object.freeze({
+        drip: clamp01((Number(effects.flood) || 0) * 0.7 + density * 0.25 + unit(type.id, 'drip') * 0.2),
+        hush: clamp01((family.snow * (climate.snow || 1)) / 1.8),
+        creak: clamp01((Number(effects.fire) || 0) * 0.2 + wind.gust * 0.4 + oldGrowth * 0.4),
+    });
     return Object.freeze({
         id: type.id,
         key: type.key,
@@ -417,7 +670,12 @@ function profileFor(type) {
         icon: family.icon,
         pattern: family.pattern,
         patternLabel: family.patternLabel,
-        parallax: clamp(family.parallax * (0.86 + unit(type.id, 'parallax') * 0.32), 0.015, 0.095),
+        parallax,
+        phenology,
+        seasons,
+        canopyLayers,
+        fieldMarks,
+        weatherReaction,
         crown: Object.freeze({
             aspect: clamp(family.crownAspect * (0.9 + unit(type.id, 'aspect') * 0.2), 0.45, 1.45),
             asymmetry: clamp01(family.asymmetry * (0.7 + unit(type.id, 'asym') * 0.7)),
@@ -450,6 +708,7 @@ function profileFor(type) {
         bloom: Object.freeze(bloom),
         fauna: Object.freeze(faunaFor(type)),
         sound: Object.freeze({ ...sound, instruments: instrumentsFor(type, familyId) }),
+        seasonStrip: Object.freeze(seasons.map(season => season.id)),
         instruments: instrumentsFor(type, familyId),
         useIcon,
         danger,
@@ -569,7 +828,7 @@ export const FOREST_PRESENTATION_POINTS = Object.freeze([
         id: '1.2.23.1.241', group: 'render', title: 'Canopy parallax by forest type',
         point: 'The crown roof of each regional forest shifts at its own depth when the camera moves.',
         consumer: 'terrain.js · drawMassCanopy / forestPresentation profile.parallax',
-        detail: 'Each of the sixty types carries a parallax factor derived from its silhouette and canopy depth. The landscape canopy layer is offset by that factor against the trunk and ground layers, so a tall emergent rainforest closes over the view at a different rate than a low thorn wood. Close LOD applies a fraction of the same offset so the roof still feels layered at roof distance.',
+        detail: 'Each of the sixty types carries a parallax factor derived from its silhouette and canopy depth. The landscape canopy layer is offset by that factor against the trunk and ground layers, so a tall emergent rainforest closes over the view at a different rate than a low thorn wood. Close LOD applies a fraction of the same offset so the roof still feels layered at roof distance. The atlas prints the same roof factor beside the understorey and trunk layers, so the readout and the map share one number.',
     }),
     Object.freeze({
         id: '1.2.23.1.242', group: 'render', title: 'Unmistakable tree silhouettes per region',
@@ -587,7 +846,7 @@ export const FOREST_PRESENTATION_POINTS = Object.freeze([
         id: '1.2.23.1.244', group: 'render', title: 'Autumn foliage with staggered colouring',
         point: 'Autumn arrives tree by tree and region by region, not on one calendar day.',
         consumer: 'seasonal-foliage.js + presentation profile.leaves.turnShift',
-        detail: 'The existing per-tree timing already jitters turn and drop. The regional profile adds a second shift of up to eight days and a spring shift of six, so a birch grove turns before the oakwood beside it and a southern beech wood colours later than a northern one. Neighbouring crowns within a stand keep their own species timing.',
+        detail: 'The existing per-tree timing already jitters turn and drop. The regional profile adds a second shift of up to eight days and a spring shift of six, so a birch grove turns before the oakwood beside it and a southern beech wood colours later than a northern one. Neighbouring crowns within a stand keep their own species timing. The atlas calendar dates leaf-out, canopy closure, turn and leaf fall per type, so two woods can be compared by day instead of by colour alone.',
     }),
     Object.freeze({
         id: '1.2.23.1.245', group: 'render', title: 'Snow loads and bare crowns in winter',
@@ -641,7 +900,7 @@ export const FOREST_PRESENTATION_POINTS = Object.freeze([
         id: '1.2.23.1.253', group: 'render', title: 'Blossoms and fruit as seasonal details',
         point: 'Spring blossom and autumn mast appear on the species that actually carry them.',
         consumer: 'terrain.js · drawBlossoms / drawMast + type.goods',
-        detail: 'Spring adds a bounded blossom pass to flowering types, tinted by the regional bloom colour. The existing mast pass is extended with the type’s real fruits and cones, and the profile sets blossom and fruit density. A beech wood drops beechnuts, an oakwood acorns, a spruce wood cones, a savanna acacia pods; a mangrove flowers in its own season.',
+        detail: 'Spring adds a bounded blossom pass to flowering types, tinted by the regional bloom colour. The existing mast pass is extended with the type’s real fruits and cones, and the profile sets blossom and fruit density. A beech wood drops beechnuts, an oakwood acorns, a spruce wood cones, a savanna acacia pods; a mangrove flowers in its own season. The atlas prints the regional blossom and fruit days beside the density, so the seasonal detail is readable before it appears on the map.',
     }),
     Object.freeze({
         id: '1.2.23.1.254', group: 'render', title: 'Visible animals and birds in matching forest types',
@@ -665,7 +924,7 @@ export const FOREST_PRESENTATION_POINTS = Object.freeze([
         id: '1.2.23.1.257', group: 'audio', title: 'Musical instruments from regional woods',
         point: 'The regional trees become the instruments the wood plays.',
         consumer: 'core/forest-ambience.js · profile.instruments timbre',
-        detail: 'Each type names three instruments built from its dominant species (spruce fiddle, birch flute, oak harp, mangrove drum, savanna lyre). Their timbre, brightness, decay and overtone set a short procedural motif played at long intervals over the bed. The motif is deterministic for the type and season, so the same wood sounds like itself across sessions.',
+        detail: 'Each type names three instruments built from its dominant species (spruce fiddle, birch flute, oak harp, mangrove drum, savanna lyre). Their timbre, brightness, decay and overtone set a short procedural motif played at long intervals over the bed. The motif is deterministic for the type and season, so the same wood sounds like itself across sessions. Each family also has its own wooden mode and tempo, and the atlas can audition the instrument, bird, insect, weather, drip, creak, hush and silence cues on demand.',
     }),
     Object.freeze({
         id: '1.2.23.1.258', group: 'audio', title: 'Silence as an acoustic device in the old wood',
@@ -682,7 +941,7 @@ export const FOREST_PRESENTATION_POINTS = Object.freeze([
     Object.freeze({
         id: '1.2.23.1.260', group: 'ui', title: 'Legends with ecological symbols',
         point: 'The map symbols are explained in one place, including the ones that are not trees.',
-        consumer: 'forest-atlas-panel.js · presentationBlock legend',
+        consumer: 'forest-atlas-panel.js · presentationBlock legend + family filter',
         detail: 'The atlas carries a legend for all nine silhouette families, the three use icons and the four danger marks, plus the protection and disturbance symbols. Each entry states what the symbol means in ecological terms, not only what colour it has. The legend is generated from the same tables the renderer reads, so it cannot drift from the map.',
     }),
     Object.freeze({
@@ -725,7 +984,7 @@ export const FOREST_PRESENTATION_POINTS = Object.freeze([
         id: '1.2.23.1.267', group: 'accessibility', title: 'Subtitles for animal voices and forest sounds',
         point: 'Every sound cue can be read as well as heard.',
         consumer: 'index.html #forest-subtitle + core/forest-ambience.js cue events',
-        detail: 'When the subtitle option is on, each bird, insect, instrument or water cue writes a short line to a polite live region above the map (“A capercaillie calls”, “Rain on the spruce tops”, “A low wooden flute”). The line fades after a few seconds. The same cue text is available without audio, so the ambience remains usable with the sound off.',
+        detail: 'When the subtitle option is on, each bird, insect, instrument or water cue writes a short line to a polite live region above the map (“A capercaillie calls”, “Rain on the spruce tops”, “A low wooden flute”). The line fades after a few seconds. The same cue text is available without audio, so the ambience remains usable with the sound off. The atlas preview prints the exact cue and keeps the last eight in a visible history.',
     }),
     Object.freeze({
         id: '1.2.23.1.268', group: 'performance', title: 'Performance mode with less tree movement',

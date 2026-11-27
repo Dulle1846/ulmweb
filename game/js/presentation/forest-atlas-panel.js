@@ -10,6 +10,7 @@ import {
 import { FOREST_GOODS, FOREST_SPECIES, forestStandAt } from "../world/forest-ecology.js";
 import { FOREST_MANAGEMENT_SYSTEMS } from "../world/forest-dynamics.js";
 import { forestFaunaEcologyFor, forestFaunaFieldGuide } from "../world/forest-fauna-ecology.js";
+import { forestAmbienceHistory } from "../core/forest-ambience.js";
 import {
     forestBiodiversityFor, forestErosionFor, forestFloodPressureFor,
     forestModelCacheStats, forestModelFor, forestModelTelemetrySnapshot,
@@ -424,6 +425,7 @@ function modelBlock(model) {
 
 function card(type, count, sampled, transitionCount, currentSeason, dynamics = null, fauna = null, model = null) {
     const timber = signatureTimberForRegionalType(type);
+    const presentation = forestPresentationProfile(type.id);
     const quote = timber ? timberQuote(timber.id) : null;
     const share = sampled > 0 ? Math.round(count / sampled * 100) : 0;
     const effects = type.effects || {};
@@ -441,6 +443,12 @@ function card(type, count, sampled, transitionCount, currentSeason, dynamics = n
         + '<span class="forest-atlas__presence">' + presence + '</span></summary>'
         + '<p class="forest-atlas__profile">' + esc(type.profile) + '</p>'
         + characterLine(type, currentSeason)
+        + (presentation ? cardSeasonLine(presentation) + cardFieldMarks(presentation) : '')
+        + (presentation ? '<div class="forest-atlas__listen"><button type="button" class="forest-atlas__listen-button" data-forest-type-cue="'
+            + esc(type.id) + '" data-forest-cue-kind="instrument" aria-label="Hear '
+            + esc(type.short || type.label) + '">HEAR THIS WOOD <small>'
+            + esc(presentation.sound.scale?.mode || 'Ionian') + '</small></button><span>'
+            + esc(presentation.instruments.map(entry => entry.label).join(' · ')) + '</span></div>' : '')
         + dynamicsBlock(dynamics, fauna)
         + modelBlock(model)
         + '<div class="forest-atlas__stats">'
@@ -949,6 +957,89 @@ function industryBlock() {
 // accessibility panel. Everything here is generated from the same profile
 // tables, filter state and guide rows the renderer and ambience read, so a
 // legend entry cannot describe a symbol the map no longer draws.
+// 1.2.23.1.244/245/253: a real phenology strip, not a decorative swatch. The
+// dates come from the same climate curves the renderer uses, shifted by the
+// regional type hash, so two neighbouring woods can be compared by day.
+function seasonCalendar(profile, scene) {
+    if (!profile?.seasons?.length) return "";
+    const active = Math.max(0, Math.min(3, Number(scene.seasonIndex) || 0));
+    const rows = profile.seasons.map((season, index) => {
+        const keyLabel = season.id === "spring" ? "LEAF-OUT"
+            : season.id === "summer" ? "CANOPY CLOSED"
+                : season.id === "autumn" ? "TURN" : "DEEP WINTER";
+        const snowFact = season.id === "winter" && profile.phenology?.snowHold !== null
+            ? "first snow day " + number(profile.phenology.snowHold) + " · " : "";
+        const facts = season.id === "spring"
+            ? "blossom " + pct(season.blossom) + " · snow " + pct(season.snow)
+            : season.id === "summer" ? "fruit " + pct(season.fruit) + " · ground " + season.ground
+                : season.id === "autumn" ? "fruit " + pct(season.fruit) + " · bare " + pct(season.bare)
+                    : snowFact + "snow " + pct(season.snow) + " · bare " + pct(season.bare);
+        return '<article class="forest-atlas__season' + (index === active ? ' is-current' : '') + '" data-forest-season="'
+            + esc(season.id) + '" data-forest-season-day="' + number(season.keyDay) + '">'
+            + '<span class="forest-atlas__season-band" style="--leaf:' + esc(season.leaf)
+            + ';--accent:' + esc(season.accent) + '" aria-hidden="true"></span>'
+            + '<div><strong>' + esc(season.label) + '</strong><small>' + esc(keyLabel) + ' · day '
+            + number(season.keyDay) + '</small></div>'
+            + '<em>' + esc(season.note) + '</em>'
+            + '<span class="forest-atlas__season-facts">' + esc(facts) + '</span></article>';
+    }).join("");
+    return '<div class="forest-atlas__year" data-forest-year="' + number(profile.seasons.length)
+        + '" data-forest-year-current="' + esc(profile.seasons[active].id) + '">'
+        + '<div class="forest-atlas__year-head"><b>A YEAR IN THE WOOD</b><span>'
+        + esc(profile.short) + ' · ' + esc(profile.phenology ? 'turn day ' + profile.phenology.turn : profile.family)
+        + ' · ' + esc(profile.ground.label) + '</span></div>' + rows + '</div>';
+}
+
+function canopyDepth(profile) {
+    const layers = profile?.canopyLayers || [];
+    if (!layers.length) return "";
+    const rows = layers.map(layer => '<div class="forest-atlas__canopy-layer" data-forest-canopy-layer="'
+        + esc(layer.id) + '"><small>' + esc(layer.label) + '</small><i><b style="width:'
+        + Math.round(layer.opacity * 100) + '%;background:' + esc(layer.tint) + '"></b></i><em>'
+        + layer.parallax.toFixed(3) + '×</em></div>').join("");
+    return '<div class="forest-atlas__canopy" data-forest-canopy-layers="' + number(layers.length) + '">'
+        + '<div class="forest-atlas__canopy-head"><b>CANOPY DEPTH</b><span>'
+        + esc(profile.family) + ' · ' + profile.parallax.toFixed(3) + '× base parallax</span></div>'
+        + rows + '</div>';
+}
+
+function soundPreview(profile, scene, cueKinds) {
+    if (!profile?.sound) return "";
+    const last = forestAmbienceHistory()[0];
+    const buttons = (cueKinds || []).map(entry => '<button type="button" class="forest-atlas__cue-button" data-forest-cue="'
+        + esc(entry.id) + '" aria-label="' + esc(entry.action) + '" title="' + esc(entry.detail) + '">'
+        + esc(String(entry.label).toUpperCase()) + '</button>').join("");
+    return '<div class="forest-atlas__sound" data-forest-soundscape="' + number((cueKinds || []).length)
+        + '" data-forest-sound-mode="' + esc(profile.sound.scale?.mode || 'Ionian') + '">'
+        + '<div class="forest-atlas__sound-head"><b>LISTEN TO THIS WOOD</b><span>'
+        + esc(profile.short) + ' · ' + esc(profile.sound.scale?.mode || 'Ionian') + ' · '
+        + number(profile.sound.tempo) + ' bpm · ' + esc(profile.sound.bed) + '</span></div>'
+        + '<div class="forest-atlas__cue-grid">' + buttons + '</div>'
+        + '<p class="forest-atlas__cue-text" data-forest-cue-text role="status" aria-live="polite">'
+        + 'Tap a cue to hear this wood. Every cue is printed here even with the sound muted.</p>'
+        + '<p class="forest-atlas__last-cue" data-forest-last-cue>'
+        + (last ? 'LAST HEARD · ' + esc(last.text) : 'NO CUE HEARD YET') + '</p>'
+        + '<small>Preview follows the forest ambience volume and subtitle setting. It never changes the regional bed or the save.</small>'
+        + '</div>';
+}
+
+// Two compact lines, not one node per season and field mark. The phone atlas
+// renders all sixty cards at once; the full four-card calendar lives once in
+// the presentation block above, and the card keeps the same information in a
+// single bounded row so the staged panel still opens quickly.
+function cardSeasonLine(profile) {
+    if (!profile?.seasons?.length) return "";
+    return '<p class="forest-atlas__season-line" data-forest-season-line="' + number(profile.seasons.length) + '">'
+        + '<b>SEASONS</b> ' + profile.seasons.map(season => esc(season.label) + ' day '
+            + number(season.keyDay)).join(' · ') + '</p>';
+}
+
+function cardFieldMarks(profile) {
+    if (!profile?.fieldMarks?.length) return "";
+    return '<p class="forest-atlas__field-marks-line" data-forest-field-marks="' + number(profile.fieldMarks.length) + '">'
+        + '<b>FIELD MARKS</b> ' + profile.fieldMarks.map(esc).join(' · ') + '</p>';
+}
+
 function presentationFilterChip(group, option, current) {
     const active = current === option.id;
     return '<button type="button" class="forest-atlas__filter-chip is-pattern-'
@@ -973,12 +1064,16 @@ function presentationBlock() {
         pattern: group.id === 'family' ? 'chevron' : group.id === 'resource' ? 'rays' : 'dots',
     }));
     const familyPatterns = { conifer: 'chevron', emergent: 'diamond', broadleaf: 'dots', airy: 'rays', coastal: 'waves', riparian: 'waves', dry: 'cross', columnar: 'bars', umbrella: 'rings', baobab: 'rings', thorn: 'cross', mangrove: 'waves', bamboo: 'bars', scrub: 'dots', willow: 'waves', heath: 'chevron' };
-    const legendRows = legend.map(entry => '<div class="forest-atlas__legend-entry" data-forest-legend="'
-        + esc(entry.family) + '"><span class="forest-atlas__legend-swatch is-pattern-'
+    // The family legend is also a filter: a player can tap the symbol they are
+    // looking at instead of translating it back into a filter-bar label.
+    const legendRows = legend.map(entry => '<button type="button" class="forest-atlas__legend-entry" data-forest-legend="'
+        + esc(entry.family) + '" data-forest-family-filter="' + esc(entry.family)
+        + '" aria-pressed="' + (filters.family === entry.family ? 'true' : 'false') + '" title="Filter '
+        + esc(entry.label) + ' woods"><span class="forest-atlas__legend-swatch is-pattern-'
         + esc(familyPatterns[entry.family] || entry.pattern) + '" aria-hidden="true"><b>'
         + esc(entry.icon) + '</b></span><div><strong>' + esc(entry.label) + '</strong><small>'
         + esc(entry.detail) + ' · ' + esc(entry.ground) + ' · ' + esc(entry.light)
-        + '</small></div></div>').join("");
+        + '</small></div></button>').join("");
     const useRows = uses.map(entry => '<div class="forest-atlas__legend-entry" data-forest-use="'
         + esc(entry.id) + '"><span class="forest-atlas__legend-glyph" aria-hidden="true">'
         + esc(entry.glyph) + '</span><div><strong>' + esc(entry.label) + '</strong><small>'
@@ -1031,8 +1126,12 @@ function presentationBlock() {
         + '<div><small>PATTERNS</small><strong>' + number(summary.patterns.length) + '</strong></div>'
         + '<div><small>FOG TYPES</small><strong>' + number(summary.fogs.length) + '</strong></div>'
         + '<div><small>GROUND WEAVES</small><strong>' + number(summary.grounds.length) + '</strong></div>'
-        + '<div><small>FILTERS ACTIVE</small><strong data-forest-filter-status="' + activeCount + '">' + number(activeCount) + ' / 3</strong></div>'
+        + '<div><small>FILTERS ACTIVE</small><strong data-forest-filter-status="' + activeCount + '" role="status" aria-live="polite">' + number(activeCount) + ' / 3</strong></div>'
         + '<div><small>REFERENCE WOOD</small><strong>' + (profile ? esc(profile.id.slice(-3)) + ' · ' + esc(profile.family.toUpperCase()) : '—') + '</strong></div></div>'
+        + '<div class="command-section-title">A YEAR IN THE WOOD · PHENOLOGY &amp; DEPTH</div>'
+        + seasonCalendar(profile, scene)
+        + canopyDepth(profile)
+        + soundPreview(profile, scene, summary.cueKinds)
         + '<div class="command-section-title">FILTER THE ATLAS · FAMILY, RESOURCE, PROTECTION</div>'
         + '<div class="forest-atlas__filter-bar" role="group" aria-label="Forest atlas filters">' + filterGroups
         + '<div class="forest-atlas__filter-group"><small>RESET</small><button type="button" class="forest-atlas__filter-chip" data-forest-filter-reset="1">ALL SIXTY TYPES</button></div></div>'

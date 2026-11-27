@@ -728,7 +728,10 @@
 .forest-atlas__filter-chip.is-current{border-color:#e3c98f;background-color:rgba(96,77,43,.95);color:#fff3d2;box-shadow:inset 0 0 0 1px rgba(227,201,143,.35)}
 .forest-atlas__filter-chip:focus-visible{outline:2px solid #f0d79a;outline-offset:2px}
 .forest-atlas__legend-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:4px;padding:3px 0}
-.forest-atlas__legend-entry{display:flex;gap:7px;align-items:center;min-width:0;padding:5px 6px;border:1px solid rgba(185,154,89,.26);border-radius:4px;background:rgba(28,31,26,.72)}
+.forest-atlas__legend-entry{display:flex;gap:7px;align-items:center;min-width:0;width:100%;padding:5px 6px;border:1px solid rgba(185,154,89,.26);border-radius:4px;background:rgba(28,31,26,.72);color:inherit;font:inherit;text-align:left;cursor:pointer}
+.forest-atlas__legend-entry:hover{border-color:rgba(214,178,106,.8);background:rgba(48,44,30,.86)}
+.forest-atlas__legend-entry[aria-pressed="true"]{border-color:#e3c98f;background:rgba(78,64,38,.78);box-shadow:inset 0 0 0 1px rgba(227,201,143,.25)}
+.forest-atlas__legend-entry:focus-visible{outline:2px solid #f0d79a;outline-offset:2px}
 .forest-atlas__legend-entry>div{display:grid;gap:1px;min-width:0}
 .forest-atlas__legend-entry strong{color:#f2e5c4;font:700 7px/1.3 var(--ui-body-font,sans-serif);letter-spacing:.03em}
 .forest-atlas__legend-entry small{color:#c9b99a;font:400 6.2px/1.4 var(--ui-body-font,sans-serif)}
@@ -743,6 +746,54 @@
 .forest-atlas__presentation-settings strong{color:#f2e5c4;font:700 6.5px/1.3 var(--ui-body-font,sans-serif)}
 .forest-atlas__presentation-detail{color:#c9b99a!important;font:400 7px/1.45 var(--ui-body-font,sans-serif)!important}
 .forest-atlas__presentation-point{border-left:2px solid rgba(120,160,110,.55)}
+/* 1.2.23.1.244/245/253: the seasonal calendar is a real four-season strip
+   with dates, not a decorative palette. The current season is marked. */
+.forest-atlas__year{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;padding:3px 0}
+.forest-atlas__year-head{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:3px 8px;padding:0 1px 2px}
+.forest-atlas__year-head b{color:#e3c98f;font:700 6.5px/1.2 var(--ui-number-font,monospace);letter-spacing:.09em}
+.forest-atlas__year-head span{color:#c9b99a;font:400 6.5px/1.35 var(--ui-body-font,sans-serif)}
+.forest-atlas__season{position:relative;display:grid;align-content:start;gap:3px;min-width:0;padding:6px 7px;border:1px solid rgba(185,154,89,.26);border-radius:4px;background:rgba(24,29,24,.72)}
+.forest-atlas__season.is-current{border-color:#e3c98f;background:rgba(78,64,38,.75);box-shadow:inset 0 0 0 1px rgba(227,201,143,.25)}
+.forest-atlas__season-band{display:block;height:5px;border-radius:2px;background:linear-gradient(90deg,var(--leaf),var(--accent))}
+.forest-atlas__season>div{display:grid;gap:1px;min-width:0}
+.forest-atlas__season strong{color:#f2e5c4;font:700 7.5px/1.25 var(--ui-body-font,sans-serif)}
+.forest-atlas__season small{color:#c9b99a;font:700 5.8px/1.25 var(--ui-number-font,monospace);letter-spacing:.05em}
+.forest-atlas__season em{color:#d8c9aa;font:400 6.4px/1.4 var(--ui-body-font,sans-serif);font-style:normal;overflow-wrap:anywhere}
+.forest-atlas__season-facts{margin-top:auto;padding-top:3px;border-top:1px dotted rgba(185,154,89,.28);color:#b7c6a4;font:600 5.8px/1.35 var(--ui-number-font,monospace);letter-spacing:.03em}
+/* 1.2.23.1.241: three depth bands make the per-type parallax readable. */
+.forest-atlas__canopy{display:grid;gap:3px;padding:6px 8px;border:1px solid rgba(185,154,89,.28);border-radius:4px;background:rgba(22,27,22,.7)}
+.forest-atlas__canopy-head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:2px 8px}
+.forest-atlas__canopy-head b{color:#e3c98f;font:700 6.5px/1.2 var(--ui-number-font,monospace);letter-spacing:.09em}
+.forest-atlas__canopy-head span{color:#c9b99a;font:400 6.5px/1.35 var(--ui-body-font,sans-serif)}
+.forest-atlas__canopy-layer{display:grid;grid-template-columns:78px minmax(0,1fr) 40px;align-items:center;gap:5px}
+.forest-atlas__canopy-layer small{color:#d8c9aa;font:600 6px/1.2 var(--ui-body-font,sans-serif)}
+.forest-atlas__canopy-layer i{display:block;height:4px;border-radius:2px;background:rgba(12,16,12,.75);overflow:hidden}
+.forest-atlas__canopy-layer i b{display:block;height:100%;border-radius:2px}
+.forest-atlas__canopy-layer em{color:#c9b99a;font:600 6px/1.2 var(--ui-number-font,monospace);text-align:right}
+/* 1.2.23.1.256–258/267: on-demand cues. The buttons share the real engine and
+   print the exact line the subtitle live region would receive. */
+.forest-atlas__sound{display:grid;gap:4px;padding:7px 8px;border:1px solid rgba(185,154,89,.3);border-radius:5px;background:rgba(18,24,19,.78)}
+.forest-atlas__sound-head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:2px 8px}
+.forest-atlas__sound-head b{color:#e3c98f;font:700 6.5px/1.2 var(--ui-number-font,monospace);letter-spacing:.09em}
+.forest-atlas__sound-head span{color:#c9b99a;font:400 6.5px/1.35 var(--ui-body-font,sans-serif)}
+.forest-atlas__cue-grid{display:flex;flex-wrap:wrap;gap:3px}
+.forest-atlas__cue-button{min-height:28px;padding:4px 8px;border:1px solid rgba(185,154,89,.4);border-radius:3px;background-color:rgba(40,48,36,.92);color:#ead9b5;font:700 6.5px/1.2 var(--ui-body-font,sans-serif);letter-spacing:.05em;cursor:pointer}
+.forest-atlas__cue-button:hover{border-color:#e3c98f;background-color:rgba(78,64,38,.95);color:#fff3d2}
+.forest-atlas__cue-button:focus-visible{outline:2px solid #f0d79a;outline-offset:2px}
+.forest-atlas__cue-text{margin:0;padding:4px 6px;border-left:2px solid rgba(120,160,110,.6);color:#e7f0d9;font:600 7px/1.45 var(--ui-body-font,sans-serif)}
+.forest-atlas__last-cue{margin:0;color:#b7c6a4;font:600 5.8px/1.35 var(--ui-number-font,monospace);letter-spacing:.04em;overflow-wrap:anywhere}
+.forest-atlas__sound>small{color:#a99c84;font:400 5.8px/1.4 var(--ui-body-font,sans-serif)}
+/* Per-card phenology and the direct listen action. The card remains one
+   bounded block; opening a card is the only time these rows are laid out. */
+.forest-atlas__season-line,.forest-atlas__field-marks-line{margin:0;padding:5px 0 2px;color:#d8c9aa;font:400 6.4px/1.45 var(--ui-body-font,sans-serif)}
+.forest-atlas__season-line b,.forest-atlas__field-marks-line b{margin-right:4px;color:#c9b99a;font:700 5.8px/1.2 var(--ui-number-font,monospace);letter-spacing:.08em}
+.forest-atlas__field-marks-line{padding-top:0;border-bottom:1px dotted rgba(185,154,89,.22)}
+.forest-atlas__listen{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;padding:2px 0 5px}
+.forest-atlas__listen-button{min-height:30px;padding:4px 8px;border:1px solid rgba(120,160,110,.55);border-radius:3px;background:rgba(42,58,40,.85);color:#e7f0d9;font:700 6.5px/1.2 var(--ui-body-font,sans-serif);letter-spacing:.06em;cursor:pointer}
+.forest-atlas__listen-button small{margin-left:4px;color:#b7c6a4;font:600 5.8px/1.2 var(--ui-number-font,monospace)}
+.forest-atlas__listen-button:hover{border-color:#b7d39f;background:rgba(62,82,56,.95)}
+.forest-atlas__listen-button:focus-visible{outline:2px solid #d9efc2;outline-offset:2px}
+.forest-atlas__listen>span{color:#b7c6a4;font:400 6.2px/1.4 var(--ui-body-font,sans-serif)}
 /* Colour-blind-safe family patterns. The type glyph and name are always present;
    the pattern is the second, redundant channel and only appears when chosen. */
 .ui-forest-colorblind .forest-atlas__legend-swatch.is-pattern-chevron,
@@ -789,6 +840,24 @@ html.forest-font-large .forest-atlas__guide-point h4,
 html.forest-font-large .forest-atlas__legend-entry strong,
 html.forest-font-large .forest-atlas__presentation-settings strong{font-size:12.5px;line-height:1.35}
 html.forest-font-large .forest-atlas__field-guide>summary strong{font-size:12px}
+html.forest-font-large .forest-atlas__season strong,
+html.forest-font-large .forest-atlas__year-head b,
+html.forest-font-large .forest-atlas__canopy-head b,
+html.forest-font-large .forest-atlas__sound-head b{font-size:9px;line-height:1.3}
+html.forest-font-large .forest-atlas__season em,
+html.forest-font-large .forest-atlas__season small,
+html.forest-font-large .forest-atlas__season-facts,
+html.forest-font-large .forest-atlas__year-head span,
+html.forest-font-large .forest-atlas__canopy-head span,
+html.forest-font-large .forest-atlas__canopy-layer small,
+html.forest-font-large .forest-atlas__sound-head span,
+html.forest-font-large .forest-atlas__cue-text,
+html.forest-font-large .forest-atlas__last-cue,
+html.forest-font-large .forest-atlas__season-line,
+html.forest-font-large .forest-atlas__field-marks-line,
+html.forest-font-large .forest-atlas__listen>span{font-size:8.5px;line-height:1.45}
+html.forest-font-large .forest-atlas__cue-button,
+html.forest-font-large .forest-atlas__listen-button{font-size:9px;min-height:34px}
 html.forest-font-xlarge .forest-atlas__profile,
 html.forest-font-xlarge .forest-atlas__chip,
 html.forest-font-xlarge .forest-atlas__good,
@@ -804,6 +873,24 @@ html.forest-font-xlarge .forest-atlas__guide-point h4,
 html.forest-font-xlarge .forest-atlas__legend-entry strong,
 html.forest-font-xlarge .forest-atlas__presentation-settings strong{font-size:14px;line-height:1.35}
 html.forest-font-xlarge .forest-atlas__field-guide>summary strong{font-size:14px}
+html.forest-font-xlarge .forest-atlas__season strong,
+html.forest-font-xlarge .forest-atlas__year-head b,
+html.forest-font-xlarge .forest-atlas__canopy-head b,
+html.forest-font-xlarge .forest-atlas__sound-head b{font-size:11px;line-height:1.3}
+html.forest-font-xlarge .forest-atlas__season em,
+html.forest-font-xlarge .forest-atlas__season small,
+html.forest-font-xlarge .forest-atlas__season-facts,
+html.forest-font-xlarge .forest-atlas__year-head span,
+html.forest-font-xlarge .forest-atlas__canopy-head span,
+html.forest-font-xlarge .forest-atlas__canopy-layer small,
+html.forest-font-xlarge .forest-atlas__sound-head span,
+html.forest-font-xlarge .forest-atlas__cue-text,
+html.forest-font-xlarge .forest-atlas__last-cue,
+html.forest-font-xlarge .forest-atlas__season-line,
+html.forest-font-xlarge .forest-atlas__field-marks-line,
+html.forest-font-xlarge .forest-atlas__listen>span{font-size:10.5px;line-height:1.5}
+html.forest-font-xlarge .forest-atlas__cue-button,
+html.forest-font-xlarge .forest-atlas__listen-button{font-size:11px;min-height:40px}
 /* 1.2.23.1.267: the sound subtitle is a live region above the map, not a
    tooltip or a toast, so it never steals input and never hides the controls. */
 .forest-subtitle{position:fixed;z-index:1180;left:50%;bottom:58px;transform:translateX(-50%);max-width:min(92vw,720px);padding:6px 11px;border:1px solid rgba(214,191,150,.45);border-radius:4px;background:rgba(13,20,15,.92);color:#f2e6c9;font:700 9px/1.35 var(--ui-body-font,sans-serif);letter-spacing:.04em;text-align:center;text-wrap:balance;pointer-events:none;box-shadow:0 3px 12px rgba(0,0,0,.35)}
@@ -817,6 +904,22 @@ body.ui-modal-open .forest-subtitle{opacity:0}
 .forest-tip.hidden{display:none}
 body.ui-forest-symbolic .forest-atlas__card{background:rgba(24,30,23,.55)}
 @media(max-width:900px),(pointer:coarse){
+ .forest-atlas__year{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .forest-atlas__season{padding:8px}
+ .forest-atlas__season strong{font-size:10px}
+ .forest-atlas__season em{font-size:8.5px;line-height:1.45}
+ .forest-atlas__season small,.forest-atlas__season-facts{font-size:7.5px;line-height:1.4}
+ .forest-atlas__year-head b,.forest-atlas__canopy-head b,.forest-atlas__sound-head b{font-size:8.5px}
+ .forest-atlas__year-head span,.forest-atlas__canopy-head span,.forest-atlas__sound-head span{font-size:8.5px;line-height:1.4}
+ .forest-atlas__canopy-layer{grid-template-columns:92px minmax(0,1fr) 44px;min-height:28px}
+ .forest-atlas__canopy-layer small,.forest-atlas__canopy-layer em{font-size:8px}
+ .forest-atlas__cue-button,.forest-atlas__listen-button{min-height:44px;padding:8px 11px;font-size:9px}
+ .forest-atlas__cue-text{font-size:9px;line-height:1.45}
+ .forest-atlas__last-cue{font-size:7.5px;line-height:1.4}
+ .forest-atlas__sound>small{font-size:7.5px;line-height:1.45}
+ .forest-atlas__season-line,.forest-atlas__field-marks-line{font-size:8.5px;line-height:1.5}
+ .forest-atlas__season-line b,.forest-atlas__field-marks-line b{font-size:7.5px}
+ .forest-atlas__listen>span{font-size:8px;line-height:1.4}
  .forest-atlas__filter-chip{min-height:44px;padding:8px 11px;font-size:9px}
  .forest-atlas__chip{min-height:40px;padding:8px 11px;font-size:9.5px}
  .forest-atlas__good{min-height:42px;padding:7px 10px;font-size:9px}

@@ -1,6 +1,6 @@
 # Wald-Darstellung, Audio, UI und Accessibility 1.2.23.1.241–270
 
-**Status: implementiert, verdrahtet und im Browser geprüft (v3.84.1).**
+**Status: implementiert, vertieft, verdrahtet und im Browser geprüft (v3.84.2).**
 
 Die dreißig Punkte bilden eine gemeinsame Präsentations-, Audio- und
 Zugänglichkeitsschicht über dem vorhandenen Waldmodell. Sie verändern keine
@@ -24,6 +24,41 @@ Alle 60 Profile werden deterministisch aus `REGIONAL_FOREST_TYPES`,
 `render.silhouette`, Klima und einem stabilen Hash abgeleitet. Es gibt keinen
 zweiten Waldgenerator und keinen Per-Frame-Scan. Die Referenzszene wird alle
 1,8 Sekunden neu gesampled; Render-Tuning und Ambience lesen nur dieses Ergebnis.
+
+## Waldkunde-Erweiterung (v3.84.2)
+
+Die dreißig Punkte waren vollständig, aber ein großer Teil ihrer Tiefe war nur
+passiv sichtbar. Die Erweiterung macht dieselben Profildaten im Atlas lesbar,
+hörbar und vergleichbar — ohne zweiten Generator, ohne Save-Feld und ohne
+Simulationsänderung.
+
+- **Datierter Jahreslauf.** Jeder der 60 Typen trägt vier Jahreszeiten mit
+  Laubaustrieb, Kronenschluss, Blüte, Frucht, Herbstfärbung, Laubfall, erstem
+  Schnee und Hochwinter. Die Tage stammen aus denselben Klimakurven wie
+  `season.js`, verschoben um den regionalen Typ-Hash. Der Atlas markiert die
+  aktuelle Jahreszeit und zeigt Blüte, Frucht, Schnee und Kahlanteil.
+- **Kronentiefe.** Das Profil liefert Unterholz-, Stamm- und Kronendach-Ebene
+  mit eigenem Parallaxfaktor, Deckkraft und Tint. Die Dach-Ebene ist exakt der
+  Faktor, den die Landschaftskrone im Renderer verwendet.
+- **Feldmerkmale.** Drei regionale Merkmale pro Typ (Wuchsform, Boden,
+  Klimasignatur) stehen auf jeder Atlas-Karte und machen einen Bestand auch
+  ohne Farbe erkennbar.
+- **Hörbare Waldkunde.** Acht echte Cue-Arten — Vogel, Insekten, Instrument,
+  Wetter, Tropfen, Knistern, Schneestille und Stille — lassen sich im Atlas per
+  Tipp oder Tastatur abspielen. Die gedruckte Zeile ist exakt der Cue, den die
+  Ambience erhält; sie funktioniert also auch bei stummgeschaltetem Ton. Die
+  letzten acht Cues bleiben in einer Historie sichtbar.
+- **Vertiefte Musik.** Jede Familie hat eine Holztonart (Dorian, Ionisch,
+  Lydisch, Mixolydisch, Äolisch, Phrygisch oder pentatonisch), ein stabiles
+  dreinotiges Motiv und ein eigenes Tempo. Der Synthesizer erzeugt zusätzlich
+  Tropfen, ein knarrendes Stammholz und eine Schneestille.
+- **Legende als Filter.** Ein Tipp auf ein Familienzeichen filtert den Atlas
+  auf diese Familie; ein zweiter Tipp hebt den Filter auf. `aria-pressed` macht
+  den Zustand für Hilfsmittel sichtbar, und die Legende kann nicht von der
+  Filterleiste abweichen.
+- **Zugänglichkeit.** Cue-Zeile und Filterzähler sind höfliche Live-Regionen;
+  Cue-Schaltflächen sind auf groben Zeigern 44 px hoch; Jahreslauf und
+  Kronentiefe brechen auf zwei Spalten um, ohne horizontal zu überlaufen.
 
 ## Die dreißig Punkte
 
@@ -117,20 +152,25 @@ Einstellung für Interface und Wald.
 
 ## Verifikation
 
-- `node --test tests/systems/forest-presentation.test.js` — 9 Tests:
+- `node --test tests/systems/forest-presentation.test.js` — 11 Tests:
   Profile, Guide, Filter, Legende, deterministische Cues, Schutzstatus,
-  Einstellungs-Normalisierung.
+  Einstellungs-Normalisierung, vier Jahreszeiten mit datierten Tagen,
+  Kronentiefe, Feldmerkmale, Tonarten/Motive und alle acht Cue-Vorschauen.
 - `npm run test:forest-presentation-ui` — echter Chromium-Spielerpfad:
   startet ein Reich, öffnet den Atlas, prüft 60 Karten, 30 Guide-Punkte,
-  18 Filter, Filterwirkung, alle Einstellungen, die kombinierte
+  18 Filter, Filterwirkung, vier Jahreszeiten, drei Kronenebenen, acht Cues,
+  60 Karten-Hörproben, die echte Instrumenten-Vorschau mit Cue-Historie, den
+  Legendenfilter, alle Einstellungen, die kombinierte
   Farbenblind-/Kontrastdarstellung, Schriftvergrößerung, Cache-Neuaufbau,
   symbolische Karte, Ambience-Status und die Untertitel-Live-Region.
 - `npm run test:forest-presentation-mobile` — echter Touch-Spielerpfad bei
   390×844 und 768×1024: Gründung, Atlas, alle 30 Guide-Punkte, jeder der 18
   Filter und der Reset, 23 Legende-Einträge, Baum- und Gut-Tooltip per Tap,
-  alle neun Wald-Einstellungen plus reduzierte Bewegung, Untertitel-Cue,
-  symbolische Karte, Speichern/Neuladen/Fortsetzen sowie Overflow- und
-  Überlappungsprüfungen. Dieselbe Reise läuft gegen beide Live-Hosts.
+  vier Jahreszeiten, drei Kronenebenen, acht Cue-Ziele mit 44-px-Prüfung und
+  echter Touch-Hörprobe, alle neun Wald-Einstellungen plus reduzierte Bewegung,
+  Untertitel-Cue, symbolische Karte, Speichern/Neuladen/Fortsetzen sowie
+  Overflow- und Überlappungsprüfungen. Dieselbe Reise läuft gegen beide
+  Live-Hosts.
 - `npm test` und der deterministische 25-Jahres-Feldzug sind das Release-Gate;
   der 60-Jahres-Soak bleibt Nightly.
 

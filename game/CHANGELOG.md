@@ -1,6 +1,6 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.84.1`
+**Current production version:** `3.84.2`
 **Next development line:** `3.85.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
@@ -8,6 +8,49 @@
 **Last repository verification:** 2026-11-27 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.84.2 — Waldkunde: Jahreslauf, Kronentiefe und Hörprobe
+
+The 3.84 forest presentation was complete, but most of its depth was passive.
+This release turns the shared profile into something the player can read, hear
+and compare in the atlas, without starting a second simulation.
+
+- **A dated year in the wood.** Every one of the sixty regional types now
+  carries a four-season calendar derived from the same climate curves as the
+  renderer: leaf-out, canopy closure, blossom, fruit, autumn turn, leaf fall,
+  first snow and deep winter. Neighbouring woods differ by days, and the atlas
+  marks the current season and shows the relevant count for each one.
+- **Canopy depth is visible.** The profile now exposes understorey, trunk and
+  crown-roof layers with their own parallax factor, opacity and tint. The roof
+  layer is the same factor the landscape canopy actually uses, so the readout
+  cannot drift from the map.
+- **Every wood has field marks.** Three regional marks per type (species form,
+  floor, climate signature) give the player a quick way to recognise a stand
+  beyond its colour. They are derived from the same family tables and appear on
+  every atlas card.
+- **The soundscape is playable.** Eight real cue kinds — bird, insects,
+  instrument, weather, drips, creak, snow hush and silence — can be auditioned
+  from the atlas with a tap or keyboard activation. The printed line is the
+  exact cue the ambience engine receives, so the feature works with the sound
+  muted. A cue history keeps the last heard line in view.
+- **Regional music is deeper.** Each family now has a wooden mode (Dorian,
+  Ionian, Lydian, Mixolydian, Aeolian, Phrygian or pentatonic), a stable
+  three-note motif and its own tempo. The engine synthesises drips, a creaking
+  trunk and a snow hush in addition to the existing bird, insect and weather
+  voices.
+- **The legend is a control.** Tapping a family symbol filters the atlas to
+  that family and tapping it again clears the filter. The active state is
+  exposed with `aria-pressed`, so the key and the filter bar cannot disagree.
+- **Accessibility follows the new controls.** The sound cue line and the filter
+  count are polite live regions; cue buttons are 44px touch targets on coarse
+  pointers; the seasonal and canopy blocks reflow to two columns without
+  horizontal overflow.
+- **Player proof.** The desktop atlas journey verifies the four season cards,
+  three canopy layers, eight cue buttons, sixty per-card listen actions, the
+  real instrument preview, the cue history and the legend filter. The mobile
+  journey repeats the season, canopy, cue-target and live-region checks at
+  390×844 and 768×1024 with touch input. `npm test` and the full forest
+  presentation reference stay green.
 
 ## 3.84.1 — Mobile Wald-Atlas und Touch-Bedienung
 

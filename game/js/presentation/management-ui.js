@@ -35,7 +35,9 @@ import { forestFaunaEcologyFor, forestFaunaEcologySummary } from "../world/fores
 import { cleanBiomeWater, craftBiomeGoods, drainBiomeRegion, harvestBiomeResource, huntBiomeSpecies, irrigateBiomeRegion, reforestBiomeRegion, reintroduceBiomeSpecies, restoreBiomeRegion, sellBiomeCraft, sellBiomeGoods, setBiomeFocus, setBiomePolicy, setBiomeProtection, slashAndBurnBiomeRegion, surveyBiomeRegion } from "../systems/biome-resource-state.js";
 import { renderBiomePanel } from "./biome-panel.js";
 import { invalidateForestAtlasSurvey, renderForestAtlasPanel } from "./forest-atlas-panel.js";
-import { resetForestMapFilters, setForestMapFilter } from "../systems/forest-presentation.js";
+import { previewForestAmbience } from "../core/forest-ambience.js";
+import { forestPresentationProfile } from "../world/forest-presentation.js";
+import { forestMapFilters, forestPresentationSummary, resetForestMapFilters, setForestMapFilter } from "../systems/forest-presentation.js";
 import { timberMarketSummary, sellRegionalTimber, TIMBER_SALE_LOT } from "../systems/regional-timber-market.js";
 import { FOREST_WORKS_MODES, SAW_PROFILES, INDUSTRY_GOODS } from "../world/forest-industries.js";
 import { forestMasteryFor, forestMasterworkArchive, forestWorksStatus, runForestWorks, sawProfileIdFor, sellForestIndustryGood, setForestWorksMode, setSawProfile, supplyClinicMedicine } from "../systems/forest-industries.js";
@@ -2231,6 +2233,40 @@ export function setupManagementUI(){
   if(forestTipTarget){
    e.preventDefault();
    toggleForestTip(forestTipTarget);
+   return;
+  }
+  // 1.2.23.1.256–258/267: an atlas cue is a real user gesture, so the
+  // procedural engine may resume a suspended context and the printed line is
+  // updated in place. The cue is the same object the ambience scheduler uses.
+  const forestCue=e.target.closest("[data-forest-cue]");
+  if(forestCue){
+   const scene=forestPresentationSummary().scene;
+   const result=previewForestAmbience(scene.profile,scene,forestCue.dataset.forestCue);
+   const text=result?.text||result?.cue?.text||"The wood is still.";
+   document.querySelectorAll("[data-forest-cue-text]").forEach(element=>{element.textContent=text;});
+   document.querySelectorAll("[data-forest-last-cue]").forEach(element=>{element.textContent="LAST HEARD · "+text;});
+   return;
+  }
+  const forestTypeCue=e.target.closest("[data-forest-type-cue]");
+  if(forestTypeCue){
+   const profile=forestPresentationProfile(forestTypeCue.dataset.forestTypeCue);
+   const scene={weather:state.weather||"clear",hour:state.timeOfDay,season:["spring","summer","autumn","winter"][Math.max(0,Math.min(3,Number(state.seasonIndex)||0))],seasonIndex:Number(state.seasonIndex)||0};
+   const result=previewForestAmbience(profile,scene,forestTypeCue.dataset.forestCueKind||"instrument");
+   const text=result?.text||result?.cue?.text||"The wood is still.";
+   document.querySelectorAll("[data-forest-cue-text]").forEach(element=>{element.textContent=text;});
+   document.querySelectorAll("[data-forest-last-cue]").forEach(element=>{element.textContent="LAST HEARD · "+text;});
+   toast((profile?.short||"FOREST")+" · "+text);
+   return;
+  }
+  // 1.2.23.1.260/262: a legend entry is also a one-tap family filter. Tapping
+  // the active family clears it again, so the legend can never trap the player
+  // in a subset without an obvious way back.
+  const forestFamily=e.target.closest("[data-forest-family-filter]");
+  if(forestFamily){
+   const family=forestFamily.dataset.forestFamilyFilter;
+   const active=forestMapFilters().family===family;
+   const ok=setForestMapFilter("family",active?"all":family);
+   if(ok){toast("FOREST FAMILY · "+(active?"ALL TYPES":String(family).toUpperCase()));renderUI();render();}
    return;
   }
   // 1.2.23.1.262: filter chips re-render the atlas in place. The filter state

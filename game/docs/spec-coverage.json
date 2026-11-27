@@ -2,9 +2,9 @@
   "version": 2,
   "generatedBy": "scripts/spec-audit.mjs",
   "scope": "All numbered 1.1 and 1.2.1–1.2.18 requirements, including the 1.2.23.1.151–210 forest economy and forest culture, plus the documented 2.x phases, 3.3–4.0 roadmap points and the 3.11 expedition follow-up chain contract.",
-  "commit": "28d4251473aef097c801fedbf7e04cb3b2151c32",
-  "sourceHash": "54ba8a8e4edd8e70efd337af17e9e63fbd294411e0a19b09ebd6846b44710c24",
-  "generatedAt": "2026-11-27T11:10:27+00:00",
+  "commit": "3308d52b6d6abb2db92edaad0fa0f939525abe1d",
+  "sourceHash": "772cd03b51d745d3e9a6d0a3411c0c09287379f17fe576761c207663c8f015f7",
+  "generatedAt": "2026-11-27T12:09:34+00:00",
   "totals": {
     "total": 1783,
     "implemented": 1783,

@@ -102,6 +102,14 @@ try {
             uses: document.querySelectorAll("[data-forest-use]").length,
             dangers: document.querySelectorAll("[data-forest-danger]").length,
             filters: document.querySelectorAll("[data-forest-filter]").length,
+            seasons: document.querySelectorAll("[data-forest-season]").length,
+            canopyLayers: document.querySelectorAll("[data-forest-canopy-layer]").length,
+            cueButtons: document.querySelectorAll("[data-forest-cue]").length,
+            typeCueButtons: document.querySelectorAll("[data-forest-type-cue]").length,
+            cueLive: document.querySelector("[data-forest-cue-text]")?.getAttribute("aria-live") || "",
+            filterLive: document.querySelector("[data-forest-filter-status]")?.getAttribute("aria-live") || "",
+            seasonDays: [...document.querySelectorAll("[data-forest-season]")].map(element => Number(element.dataset.forestSeasonDay)),
+            currentSeason: document.querySelector(".forest-atlas__season.is-current")?.dataset.forestSeason || "",
             noteFont: note ? parseFloat(getComputedStyle(note).fontSize) : 0,
             pointFont: point ? parseFloat(getComputedStyle(point).fontSize) : 0,
             guideText: guide ? (guide.textContent || "").replace(/\s+/g, " ").trim() : "",
@@ -116,6 +124,15 @@ try {
     assert.equal(baseline.uses, 3, "three use icons must be explained");
     assert.equal(baseline.dangers, 4, "four danger marks must be explained");
     assert.ok(baseline.filters >= 18, "every family, resource and protection value must be filterable");
+    assert.equal(baseline.seasons, 4, "the atlas must show a four-season phenology calendar");
+    assert.equal(baseline.canopyLayers, 3, "the atlas must show all three canopy depth layers");
+    assert.equal(baseline.cueButtons, 8, "every regional cue must be previewable");
+    assert.equal(baseline.typeCueButtons, 60, "every regional card must offer its own wood");
+    assert.equal(baseline.cueLive, "polite", "the cue line must be a polite live region");
+    assert.equal(baseline.filterLive, "polite", "the filter count must be announced");
+    assert.equal(baseline.currentSeason, "spring", "the sample starts in spring");
+    assert.ok(baseline.seasonDays.every(day => day >= 0 && day < 400), "season days stay inside the realm year");
+    assert.equal(new Set(baseline.seasonDays).size >= 2, true, "seasonal dates must differ within a wood");
     for (const label of ["CANOPY PARALLAX", "COLOUR-BLIND-SAFE", "REDUCED MOTION", "SUBTITLES", "ALTERNATIVE MAP VIEW"]) {
         assert.ok(baseline.guideText.toUpperCase().includes(label), "the guide must name " + label);
     }
@@ -132,6 +149,45 @@ try {
     await page.locator("[data-forest-filter-reset]").click();
     await page.waitForFunction(() => document.querySelectorAll("#command-panel-content .forest-atlas__card").length === 60, null, { timeout: 5000 });
     evidence.filters = { coniferCards, coniferTimberCards, resetCards: 60 };
+
+    // The legend is a one-tap filter, not only a key. Tapping the active
+    // family again clears it.
+    const legendFilter = page.locator('[data-forest-family-filter="conifer"]');
+    await legendFilter.click();
+    await page.waitForFunction(() => document.querySelectorAll("#command-panel-content .forest-atlas__card").length < 60, null, { timeout: 5000 });
+    const legendActive = await page.evaluate(() => ({
+        pressed: document.querySelector('[data-forest-family-filter="conifer"]')?.getAttribute("aria-pressed") || "",
+        cards: document.querySelectorAll("#command-panel-content .forest-atlas__card").length,
+        status: document.querySelector("[data-forest-filter-status]")?.textContent.trim() || "",
+    }));
+    assert.equal(legendActive.pressed, "true");
+    assert.ok(legendActive.cards > 0 && legendActive.cards < 60);
+    assert.equal(legendActive.status, "1 / 3");
+    await legendFilter.click();
+    await page.waitForFunction(() => document.querySelectorAll("#command-panel-content .forest-atlas__card").length === 60, null, { timeout: 5000 });
+    assert.equal(await legendFilter.getAttribute("aria-pressed"), "false");
+    evidence.legendFilter = legendActive;
+
+    // The atlas can audition the real regional soundscape. The printed line is
+    // the cue the ambience engine receives, so it must update even if the
+    // browser leaves the audio context suspended.
+    await page.locator('[data-forest-cue="instrument"]').click();
+    await page.waitForFunction(() => (document.querySelector("[data-forest-cue-text]")?.textContent || "").includes("sounds somewhere"), null, { timeout: 5000 });
+    const cue = await page.evaluate(async () => ({
+        text: document.querySelector("[data-forest-cue-text]")?.textContent.trim() || "",
+        last: document.querySelector("[data-forest-last-cue]")?.textContent.trim() || "",
+        history: (await import("./js/core/forest-ambience.js")).forestAmbienceHistory().length,
+    }));
+    assert.ok(cue.text.length > 10, "the instrument cue must print its real line");
+    assert.match(cue.last, /LAST HEARD/);
+    assert.ok(cue.history >= 1, "the cue must enter the ambience history");
+    evidence.cue = cue;
+
+    // A card can audition its own regional wood without changing the live bed.
+    await page.locator("#command-panel-content .forest-atlas__card").first().locator("summary").click();
+    await page.locator("[data-forest-type-cue]").first().click();
+    await page.waitForFunction(() => (document.querySelector("[data-forest-cue-text]")?.textContent || "").includes("sounds somewhere"), null, { timeout: 5000 });
+    evidence.typeCue = await page.locator("[data-forest-cue-text]").first().innerText();
 
     // The accessibility controls live in the real settings dialog.
     await page.locator("#command-close").click();
@@ -213,15 +269,16 @@ try {
     assert.ok(active.settingsText.includes("ON"));
     await page.screenshot({ path: screenshotPath, fullPage: false });
 
-    // Subtitle live region: the ambience dispatches a cue and the player sees it.
-    await page.evaluate(() => {
+    // Subtitle live region: dispatch and read synchronously so a scheduled
+    // ambience cue cannot replace the line between the two steps.
+    const subtitle = await page.evaluate(() => {
         document.dispatchEvent(new CustomEvent("kac:forest-ambience", {
             detail: { kind: "bird", text: "A capercaillie drums beyond the pines.", at: Date.now() },
         }));
+        return document.querySelector("#forest-subtitle").innerText.trim();
     });
-    await page.locator("#forest-subtitle").waitFor({ state: "visible", timeout: 5000 });
-    const subtitle = await page.locator("#forest-subtitle").innerText();
     assert.match(subtitle, /capercaillie/i);
+    await page.locator("#forest-subtitle").waitFor({ state: "visible", timeout: 5000 });
     const live = await page.locator("#forest-subtitle").evaluate(element => ({
         role: element.getAttribute("role"),
         live: element.getAttribute("aria-live"),

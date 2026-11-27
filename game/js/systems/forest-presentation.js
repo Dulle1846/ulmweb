@@ -407,10 +407,10 @@ export function forestPresentationGuide(scene = forestReferenceScene()) {
     const settings = forestPresentationSettings();
     const sound = profile.sound;
     const values = {
-        '1.2.23.1.241': profile.parallax.toFixed(3) + '× · ' + profile.family,
+        '1.2.23.1.241': profile.parallax.toFixed(3) + '× · ' + profile.family + ' · ' + profile.canopyLayers.length + ' layers',
         '1.2.23.1.242': profile.silhouette + ' · aspect ' + profile.crown.aspect.toFixed(2) + ' · ' + profile.crown.tiers + ' tiers',
         '1.2.23.1.243': profile.leaves.summer + ' leaves · ' + profile.light.mood + ' light',
-        '1.2.23.1.244': (profile.leaves.turnShift >= 0 ? '+' : '') + profile.leaves.turnShift + ' days turn shift · ' + (profile.leaves.springShift >= 0 ? '+' : '') + profile.leaves.springShift + ' spring',
+        '1.2.23.1.244': 'turn day ' + profile.phenology.turn + ' · leaf fall ' + profile.phenology.leafFall + ' · ' + (profile.leaves.turnShift >= 0 ? '+' : '') + profile.leaves.turnShift + ' days shift',
         '1.2.23.1.245': pct(profile.snow.retention / 1.8) + ' snow retention · ' + pct(profile.snow.bareShare) + ' bare crowns',
         '1.2.23.1.246': profile.ground.label + ' · ' + profile.ground.detail,
         '1.2.23.1.247': pct(profile.light.shaft) + ' shaft strength · ' + pct(profile.light.dapple) + ' dapple',
@@ -419,11 +419,11 @@ export function forestPresentationGuide(scene = forestReferenceScene()) {
         '1.2.23.1.250': profile.wind.stiffness.toFixed(2) + ' stiffness · ' + profile.wind.gust.toFixed(2) + ' gust',
         '1.2.23.1.251': pct(profile.deadwood) + ' deadwood · ' + pct(profile.rootPlate) + ' root plates',
         '1.2.23.1.252': 'fern ' + pct(profile.understory.fern) + ' · grass ' + pct(profile.understory.grass) + ' · shrub ' + pct(profile.understory.shrub),
-        '1.2.23.1.253': pct(profile.bloom.blossom) + ' blossom · ' + pct(profile.bloom.fruit) + ' fruit · ' + profile.bloom.color,
+        '1.2.23.1.253': pct(profile.bloom.blossom) + ' blossom day ' + profile.phenology.blossom + ' · ' + pct(profile.bloom.fruit) + ' fruit day ' + profile.phenology.fruit,
         '1.2.23.1.254': birdLabel(profile.fauna.bird) + ' · ' + birdLabel(profile.fauna.mammal) + ' · ' + pct(profile.fauna.richness) + ' richness',
         '1.2.23.1.255': 'insects ' + pct(profile.fauna.richness * 0.8 + 0.1) + ' · ' + profile.fauna.insect,
-        '1.2.23.1.256': sound.bed + ' · ' + pct(sound.density) + ' density · ' + sound.birds.map(birdLabel).join(', '),
-        '1.2.23.1.257': profile.instruments.map(entry => entry.label).join(' · '),
+        '1.2.23.1.256': sound.bed + ' · ' + pct(sound.density) + ' density · ' + sound.scale.mode + ' · ' + sound.birds.map(birdLabel).join(', '),
+        '1.2.23.1.257': profile.instruments.map(entry => entry.label).join(' · ') + ' · ' + profile.sound.scale.mode + ' mode · ' + profile.sound.tempo + ' bpm',
         '1.2.23.1.258': pct(sound.silence) + ' silence · old growth ' + pct(sound.oldGrowth),
         '1.2.23.1.259': profile.icon + ' type · ' + (FOREST_USE_ICONS[profile.useIcon]?.glyph || '❧') + ' use · ' + (FOREST_DANGER_ICONS[profile.danger]?.glyph || '·') + ' danger',
         '1.2.23.1.260': profile.patternLabel + ' pattern · ' + profile.ground.label + ' · ' + profile.fog.label,
@@ -433,7 +433,7 @@ export function forestPresentationGuide(scene = forestReferenceScene()) {
         '1.2.23.1.264': settings.forestCanopyContrast ? 'Canopy contrast ON' : 'Canopy contrast off',
         '1.2.23.1.265': settings.forestFontScale.toUpperCase() + ' forest text',
         '1.2.23.1.266': forestReducedMotion() ? 'Reduced motion ON · ' + pct(forestMotionScale()) + ' sway' : 'Full motion · ' + pct(forestMotionScale()) + ' sway',
-        '1.2.23.1.267': settings.forestSubtitles ? 'Subtitles ON' : 'Subtitles off',
+        '1.2.23.1.267': (settings.forestSubtitles ? 'Subtitles ON' : 'Subtitles off') + ' · ' + FOREST_CUE_KINDS.length + ' cue kinds',
         '1.2.23.1.268': settings.forestPerformance ? 'Performance mode ON' : 'Performance mode off',
         '1.2.23.1.269': pct(forestParticleScale()) + ' rain / leaf particles',
         '1.2.23.1.270': settings.forestMapView === 'symbolic' ? 'Symbolic map view ON' : 'Detailed map view',
@@ -447,6 +447,7 @@ export function forestPresentationGuide(scene = forestReferenceScene()) {
 export function forestPresentationSummary() {
     const scene = forestReferenceScene();
     const settings = forestPresentationSettings();
+    const profile = scene.profile;
     const families = [...new Set(FOREST_PRESENTATION_LIST.map(profile => profile.family))];
     const patterns = [...new Set(FOREST_PRESENTATION_LIST.map(profile => profile.pattern))];
     const grounds = [...new Set(FOREST_PRESENTATION_LIST.map(profile => profile.ground.label))];
@@ -460,6 +461,11 @@ export function forestPresentationSummary() {
         scene,
         filters: forestMapFilters(),
         requirements: FOREST_PRESENTATION_POINTS.length,
+        seasons: profile?.seasons || [],
+        phenology: profile?.phenology || null,
+        canopyLayers: profile?.canopyLayers || [],
+        fieldMarks: profile?.fieldMarks || [],
+        cueKinds: FOREST_CUE_KINDS,
         guide: forestPresentationGuide(scene),
         legend: forestLegendEntries(),
         uses: forestUseLegend(),
@@ -504,6 +510,19 @@ const CUE_BEDS = Object.freeze({
     'heath-wind': 'Wind combs the heath.',
 });
 
+// Every cue the wood can make. The atlas preview and the scheduler share this
+// list, so a button can never promise a sound the engine cannot produce.
+export const FOREST_CUE_KINDS = Object.freeze([
+    Object.freeze({ id: 'bird', label: 'Bird', action: 'Call a bird', detail: 'The resident bird of this regional wood.' }),
+    Object.freeze({ id: 'insect', label: 'Insects', action: 'Raise the insects', detail: 'The warm-season insect chorus and its flight tone.' }),
+    Object.freeze({ id: 'instrument', label: 'Instrument', action: 'Play the wood', detail: 'A short motif on an instrument built from this wood.' }),
+    Object.freeze({ id: 'weather', label: 'Weather', action: 'Move the weather', detail: 'Wind, rain or snow moving through the regional bed.' }),
+    Object.freeze({ id: 'drip', label: 'Drips', action: 'Hear the drips', detail: 'Rain or meltwater falling from the crowns.' }),
+    Object.freeze({ id: 'creak', label: 'Creak', action: 'Bend a trunk', detail: 'Old wood and a stiff trunk answering a gust.' }),
+    Object.freeze({ id: 'hush', label: 'Snow hush', action: 'Let the snow fall', detail: 'The muffled, close sound of a snow-loaded wood.' }),
+    Object.freeze({ id: 'silence', label: 'Silence', action: 'Hold the silence', detail: 'The deliberate quiet of an old-growth stand.' }),
+]);
+
 export function forestSoundscape(profile, scene = {}) {
     const weather = String(scene.weather || 'clear').toLowerCase();
     const night = Number(scene.hour) >= 21 || Number(scene.hour) < 5;
@@ -512,36 +531,92 @@ export function forestSoundscape(profile, scene = {}) {
         bedText: weather === 'rain' || weather === 'storm'
             ? 'Rain on the ' + profile.dominantLabel.toLowerCase() + ' leaves.'
             : (CUE_BEDS[profile.sound.bed] || 'The wood is moving.'),
-        birds: night ? [profile.sound.birds.includes('owl') ? 'owl' : 'owl'] : profile.sound.birds,
+        birds: night
+            ? [profile.sound.birds.includes('owl') ? 'owl' : (profile.sound.birds[0] || 'owl')]
+            : profile.sound.birds,
         insect: profile.fauna.insect,
         instruments: profile.instruments,
         density: profile.sound.density,
         silence: profile.sound.silence,
         oldGrowth: profile.sound.oldGrowth,
+        mode: profile.sound.scale?.mode || 'Ionian',
+        scale: profile.sound.scale || null,
+        motif: profile.sound.motif || [0, 2, 4],
+        tempo: profile.sound.tempo || 60,
+        weatherReaction: profile.weatherReaction || { drip: 0, hush: 0, creak: 0 },
         night,
         weather,
         muggy: weather === 'rain' || weather === 'storm',
     };
 }
 
+function birdCue(sound, roll) {
+    const birds = sound.birds || [];
+    const bird = birds[Math.floor(clamp01(roll) * birds.length) % Math.max(1, birds.length)];
+    return {
+        kind: 'bird',
+        text: CUE_BIRDS[bird] || ('A ' + birdLabel(bird) + ' calls.'),
+        bird,
+        duration: 1.1 + roll * 0.8,
+    };
+}
+
+function instrumentCue(profile, roll) {
+    const instrument = profile.instruments[Math.floor(roll * profile.instruments.length) % Math.max(1, profile.instruments.length)];
+    return {
+        kind: 'instrument',
+        text: (/^[aeiou]/i.test(instrument.label) ? 'An ' : 'A ')
+            + instrument.label + ' sounds somewhere in the wood.',
+        instrument,
+        duration: 1.6 + roll * 1.2,
+    };
+}
+
+function cueForKind(profile, scene, kind, roll, sound = forestSoundscape(profile, scene)) {
+    const label = profile.dominantLabel.toLowerCase();
+    switch (kind) {
+    case 'bird': return birdCue(sound, roll);
+    case 'insect': return {
+        kind: 'insect',
+        text: sound.muggy ? 'Insects drone under the wet leaves.' : 'Insects rise from the sunlit gap.',
+        duration: 1.5,
+    };
+    case 'instrument': return instrumentCue(profile, roll);
+    case 'drip': return {
+        kind: 'drip',
+        text: sound.muggy ? 'Rain drips from the ' + label + ' crowns.' : 'Meltwater drips from the ' + label + ' crowns.',
+        duration: 1.3 + roll * 0.4,
+    };
+    case 'creak': return {
+        kind: 'creak',
+        text: 'A ' + label + ' trunk creaks in the wind.',
+        duration: 1.9 + roll * 0.8,
+    };
+    case 'hush': return {
+        kind: 'hush',
+        text: 'Snow muffles the ' + label + ' wood.',
+        duration: 2.2 + roll * 0.8,
+    };
+    case 'silence': return { kind: 'silence', text: '', duration: 2.2 };
+    case 'weather': return { kind: 'weather', text: sound.bedText, duration: 1.8 };
+    default: return { kind: 'weather', text: sound.bedText, duration: 1.8 };
+    }
+}
+
 // One cue. `roll` in 0..1 and `kindRoll` in 0..1 are supplied by the audio
 // scheduler (seeded by time and type) so the same wood keeps a stable voice.
-export function forestSoundCue(profile, scene = {}, roll = 0.5, kindRoll = 0.5) {
+// `forcedKind` is the atlas preview path; it never depends on a random roll.
+export function forestSoundCue(profile, scene = {}, roll = 0.5, kindRoll = 0.5, forcedKind = null) {
     const sound = forestSoundscape(profile, scene);
+    const forced = String(forcedKind || '').toLowerCase();
+    if (forced && FOREST_CUE_KINDS.some(entry => entry.id === forced)) {
+        return cueForKind(profile, scene, forced, roll, sound);
+    }
     const silence = clamp01(sound.silence);
     if (silence > 0.55 && kindRoll < silence * 0.6) {
         return { kind: 'silence', text: '', duration: 2.2 };
     }
-    const birds = sound.birds || [];
-    const bird = birds[Math.floor(clamp01(roll) * birds.length) % Math.max(1, birds.length)];
-    if (kindRoll < 0.52) {
-        return {
-            kind: 'bird',
-            text: CUE_BIRDS[bird] || ('A ' + birdLabel(bird) + ' calls.'),
-            bird,
-            duration: 1.1 + roll * 0.8,
-        };
-    }
+    if (kindRoll < 0.52) return birdCue(sound, roll);
     if (kindRoll < 0.72) {
         return {
             kind: 'insect',
@@ -549,20 +624,41 @@ export function forestSoundCue(profile, scene = {}, roll = 0.5, kindRoll = 0.5) 
             duration: 1.5,
         };
     }
-    if (kindRoll < 0.9) {
-        const instrument = profile.instruments[Math.floor(roll * profile.instruments.length) % Math.max(1, profile.instruments.length)];
-        return {
-            kind: 'instrument',
-            text: 'A ' + instrument.label + ' sounds somewhere in the wood.',
-            instrument,
-            duration: 1.6 + roll * 1.2,
-        };
-    }
-    return { kind: 'weather', text: sound.bedText, duration: 1.8 };
+    if (kindRoll < 0.9) return instrumentCue(profile, roll);
+    // Weather owns the tail of the distribution. In a wet wood it is a drip,
+    // in snow a hush, and in dry weather the ordinary moving bed.
+    if (sound.muggy) return cueForKind(profile, scene, 'drip', roll, sound);
+    if (sound.weather === 'snow') return cueForKind(profile, scene, 'hush', roll, sound);
+    if (sound.weatherReaction.creak > 0.72) return cueForKind(profile, scene, 'creak', roll, sound);
+    return cueForKind(profile, scene, 'weather', roll, sound);
+}
+
+// Deterministic preview used by the atlas. The returned cue is exactly what the
+// ambience engine plays, so the printed line and the sound cannot disagree.
+export function forestSoundPreview(profile, scene = {}, kind = 'bird') {
+    if (!profile) return null;
+    const cueKind = FOREST_CUE_KINDS.some(entry => entry.id === kind) ? kind : 'bird';
+    const rolls = {
+        bird: 0.37, insect: 0.58, instrument: 0.74, weather: 0.94,
+        drip: 0.42, creak: 0.61, hush: 0.28, silence: 0.1,
+    };
+    return forestSoundCue(profile, scene, rolls[cueKind] ?? 0.5, 0.5, cueKind);
+}
+
+export function forestTypeSoundPreview(typeId, kind = 'instrument', scene = {}) {
+    const profile = forestPresentationProfile(typeId);
+    if (!profile) return null;
+    const live = {
+        weather: scene.weather || 'clear',
+        hour: Number.isFinite(Number(scene.hour)) ? Number(scene.hour) : 12,
+        season: scene.season ?? 'summer',
+        seasonIndex: Number.isFinite(Number(scene.seasonIndex)) ? Number(scene.seasonIndex) : 1,
+    };
+    return { profile, cue: forestSoundPreview(profile, live, kind) };
 }
 
 export function forestPresentationCueText(profile, kind = 'weather') {
-    return forestSoundCue(profile, {}, 0.5, kind === 'instrument' ? 0.8 : kind === 'bird' ? 0.4 : 0.95).text;
+    return forestSoundPreview(profile, {}, kind)?.text || '';
 }
 
 export function forestProfileTooltip(profile) {

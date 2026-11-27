@@ -169,6 +169,15 @@ for (const viewport of viewports) {
                 uses: document.querySelectorAll("[data-forest-use]").length,
                 dangers: document.querySelectorAll("[data-forest-danger]").length,
                 filters: document.querySelectorAll("[data-forest-filter]").length,
+                seasons: document.querySelectorAll("[data-forest-season]").length,
+                canopyLayers: document.querySelectorAll("[data-forest-canopy-layer]").length,
+                cueButtons: document.querySelectorAll("[data-forest-cue]").length,
+                typeCueButtons: document.querySelectorAll("[data-forest-type-cue]").length,
+                cueHeight: document.querySelector("[data-forest-cue]")?.getBoundingClientRect().height || 0,
+                cueRight: Math.max(...[...document.querySelectorAll("[data-forest-cue]")].map(element => element.getBoundingClientRect().right)),
+                seasonOverflow: [...document.querySelectorAll("[data-forest-season]")].filter(element => element.scrollWidth > element.clientWidth + 1).length,
+                canopyOverflow: [...document.querySelectorAll("[data-forest-canopy-layer]")].filter(element => element.scrollWidth > element.clientWidth + 1).length,
+                yearColumns: document.querySelector("[data-forest-year]") ? getComputedStyle(document.querySelector("[data-forest-year]")).gridTemplateColumns.split(" ").length : 0,
                 filterRects,
                 filterHeight: chip.getBoundingClientRect().height,
                 filterFont: parseFloat(getComputedStyle(chip).fontSize),
@@ -204,6 +213,15 @@ for (const viewport of viewports) {
         assert.equal(baseline.dangers, 4, "four danger symbols");
         assert.equal(baseline.legends + baseline.uses + baseline.dangers, 23, "the complete ecological legend has twenty-three entries");
         assert.equal(baseline.filters, 18, "eighteen filters across family, resource and protection");
+        assert.equal(baseline.seasons, 4, "the four-season calendar must lay out on a phone");
+        assert.equal(baseline.canopyLayers, 3, "all three canopy depth layers must lay out on a phone");
+        assert.equal(baseline.cueButtons, 8, "all eight regional cues must be tappable on a phone");
+        assert.equal(baseline.typeCueButtons, 60, "every card must keep its own listen action");
+        assert.ok(baseline.cueHeight >= 44, "cue buttons must be a 44px touch target, got " + baseline.cueHeight);
+        assert.ok(baseline.cueRight <= baseline.panelRect.right + 1, "cue buttons must stay inside the panel");
+        assert.equal(baseline.seasonOverflow, 0, "no season card may clip horizontally");
+        assert.equal(baseline.canopyOverflow, 0, "no canopy layer may clip horizontally");
+        assert.equal(baseline.yearColumns, 2, "the phone calendar uses two readable columns");
         assert.ok(baseline.filterHeight >= 44, "filter chips must be at least a 44px touch target, got " + baseline.filterHeight);
         assert.ok(baseline.pointFont >= 10, "guide text must be legible on a small screen, got " + baseline.pointFont);
         assert.ok(baseline.noteFont >= 10, "atlas notes must be legible on a small screen, got " + baseline.noteFont);
@@ -229,6 +247,26 @@ for (const viewport of viewports) {
             }
         }
         report.checks.baseline = baseline;
+
+        // Every cue is a real touch action, and the printed line is the same
+        // cue the ambience engine receives. This is the smallest player proof
+        // that the soundscape is reachable on a phone, not only in Settings.
+        const cueButton = page.locator('[data-forest-cue="instrument"]');
+        await cueButton.scrollIntoViewIfNeeded();
+        const cueBox = await cueButton.boundingBox();
+        await page.touchscreen.tap(cueBox.x + cueBox.width / 2, cueBox.y + cueBox.height / 2);
+        await page.waitForFunction(() => (document.querySelector("[data-forest-cue-text]")?.textContent || "").includes("sounds somewhere"), null, { timeout: 5000 });
+        const cue = await page.evaluate(() => ({
+            text: document.querySelector("[data-forest-cue-text]")?.textContent.trim() || "",
+            last: document.querySelector("[data-forest-last-cue]")?.textContent.trim() || "",
+            live: document.querySelector("[data-forest-cue-text]")?.getAttribute("aria-live") || "",
+        }));
+        assert.ok(cue.text.length > 10, "a tap must print the real cue line");
+        assert.match(cue.last, /LAST HEARD/);
+        assert.equal(cue.live, "polite");
+        report.checks.cue = cue;
+        await page.locator(".forest-atlas__year").scrollIntoViewIfNeeded();
+        await page.screenshot({ path: resolve(outputDir, `forest-mobile-${viewport.id}-presentation.png`) });
 
         // Read the whole field guide through a touch-expanded details element.
         await page.locator("[data-presentation-guide] > summary").tap();
@@ -527,13 +565,12 @@ for (const viewport of viewports) {
 
         // The subtitle cue still fires: while the atlas is open it is visually
         // clear of the panel, and it is visible on the map again after closing.
-        await page.evaluate(() => {
+        // Dispatch and read in one synchronous step so a scheduled ambience cue
+        // cannot replace the line in between.
+        const subtitleOpen = await page.evaluate(() => {
             document.dispatchEvent(new CustomEvent("kac:forest-ambience", {
                 detail: { kind: "bird", text: "A capercaillie drums beyond the pines.", at: Date.now() },
             }));
-        });
-        await page.waitForTimeout(250);
-        const subtitleOpen = await page.evaluate(() => {
             const subtitle = document.querySelector("#forest-subtitle");
             const panel = document.querySelector(".command-panel").getBoundingClientRect();
             const rect = subtitle.getBoundingClientRect();

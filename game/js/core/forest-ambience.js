@@ -24,6 +24,7 @@ let volume = 0.3;
 let currentProfile = null;
 let currentScene = null;
 let lastCue = null;
+const cueHistory = [];
 let unlockBound = false;
 let lastSceneKey = '';
 const activeVoices = new Set();
@@ -75,14 +76,14 @@ function bindUnlock() {
     window.addEventListener('touchend', unlock, true);
 }
 
-function noiseBuffer(seconds = 2) {
+function noiseBuffer(seconds = 2, profile = currentProfile) {
     const context = audioContext;
     const length = Math.max(1, Math.floor((context.sampleRate || 22050) * seconds));
     const buffer = context.createBuffer(1, length, context.sampleRate || 22050);
     const data = buffer.getChannelData(0);
     // A seeded LCG makes the bed's grain stable for one regional type, so the
     // same wood does not acquire a different hiss after a reload.
-    let seed = 0x2f6e2b1 ^ hashText(currentProfile?.id || 'forest');
+    let seed = 0x2f6e2b1 ^ hashText(profile?.id || 'forest');
     for (let index = 0; index < length; index++) {
         seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
         data[index] = (seed / 0x100000000) * 2 - 1;
@@ -214,26 +215,98 @@ function playInsect() {
     }
 }
 
-function playInstrument(instrument) {
+function playInstrument(instrument, profile = currentProfile, scene = currentScene) {
     const context = audioContext;
     if (!context || !masterGain) return;
     const now = context.currentTime + 0.05;
-    const scale = [220, 261.63, 293.66, 329.63, 392, 440];
-    const seed = hashText((currentProfile?.id || 'wood') + ':' + (currentScene?.season || 'summer'));
-    const root = scale[seed % scale.length];
+    // The regional mode is real: a spruce wood improvises in Dorian, an oak
+    // wood in Ionian, a savanna wood on a pentatonic. The motif is a stable
+    // three-note phrase, not a fresh random walk every time it is heard.
+    const degrees = profile?.sound?.scale?.degrees || [0, 2, 4, 5, 7, 9, 11];
+    const motif = profile?.sound?.motif || [0, 2, 4];
+    const seed = hashText((profile?.id || 'wood') + ':' + (scene?.season || 'summer'));
+    const rootIndex = seed % degrees.length;
+    const root = 196 * Math.pow(2, (degrees[rootIndex] || 0) / 12);
     const brightness = Number(instrument?.brightness) || 0.6;
-    const decay = 0.9 + (Number(instrument?.decay) || 0.5) * 1.4;
+    const decay = 0.8 + (Number(instrument?.decay) || 0.5) * 1.2;
     const overtone = Number(instrument?.overtone) || 0.5;
-    tone(root, now, decay, 'triangle', 0.028, masterGain, 0);
-    tone(root * 2.01, now + 0.02, decay * 0.8, 'sine', 0.012 * brightness + 0.006, masterGain, 0);
-    if (overtone > 0.55) tone(root * 2.98, now + 0.04, decay * 0.55, 'sine', 0.006, masterGain, 0);
+    const wave = instrument?.timbre === 'struck' ? 'triangle'
+        : instrument?.timbre === 'breathy' ? 'sine' : 'triangle';
+    motif.forEach((step, index) => {
+        const degree = degrees[(rootIndex + step) % degrees.length] || 0;
+        const frequency = root * Math.pow(2, degree / 12);
+        const at = now + index * (0.22 + (Number(profile?.sound?.tempo) || 60) / 600);
+        tone(frequency, at, decay * (1 - index * 0.12), wave, 0.026 - index * 0.004, masterGain, 0);
+        tone(frequency * 2.01, at + 0.02, decay * 0.72, 'sine', 0.01 * brightness + 0.004, masterGain, 0);
+        if (overtone > 0.55 && index === 0) tone(frequency * 2.98, at + 0.04, decay * 0.5, 'sine', 0.005, masterGain, 0);
+    });
 }
 
-function playWeather() {
+function playDrip(profile = currentProfile) {
     const context = audioContext;
-    if (!context || !masterGain || !bedNoise) return;
+    if (!context || !masterGain) return;
+    const now = context.currentTime + 0.05;
+    const seed = hashText((profile?.id || 'wood') + ':drip');
+    for (let index = 0; index < 4; index++) {
+        const frequency = 860 + ((seed >> (index * 5)) & 31) * 42;
+        tone(frequency, now + index * 0.11, 0.07, 'sine', 0.018, masterGain, -240);
+    }
+}
+
+function playCreak(profile = currentProfile) {
+    const context = audioContext;
+    if (!context || !masterGain) return;
+    const now = context.currentTime + 0.05;
+    const seed = hashText((profile?.id || 'wood') + ':creak');
+    const base = 74 + (seed % 24);
+    tone(base, now, 1.35, 'sawtooth', 0.012, masterGain, -26);
+    tone(base * 1.5, now + 0.18, 0.95, 'triangle', 0.007, masterGain, -18);
+}
+
+function playHush(profile = currentProfile) {
+    const context = audioContext;
+    if (!context || !masterGain) return;
     const source = context.createBufferSource();
-    source.buffer = bedNoise;
+    source.buffer = noiseBuffer(1.2, profile);
+    const filter = context.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = 520;
+    filter.Q.value = 0.4;
+    const gain = context.createGain();
+    const now = context.currentTime + 0.05;
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.018, now + 0.8);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 3.0);
+    source.connect(filter);
+    filter.connect(gain);
+    gain.connect(masterGain);
+    source.start(now);
+    source.stop(now + 3.1);
+    source.addEventListener('ended', () => {
+        try { source.disconnect(); } catch { /* already disconnected */ }
+        try { filter.disconnect(); } catch { /* already disconnected */ }
+        try { gain.disconnect(); } catch { /* already disconnected */ }
+    });
+}
+
+function playCue(cue, profile = currentProfile, scene = currentScene) {
+    if (!cue) return;
+    if (cue.kind === 'bird') playBird(cue.bird);
+    else if (cue.kind === 'insect') playInsect();
+    else if (cue.kind === 'instrument') playInstrument(cue.instrument, profile, scene);
+    else if (cue.kind === 'drip') playDrip(profile);
+    else if (cue.kind === 'creak') playCreak(profile);
+    else if (cue.kind === 'hush') playHush(profile);
+    else if (cue.kind === 'weather') playWeather(profile);
+}
+
+function playWeather(profile = currentProfile) {
+    const context = audioContext;
+    if (!context || !masterGain) return;
+    const source = context.createBufferSource();
+    // A requested cue must work before the bed has ever been built (for example
+    // with ambience switched off), so fall back to a short local noise buffer.
+    source.buffer = bedNoise || noiseBuffer(1.8, profile);
     const filter = context.createBiquadFilter();
     filter.type = 'bandpass';
     filter.frequency.value = 900;
@@ -257,6 +330,8 @@ function playWeather() {
 
 function emitCue(cue) {
     lastCue = { ...cue, at: Date.now() };
+    cueHistory.unshift({ ...lastCue });
+    if (cueHistory.length > 8) cueHistory.length = 8;
     if (typeof document === 'undefined' || !forestSubtitlesEnabled() || !cue?.text) return;
     try {
         document.dispatchEvent(new CustomEvent('kac:forest-ambience', {
@@ -279,10 +354,7 @@ function scheduleNextCue(delayMs = null) {
             emitCue({ ...cue, text: cue.text || 'The old wood holds its silence.' });
         } else {
             emitCue(cue);
-            if (cue.kind === 'bird') playBird(cue.bird);
-            else if (cue.kind === 'insect') playInsect();
-            else if (cue.kind === 'instrument') playInstrument(cue.instrument);
-            else playWeather();
+            playCue(cue);
         }
         scheduleNextCue();
     }, Math.max(900, wait));
@@ -354,6 +426,46 @@ export function forestAmbienceStatus() {
 
 export function forestAmbienceLastCue() {
     return lastCue ? { ...lastCue } : null;
+}
+
+export function forestAmbienceHistory() {
+    return cueHistory.map(entry => ({ ...entry }));
+}
+
+// On-demand atlas preview. It is a real user gesture, so it may resume a
+// suspended context. With the ambience switched off it still plays this one
+// requested cue at the saved volume, then restores silence; the printed cue is
+// returned either way, so the feature works with sound muted or unavailable.
+export function previewForestAmbience(profile, scene = {}, kind = 'bird') {
+    if (!profile) return { ok: false, reason: 'no-wood', cue: null, text: '' };
+    const cue = forestSoundCue(profile, scene, 0.5, 0.5, kind);
+    const spoken = {
+        ...cue,
+        text: cue.text || (cue.kind === 'silence' ? 'The old wood holds its silence.' : 'The wood is still.'),
+    };
+    const context = getContext();
+    if (!context) return { ok: false, reason: 'no-audio', cue: spoken, text: spoken.text };
+    const start = () => {
+        if (!masterGain || !audioContext) return false;
+        const restore = !enabled;
+        if (restore) masterGain.gain.setTargetAtTime(Math.max(0.0001, volume), audioContext.currentTime, 0.02);
+        emitCue(spoken);
+        playCue(spoken, profile, scene);
+        // A requested cue must be readable and audible before the next automatic
+        // one; otherwise a scheduled bird or instrument can cut it off mid-line.
+        if (enabled) scheduleNextCue(6500);
+        if (restore) {
+            window.setTimeout(() => {
+                try { masterGain?.gain.setTargetAtTime(0, audioContext.currentTime, 0.12); } catch { /* context closed */ }
+            }, 3600);
+        }
+        return true;
+    };
+    if (context.state === 'running') return { ok: start(), reason: null, cue: spoken, text: spoken.text };
+    context.resume().then(() => {
+        if (audioContext?.state === 'running') start();
+    }).catch(() => {});
+    return { ok: false, reason: 'suspended', cue: spoken, text: spoken.text };
 }
 
 if (typeof document !== 'undefined') {

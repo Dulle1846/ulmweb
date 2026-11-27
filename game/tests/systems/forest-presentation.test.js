@@ -15,13 +15,13 @@ import {
 } from "../../js/world/forest-presentation.js";
 import {
     FOREST_PRESENTATION_SETTINGS, forestCanopyContrast, forestDangerLegend,
-    forestFilterOptions, forestLegendEntries, forestMapFilters, forestMapSymbol,
-    forestMatchesFilters, forestMotionScale, forestParticleScale,
+    FOREST_CUE_KINDS, forestFilterOptions, forestLegendEntries, forestMapFilters,
+    forestMapSymbol, forestMatchesFilters, forestMotionScale, forestParticleScale,
     forestPresentationGuide, forestPresentationProfileForStand as systemProfileForStand,
     forestPresentationSettings, forestPresentationSummary, forestRenderTuning,
-    forestSoundCue, forestSoundscape, forestSymbolicMap,
-    forestUseLegend, normalizeForestPresentationSettings, resetForestMapFilters,
-    setForestMapFilter,
+    forestSoundCue, forestSoundPreview, forestSoundscape, forestSymbolicMap,
+    forestTypeSoundPreview, forestUseLegend, normalizeForestPresentationSettings,
+    resetForestMapFilters, setForestMapFilter,
 } from "../../js/systems/forest-presentation.js";
 import { normalizeSettings } from "../../js/core/persistence.js";
 
@@ -239,6 +239,68 @@ test("legend and summary are generated from the same profile tables", () => {
     assert.ok(dangers.length >= 3);
     const symbol = forestMapSymbol(FOREST_PRESENTATION_LIST[0]);
     assert.ok(symbol.type && symbol.use && symbol.danger && symbol.pattern);
+});
+
+test("the seasonal calendar is complete, dated and regional", () => {
+    const turns = new Set();
+    const blossoms = new Set();
+    const notes = new Set();
+    const winterColours = new Set();
+    for (const profile of FOREST_PRESENTATION_LIST) {
+        assert.equal(profile.seasons.length, 4, profile.id + " needs four seasons");
+        assert.deepEqual(profile.seasons.map(season => season.id), ["spring", "summer", "autumn", "winter"]);
+        for (const season of profile.seasons) {
+            assert.ok(season.label && season.note.length > 20, profile.id + " season needs a note");
+            assert.ok(season.keyDay >= 0 && season.keyDay < 400, profile.id + " season day must be in the realm year");
+            assert.match(season.leaf, /^#[0-9a-f]{6}$/i);
+            assert.ok(season.ground, profile.id + " season needs its ground weave");
+            assert.ok(season.startDay < season.endDay);
+        }
+        assert.equal(profile.phenology.turn, profile.seasons[2].keyDay);
+        assert.equal(profile.phenology.leafOut, profile.seasons[0].keyDay);
+        assert.ok(profile.phenology.leafOut >= 0 && profile.phenology.leafOut < 400);
+        assert.ok(profile.phenology.fruit >= 0 && profile.phenology.fruit < 400);
+        assert.equal(profile.canopyLayers.length, 3, profile.id + " needs three depth layers");
+        assert.equal(profile.canopyLayers[2].id, "roof");
+        assert.ok(Math.abs(profile.canopyLayers[2].parallax - profile.parallax) < 0.001);
+        assert.ok(profile.canopyLayers[0].parallax < profile.canopyLayers[2].parallax);
+        assert.equal(profile.fieldMarks.length, 3, profile.id + " needs three field marks");
+        assert.ok(profile.sound.scale.degrees.length >= 5, profile.id + " needs a playable mode");
+        assert.equal(profile.sound.motif.length, 3, profile.id + " needs a three-note motif");
+        assert.ok(profile.sound.tempo >= 40 && profile.sound.tempo <= 90);
+        assert.ok(profile.weatherReaction.drip >= 0 && profile.weatherReaction.hush >= 0);
+        turns.add(profile.phenology.turn);
+        blossoms.add(profile.phenology.blossom);
+        notes.add(profile.seasons[0].note);
+        winterColours.add(profile.seasons[3].leaf);
+    }
+    assert.ok(turns.size >= 20, "autumn must not start on one day for every wood");
+    assert.ok(blossoms.size >= 20, "blossom must not start on one day for every wood");
+    assert.ok(notes.size >= 10, "season notes must differ by family");
+    assert.ok(winterColours.size >= 8, "winter crowns must not all share one colour");
+});
+
+test("every sound cue can be previewed and weather changes the cue", () => {
+    const profile = FOREST_PRESENTATION_LIST.find(entry => entry.family === "broadleaf") || FOREST_PRESENTATION_LIST[0];
+    const seen = new Set();
+    for (const entry of FOREST_CUE_KINDS) {
+        const cue = forestSoundPreview(profile, { weather: "clear", hour: 12, season: "summer" }, entry.id);
+        assert.equal(cue.kind, entry.id, "preview must return the requested cue kind");
+        if (entry.id !== "silence") assert.ok(cue.text.length > 5, entry.id + " needs a printable line");
+        seen.add(cue.kind);
+    }
+    assert.equal(seen.size, FOREST_CUE_KINDS.length);
+    assert.equal(forestSoundCue(profile, { weather: "rain" }, 0.5, 0.96).kind, "drip");
+    assert.equal(forestSoundCue(profile, { weather: "snow" }, 0.5, 0.96).kind, "hush");
+    const typePreview = forestTypeSoundPreview(profile.id, "instrument", { weather: "clear", hour: 12 });
+    assert.equal(typePreview.profile.id, profile.id);
+    assert.equal(typePreview.cue.kind, "instrument");
+    assert.ok(typePreview.cue.instrument.label.length > 3);
+    const summary = forestPresentationSummary();
+    assert.equal(summary.cueKinds.length, FOREST_CUE_KINDS.length);
+    assert.equal(summary.seasons.length, 4);
+    assert.equal(summary.canopyLayers.length, 3);
+    assert.ok(summary.fieldMarks.length >= 2);
 });
 
 test("the soundscape chooses deterministic cues and can hold its silence", () => {
