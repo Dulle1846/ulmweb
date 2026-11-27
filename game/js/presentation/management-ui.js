@@ -35,6 +35,7 @@ import { forestFaunaEcologyFor, forestFaunaEcologySummary } from "../world/fores
 import { cleanBiomeWater, craftBiomeGoods, drainBiomeRegion, harvestBiomeResource, huntBiomeSpecies, irrigateBiomeRegion, reforestBiomeRegion, reintroduceBiomeSpecies, restoreBiomeRegion, sellBiomeCraft, sellBiomeGoods, setBiomeFocus, setBiomePolicy, setBiomeProtection, slashAndBurnBiomeRegion, surveyBiomeRegion } from "../systems/biome-resource-state.js";
 import { renderBiomePanel } from "./biome-panel.js";
 import { invalidateForestAtlasSurvey, renderForestAtlasPanel } from "./forest-atlas-panel.js";
+import { resetForestMapFilters, setForestMapFilter } from "../systems/forest-presentation.js";
 import { timberMarketSummary, sellRegionalTimber, TIMBER_SALE_LOT } from "../systems/regional-timber-market.js";
 import { FOREST_WORKS_MODES, SAW_PROFILES, INDUSTRY_GOODS } from "../world/forest-industries.js";
 import { forestMasteryFor, forestMasterworkArchive, forestWorksStatus, runForestWorks, sawProfileIdFor, sellForestIndustryGood, setForestWorksMode, setSawProfile, supplyClinicMedicine } from "../systems/forest-industries.js";
@@ -2189,6 +2190,20 @@ export function setupManagementUI(){
    const result=mediateForestConflict(cultureMediate.dataset.cultureMediate);
    if(result.ok){toast("WOOD-RIGHT DISPUTE SETTLED · "+result.conflict.label);renderUI();render();}
    else toast(String(result.reason||"MEDIATION FAILED").toUpperCase());
+   return;
+  }
+  // 1.2.23.1.262: filter chips re-render the atlas in place. The filter state
+  // lives with the presentation system, so it also survives a panel reopen
+  // without being written to the save.
+  const forestFilter=e.target.closest("[data-forest-filter]");
+  if(forestFilter){
+   const ok=setForestMapFilter(forestFilter.dataset.forestFilter,forestFilter.dataset.forestFilterValue);
+   if(ok){toast("FOREST FILTER · "+String(forestFilter.dataset.forestFilterValue).toUpperCase());renderUI();render();}
+   return;
+  }
+  const forestFilterReset=e.target.closest("[data-forest-filter-reset]");
+  if(forestFilterReset){
+   resetForestMapFilters();toast("FOREST FILTERS CLEARED · ALL SIXTY TYPES");renderUI();render();
    return;
   }
   const commission=e.target.closest("[data-forest-commission]");

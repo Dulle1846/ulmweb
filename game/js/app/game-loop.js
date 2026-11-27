@@ -11,6 +11,8 @@ import { updateCamera } from "../presentation/camera.js";
 import { updateParticles,updateFloaters } from "../presentation/rendering/particles.js";
 import { updateMinimap } from "../presentation/rendering/minimap.js";
 import { flushPresentationEffects } from "../presentation/effects.js";
+import { forestReferenceScene } from "../systems/forest-presentation.js";
+import { setForestScene } from "../core/forest-ambience.js";
 
 let loopStarted=false;
 let lastRenderTimestamp=0;
@@ -18,6 +20,7 @@ let perfWindowStarted=0;
 let perfRenderedFrames=0;
 let perfIntervalTotal=0;
 let perfLastFrameAt=0;
+let lastForestAudioAt=0;
 
 function resetFrameClock(){
  state.lastFrameTime=0;lastRenderTimestamp=0;state.tickAccumulator=0;state.movementAccumulator=0;
@@ -153,6 +156,14 @@ function gameLoop(timestamp){
    // A 1 Hz cadence keeps it useful without competing with the 30 FPS world
    // budget; the terrain half is cached separately inside updateMinimap().
    if(!worldOccluded&&timestamp-state.lastMinimapRender>=4000){updateMinimap();state.lastMinimapRender=timestamp;}
+   // One bounded ambience lookup every 1.8 s. It samples the camera-centre wood
+   // through the same stand model the renderer uses and only schedules audio
+   // when the regional type or weather actually changes.
+   if(!worldOccluded&&state.hasStarted&&timestamp-lastForestAudioAt>=1800){
+    lastForestAudioAt=timestamp;
+    const scene=forestReferenceScene();
+    if(scene.available)setForestScene(scene.profile,scene);
+   }
    // Simulation and camera updates stay smooth, while expensive world drawing
    // follows the selected 60/30 FPS cap. A sub-millisecond tolerance avoids
    // dropping every other frame on displays whose refresh interval is rounded.

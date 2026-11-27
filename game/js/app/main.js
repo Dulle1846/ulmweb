@@ -38,6 +38,8 @@ import { setupInput } from "../presentation/input.js";
 import { renderUI,renderInitialUI,showBigMessage,setupMapViewControls } from "../presentation/rendering/ui.js";
 import { createLocalProfile,getActiveProfile,readLocalSave,writeLocalSave,getLocalSaveInfo,listLocalProfiles,selectLocalProfile,loadSettings,saveSettings } from "../core/persistence.js";
 import { startSoundtrack,setMusicEnabled,setMusicVolume,applySoundtrackSettings } from "../core/soundtrack.js";
+import { applyForestAmbienceSettings } from "../core/forest-ambience.js";
+import { forestPresentationSettings, invalidateForestPresentationCache } from "../systems/forest-presentation.js";
 import {getRandomStreamSnapshot,restoreRandomStreams} from "../core/random.js";
 import {ensurePersonProfile,normalizePersonProfile,normalizePersonMemorial,MAX_PERSON_ARCHIVE} from "../systems/people.js";
 import {setupCharacterDossier} from "../presentation/character-dossier.js";
@@ -131,13 +133,36 @@ function scenarioStoreText(definition){
     return ["food","wood","stone","gold"].map(key=>Number(definition?.resources?.[key])>0?Number(definition.resources[key])+" "+key:"").filter(Boolean).join(" · ")||"no starting stores";
 }
 function scenarioById(id){return SCENARIO_PRESETS[id]||dataPackScenarios.find(entry=>entry.id===id)||customScenarios.find(entry=>entry.id===id)||SCENARIO_PRESETS["free-realm"];}
+let lastForestPresentationKey="";
 function applyInterfaceSettings(){
+    const previousForestKey=lastForestPresentationKey;
     document.body.classList.toggle("hide-resource-deltas",settings.showDeltas===false);
     document.body.classList.toggle("reduce-interface-motion",settings.reduceMotion===true);
     const root=document.documentElement;
     root.classList.toggle("ui-hide-tooltips",settings.showTooltips===false);
     root.classList.toggle("ui-reduced-motion",settings.reduceMotion===true);
     root.classList.toggle("ui-high-contrast",settings.highContrast===true);
+    // Forest presentation is a shared display contract: the map renderer, the
+    // Atlas and the ambience all read state.settings, so the UI only publishes
+    // the current saved values and one class per visual mode.
+    state.settings=settings;
+    const forest=forestPresentationSettings();
+    lastForestPresentationKey=[forest.forestColorblind?1:0,forest.forestCanopyContrast?1:0,forest.forestFontScale,forest.forestPerformance?1:0,forest.forestReducedParticles?1:0,forest.forestMapView].join("|");
+    root.classList.toggle("ui-forest-colorblind",forest.forestColorblind);
+    root.classList.toggle("ui-forest-contrast",forest.forestCanopyContrast);
+    root.classList.toggle("forest-font-large",forest.forestFontScale==="large");
+    root.classList.toggle("forest-font-xlarge",forest.forestFontScale==="xlarge");
+    root.style.setProperty("--forest-font-scale",forest.forestFontScale==="xlarge"?"1.4":forest.forestFontScale==="large"?"1.2":"1");
+    document.body.classList.toggle("ui-forest-symbolic",forest.forestMapView==="symbolic");
+    applyForestAmbienceSettings(forest);
+    if(previousForestKey!==lastForestPresentationKey){
+        invalidateForestPresentationCache();
+        // The map view and canopy contrast are baked into the detail raster, so
+        // a change must schedule one rebuild instead of waiting for a season.
+        state.terrainCacheRevision=(Number(state.terrainCacheRevision)||0)+1;
+    }
+    const subtitle=document.getElementById("forest-subtitle");
+    if(subtitle&&forest.forestSubtitles!==true)subtitle.classList.add("hidden");
 }
 
 function applyPerformanceSettings(){
@@ -1566,6 +1591,36 @@ function bindMenu(){
     if(motionToggle){motionToggle.checked=settings.reduceMotion===true;motionToggle.addEventListener("change",event=>{settings.reduceMotion=event.target.checked;applyInterfaceSettings();saveSettings(settings);});}
     const highContrastToggle=document.getElementById("settings-high-contrast-toggle");
     if(highContrastToggle){highContrastToggle.checked=settings.highContrast===true;highContrastToggle.addEventListener("change",event=>{settings.highContrast=event.target.checked;applyInterfaceSettings();saveSettings(settings);});}
+    // Forest presentation settings. They are display-only, so they live beside
+    // the soundtrack settings and never enter a save snapshot.
+    const forestAmbienceToggle=document.getElementById("settings-forest-ambience-toggle");
+    if(forestAmbienceToggle){forestAmbienceToggle.checked=settings.forestAmbience!==false;forestAmbienceToggle.addEventListener("change",event=>{settings.forestAmbience=event.target.checked;applyInterfaceSettings();saveSettings(settings);});}
+    const forestAmbienceVolume=document.getElementById("settings-forest-ambience-volume");
+    if(forestAmbienceVolume){forestAmbienceVolume.value=String(Math.round(Number(settings.forestAmbienceVolume??0.3)*100));forestAmbienceVolume.addEventListener("input",event=>{settings.forestAmbienceVolume=Number(event.target.value)/100;applyForestAmbienceSettings(forestPresentationSettings());saveSettings(settings);});}
+    const forestSubtitlesToggle=document.getElementById("settings-forest-subtitles-toggle");
+    if(forestSubtitlesToggle){forestSubtitlesToggle.checked=settings.forestSubtitles===true;forestSubtitlesToggle.addEventListener("change",event=>{settings.forestSubtitles=event.target.checked;applyInterfaceSettings();saveSettings(settings);});}
+    const forestColorblindToggle=document.getElementById("settings-forest-colorblind-toggle");
+    if(forestColorblindToggle){forestColorblindToggle.checked=settings.forestColorblind===true;forestColorblindToggle.addEventListener("change",event=>{settings.forestColorblind=event.target.checked;applyInterfaceSettings();saveSettings(settings);});}
+    const forestContrastToggle=document.getElementById("settings-forest-contrast-toggle");
+    if(forestContrastToggle){forestContrastToggle.checked=settings.forestCanopyContrast===true;forestContrastToggle.addEventListener("change",event=>{settings.forestCanopyContrast=event.target.checked;applyInterfaceSettings();saveSettings(settings);});}
+    const forestFontScale=document.getElementById("settings-forest-font-scale");
+    if(forestFontScale){forestFontScale.value=settings.forestFontScale||"normal";forestFontScale.addEventListener("change",event=>{settings.forestFontScale=["normal","large","xlarge"].includes(event.target.value)?event.target.value:"normal";applyInterfaceSettings();saveSettings(settings);});}
+    const forestPerformanceToggle=document.getElementById("settings-forest-performance-toggle");
+    if(forestPerformanceToggle){forestPerformanceToggle.checked=settings.forestPerformance===true;forestPerformanceToggle.addEventListener("change",event=>{settings.forestPerformance=event.target.checked;applyInterfaceSettings();saveSettings(settings);});}
+    const forestParticlesToggle=document.getElementById("settings-forest-particles-toggle");
+    if(forestParticlesToggle){forestParticlesToggle.checked=settings.forestReducedParticles===true;forestParticlesToggle.addEventListener("change",event=>{settings.forestReducedParticles=event.target.checked;applyInterfaceSettings();saveSettings(settings);});}
+    const forestMapView=document.getElementById("settings-forest-map-view");
+    if(forestMapView){forestMapView.value=settings.forestMapView||"detailed";forestMapView.addEventListener("change",event=>{settings.forestMapView=event.target.value==="symbolic"?"symbolic":"detailed";applyInterfaceSettings();saveSettings(settings);});}
+    let forestSubtitleTimer=0;
+    document.addEventListener("kac:forest-ambience",event=>{
+        if(settings.forestSubtitles!==true)return;
+        const subtitle=document.getElementById("forest-subtitle");
+        if(!subtitle)return;
+        subtitle.textContent=String(event.detail?.text||"").slice(0,180);
+        subtitle.classList.toggle("hidden",!subtitle.textContent);
+        window.clearTimeout(forestSubtitleTimer);
+        forestSubtitleTimer=window.setTimeout(()=>subtitle.classList.add("hidden"),4600);
+    });
     const timeOfDayControl=document.getElementById("settings-time-of-day");
     const timeOfDayValue=document.getElementById("settings-time-of-day-value");
     if(timeOfDayControl){

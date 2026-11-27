@@ -1,13 +1,45 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.83.1`
-**Next development line:** `3.84.0-dev`
+**Current production version:** `3.84.0`
+**Next development line:** `3.85.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
 **Last repository verification:** 2026-11-27 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.84.0 — Wald-Darstellung, Audio, UI und Accessibility (241–270)
+
+Adds points 1.2.23.1.241–270 as one presentation layer over the living wood.
+Sixty regional types now carry a deterministic visual, acoustic and cartographic
+identity derived from their silhouette, climate and existing render data. No
+simulation value, save field or deterministic result changes.
+
+- **The wood looks like itself.** Nine crown silhouettes, per-type parallax,
+  regional leaf and light palettes, staggered autumn colour, regional snow load
+  and bare crowns, eight ground weaves, two-shaft canopy light, nine fog types,
+  wet surfaces, dripping crowns, species stiffness, deadwood and root plates,
+  ferns/grasses/shrubs, seasonal blossom and fruit, regional fauna, canopy birds
+  and bounded insect clouds are drawn through the existing terrain passes.
+- **The wood sounds like itself.** A procedural WebAudio bed is filtered per
+  region, with birds and insects from the real fauna list, three instruments
+  built from the regional woods, deterministic motifs and deliberate silence in
+  old growth. No audio files are shipped.
+- **The atlas reads the wood.** Map icons for type, use and danger, an ecological
+  legend, species and goods tooltips, three combined filters and a thirty-point
+  field guide with live readings from the reference stand.
+- **Accessibility is real.** Colour-blind-safe patterns on swatches, icons and
+  chips; a separate canopy-contrast mode; three forest text sizes; reduced motion
+  for wind and leaves; sound subtitles in a polite live region; performance mode;
+  reduced weather particles; and a symbolic map view for weak devices.
+- **Player proof.** A Chromium journey starts a realm, opens the Atlas, verifies
+  60 cards, 30 guide points, 18 filters and their effect, changes every setting,
+  combines colour-blind with contrast, checks font growth and terrain rebuild,
+  switches to the symbolic map, observes a running ambience cue and reads the
+  subtitle live region. Full `npm test`, the 44-section spec audit and the
+  deterministic 25-year campaign are the release gate. See
+  [docs/FOREST_PRESENTATION.md](docs/FOREST_PRESENTATION.md).
 
 ## 3.83.1 — Live war-fire availability fix
 

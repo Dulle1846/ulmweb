@@ -180,11 +180,23 @@ const DEFAULT_SETTINGS = Object.freeze({
     renderScale: 1,
     showFps: false,
     timeOfDay: 12,
+    forestAmbience: true,
+    forestAmbienceVolume: 0.3,
+    forestSubtitles: false,
+    forestColorblind: false,
+    forestCanopyContrast: false,
+    forestFontScale: "normal",
+    forestPerformance: false,
+    forestReducedParticles: false,
+    forestMapView: "detailed",
 });
+const FOREST_FONT_SCALES = new Set(["normal", "large", "xlarge"]);
+const FOREST_MAP_VIEWS = new Set(["detailed", "symbolic"]);
 
 export function normalizeSettings(rawSettings = {}) {
     const settings = rawSettings && typeof rawSettings === "object" ? rawSettings : {};
     const musicVolume = Number(settings.musicVolume);
+    const forestAmbienceVolume = Number(settings.forestAmbienceVolume);
     const frameLimit = Number(settings.frameLimit);
     const renderScale = Number(settings.renderScale);
     const timeOfDay = Number(settings.timeOfDay);
@@ -199,6 +211,15 @@ export function normalizeSettings(rawSettings = {}) {
         renderScale: RENDER_SCALES.has(renderScale) ? renderScale : DEFAULT_SETTINGS.renderScale,
         showFps: settings.showFps === true,
         timeOfDay: Number.isFinite(timeOfDay) ? Math.max(0, Math.min(23, Math.round(timeOfDay))) : DEFAULT_SETTINGS.timeOfDay,
+        forestAmbience: settings.forestAmbience !== false,
+        forestAmbienceVolume: Number.isFinite(forestAmbienceVolume) ? Math.max(0, Math.min(1, forestAmbienceVolume)) : DEFAULT_SETTINGS.forestAmbienceVolume,
+        forestSubtitles: settings.forestSubtitles === true,
+        forestColorblind: settings.forestColorblind === true,
+        forestCanopyContrast: settings.forestCanopyContrast === true,
+        forestFontScale: FOREST_FONT_SCALES.has(settings.forestFontScale) ? settings.forestFontScale : DEFAULT_SETTINGS.forestFontScale,
+        forestPerformance: settings.forestPerformance === true,
+        forestReducedParticles: settings.forestReducedParticles === true,
+        forestMapView: FOREST_MAP_VIEWS.has(settings.forestMapView) ? settings.forestMapView : DEFAULT_SETTINGS.forestMapView,
     };
 }
 

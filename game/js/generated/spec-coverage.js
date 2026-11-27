@@ -2,13 +2,13 @@
 export const SPEC_COVERAGE = Object.freeze({
   "version": 2,
   "generatedBy": "scripts/spec-audit.mjs",
-  "commit": "f5dd47eb146df4e32f7b0369cebfb769a6b4b5fc",
-  "sourceHash": "1c17fd5402b005001274def4ea05286ccefb922b458338b7e9b6fa4bf6cc1cd2",
+  "commit": "ffa9103853eaa6c8c9f9625a2e621f04a993c87e",
+  "sourceHash": "29ec47a7067d49ba040c6a7516b259d558adab21a516d0559de3eba252218555",
   "totals": {
-    "total": 1753,
-    "implemented": 1753,
+    "total": 1783,
+    "implemented": 1783,
     "open": 0,
-    "sections": 43
+    "sections": 44
   },
   "nextSection": null,
   "collisions": [
@@ -573,6 +573,14 @@ export const SPEC_COVERAGE = Object.freeze({
       "implemented": 30,
       "open": 0,
       "source": "js/world/forest-warfare.js"
+    },
+    {
+      "id": "1.2.23.1.241-270",
+      "title": "Forest presentation, audio, UI and accessibility",
+      "total": 30,
+      "implemented": 30,
+      "open": 0,
+      "source": "js/world/forest-presentation.js"
     },
     {
       "id": "2.1",

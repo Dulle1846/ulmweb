@@ -2,14 +2,14 @@
   "version": 2,
   "generatedBy": "scripts/spec-audit.mjs",
   "scope": "All numbered 1.1 and 1.2.1–1.2.18 requirements, including the 1.2.23.1.151–210 forest economy and forest culture, plus the documented 2.x phases, 3.3–4.0 roadmap points and the 3.11 expedition follow-up chain contract.",
-  "commit": "f5dd47eb146df4e32f7b0369cebfb769a6b4b5fc",
-  "sourceHash": "1c17fd5402b005001274def4ea05286ccefb922b458338b7e9b6fa4bf6cc1cd2",
-  "generatedAt": "2026-11-27T06:30:23+00:00",
+  "commit": "ffa9103853eaa6c8c9f9625a2e621f04a993c87e",
+  "sourceHash": "29ec47a7067d49ba040c6a7516b259d558adab21a516d0559de3eba252218555",
+  "generatedAt": "2026-11-27T07:02:44+00:00",
   "totals": {
-    "total": 1753,
-    "implemented": 1753,
+    "total": 1783,
+    "implemented": 1783,
     "open": 0,
-    "sections": 43
+    "sections": 44
   },
   "collisions": [
     {
@@ -43045,6 +43045,976 @@
       ],
       "source": "js/world/forest-warfare.js",
       "note": "30 player-facing forest-war requirements from FOREST_WARFARE_REQUIREMENTS; each names its live consumer in the atlas.",
+      "probeFunction": null,
+      "probeClimate": "temperate",
+      "probeExtra": {},
+      "probeAvailable": false,
+      "probeObserved": 0,
+      "implemented": 30,
+      "open": 0,
+      "total": 30
+    },
+    {
+      "id": "1.2.23.1.241-270",
+      "title": "Forest presentation, audio, UI and accessibility",
+      "points": [
+        {
+          "id": "1.2.23.1.241",
+          "label": "Canopy parallax by forest type",
+          "key": "The crown roof of each regional forest shifts at its own depth when the camera moves.",
+          "group": "FOREST PRESENTATION",
+          "status": "implemented",
+          "docEvidence": "FOREST_PRESENTATION_POINTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-presentation.test.js",
+            "tests/browser/forest-presentation-ui.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-presentation.js#FOREST_PRESENTATION_POINTS (catalog)",
+            "js/world/forest-presentation.js#FOREST_PRESENTATION_PROFILES (regional presentation profiles)",
+            "js/systems/forest-presentation.js#forestPresentationGuide (live guide)",
+            "js/systems/forest-presentation.js#forestRenderTuning (render tuning)",
+            "js/systems/forest-presentation.js#forestSoundCue (audio script)",
+            "js/core/forest-ambience.js#setForestScene (procedural audio)",
+            "js/presentation/rendering/terrain.js#drawRegionalGroundTexture (map render)",
+            "js/presentation/forest-atlas-panel.js#presentationBlock (ui)",
+            "js/presentation/management-ui.js#setForestMapFilter (filter actions)",
+            "js/presentation/rendering/weather-overlay.js#forestParticleScale (particle budget)",
+            "js/app/main.js#applyInterfaceSettings (settings wiring)",
+            "js/core/persistence.js#normalizeSettings (persistence)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.242",
+          "label": "Unmistakable tree silhouettes per region",
+          "key": "A player can name the woodland from the crown outline alone.",
+          "group": "FOREST PRESENTATION",
+          "status": "implemented",
+          "docEvidence": "FOREST_PRESENTATION_POINTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-presentation.test.js",
+            "tests/browser/forest-presentation-ui.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-presentation.js#FOREST_PRESENTATION_POINTS (catalog)",
+            "js/world/forest-presentation.js#FOREST_PRESENTATION_PROFILES (regional presentation profiles)",
+            "js/systems/forest-presentation.js#forestPresentationGuide (live guide)",
+            "js/systems/forest-presentation.js#forestRenderTuning (render tuning)",
+            "js/systems/forest-presentation.js#forestSoundCue (audio script)",
+            "js/core/forest-ambience.js#setForestScene (procedural audio)",
+            "js/presentation/rendering/terrain.js#drawRegionalGroundTexture (map render)",
+            "js/presentation/forest-atlas-panel.js#presentationBlock (ui)",
+            "js/presentation/management-ui.js#setForestMapFilter (filter actions)",
+            "js/presentation/rendering/weather-overlay.js#forestParticleScale (particle budget)",
+            "js/app/main.js#applyInterfaceSettings (settings wiring)",
+            "js/core/persistence.js#normalizeSettings (persistence)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.243",
+          "label": "Regional leaf colours and light moods",
+          "key": "Each woodland has its own leaf palette and its own quality of light.",
+          "group": "FOREST PRESENTATION",
+          "status": "implemented",
+          "docEvidence": "FOREST_PRESENTATION_POINTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-presentation.test.js",
+            "tests/browser/forest-presentation-ui.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-presentation.js#FOREST_PRESENTATION_POINTS (catalog)",
+            "js/world/forest-presentation.js#FOREST_PRESENTATION_PROFILES (regional presentation profiles)",
+            "js/systems/forest-presentation.js#forestPresentationGuide (live guide)",
+            "js/systems/forest-presentation.js#forestRenderTuning (render tuning)",
+            "js/systems/forest-presentation.js#forestSoundCue (audio script)",
+            "js/core/forest-ambience.js#setForestScene (procedural audio)",
+            "js/presentation/rendering/terrain.js#drawRegionalGroundTexture (map render)",
+            "js/presentation/forest-atlas-panel.js#presentationBlock (ui)",
+            "js/presentation/management-ui.js#setForestMapFilter (filter actions)",
+            "js/presentation/rendering/weather-overlay.js#forestParticleScale (particle budget)",
+            "js/app/main.js#applyInterfaceSettings (settings wiring)",
+            "js/core/persistence.js#normalizeSettings (persistence)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.244",
+          "label": "Autumn foliage with staggered colouring",
+          "key": "Autumn arrives tree by tree and region by region, not on one calendar day.",
+          "group": "FOREST PRESENTATION",
+          "status": "implemented",
+          "docEvidence": "FOREST_PRESENTATION_POINTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-presentation.test.js",
+            "tests/browser/forest-presentation-ui.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-presentation.js#FOREST_PRESENTATION_POINTS (catalog)",
+            "js/world/forest-presentation.js#FOREST_PRESENTATION_PROFILES (regional presentation profiles)",
+            "js/systems/forest-presentation.js#forestPresentationGuide (live guide)",
+            "js/systems/forest-presentation.js#forestRenderTuning (render tuning)",
+            "js/systems/forest-presentation.js#forestSoundCue (audio script)",
+            "js/core/forest-ambience.js#setForestScene (procedural audio)",
+            "js/presentation/rendering/terrain.js#drawRegionalGroundTexture (map render)",
+            "js/presentation/forest-atlas-panel.js#presentationBlock (ui)",
+            "js/presentation/management-ui.js#setForestMapFilter (filter actions)",
+            "js/presentation/rendering/weather-overlay.js#forestParticleScale (particle budget)",
+            "js/app/main.js#applyInterfaceSettings (settings wiring)",
+            "js/core/persistence.js#normalizeSettings (persistence)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.245",
+          "label": "Snow loads and bare crowns in winter",
+          "key": "Snow sits differently on spruce, oak and mangrove, and bare crowns stay legible.",
+          "group": "FOREST PRESENTATION",
+          "status": "implemented",
+          "docEvidence": "FOREST_PRESENTATION_POINTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-presentation.test.js",
+            "tests/browser/forest-presentation-ui.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-presentation.js#FOREST_PRESENTATION_POINTS (catalog)",
+            "js/world/forest-presentation.js#FOREST_PRESENTATION_PROFILES (regional presentation profiles)",
+            "js/systems/forest-presentation.js#forestPresentationGuide (live guide)",
+            "js/systems/forest-presentation.js#forestRenderTuning (render tuning)",
+            "js/systems/forest-presentation.js#forestSoundCue (audio script)",
+            "js/core/forest-ambience.js#setForestScene (procedural audio)",
+            "js/presentation/rendering/terrain.js#drawRegionalGroundTexture (map render)",
+            "js/presentation/forest-atlas-panel.js#presentationBlock (ui)",
+            "js/presentation/management-ui.js#setForestMapFilter (filter actions)",
+            "js/presentation/rendering/weather-overlay.js#forestParticleScale (particle budget)",
+            "js/app/main.js#applyInterfaceSettings (settings wiring)",
+            "js/core/persistence.js#normalizeSettings (persistence)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.246",
+          "label": "Ground textures for needle, broadleaf and mangrove",
+          "key": "The floor under the trees names the forest as clearly as the crowns do.",
+          "group": "FOREST PRESENTATION",
+          "status": "implemented",
+          "docEvidence": "FOREST_PRESENTATION_POINTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-presentation.test.js",
+            "tests/browser/forest-presentation-ui.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-presentation.js#FOREST_PRESENTATION_POINTS (catalog)",
+            "js/world/forest-presentation.js#FOREST_PRESENTATION_PROFILES (regional presentation profiles)",
+            "js/systems/forest-presentation.js#forestPresentationGuide (live guide)",
+            "js/systems/forest-presentation.js#forestRenderTuning (render tuning)",
+            "js/systems/forest-presentation.js#forestSoundCue (audio script)",
+            "js/core/forest-ambience.js#setForestScene (procedural audio)",
+            "js/presentation/rendering/terrain.js#drawRegionalGroundTexture (map render)",
+            "js/presentation/forest-atlas-panel.js#presentationBlock (ui)",
+            "js/presentation/management-ui.js#setForestMapFilter (filter actions)",
+            "js/presentation/rendering/weather-overlay.js#forestParticleScale (particle budget)",
+            "js/app/main.js#applyInterfaceSettings (settings wiring)",
+            "js/core/persistence.js#normalizeSettings (persistence)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.247",
+          "label": "Light rays through fog and canopy gaps",
+          "key": "Shafts of light break through crown gaps and are made visible by the mist.",
+          "group": "FOREST PRESENTATION",
+          "status": "implemented",
+          "docEvidence": "FOREST_PRESENTATION_POINTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-presentation.test.js",
+            "tests/browser/forest-presentation-ui.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-presentation.js#FOREST_PRESENTATION_POINTS (catalog)",
+            "js/world/forest-presentation.js#FOREST_PRESENTATION_PROFILES (regional presentation profiles)",
+            "js/systems/forest-presentation.js#forestPresentationGuide (live guide)",
+            "js/systems/forest-presentation.js#forestRenderTuning (render tuning)",
+            "js/systems/forest-presentation.js#forestSoundCue (audio script)",
+            "js/core/forest-ambience.js#setForestScene (procedural audio)",
+            "js/presentation/rendering/terrain.js#drawRegionalGroundTexture (map render)",
+            "js/presentation/forest-atlas-panel.js#presentationBlock (ui)",
+            "js/presentation/management-ui.js#setForestMapFilter (filter actions)",
+            "js/presentation/rendering/weather-overlay.js#forestParticleScale (particle budget)",
+            "js/app/main.js#applyInterfaceSettings (settings wiring)",
+            "js/core/persistence.js#normalizeSettings (persistence)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.248",
+          "label": "Regional fog types and visibility",
+          "key": "Coastal veil, valley mist, ground fog, river steam, canopy breath, dry haze, dust, wood mist and ash fall.",
+          "group": "FOREST PRESENTATION",
+          "status": "implemented",
+          "docEvidence": "FOREST_PRESENTATION_POINTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-presentation.test.js",
+            "tests/browser/forest-presentation-ui.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-presentation.js#FOREST_PRESENTATION_POINTS (catalog)",
+            "js/world/forest-presentation.js#FOREST_PRESENTATION_PROFILES (regional presentation profiles)",
+            "js/systems/forest-presentation.js#forestPresentationGuide (live guide)",
+            "js/systems/forest-presentation.js#forestRenderTuning (render tuning)",
+            "js/systems/forest-presentation.js#forestSoundCue (audio script)",
+            "js/core/forest-ambience.js#setForestScene (procedural audio)",
+            "js/presentation/rendering/terrain.js#drawRegionalGroundTexture (map render)",
+            "js/presentation/forest-atlas-panel.js#presentationBlock (ui)",
+            "js/presentation/management-ui.js#setForestMapFilter (filter actions)",
+            "js/presentation/rendering/weather-overlay.js#forestParticleScale (particle budget)",
+            "js/app/main.js#applyInterfaceSettings (settings wiring)",
+            "js/core/persistence.js#normalizeSettings (persistence)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.249",
+          "label": "Rain, dripping water and wet surfaces",
+          "key": "A wet wood looks wet: dark soil, standing puddles, dripping crowns and glossy leaves.",
+          "group": "FOREST PRESENTATION",
+          "status": "implemented",
+          "docEvidence": "FOREST_PRESENTATION_POINTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-presentation.test.js",
+            "tests/browser/forest-presentation-ui.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-presentation.js#FOREST_PRESENTATION_POINTS (catalog)",
+            "js/world/forest-presentation.js#FOREST_PRESENTATION_PROFILES (regional presentation profiles)",
+            "js/systems/forest-presentation.js#forestPresentationGuide (live guide)",
+            "js/systems/forest-presentation.js#forestRenderTuning (render tuning)",
+            "js/systems/forest-presentation.js#forestSoundCue (audio script)",
+            "js/core/forest-ambience.js#setForestScene (procedural audio)",
+            "js/presentation/rendering/terrain.js#drawRegionalGroundTexture (map render)",
+            "js/presentation/forest-atlas-panel.js#presentationBlock (ui)",
+            "js/presentation/management-ui.js#setForestMapFilter (filter actions)",
+            "js/presentation/rendering/weather-overlay.js#forestParticleScale (particle budget)",
+            "js/app/main.js#applyInterfaceSettings (settings wiring)",
+            "js/core/persistence.js#normalizeSettings (persistence)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.250",
+          "label": "Wind movement with species stiffness",
+          "key": "Spruce, birch, oak and palm do not bend the same way in the same gust.",
+          "group": "FOREST PRESENTATION",
+          "status": "implemented",
+          "docEvidence": "FOREST_PRESENTATION_POINTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-presentation.test.js",
+            "tests/browser/forest-presentation-ui.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-presentation.js#FOREST_PRESENTATION_POINTS (catalog)",
+            "js/world/forest-presentation.js#FOREST_PRESENTATION_PROFILES (regional presentation profiles)",
+            "js/systems/forest-presentation.js#forestPresentationGuide (live guide)",
+            "js/systems/forest-presentation.js#forestRenderTuning (render tuning)",
+            "js/systems/forest-presentation.js#forestSoundCue (audio script)",
+            "js/core/forest-ambience.js#setForestScene (procedural audio)",
+            "js/presentation/rendering/terrain.js#drawRegionalGroundTexture (map render)",
+            "js/presentation/forest-atlas-panel.js#presentationBlock (ui)",
+            "js/presentation/management-ui.js#setForestMapFilter (filter actions)",
+            "js/presentation/rendering/weather-overlay.js#forestParticleScale (particle budget)",
+            "js/app/main.js#applyInterfaceSettings (settings wiring)",
+            "js/core/persistence.js#normalizeSettings (persistence)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.251",
+          "label": "Deadwood, root plates and fallen trunks",
+          "key": "A living wood carries its own history on the floor.",
+          "group": "FOREST PRESENTATION",
+          "status": "implemented",
+          "docEvidence": "FOREST_PRESENTATION_POINTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-presentation.test.js",
+            "tests/browser/forest-presentation-ui.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-presentation.js#FOREST_PRESENTATION_POINTS (catalog)",
+            "js/world/forest-presentation.js#FOREST_PRESENTATION_PROFILES (regional presentation profiles)",
+            "js/systems/forest-presentation.js#forestPresentationGuide (live guide)",
+            "js/systems/forest-presentation.js#forestRenderTuning (render tuning)",
+            "js/systems/forest-presentation.js#forestSoundCue (audio script)",
+            "js/core/forest-ambience.js#setForestScene (procedural audio)",
+            "js/presentation/rendering/terrain.js#drawRegionalGroundTexture (map render)",
+            "js/presentation/forest-atlas-panel.js#presentationBlock (ui)",
+            "js/presentation/management-ui.js#setForestMapFilter (filter actions)",
+            "js/presentation/rendering/weather-overlay.js#forestParticleScale (particle budget)",
+            "js/app/main.js#applyInterfaceSettings (settings wiring)",
+            "js/core/persistence.js#normalizeSettings (persistence)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.252",
+          "label": "Understory with ferns, grasses and shrubs",
+          "key": "Each wood has its own low layer, not one generic fern stamp.",
+          "group": "FOREST PRESENTATION",
+          "status": "implemented",
+          "docEvidence": "FOREST_PRESENTATION_POINTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-presentation.test.js",
+            "tests/browser/forest-presentation-ui.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-presentation.js#FOREST_PRESENTATION_POINTS (catalog)",
+            "js/world/forest-presentation.js#FOREST_PRESENTATION_PROFILES (regional presentation profiles)",
+            "js/systems/forest-presentation.js#forestPresentationGuide (live guide)",
+            "js/systems/forest-presentation.js#forestRenderTuning (render tuning)",
+            "js/systems/forest-presentation.js#forestSoundCue (audio script)",
+            "js/core/forest-ambience.js#setForestScene (procedural audio)",
+            "js/presentation/rendering/terrain.js#drawRegionalGroundTexture (map render)",
+            "js/presentation/forest-atlas-panel.js#presentationBlock (ui)",
+            "js/presentation/management-ui.js#setForestMapFilter (filter actions)",
+            "js/presentation/rendering/weather-overlay.js#forestParticleScale (particle budget)",
+            "js/app/main.js#applyInterfaceSettings (settings wiring)",
+            "js/core/persistence.js#normalizeSettings (persistence)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.253",
+          "label": "Blossoms and fruit as seasonal details",
+          "key": "Spring blossom and autumn mast appear on the species that actually carry them.",
+          "group": "FOREST PRESENTATION",
+          "status": "implemented",
+          "docEvidence": "FOREST_PRESENTATION_POINTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-presentation.test.js",
+            "tests/browser/forest-presentation-ui.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-presentation.js#FOREST_PRESENTATION_POINTS (catalog)",
+            "js/world/forest-presentation.js#FOREST_PRESENTATION_PROFILES (regional presentation profiles)",
+            "js/systems/forest-presentation.js#forestPresentationGuide (live guide)",
+            "js/systems/forest-presentation.js#forestRenderTuning (render tuning)",
+            "js/systems/forest-presentation.js#forestSoundCue (audio script)",
+            "js/core/forest-ambience.js#setForestScene (procedural audio)",
+            "js/presentation/rendering/terrain.js#drawRegionalGroundTexture (map render)",
+            "js/presentation/forest-atlas-panel.js#presentationBlock (ui)",
+            "js/presentation/management-ui.js#setForestMapFilter (filter actions)",
+            "js/presentation/rendering/weather-overlay.js#forestParticleScale (particle budget)",
+            "js/app/main.js#applyInterfaceSettings (settings wiring)",
+            "js/core/persistence.js#normalizeSettings (persistence)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.254",
+          "label": "Visible animals and birds in matching forest types",
+          "key": "The right animal appears in the right wood, and birds cross the canopy.",
+          "group": "FOREST PRESENTATION",
+          "status": "implemented",
+          "docEvidence": "FOREST_PRESENTATION_POINTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-presentation.test.js",
+            "tests/browser/forest-presentation-ui.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-presentation.js#FOREST_PRESENTATION_POINTS (catalog)",
+            "js/world/forest-presentation.js#FOREST_PRESENTATION_PROFILES (regional presentation profiles)",
+            "js/systems/forest-presentation.js#forestPresentationGuide (live guide)",
+            "js/systems/forest-presentation.js#forestRenderTuning (render tuning)",
+            "js/systems/forest-presentation.js#forestSoundCue (audio script)",
+            "js/core/forest-ambience.js#setForestScene (procedural audio)",
+            "js/presentation/rendering/terrain.js#drawRegionalGroundTexture (map render)",
+            "js/presentation/forest-atlas-panel.js#presentationBlock (ui)",
+            "js/presentation/management-ui.js#setForestMapFilter (filter actions)",
+            "js/presentation/rendering/weather-overlay.js#forestParticleScale (particle budget)",
+            "js/app/main.js#applyInterfaceSettings (settings wiring)",
+            "js/core/persistence.js#normalizeSettings (persistence)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.255",
+          "label": "Insect clouds and butterflies as atmosphere",
+          "key": "Warm, flowering woods carry a moving haze of insects.",
+          "group": "FOREST PRESENTATION",
+          "status": "implemented",
+          "docEvidence": "FOREST_PRESENTATION_POINTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-presentation.test.js",
+            "tests/browser/forest-presentation-ui.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-presentation.js#FOREST_PRESENTATION_POINTS (catalog)",
+            "js/world/forest-presentation.js#FOREST_PRESENTATION_PROFILES (regional presentation profiles)",
+            "js/systems/forest-presentation.js#forestPresentationGuide (live guide)",
+            "js/systems/forest-presentation.js#forestRenderTuning (render tuning)",
+            "js/systems/forest-presentation.js#forestSoundCue (audio script)",
+            "js/core/forest-ambience.js#setForestScene (procedural audio)",
+            "js/presentation/rendering/terrain.js#drawRegionalGroundTexture (map render)",
+            "js/presentation/forest-atlas-panel.js#presentationBlock (ui)",
+            "js/presentation/management-ui.js#setForestMapFilter (filter actions)",
+            "js/presentation/rendering/weather-overlay.js#forestParticleScale (particle budget)",
+            "js/app/main.js#applyInterfaceSettings (settings wiring)",
+            "js/core/persistence.js#normalizeSettings (persistence)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.256",
+          "label": "Regional forest sounds and animal voices",
+          "key": "Every woodland has its own bed, its own birds and its own weather.",
+          "group": "FOREST PRESENTATION",
+          "status": "implemented",
+          "docEvidence": "FOREST_PRESENTATION_POINTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-presentation.test.js",
+            "tests/browser/forest-presentation-ui.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-presentation.js#FOREST_PRESENTATION_POINTS (catalog)",
+            "js/world/forest-presentation.js#FOREST_PRESENTATION_PROFILES (regional presentation profiles)",
+            "js/systems/forest-presentation.js#forestPresentationGuide (live guide)",
+            "js/systems/forest-presentation.js#forestRenderTuning (render tuning)",
+            "js/systems/forest-presentation.js#forestSoundCue (audio script)",
+            "js/core/forest-ambience.js#setForestScene (procedural audio)",
+            "js/presentation/rendering/terrain.js#drawRegionalGroundTexture (map render)",
+            "js/presentation/forest-atlas-panel.js#presentationBlock (ui)",
+            "js/presentation/management-ui.js#setForestMapFilter (filter actions)",
+            "js/presentation/rendering/weather-overlay.js#forestParticleScale (particle budget)",
+            "js/app/main.js#applyInterfaceSettings (settings wiring)",
+            "js/core/persistence.js#normalizeSettings (persistence)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.257",
+          "label": "Musical instruments from regional woods",
+          "key": "The regional trees become the instruments the wood plays.",
+          "group": "FOREST PRESENTATION",
+          "status": "implemented",
+          "docEvidence": "FOREST_PRESENTATION_POINTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-presentation.test.js",
+            "tests/browser/forest-presentation-ui.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-presentation.js#FOREST_PRESENTATION_POINTS (catalog)",
+            "js/world/forest-presentation.js#FOREST_PRESENTATION_PROFILES (regional presentation profiles)",
+            "js/systems/forest-presentation.js#forestPresentationGuide (live guide)",
+            "js/systems/forest-presentation.js#forestRenderTuning (render tuning)",
+            "js/systems/forest-presentation.js#forestSoundCue (audio script)",
+            "js/core/forest-ambience.js#setForestScene (procedural audio)",
+            "js/presentation/rendering/terrain.js#drawRegionalGroundTexture (map render)",
+            "js/presentation/forest-atlas-panel.js#presentationBlock (ui)",
+            "js/presentation/management-ui.js#setForestMapFilter (filter actions)",
+            "js/presentation/rendering/weather-overlay.js#forestParticleScale (particle budget)",
+            "js/app/main.js#applyInterfaceSettings (settings wiring)",
+            "js/core/persistence.js#normalizeSettings (persistence)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.258",
+          "label": "Silence as an acoustic device in the old wood",
+          "key": "The oldest stands go quiet, and the quiet is the point.",
+          "group": "FOREST PRESENTATION",
+          "status": "implemented",
+          "docEvidence": "FOREST_PRESENTATION_POINTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-presentation.test.js",
+            "tests/browser/forest-presentation-ui.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-presentation.js#FOREST_PRESENTATION_POINTS (catalog)",
+            "js/world/forest-presentation.js#FOREST_PRESENTATION_PROFILES (regional presentation profiles)",
+            "js/systems/forest-presentation.js#forestPresentationGuide (live guide)",
+            "js/systems/forest-presentation.js#forestRenderTuning (render tuning)",
+            "js/systems/forest-presentation.js#forestSoundCue (audio script)",
+            "js/core/forest-ambience.js#setForestScene (procedural audio)",
+            "js/presentation/rendering/terrain.js#drawRegionalGroundTexture (map render)",
+            "js/presentation/forest-atlas-panel.js#presentationBlock (ui)",
+            "js/presentation/management-ui.js#setForestMapFilter (filter actions)",
+            "js/presentation/rendering/weather-overlay.js#forestParticleScale (particle budget)",
+            "js/app/main.js#applyInterfaceSettings (settings wiring)",
+            "js/core/persistence.js#normalizeSettings (persistence)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.259",
+          "label": "Map icons for forest type, use and danger",
+          "key": "A small icon on the map names the wood, what it is used for and what can go wrong.",
+          "group": "FOREST PRESENTATION",
+          "status": "implemented",
+          "docEvidence": "FOREST_PRESENTATION_POINTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-presentation.test.js",
+            "tests/browser/forest-presentation-ui.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-presentation.js#FOREST_PRESENTATION_POINTS (catalog)",
+            "js/world/forest-presentation.js#FOREST_PRESENTATION_PROFILES (regional presentation profiles)",
+            "js/systems/forest-presentation.js#forestPresentationGuide (live guide)",
+            "js/systems/forest-presentation.js#forestRenderTuning (render tuning)",
+            "js/systems/forest-presentation.js#forestSoundCue (audio script)",
+            "js/core/forest-ambience.js#setForestScene (procedural audio)",
+            "js/presentation/rendering/terrain.js#drawRegionalGroundTexture (map render)",
+            "js/presentation/forest-atlas-panel.js#presentationBlock (ui)",
+            "js/presentation/management-ui.js#setForestMapFilter (filter actions)",
+            "js/presentation/rendering/weather-overlay.js#forestParticleScale (particle budget)",
+            "js/app/main.js#applyInterfaceSettings (settings wiring)",
+            "js/core/persistence.js#normalizeSettings (persistence)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.260",
+          "label": "Legends with ecological symbols",
+          "key": "The map symbols are explained in one place, including the ones that are not trees.",
+          "group": "FOREST PRESENTATION",
+          "status": "implemented",
+          "docEvidence": "FOREST_PRESENTATION_POINTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-presentation.test.js",
+            "tests/browser/forest-presentation-ui.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-presentation.js#FOREST_PRESENTATION_POINTS (catalog)",
+            "js/world/forest-presentation.js#FOREST_PRESENTATION_PROFILES (regional presentation profiles)",
+            "js/systems/forest-presentation.js#forestPresentationGuide (live guide)",
+            "js/systems/forest-presentation.js#forestRenderTuning (render tuning)",
+            "js/systems/forest-presentation.js#forestSoundCue (audio script)",
+            "js/core/forest-ambience.js#setForestScene (procedural audio)",
+            "js/presentation/rendering/terrain.js#drawRegionalGroundTexture (map render)",
+            "js/presentation/forest-atlas-panel.js#presentationBlock (ui)",
+            "js/presentation/management-ui.js#setForestMapFilter (filter actions)",
+            "js/presentation/rendering/weather-overlay.js#forestParticleScale (particle budget)",
+            "js/app/main.js#applyInterfaceSettings (settings wiring)",
+            "js/core/persistence.js#normalizeSettings (persistence)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.261",
+          "label": "Tooltips for tree species and forest goods",
+          "key": "Hovering a species chip or a good explains its ecology and its use.",
+          "group": "FOREST PRESENTATION",
+          "status": "implemented",
+          "docEvidence": "FOREST_PRESENTATION_POINTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-presentation.test.js",
+            "tests/browser/forest-presentation-ui.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-presentation.js#FOREST_PRESENTATION_POINTS (catalog)",
+            "js/world/forest-presentation.js#FOREST_PRESENTATION_PROFILES (regional presentation profiles)",
+            "js/systems/forest-presentation.js#forestPresentationGuide (live guide)",
+            "js/systems/forest-presentation.js#forestRenderTuning (render tuning)",
+            "js/systems/forest-presentation.js#forestSoundCue (audio script)",
+            "js/core/forest-ambience.js#setForestScene (procedural audio)",
+            "js/presentation/rendering/terrain.js#drawRegionalGroundTexture (map render)",
+            "js/presentation/forest-atlas-panel.js#presentationBlock (ui)",
+            "js/presentation/management-ui.js#setForestMapFilter (filter actions)",
+            "js/presentation/rendering/weather-overlay.js#forestParticleScale (particle budget)",
+            "js/app/main.js#applyInterfaceSettings (settings wiring)",
+            "js/core/persistence.js#normalizeSettings (persistence)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.262",
+          "label": "Filter by forest type, resource and protection",
+          "key": "The player can narrow sixty types to the wood they actually need.",
+          "group": "FOREST PRESENTATION",
+          "status": "implemented",
+          "docEvidence": "FOREST_PRESENTATION_POINTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-presentation.test.js",
+            "tests/browser/forest-presentation-ui.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-presentation.js#FOREST_PRESENTATION_POINTS (catalog)",
+            "js/world/forest-presentation.js#FOREST_PRESENTATION_PROFILES (regional presentation profiles)",
+            "js/systems/forest-presentation.js#forestPresentationGuide (live guide)",
+            "js/systems/forest-presentation.js#forestRenderTuning (render tuning)",
+            "js/systems/forest-presentation.js#forestSoundCue (audio script)",
+            "js/core/forest-ambience.js#setForestScene (procedural audio)",
+            "js/presentation/rendering/terrain.js#drawRegionalGroundTexture (map render)",
+            "js/presentation/forest-atlas-panel.js#presentationBlock (ui)",
+            "js/presentation/management-ui.js#setForestMapFilter (filter actions)",
+            "js/presentation/rendering/weather-overlay.js#forestParticleScale (particle budget)",
+            "js/app/main.js#applyInterfaceSettings (settings wiring)",
+            "js/core/persistence.js#normalizeSettings (persistence)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.263",
+          "label": "Colour-blind-safe forest type coding",
+          "key": "Forest type is never carried by colour alone.",
+          "group": "FOREST PRESENTATION",
+          "status": "implemented",
+          "docEvidence": "FOREST_PRESENTATION_POINTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-presentation.test.js",
+            "tests/browser/forest-presentation-ui.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-presentation.js#FOREST_PRESENTATION_POINTS (catalog)",
+            "js/world/forest-presentation.js#FOREST_PRESENTATION_PROFILES (regional presentation profiles)",
+            "js/systems/forest-presentation.js#forestPresentationGuide (live guide)",
+            "js/systems/forest-presentation.js#forestRenderTuning (render tuning)",
+            "js/systems/forest-presentation.js#forestSoundCue (audio script)",
+            "js/core/forest-ambience.js#setForestScene (procedural audio)",
+            "js/presentation/rendering/terrain.js#drawRegionalGroundTexture (map render)",
+            "js/presentation/forest-atlas-panel.js#presentationBlock (ui)",
+            "js/presentation/management-ui.js#setForestMapFilter (filter actions)",
+            "js/presentation/rendering/weather-overlay.js#forestParticleScale (particle budget)",
+            "js/app/main.js#applyInterfaceSettings (settings wiring)",
+            "js/core/persistence.js#normalizeSettings (persistence)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.264",
+          "label": "Contrast mode for dense canopy rendering",
+          "key": "In a closed wood the crowns must not merge into one dark mass.",
+          "group": "FOREST PRESENTATION",
+          "status": "implemented",
+          "docEvidence": "FOREST_PRESENTATION_POINTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-presentation.test.js",
+            "tests/browser/forest-presentation-ui.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-presentation.js#FOREST_PRESENTATION_POINTS (catalog)",
+            "js/world/forest-presentation.js#FOREST_PRESENTATION_PROFILES (regional presentation profiles)",
+            "js/systems/forest-presentation.js#forestPresentationGuide (live guide)",
+            "js/systems/forest-presentation.js#forestRenderTuning (render tuning)",
+            "js/systems/forest-presentation.js#forestSoundCue (audio script)",
+            "js/core/forest-ambience.js#setForestScene (procedural audio)",
+            "js/presentation/rendering/terrain.js#drawRegionalGroundTexture (map render)",
+            "js/presentation/forest-atlas-panel.js#presentationBlock (ui)",
+            "js/presentation/management-ui.js#setForestMapFilter (filter actions)",
+            "js/presentation/rendering/weather-overlay.js#forestParticleScale (particle budget)",
+            "js/app/main.js#applyInterfaceSettings (settings wiring)",
+            "js/core/persistence.js#normalizeSettings (persistence)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.265",
+          "label": "Adjustable font size in forest dialogs",
+          "key": "The atlas can be read comfortably without zooming the browser.",
+          "group": "FOREST PRESENTATION",
+          "status": "implemented",
+          "docEvidence": "FOREST_PRESENTATION_POINTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-presentation.test.js",
+            "tests/browser/forest-presentation-ui.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-presentation.js#FOREST_PRESENTATION_POINTS (catalog)",
+            "js/world/forest-presentation.js#FOREST_PRESENTATION_PROFILES (regional presentation profiles)",
+            "js/systems/forest-presentation.js#forestPresentationGuide (live guide)",
+            "js/systems/forest-presentation.js#forestRenderTuning (render tuning)",
+            "js/systems/forest-presentation.js#forestSoundCue (audio script)",
+            "js/core/forest-ambience.js#setForestScene (procedural audio)",
+            "js/presentation/rendering/terrain.js#drawRegionalGroundTexture (map render)",
+            "js/presentation/forest-atlas-panel.js#presentationBlock (ui)",
+            "js/presentation/management-ui.js#setForestMapFilter (filter actions)",
+            "js/presentation/rendering/weather-overlay.js#forestParticleScale (particle budget)",
+            "js/app/main.js#applyInterfaceSettings (settings wiring)",
+            "js/core/persistence.js#normalizeSettings (persistence)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.266",
+          "label": "Reduced motion for wind and leaves",
+          "key": "Players who ask for less motion get a still wood, not a broken one.",
+          "group": "FOREST PRESENTATION",
+          "status": "implemented",
+          "docEvidence": "FOREST_PRESENTATION_POINTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-presentation.test.js",
+            "tests/browser/forest-presentation-ui.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-presentation.js#FOREST_PRESENTATION_POINTS (catalog)",
+            "js/world/forest-presentation.js#FOREST_PRESENTATION_PROFILES (regional presentation profiles)",
+            "js/systems/forest-presentation.js#forestPresentationGuide (live guide)",
+            "js/systems/forest-presentation.js#forestRenderTuning (render tuning)",
+            "js/systems/forest-presentation.js#forestSoundCue (audio script)",
+            "js/core/forest-ambience.js#setForestScene (procedural audio)",
+            "js/presentation/rendering/terrain.js#drawRegionalGroundTexture (map render)",
+            "js/presentation/forest-atlas-panel.js#presentationBlock (ui)",
+            "js/presentation/management-ui.js#setForestMapFilter (filter actions)",
+            "js/presentation/rendering/weather-overlay.js#forestParticleScale (particle budget)",
+            "js/app/main.js#applyInterfaceSettings (settings wiring)",
+            "js/core/persistence.js#normalizeSettings (persistence)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.267",
+          "label": "Subtitles for animal voices and forest sounds",
+          "key": "Every sound cue can be read as well as heard.",
+          "group": "FOREST PRESENTATION",
+          "status": "implemented",
+          "docEvidence": "FOREST_PRESENTATION_POINTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-presentation.test.js",
+            "tests/browser/forest-presentation-ui.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-presentation.js#FOREST_PRESENTATION_POINTS (catalog)",
+            "js/world/forest-presentation.js#FOREST_PRESENTATION_PROFILES (regional presentation profiles)",
+            "js/systems/forest-presentation.js#forestPresentationGuide (live guide)",
+            "js/systems/forest-presentation.js#forestRenderTuning (render tuning)",
+            "js/systems/forest-presentation.js#forestSoundCue (audio script)",
+            "js/core/forest-ambience.js#setForestScene (procedural audio)",
+            "js/presentation/rendering/terrain.js#drawRegionalGroundTexture (map render)",
+            "js/presentation/forest-atlas-panel.js#presentationBlock (ui)",
+            "js/presentation/management-ui.js#setForestMapFilter (filter actions)",
+            "js/presentation/rendering/weather-overlay.js#forestParticleScale (particle budget)",
+            "js/app/main.js#applyInterfaceSettings (settings wiring)",
+            "js/core/persistence.js#normalizeSettings (persistence)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.268",
+          "label": "Performance mode with less tree movement",
+          "key": "A weaker device keeps the forest readable with a quieter canopy.",
+          "group": "FOREST PRESENTATION",
+          "status": "implemented",
+          "docEvidence": "FOREST_PRESENTATION_POINTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-presentation.test.js",
+            "tests/browser/forest-presentation-ui.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-presentation.js#FOREST_PRESENTATION_POINTS (catalog)",
+            "js/world/forest-presentation.js#FOREST_PRESENTATION_PROFILES (regional presentation profiles)",
+            "js/systems/forest-presentation.js#forestPresentationGuide (live guide)",
+            "js/systems/forest-presentation.js#forestRenderTuning (render tuning)",
+            "js/systems/forest-presentation.js#forestSoundCue (audio script)",
+            "js/core/forest-ambience.js#setForestScene (procedural audio)",
+            "js/presentation/rendering/terrain.js#drawRegionalGroundTexture (map render)",
+            "js/presentation/forest-atlas-panel.js#presentationBlock (ui)",
+            "js/presentation/management-ui.js#setForestMapFilter (filter actions)",
+            "js/presentation/rendering/weather-overlay.js#forestParticleScale (particle budget)",
+            "js/app/main.js#applyInterfaceSettings (settings wiring)",
+            "js/core/persistence.js#normalizeSettings (persistence)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.269",
+          "label": "Reduced particles for rain and leaves",
+          "key": "Weather stays visible without filling the screen with particles.",
+          "group": "FOREST PRESENTATION",
+          "status": "implemented",
+          "docEvidence": "FOREST_PRESENTATION_POINTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-presentation.test.js",
+            "tests/browser/forest-presentation-ui.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-presentation.js#FOREST_PRESENTATION_POINTS (catalog)",
+            "js/world/forest-presentation.js#FOREST_PRESENTATION_PROFILES (regional presentation profiles)",
+            "js/systems/forest-presentation.js#forestPresentationGuide (live guide)",
+            "js/systems/forest-presentation.js#forestRenderTuning (render tuning)",
+            "js/systems/forest-presentation.js#forestSoundCue (audio script)",
+            "js/core/forest-ambience.js#setForestScene (procedural audio)",
+            "js/presentation/rendering/terrain.js#drawRegionalGroundTexture (map render)",
+            "js/presentation/forest-atlas-panel.js#presentationBlock (ui)",
+            "js/presentation/management-ui.js#setForestMapFilter (filter actions)",
+            "js/presentation/rendering/weather-overlay.js#forestParticleScale (particle budget)",
+            "js/app/main.js#applyInterfaceSettings (settings wiring)",
+            "js/core/persistence.js#normalizeSettings (persistence)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.270",
+          "label": "Alternative map view for weak devices",
+          "key": "A cartographic woodland view replaces thousands of crowns on demand.",
+          "group": "FOREST PRESENTATION",
+          "status": "implemented",
+          "docEvidence": "FOREST_PRESENTATION_POINTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-presentation.test.js",
+            "tests/browser/forest-presentation-ui.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-presentation.js#FOREST_PRESENTATION_POINTS (catalog)",
+            "js/world/forest-presentation.js#FOREST_PRESENTATION_PROFILES (regional presentation profiles)",
+            "js/systems/forest-presentation.js#forestPresentationGuide (live guide)",
+            "js/systems/forest-presentation.js#forestRenderTuning (render tuning)",
+            "js/systems/forest-presentation.js#forestSoundCue (audio script)",
+            "js/core/forest-ambience.js#setForestScene (procedural audio)",
+            "js/presentation/rendering/terrain.js#drawRegionalGroundTexture (map render)",
+            "js/presentation/forest-atlas-panel.js#presentationBlock (ui)",
+            "js/presentation/management-ui.js#setForestMapFilter (filter actions)",
+            "js/presentation/rendering/weather-overlay.js#forestParticleScale (particle budget)",
+            "js/app/main.js#applyInterfaceSettings (settings wiring)",
+            "js/core/persistence.js#normalizeSettings (persistence)"
+          ],
+          "probe": null
+        }
+      ],
+      "consumers": [
+        {
+          "file": "js/world/forest-presentation.js",
+          "symbol": "FOREST_PRESENTATION_POINTS",
+          "role": "catalog",
+          "valid": true
+        },
+        {
+          "file": "js/world/forest-presentation.js",
+          "symbol": "FOREST_PRESENTATION_PROFILES",
+          "role": "regional presentation profiles",
+          "valid": true
+        },
+        {
+          "file": "js/systems/forest-presentation.js",
+          "symbol": "forestPresentationGuide",
+          "role": "live guide",
+          "valid": true
+        },
+        {
+          "file": "js/systems/forest-presentation.js",
+          "symbol": "forestRenderTuning",
+          "role": "render tuning",
+          "valid": true
+        },
+        {
+          "file": "js/systems/forest-presentation.js",
+          "symbol": "forestSoundCue",
+          "role": "audio script",
+          "valid": true
+        },
+        {
+          "file": "js/core/forest-ambience.js",
+          "symbol": "setForestScene",
+          "role": "procedural audio",
+          "valid": true
+        },
+        {
+          "file": "js/presentation/rendering/terrain.js",
+          "symbol": "drawRegionalGroundTexture",
+          "role": "map render",
+          "valid": true
+        },
+        {
+          "file": "js/presentation/forest-atlas-panel.js",
+          "symbol": "presentationBlock",
+          "role": "ui",
+          "valid": true
+        },
+        {
+          "file": "js/presentation/management-ui.js",
+          "symbol": "setForestMapFilter",
+          "role": "filter actions",
+          "valid": true
+        },
+        {
+          "file": "js/presentation/rendering/weather-overlay.js",
+          "symbol": "forestParticleScale",
+          "role": "particle budget",
+          "valid": true
+        },
+        {
+          "file": "js/app/main.js",
+          "symbol": "applyInterfaceSettings",
+          "role": "settings wiring",
+          "valid": true
+        },
+        {
+          "file": "js/core/persistence.js",
+          "symbol": "normalizeSettings",
+          "role": "persistence",
+          "valid": true
+        }
+      ],
+      "tests": [
+        {
+          "file": "tests/systems/forest-presentation.test.js",
+          "valid": true
+        },
+        {
+          "file": "tests/browser/forest-presentation-ui.mjs",
+          "valid": true
+        }
+      ],
+      "source": "js/world/forest-presentation.js",
+      "note": "30 player-facing forest presentation, audio, UI and accessibility requirements from FOREST_PRESENTATION_POINTS; each names its live consumer in the atlas.",
       "probeFunction": null,
       "probeClimate": "temperate",
       "probeExtra": {},

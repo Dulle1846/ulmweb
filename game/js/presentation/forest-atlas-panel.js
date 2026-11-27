@@ -32,6 +32,12 @@ import {
     forestStewardshipAt, forestSuccessionAt, forestSuccessionChronicle,
     forestSuccessionStats,
 } from "../systems/forest-succession.js";
+import {
+    forestDangerLegend, forestFilterOptions, forestLegendEntries, forestMapFilters,
+    forestMatchesFilters, forestPresentationGuide, forestPresentationSettings,
+    forestPresentationSummary, forestUseLegend,
+} from "../systems/forest-presentation.js";
+import { FOREST_PROTECTION_STATES, forestPresentationProfile } from "../world/forest-presentation.js";
 
 const esc = value => String(value ?? "").replace(/[&<>"']/g, character => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
@@ -254,16 +260,34 @@ function meter(label, value, detail = "") {
 function speciesList(type) {
     const entries = Object.entries(type.species || {}).sort((a, b) => b[1] - a[1]);
     return entries.slice(0, 5).map(([id, weight]) => {
-        const label = REGIONAL_SPECIES[id]?.label || id.replace(/-/g, " ");
-        return '<span class="forest-atlas__chip">' + esc(label) + ' <b>' + Math.round(weight * 100) + '%</b></span>';
+        const species = REGIONAL_SPECIES[id] || {};
+        const label = species.label || id.replace(/-/g, " ");
+        // 1.2.23.1.261: the chip explains the tree, not only its share.
+        const tip = [
+            species.latin || label,
+            species.form ? species.form + ' form' : null,
+            species.leafShape ? species.leafShape + ' leaf' : null,
+            species.timber ? 'timber ×' + Number(species.timber).toFixed(2) : null,
+            species.firewood ? 'firewood ×' + Number(species.firewood).toFixed(2) : null,
+            (species.understory || []).length ? 'understorey ' + species.understory.join(', ') : null,
+        ].filter(Boolean).join(' · ');
+        return '<span class="forest-atlas__chip" tabindex="0" title="' + esc(tip) + '">'
+            + esc(label) + ' <b>' + Math.round(weight * 100) + '%</b></span>';
     }).join("");
 }
 
 function goodsList(type) {
     const goods = (type.goods || []).slice(0, 10);
-    return goods.map(id => '<span class="forest-atlas__good">'
-        + esc(FOREST_GOODS[id]?.label || String(id).replace(/-/g, " "))
-        + ' <small>' + esc(forestGoodUseLabel(id) || "market") + '</small></span>').join("");
+    return goods.map(id => {
+        const good = FOREST_GOODS[id] || {};
+        const label = good.label || String(id).replace(/-/g, " ");
+        const use = forestGoodUseLabel(id) || "market";
+        const tip = [label, good.category ? String(good.category) : null, use,
+            good.season ? good.season + ' season' : null]
+            .filter(Boolean).join(' · ');
+        return '<span class="forest-atlas__good" tabindex="0" title="' + esc(tip) + '">'
+            + esc(label) + ' <small>' + esc(use) + '</small></span>';
+    }).join("");
 }
 
 function characterLine(type, currentSeason) {
@@ -918,6 +942,116 @@ function industryBlock() {
         + '<div class="forest-atlas__guide-grid">' + requirementRows + '</div></details>';
 }
 
+// 1.2.23.1.259–267: the atlas is also the player's map-reading and
+// accessibility panel. Everything here is generated from the same profile
+// tables, filter state and guide rows the renderer and ambience read, so a
+// legend entry cannot describe a symbol the map no longer draws.
+function presentationFilterChip(group, option, current) {
+    const active = current === option.id;
+    return '<button type="button" class="forest-atlas__filter-chip is-pattern-'
+        + esc(group.pattern || 'dots') + (active ? ' is-current' : '') + '" data-forest-filter="'
+        + esc(group.id) + '" data-forest-filter-value="' + esc(option.id) + '" aria-pressed="'
+        + (active ? 'true' : 'false') + '">' + esc(option.label) + '</button>';
+}
+
+function presentationBlock() {
+    const settings = forestPresentationSettings();
+    const summary = forestPresentationSummary();
+    const scene = summary.scene || {};
+    const profile = scene.profile || null;
+    const filters = forestMapFilters();
+    const groups = forestFilterOptions();
+    const legend = forestLegendEntries();
+    const uses = forestUseLegend();
+    const dangers = forestDangerLegend();
+    const guide = forestPresentationGuide(scene);
+    const patternGroups = groups.map(group => ({
+        ...group,
+        pattern: group.id === 'family' ? 'chevron' : group.id === 'resource' ? 'rays' : 'dots',
+    }));
+    const familyPatterns = { conifer: 'chevron', emergent: 'diamond', broadleaf: 'dots', airy: 'rays', coastal: 'waves', riparian: 'waves', dry: 'cross', columnar: 'bars', umbrella: 'rings', baobab: 'rings', thorn: 'cross', mangrove: 'waves', bamboo: 'bars', scrub: 'dots', willow: 'waves', heath: 'chevron' };
+    const legendRows = legend.map(entry => '<div class="forest-atlas__legend-entry" data-forest-legend="'
+        + esc(entry.family) + '"><span class="forest-atlas__legend-swatch is-pattern-'
+        + esc(familyPatterns[entry.family] || entry.pattern) + '" aria-hidden="true"><b>'
+        + esc(entry.icon) + '</b></span><div><strong>' + esc(entry.label) + '</strong><small>'
+        + esc(entry.detail) + ' · ' + esc(entry.ground) + ' · ' + esc(entry.light)
+        + '</small></div></div>').join("");
+    const useRows = uses.map(entry => '<div class="forest-atlas__legend-entry" data-forest-use="'
+        + esc(entry.id) + '"><span class="forest-atlas__legend-glyph" aria-hidden="true">'
+        + esc(entry.glyph) + '</span><div><strong>' + esc(entry.label) + '</strong><small>'
+        + esc(entry.detail) + '</small></div></div>').join("");
+    const dangerRows = dangers.map(entry => '<div class="forest-atlas__legend-entry" data-forest-danger="'
+        + esc(entry.id) + '"><span class="forest-atlas__legend-glyph" aria-hidden="true">'
+        + esc(entry.glyph) + '</span><div><strong>' + esc(entry.label) + '</strong><small>'
+        + esc(entry.detail) + '</small></div></div>').join("");
+    const protectionRows = FOREST_PROTECTION_STATES.filter(entry => entry.id !== 'all')
+        .map(entry => '<span class="forest-atlas__protection" data-forest-protection="'
+            + esc(entry.id) + '">' + esc(entry.label) + '</span>').join("");
+    const filterGroups = patternGroups.map(group => '<div class="forest-atlas__filter-group" data-forest-filter-group="'
+        + esc(group.id) + '"><small>' + esc(group.label) + '</small><div class="forest-atlas__filter-row">'
+        + group.options.map(option => presentationFilterChip(group, option, filters[group.id])).join("")
+        + '</div></div>').join("");
+    const activeCount = Object.values(filters).filter(value => value !== 'all').length;
+    const guideRows = guide.map(entry => '<article class="forest-atlas__guide-point forest-atlas__presentation-point" data-presentation-point="'
+        + esc(entry.id) + '" data-presentation-group="' + esc(entry.group) + '">'
+        + '<div class="forest-atlas__guide-head"><b>' + esc(entry.id.slice(-3)) + '</b><span>'
+        + esc(entry.group.toUpperCase()) + '</span></div><h4>' + esc(entry.title) + '</h4>'
+        + '<p><b>WHAT IT DOES</b> ' + esc(entry.point) + '</p>'
+        + '<p><b>LIVE IN THIS WOOD</b> ' + esc(entry.value) + '</p>'
+        + '<small>' + esc(entry.consumer) + '</small>'
+        + '<p class="forest-atlas__presentation-detail">' + esc(entry.detail) + '</p></article>').join("");
+    const settingChips = [
+        ['Ambience', settings.forestAmbience ? 'ON · ' + Math.round(settings.forestAmbienceVolume * 100) + '%' : 'OFF'],
+        ['Subtitles', settings.forestSubtitles ? 'ON' : 'OFF'],
+        ['Colour-blind', settings.forestColorblind ? 'ON' : 'OFF'],
+        ['Canopy contrast', settings.forestCanopyContrast ? 'ON' : 'OFF'],
+        ['Forest text', String(settings.forestFontScale).toUpperCase()],
+        ['Performance', settings.forestPerformance ? 'ON' : 'OFF'],
+        ['Particles', settings.forestReducedParticles ? 'REDUCED' : 'FULL'],
+        ['Map view', settings.forestMapView === 'symbolic' ? 'SYMBOLIC' : 'DETAILED'],
+    ].map(([label, value]) => '<span><small>' + esc(label) + '</small><strong>' + esc(value) + '</strong></span>').join("");
+    return '<section class="forest-atlas__presentation' + (settings.forestColorblind ? ' ui-forest-colorblind' : '')
+        + (settings.forestCanopyContrast ? ' ui-forest-contrast' : '')
+        + (settings.forestFontScale === 'normal' ? '' : ' forest-font-' + esc(settings.forestFontScale))
+        + '" data-forest-presentation="' + number(guide.length)
+        + '" data-presentation-profiles="' + number(summary.profiles)
+        + '" data-presentation-patterns="' + number(summary.patterns.length) + '">'
+        + '<div class="command-section-title">FOREST PRESENTATION, AUDIO &amp; ACCESSIBILITY · 1.2.23.1.241–270 · '
+        + number(guide.length) + ' POINTS</div>'
+        + '<p class="command-note">Sixty regional woods share one visual, acoustic and cartographic language. '
+        + 'The legend below is generated from the same profile tables the map draws from; the filters narrow the sixty types by family, resource and protection; '
+        + 'the field guide reads each point against the reference wood: '
+        + (profile ? esc(profile.short) + ' · ' + esc(profile.silhouette) + ' · ' + esc(profile.fog.label) : 'no wooded reference tile in view')
+        + '.</p>'
+        + '<div class="command-summary forest-atlas__presentation-summary">'
+        + '<div><small>PROFILES</small><strong>' + number(summary.profiles) + ' / ' + number(summary.families.length) + ' FAMILIES</strong></div>'
+        + '<div><small>PATTERNS</small><strong>' + number(summary.patterns.length) + '</strong></div>'
+        + '<div><small>FOG TYPES</small><strong>' + number(summary.fogs.length) + '</strong></div>'
+        + '<div><small>GROUND WEAVES</small><strong>' + number(summary.grounds.length) + '</strong></div>'
+        + '<div><small>FILTERS ACTIVE</small><strong data-forest-filter-status="' + activeCount + '">' + number(activeCount) + ' / 3</strong></div>'
+        + '<div><small>REFERENCE WOOD</small><strong>' + (profile ? esc(profile.id.slice(-3)) + ' · ' + esc(profile.family.toUpperCase()) : '—') + '</strong></div></div>'
+        + '<div class="command-section-title">FILTER THE ATLAS · FAMILY, RESOURCE, PROTECTION</div>'
+        + '<div class="forest-atlas__filter-bar" role="group" aria-label="Forest atlas filters">' + filterGroups
+        + '<div class="forest-atlas__filter-group"><small>RESET</small><button type="button" class="forest-atlas__filter-chip" data-forest-filter-reset="1">ALL SIXTY TYPES</button></div></div>'
+        + '<div class="command-section-title">LEGEND · ECOLOGICAL SYMBOLS</div>'
+        + '<div class="forest-atlas__legend-grid">' + legendRows + '</div>'
+        + '<div class="forest-atlas__legend-grid forest-atlas__legend-grid--compact">' + useRows + dangerRows + '</div>'
+        + '<div class="forest-atlas__legend-protection"><b>PROTECTION</b> ' + protectionRows + '</div>'
+        + '<div class="command-section-title">ACCESSIBILITY &amp; PERFORMANCE SETTINGS IN THIS VIEW</div>'
+        + '<div class="forest-atlas__presentation-settings" data-forest-settings="' + esc(settings.forestMapView) + '">' + settingChips + '</div>'
+        + '<p class="command-note">Change these in Settings → FOREST PRESENTATION &amp; ACCESSIBILITY. '
+        + 'Forest text scales the atlas cards, notes, chips and this guide without changing the map. '
+        + 'Colour-blind mode adds the family patterns shown above; canopy contrast separates mass crowns from the shade; '
+        + 'performance mode and the symbolic map view cut presentation work without touching the simulation or the save.</p>'
+        + '<details class="forest-atlas__field-guide forest-atlas__presentation-guide" data-presentation-guide="'
+        + number(guide.length) + '"><summary><span>FIELD GUIDE · ' + number(guide.length) + ' POINTS</span>'
+        + '<strong>Appearance, sound, map reading and access</strong><em>1.2.23.1.241–270 · live readings from the reference wood</em></summary>'
+        + '<p class="forest-atlas__guide-intro">Each point names the system that makes it real in play and its current reading. '
+        + 'Regional colour, silhouette, fog, ground, wind, fauna and sound all come from the same sixty-type profile; '
+        + 'the accessibility controls change presentation only, never simulation, save compatibility or determinism.</p>'
+        + '<div class="forest-atlas__guide-grid">' + guideRows + '</div></details></section>';
+}
+
 export function renderForestAtlasPanel() {
     const survey = forestAtlasSurvey();
     if (!survey.available) {
@@ -944,7 +1078,22 @@ export function renderForestAtlasPanel() {
         + 'The pulse is read from the real succession tiles, the shared chunk budget and the bounded model cache. '
         + 'Chunk builds: ' + number(survey.telemetry?.chunksBuilt) + ' · max ' + number(survey.telemetry?.maxMs)
         + ' ms · types seen: ' + number(survey.telemetry?.typesSeen) + '. No per-tile work is added to the simulation tick.</p>';
-    const cards = REGIONAL_FOREST_TYPES.map(type => {
+    // 1.2.23.1.262: the three filter groups narrow the card list in place.
+    // Family and resource come from the shared presentation profile; protection
+    // is derived from the same live sample the survey already collected.
+    const visibleTypes = REGIONAL_FOREST_TYPES.filter(type => {
+        const profile = forestPresentationProfile(type.id);
+        const row = survey.types.find(entry => entry.id === type.id);
+        const region = survey.regions.find(entry => entry.id === type.id);
+        const protection = region?.disturbances?.active > 0 ? 'disturbed'
+            : row?.dynamics?.silviculture?.system ? 'managed' : 'unmanaged';
+        return forestMatchesFilters({
+            family: profile?.family,
+            resources: profile?.resources || [],
+            protection,
+        });
+    });
+    const cards = visibleTypes.map(type => {
         const row = survey.types.find(entry => entry.id === type.id);
         return card(type, row?.count || 0, survey.sampled, row?.transitionCount || 0, currentSeason, row?.dynamics || null, row?.fauna || null, row?.model || null);
     }).join("");
@@ -966,12 +1115,13 @@ export function renderForestAtlasPanel() {
         + '<div><small>TRANSITION EDGES</small><strong>' + number(survey.transitionSamples) + '</strong></div>'
         + '<div><small>SEASON</small><strong>' + esc(survey.season.toUpperCase()) + '</strong></div></div>'
         + processBlock
+        + presentationBlock()
         + industryBlock()
         + cultureBlock()
         + warfareBlock()
         + regionHistoryBlock(survey)
         + faunaFieldGuide(survey)
-        + '<div class="forest-atlas">' + cards + '</div>'
+        + '<div class="forest-atlas">' + (cards || '<p class="command-note" data-forest-filter-empty="1">No regional type matches the active filters. Reset the filter bar above to show all sixty types.</p>') + '</div>'
         + '<p class="command-note">The realm count comes from a bounded deterministic sample of up to ' + number(SURVEY_LIMIT)
         + ' forest tiles; it is a survey, not a per-frame scan. Timber, regrowth, wildlife, forage and work are live simulation inputs: they price lumber batches, gathering yields, regrowth and habitat. Flood raises the spoilage of a perishable harvest, and a signature good pays a bonus in its own season. The ecology block is taken from the first surveyed tile of each type: it reports the actual mixture class, succession phase, seed bank, mother trees, genetic breadth, site fitness, disease resistance, silvicultural system, roots, humus, mycorrhiza, understorey, lianas, epiphytes and canopy gaps. Timber prices are the current seasonal base quote of the regional timber market in the Royal Stores.</p>';
 }

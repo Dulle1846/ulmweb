@@ -10,6 +10,7 @@
 
 import { state } from '../../core/state.js';
 import { seasonalState } from '../../world/season.js';
+import { forestParticleScale } from '../../systems/forest-presentation.js';
 
 const SNOW_COUNT = 170;
 const RAIN_COUNT = 160;
@@ -61,13 +62,18 @@ export function drawWeatherOverlay(ctx, canvas, time = performance.now() / 1000)
     if (width < 2 || height < 2) return false;
 
     const unit = Math.max(0.75, Math.min(2.4, width / 960));
+    // The reduced-particle setting is shared with the forest pass, so weather
+    // and leaf motes never disagree about how heavy the screen should be.
+    const particleScale = forestParticleScale();
+    const snowCount = Math.max(28, Math.round(SNOW_COUNT * particleScale));
+    const rainCount = Math.max(24, Math.round(RAIN_COUNT * particleScale));
     ctx.save();
     if (kind === 'snow') {
         // A faint cold veil makes the whole layout read as a snowy day.
         ctx.fillStyle = 'rgba(214, 233, 248, 0.10)';
         ctx.fillRect(0, 0, width, height);
         ctx.fillStyle = '#eef7ff';
-        for (const flake of weatherParticles(time, 'snow', SNOW_COUNT)) {
+        for (const flake of weatherParticles(time, 'snow', snowCount)) {
             ctx.globalAlpha = flake.alpha;
             ctx.beginPath();
             ctx.arc(flake.x * width, flake.y * height, flake.size * unit * 1.05, 0, Math.PI * 2);
@@ -78,7 +84,7 @@ export function drawWeatherOverlay(ctx, canvas, time = performance.now() / 1000)
         ctx.fillRect(0, 0, width, height);
         ctx.strokeStyle = 'rgba(184, 214, 232, 0.55)';
         ctx.lineWidth = Math.max(1, unit * 0.7);
-        for (const drop of weatherParticles(time, 'rain', RAIN_COUNT)) {
+        for (const drop of weatherParticles(time, 'rain', rainCount)) {
             const x = drop.x * width;
             const y = drop.y * height;
             const length = (12 + drop.size * 10) * unit;

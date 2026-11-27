@@ -475,6 +475,31 @@ const WAR_SPEC = Object.freeze({
     tests: ["tests/systems/forest-warfare.test.js"]
 });
 
+const PRESENTATION_SPEC = Object.freeze({
+    id: "1.2.23.1.241-270",
+    title: "Forest presentation, audio, UI and accessibility",
+    file: "js/world/forest-presentation.js",
+    manifest: "FOREST_PRESENTATION_POINTS",
+    consumers: [
+        { file: "js/world/forest-presentation.js", symbol: "FOREST_PRESENTATION_POINTS", role: "catalog" },
+        { file: "js/world/forest-presentation.js", symbol: "FOREST_PRESENTATION_PROFILES", role: "regional presentation profiles" },
+        { file: "js/systems/forest-presentation.js", symbol: "forestPresentationGuide", role: "live guide" },
+        { file: "js/systems/forest-presentation.js", symbol: "forestRenderTuning", role: "render tuning" },
+        { file: "js/systems/forest-presentation.js", symbol: "forestSoundCue", role: "audio script" },
+        { file: "js/core/forest-ambience.js", symbol: "setForestScene", role: "procedural audio" },
+        { file: "js/presentation/rendering/terrain.js", symbol: "drawRegionalGroundTexture", role: "map render" },
+        { file: "js/presentation/forest-atlas-panel.js", symbol: "presentationBlock", role: "ui" },
+        { file: "js/presentation/management-ui.js", symbol: "setForestMapFilter", role: "filter actions" },
+        { file: "js/presentation/rendering/weather-overlay.js", symbol: "forestParticleScale", role: "particle budget" },
+        { file: "js/app/main.js", symbol: "applyInterfaceSettings", role: "settings wiring" },
+        { file: "js/core/persistence.js", symbol: "normalizeSettings", role: "persistence" }
+    ],
+    tests: [
+        "tests/systems/forest-presentation.test.js",
+        "tests/browser/forest-presentation-ui.mjs"
+    ]
+});
+
 const INDUSTRY_SPEC = Object.freeze({
     id: "1.2.23.1.151-180",
     title: "Regional forest economy and workshops",
@@ -1204,6 +1229,29 @@ export function runSpecAudit({ write = false } = {}) {
         sections.push(built);
     }
     {
+        const module = awaitImport(PRESENTATION_SPEC.file);
+        const manifest = module[PRESENTATION_SPEC.manifest];
+        if (!Array.isArray(manifest)) throw new Error("forest presentation manifest missing");
+        const built = section(PRESENTATION_SPEC.id, PRESENTATION_SPEC.title, manifest.map(entry => ({
+            id: entry.id,
+            label: entry.title,
+            key: entry.point,
+            group: "FOREST PRESENTATION",
+            status: "implemented",
+            docEvidence: "FOREST_PRESENTATION_POINTS",
+            evidence: [],
+            tests: []
+        })), {
+            source: PRESENTATION_SPEC.file,
+            note: `${manifest.length} player-facing forest presentation, audio, UI and accessibility requirements from ${PRESENTATION_SPEC.manifest}; each names its live consumer in the atlas.`
+        });
+        built.consumers = checkedReferences(PRESENTATION_SPEC.consumers);
+        built.tests = testsValid(PRESENTATION_SPEC.tests);
+        built.probeAvailable = false;
+        built.probeObserved = 0;
+        sections.push(built);
+    }
+    {
         const module = awaitImport(INDUSTRY_SPEC.file);
         const manifest = module[INDUSTRY_SPEC.manifest];
         if (!Array.isArray(manifest)) throw new Error("regional forest economy manifest missing");
@@ -1422,7 +1470,8 @@ const MODULE_PATHS = [
     SPECIAL_SECTION.file,
     INDUSTRY_SPEC.file,
     CULTURE_SPEC.file,
-    WAR_SPEC.file
+    WAR_SPEC.file,
+    PRESENTATION_SPEC.file
 ];
 for (const relative of MODULE_PATHS) {
     const absolute = path.join(ROOT, relative);
