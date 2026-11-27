@@ -781,6 +781,51 @@ const SYSTEM_SPECS = [
         consumers: [{ file: "js/systems/creatures.js", symbol: "updateCreatures", role: "simulation" }, { file: "js/presentation/rendering/entities.js", symbol: "drawEntity", role: "renderer" }],
         tests: ["tests/systems/depth.test.js"]
     }),
+    section("3.11", "Royal expeditions and biome follow-up chains", [
+        { id: "3.11.1", label: "One bounded follow-up chain per existing landmark from SITE_CHAINS", evidence: [
+            { file: "js/systems/expeditions.js", symbol: "SITE_CHAINS", role: "chain catalog" },
+            { file: "js/systems/expeditions.js", symbol: "MAX_SITES", role: "site bound" }
+        ], tests: ["tests/systems/expeditions.test.js"] },
+        { id: "3.11.2", label: "Blight study and quarantine arm one follow-up; purge and ignore do not", evidence: [
+            { file: "js/systems/special-biome-couplings.js", symbol: "blightChoices", role: "decision catalog" },
+            { file: "js/systems/special-biome-couplings.js", symbol: "resolveBlightDecision", role: "decision" },
+            { file: "js/systems/expeditions.js", symbol: "armSiteChainFollowUp", role: "field order" },
+            { file: "js/systems/expeditions.js", symbol: "SITE_CHAIN_CLAIMS", role: "claim guard" }
+        ], tests: ["tests/systems/special-biome-couplings.test.js", "tests/browser/biome-atlas-ui.mjs"] },
+        { id: "3.11.3", label: "Four named stages are exposed through chainStage and the Explore panel", evidence: [
+            { file: "js/systems/expeditions.js", symbol: "CHAIN_STAGE_LABELS", role: "stage labels" },
+            { file: "js/systems/expeditions.js", symbol: "chainStage", role: "state" },
+            { file: "js/presentation/expeditions-panel.js", symbol: "FOLLOW-UP ·", role: "badge" },
+            { file: "js/presentation/expeditions-panel.js", symbol: "CHAINS CLOSED", role: "counter" },
+            { file: "css/diplomacy.css", symbol: "expedition-site__chain", role: "presentation" }
+        ], tests: ["tests/systems/expeditions.test.js", "tests/browser/expeditions-ui.mjs"] },
+        { id: "3.11.4", label: "Fixed +6/+0.12 study and +3/+0.05 quarantine modifiers reuse the existing score stream", evidence: [
+            { file: "js/systems/expeditions.js", symbol: "SITE_CHAINS", role: "fixed modifiers" },
+            { file: "js/systems/expeditions.js", symbol: "chainBonus", role: "score" },
+            { file: "js/systems/expeditions.js", symbol: "rewardScale", role: "cache scale" }
+        ], tests: ["tests/systems/expeditions.test.js"] },
+        { id: "3.11.5", label: "A failed follow-up stays armed at stage 2 and can be attempted again", evidence: [
+            { file: "js/systems/expeditions.js", symbol: "chainStage", role: "stage" },
+            { file: "js/systems/expeditions.js", symbol: "chainClaim", role: "claim" },
+            { file: "js/systems/expeditions.js", symbol: "pushSiteNote", role: "failure note" },
+            { file: "js/systems/expeditions.js", symbol: "chainReady", role: "snapshot" }
+        ], tests: ["tests/systems/expeditions.test.js"] },
+        { id: "3.11.6", label: "Eight field notes of 220 characters normalize without a save bump or per-tick work", evidence: [
+            { file: "js/systems/expeditions.js", symbol: "MAX_SITE_NOTES", role: "note cap" },
+            { file: "js/systems/expeditions.js", symbol: "MAX_SITE_NOTE_CHARS", role: "length cap" },
+            { file: "js/systems/expeditions.js", symbol: "normalizeExpeditionsState", role: "persistence" },
+            { file: "js/systems/expeditions.js", symbol: "updateExpeditions", role: "tick guard" },
+            { file: "js/presentation/expeditions-panel.js", symbol: "expedition-site__notes", role: "notes ui" }
+        ], tests: ["tests/systems/expeditions.test.js", "tests/browser/expeditions-ui.mjs"] }
+    ], {
+        consumers: [
+            { file: "js/systems/expeditions.js", symbol: "armSiteChainFollowUp", role: "follow-up" },
+            { file: "js/systems/special-biome-couplings.js", symbol: "resolveBlightDecision", role: "blight" },
+            { file: "js/presentation/expeditions-panel.js", symbol: "renderExpeditionsPanel", role: "survey" },
+            { file: "css/diplomacy.css", symbol: "expedition-site__chain", role: "presentation" }
+        ],
+        tests: ["tests/systems/expeditions.test.js", "tests/systems/special-biome-couplings.test.js", "tests/browser/expeditions-ui.mjs", "tests/browser/biome-atlas-ui.mjs"]
+    }),
     section("4.0", "Great World and long-running history", [
         {
             id: "4.0.1", label: "Multiple kingdoms and map regions",
@@ -860,6 +905,55 @@ const SPECIAL_SECTION = {
     ],
     tests: ["tests/systems/special-biomes.test.js", "tests/systems/special-biome-couplings.test.js"]
 };
+
+// The 3.80.0 follow-up chains are part of the biome contract: a blight decree
+// writes a field order onto one of the eight existing landmark sites. These
+// points carry their own consumers and tests instead of relying on the generic
+// atlas rows above.
+const BLIGHT_CHAIN_POINTS = [
+    {
+        id: "1.2.16.chain.blight",
+        label: "Blight study and quarantine arm one landmark follow-up; purge and ignore do not",
+        evidence: [
+            { file: "js/systems/special-biome-couplings.js", symbol: "blightChoices", role: "decision catalog" },
+            { file: "js/systems/special-biome-couplings.js", symbol: "resolveBlightDecision", role: "decision action" },
+            { file: "js/systems/expeditions.js", symbol: "armSiteChainFollowUp", role: "field order" }
+        ],
+        tests: ["tests/systems/special-biome-couplings.test.js", "tests/browser/biome-atlas-ui.mjs"]
+    },
+    {
+        id: "1.2.16.chain.catalog",
+        label: "All eight existing landmarks own one bounded chain without a new site",
+        evidence: [
+            { file: "js/systems/expeditions.js", symbol: "SITE_CHAINS", role: "chain catalog" },
+            { file: "js/systems/expeditions.js", symbol: "armSiteChainFollowUp", role: "claim" },
+            { file: "js/presentation/expeditions-panel.js", symbol: "renderExpeditionsPanel", role: "survey" }
+        ],
+        tests: ["tests/systems/expeditions.test.js", "tests/browser/expeditions-ui.mjs"]
+    },
+    {
+        id: "1.2.16.chain.stages",
+        label: "RUMOUR, SURVEYED, FOLLOW-UP READY and CHAIN CLOSED are visible in Explore",
+        evidence: [
+            { file: "js/systems/expeditions.js", symbol: "chainStage", role: "stage" },
+            { file: "js/presentation/expeditions-panel.js", symbol: "SURVEY FOLLOW-UP", role: "ui action" },
+            { file: "js/presentation/expeditions-panel.js", symbol: "FOLLOW-UPS READY", role: "ui counter" },
+            { file: "css/diplomacy.css", symbol: "expedition-site__chain", role: "presentation" }
+        ],
+        tests: ["tests/systems/expeditions.test.js", "tests/browser/expeditions-ui.mjs"]
+    },
+    {
+        id: "1.2.16.chain.rewards",
+        label: "Fixed study +6/+0.12 and quarantine +3/+0.05 rewards survive a failed retry",
+        evidence: [
+            { file: "js/systems/expeditions.js", symbol: "SITE_CHAINS", role: "fixed modifiers" },
+            { file: "js/systems/expeditions.js", symbol: "chainReady", role: "snapshot" },
+            { file: "js/systems/expeditions.js", symbol: "chainClosed", role: "snapshot" },
+            { file: "js/presentation/expeditions-panel.js", symbol: "CHAINS CLOSED", role: "ui counter" }
+        ],
+        tests: ["tests/systems/expeditions.test.js"]
+    }
+];
 
 function normalizeSection(def) {
     return section(def.id, def.title, def.points, {
@@ -957,15 +1051,18 @@ function buildManifestSection(def, module) {
 function buildSpecialSection(module) {
     const manifest = module[SPECIAL_SECTION.manifest];
     if (!Array.isArray(manifest)) throw new Error("special biome manifest missing");
-    const points = manifest.map(entry => ({
-        id: entry.id, label: entry.label, key: entry.family, group: entry.family,
-        status: "implemented", docEvidence: "SPECIAL_BIOME_MANIFEST"
-    }));
+    const points = [
+        ...manifest.map(entry => ({
+            id: entry.id, label: entry.label, key: entry.family, group: entry.family,
+            status: "implemented", docEvidence: "SPECIAL_BIOME_MANIFEST"
+        })),
+        ...BLIGHT_CHAIN_POINTS.map(point => ({ ...point }))
+    ];
     return section(SPECIAL_SECTION.id, SPECIAL_SECTION.title, points, {
         consumers: SPECIAL_SECTION.consumers,
         tests: SPECIAL_SECTION.tests,
         source: SPECIAL_SECTION.file,
-        note: `${manifest.length} atlas and integration contract rows.`
+        note: `${manifest.length} atlas and integration contract rows plus ${BLIGHT_CHAIN_POINTS.length} blight follow-up chain rows.`
     });
 }
 
@@ -1123,7 +1220,7 @@ export function runSpecAudit({ write = false } = {}) {
     const result = {
         version: 2,
         generatedBy: "scripts/spec-audit.mjs",
-        scope: "All numbered 1.1 and 1.2.1–1.2.18 requirements, including the 1.2.23.1.151–210 forest economy and forest culture, plus the documented 2.x phases and 3.3–4.0 roadmap points.",
+        scope: "All numbered 1.1 and 1.2.1–1.2.18 requirements, including the 1.2.23.1.151–210 forest economy and forest culture, plus the documented 2.x phases, 3.3–4.0 roadmap points and the 3.11 expedition follow-up chain contract.",
         commit: readCommit(),
         sourceHash: hashFiles(allFiles),
         generatedAt: readCommitDate(),

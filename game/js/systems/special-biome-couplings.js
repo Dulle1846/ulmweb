@@ -12,6 +12,7 @@
 import { state } from "../core/state.js";
 import { addLog } from "../core/event-log.js";
 import { applyPoliticalEffects } from "./politics.js";
+import { armSiteChainFollowUp } from "./expeditions.js";
 import { RARE_GOODS, SPECIAL_BIOME_FAMILIES, specialBiomeRegionAt } from "../world/special-biomes.js";
 
 export const SPECIAL_BIOME_COUPLING_VERSION = 1;
@@ -514,9 +515,9 @@ export function getBiomeQuestSnapshot() {
 
 export function blightChoices() {
     return [
-        { id: "quarantine", label: "QUARANTINE", detail: "10 food + 5 gold · pressure -1 · morale +0.5", cost: { food: 10, gold: 5 } },
+        { id: "quarantine", label: "QUARANTINE", detail: "10 food + 5 gold · pressure -1 · morale +0.5 · one landmark follow-up", cost: { food: 10, gold: 5 } },
         { id: "purge", label: "BURN THE ROT", detail: "15 wood + 8 gold · pressure -2 · legitimacy +1", cost: { wood: 15, gold: 8 } },
-        { id: "study", label: "STUDY THE BLIGHT", detail: "12 gold · pressure unchanged · +3 resin", cost: { gold: 12 } },
+        { id: "study", label: "STUDY THE BLIGHT", detail: "12 gold · pressure unchanged · +3 resin · one landmark follow-up", cost: { gold: 12 } },
         { id: "ignore", label: "LEAVE IT", detail: "No cost · pressure +1 · morale -2 · legitimacy -1", cost: {} }
     ];
 }
@@ -607,10 +608,19 @@ export function resolveBlightDecision(choiceId) {
     }
     couplings.blightActions[choiceId]++;
     couplings.blightDecision = null;
-    pushCouplingHistory("decree", region, decision.regionName + " answered: " + choice.label + ".", choiceId);
-    addLog("BLIGHT DECREE ANSWERED · " + choice.label.toUpperCase() + " · " + region.name.toUpperCase(), "#d8bd82", "politics");
+    // Study and quarantine leave a field order on one of the eight existing
+    // landmarks. Purge and ignore deliberately do not: they answer the blight
+    // without opening an expedition chain.
+    const siteChain = armSiteChainFollowUp(choiceId, region);
+    const chainText = siteChain
+        ? " Follow-up ordered at " + siteChain.siteName + ": " + siteChain.claimLabel + "."
+        : "";
+    pushCouplingHistory("decree", region, decision.regionName + " answered: " + choice.label + "." + chainText, choiceId);
+    addLog("BLIGHT DECREE ANSWERED · " + choice.label.toUpperCase() + " · " + region.name.toUpperCase()
+        + (siteChain ? " · FOLLOW-UP " + siteChain.siteName.toUpperCase() + " · " + siteChain.claimLabel.toUpperCase() : ""),
+    "#d8bd82", "politics");
     invalidateSpecialBiomeInfluence();
-    return { ok: true, choice: choiceId, region: { ...region }, snapshot: getBlightDecisionSnapshot() };
+    return { ok: true, choice: choiceId, region: { ...region }, siteChain, snapshot: getBlightDecisionSnapshot() };
 }
 
 // Bounded annual settlement. Called once after the rare-good yield pass.

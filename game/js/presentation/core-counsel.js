@@ -89,6 +89,11 @@ function roadCost() {
     return ROAD_TYPES.dirt.cost;
 }
 
+function readyExpeditionChain(state) {
+    return (Array.isArray(state?.expeditions?.sites) ? state.expeditions.sites : [])
+        .find(site => Number(site?.chainStage) === 2 && (site?.claim === "study" || site?.claim === "quarantine")) || null;
+}
+
 export function getCoreCounsel(state) {
     const food = Math.max(0, Number(state?.resources?.food) || 0);
     const wood = Math.max(0, Number(state?.resources?.wood) || 0);
@@ -350,6 +355,23 @@ export function getCoreCounsel(state) {
                 " · " + Math.round(Number(campaign.progress) || 0) + "/" + CAMPAIGN_GOAL + " progress",
             actionLabel: "OPEN MILITARY",
             panel: "military",
+            buildCategory: null,
+            buildType: null
+        };
+    }
+    // A blight-claimed landmark is an actionable field order, not a new
+    // checklist. Point the existing NEXT MOVE at the real Explore card until a
+    // party closes it, without creating state or recommending a second claim.
+    const followUp = readyExpeditionChain(state);
+    if (followUp) {
+        return {
+            id: "expedition-chain",
+            stepId: null,
+            text: "Close the " + String(followUp.claim).toUpperCase() + " follow-up at " + String(followUp.name || "the marked landmark") + " in Explore.",
+            evidence: String(followUp.name || "Landmark").toUpperCase() + " · " + String(followUp.claim).toUpperCase() +
+                " · FOLLOW-UP READY · " + (Array.isArray(followUp.notes) ? followUp.notes.length : 0) + " field notes",
+            actionLabel: "OPEN EXPLORE",
+            panel: "explore",
             buildCategory: null,
             buildType: null
         };

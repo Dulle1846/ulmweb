@@ -1718,7 +1718,7 @@ function act(b){ const a=b.dataset.command,v=b.dataset.value;let r={ok:false,rea
   else if(a==="manual-order")toast(r.ok?r.message:String(r.reason||"ORDER FAILED").replaceAll("-"," ").toUpperCase());
   else if(a==="timber-sell")toast(r.ok?("TIMBER SOLD · "+(r.amount||0)+" FOR "+(r.gold||0)+" GOLD"):String(r.reason||"TIMBER NOT SOLD").toUpperCase());
   else if(a==="special-biome-quest")toast("ATLAS QUEST RESOLVED · "+String(r.choice||"CHOICE").toUpperCase());
-  else if(a==="special-blight-choice")toast("BLIGHT DECREE ANSWERED · "+String(r.choice||"CHOICE").toUpperCase());
+  else if(a==="special-blight-choice")toast("BLIGHT DECREE ANSWERED · "+String(r.choice||"CHOICE").toUpperCase()+(r.siteChain?" · FOLLOW-UP "+String(r.siteChain.siteName).toUpperCase():""));
   else if(a.startsWith("special-biome-"))toast("RARE BIOME UPDATED");
   else if(a.startsWith("biome-"))toast(String(r.message||"BIOME ATLAS UPDATED").toUpperCase());
   else if(a.startsWith("hazard-"))toast(String(r.message||"HAZARD RESPONSE RECORDED").toUpperCase());

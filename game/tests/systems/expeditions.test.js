@@ -10,7 +10,8 @@ import { ensurePersonProfile } from "../../js/systems/people.js";
 import {
     ensureExpeditions, getExpeditionSnapshot, startExpedition, updateExpeditions,
     expeditionCandidates, normalizeExpeditionsState, validateExpeditionsState,
-    MAX_SITES, MAX_HISTORY, MAX_LORE
+    SITE_CHAINS, armSiteChainFollowUp, MAX_SITES, MAX_HISTORY, MAX_LORE,
+    MAX_SITE_NOTES, MAX_SITE_NOTE_CHARS
 } from "../../js/systems/expeditions.js";
 import { createSaveSnapshot } from "../../js/core/save-runtime.js";
 import { MANAGEMENT_TABS } from "../../js/presentation/management-tabs.js";
@@ -208,15 +209,38 @@ test("the save snapshot carries the active expedition and its leader link", () =
     assert.deepEqual(normalized.sites.map(site => site.id), expedition.sites.map(site => site.id));
 });
 
+test("follow-up chains survive a save round-trip and old saves normalize without a schema bump", () => {
+    setupWorld();
+    const armed = armSiteChainFollowUp("quarantine", { x: 18, y: 78 });
+    const snapshot = createSaveSnapshot();
+    assert.ok(snapshot.expeditions, "the save must carry the expedition block");
+    const restored = normalizeExpeditionsState(JSON.parse(JSON.stringify(snapshot.expeditions)));
+    const site = restored.sites.find(entry => entry.id === armed.siteId);
+    assert.equal(site.chainStage, 2);
+    assert.equal(site.claim, "quarantine");
+    assert.equal(site.notes[0], SITE_CHAINS[site.type].quarantine.opening);
+    assert.equal(validateExpeditionsState(restored), true);
+
+    const legacySites = restored.sites.map(({ chainStage, claim, notes, ...rest }) => rest);
+    const legacy = normalizeExpeditionsState({ ...restored, sites: legacySites });
+    const legacySite = legacy.sites.find(entry => entry.id === armed.siteId);
+    assert.equal(legacySite.chainStage, 0);
+    assert.equal(legacySite.claim, null);
+    assert.deepEqual(legacySite.notes, []);
+    assert.equal(validateExpeditionsState(legacy), true);
+});
+
 test("the save, simulation and UI source contracts include the expedition layer", async () => {
     const source = async path => readFile(new URL("../../" + path, import.meta.url), "utf8");
-    const [module, saveRuntime, validation, simulation, html, ui, css] = await Promise.all([
+    const [module, couplings, saveRuntime, validation, simulation, html, ui, panel, css] = await Promise.all([
         source("js/systems/expeditions.js"),
+        source("js/systems/special-biome-couplings.js"),
         source("js/core/save-runtime.js"),
         source("js/core/save-validation.js"),
         source("js/simulation/simulation.js"),
         source("index.html"),
         source("js/presentation/management-ui.js"),
+        source("js/presentation/expeditions-panel.js"),
         source("css/diplomacy.css")
     ]);
     assert.match(module, /export function updateExpeditions/, "the expedition layer must expose its tick entry point");
@@ -231,4 +255,140 @@ test("the save, simulation and UI source contracts include the expedition layer"
     assert.ok(ui.includes("kac:expedition-change"), "the open panel must refresh when travel resolves");
     assert.ok(ui.includes("stepTransitionSurvey") && ui.includes("refreshTransitionSurvey"), "the ecotone survey must step its tile cursor and refresh in place");
     assert.ok(css.includes(".expedition-site") && css.includes(".expedition-active"), "the expedition panel must have a real visual treatment");
+    assert.ok(module.includes("export const SITE_CHAINS") && module.includes("export function armSiteChainFollowUp"),
+        "the expedition layer must expose the bounded follow-up chain");
+    assert.ok(couplings.includes("armSiteChainFollowUp(choiceId, region)"), "blight decrees must arm real expedition follow-ups");
+    assert.ok(panel.includes("data-chain-stage") && panel.includes("expedition-site__notes"), "the Explore card must render chain state and field notes");
+    assert.ok(panel.includes("FOLLOW-UPS READY") && panel.includes("CHAINS CLOSED"), "the summary must expose chain progress");
+    assert.ok(ui.includes("r.siteChain") && css.includes(".expedition-site__chain") && css.includes(".expedition-site__notes"),
+        "the decree toast and chain styling must be wired");
+});
+
+test("all eight landmarks carry one bounded, deterministic follow-up chain", () => {
+    const expectedTypes = ["ruins", "cave", "shrine", "tower", "crater", "grove", "barrow", "caravanserai"];
+    assert.deepEqual(Object.keys(SITE_CHAINS), expectedTypes);
+    for (const type of expectedTypes) {
+        const chain = SITE_CHAINS[type];
+        assert.ok(chain.title && chain.title.length >= 12, type + " needs a readable chain title");
+        for (const claim of ["study", "quarantine"]) {
+            const entry = chain[claim];
+            assert.ok(entry.label && entry.label.length >= 10, type + "/" + claim + " needs a readable order");
+            assert.equal(entry.score, claim === "study" ? 6 : 3);
+            assert.equal(entry.reward, claim === "study" ? 0.12 : 0.05);
+            assert.ok(entry.opening.length >= 60, type + "/" + claim + " needs a real opening note");
+            assert.ok(entry.closure.length >= 60, type + "/" + claim + " needs a real closure note");
+            assert.ok(entry.opening.length <= MAX_SITE_NOTE_CHARS);
+            assert.ok(entry.closure.length <= MAX_SITE_NOTE_CHARS);
+        }
+    }
+});
+
+test("a blight claim arms one existing site without inventing landmarks or extra randomness", () => {
+    setupWorld();
+    const expedition = ensureExpeditions();
+    const originalIds = expedition.sites.map(site => site.id);
+    const region = { x: 24, y: 31 };
+    const first = armSiteChainFollowUp("study", region);
+    assert.ok(first, "study must place a field order");
+    assert.equal(expedition.sites.length, MAX_SITES);
+    assert.deepEqual(expedition.sites.map(site => site.id), originalIds, "follow-ups must reuse the eight landmarks");
+    assert.equal(first.claim, "study");
+    assert.equal(first.claimLabel, SITE_CHAINS[expedition.sites.find(site => site.id === first.siteId).type].study.label);
+    const site = expedition.sites.find(entry => entry.id === first.siteId);
+    assert.equal(site.chainStage, 2);
+    assert.equal(site.claim, "study");
+    assert.equal(site.notes.length, 1);
+    const second = armSiteChainFollowUp("quarantine", region);
+    assert.ok(second, "quarantine must place a different field order");
+    assert.notEqual(second.siteId, first.siteId, "an armed site cannot be armed twice");
+    assert.equal(armSiteChainFollowUp("purge"), null);
+    assert.equal(armSiteChainFollowUp("ignore"), null);
+    assert.equal(expedition.sites.filter(entry => entry.chainStage === 2).length, 2);
+    const snapshot = getExpeditionSnapshot();
+    assert.equal(snapshot.stats.chainReady, 2);
+    assert.equal(snapshot.stats.chainClosed, 0);
+    assert.equal(snapshot.sites.find(entry => entry.id === first.siteId).claimLabel, first.claimLabel);
+    site.notes = Array.from({ length: MAX_SITE_NOTES + 6 }, (_, index) => "x".repeat(MAX_SITE_NOTE_CHARS + 8) + index);
+    const normalized = normalizeExpeditionsState(expedition);
+    const normalizedSite = normalized.sites.find(entry => entry.id === first.siteId);
+    assert.equal(normalizedSite.notes.length, MAX_SITE_NOTES);
+    assert.equal(normalizedSite.notes.every(note => note.length === MAX_SITE_NOTE_CHARS), true);
+    assert.equal(validateExpeditionsState(normalized), true);
+});
+
+function runFollowUpExpedition(siteId, claim, region = null) {
+    setupWorld();
+    const expedition = ensureExpeditions();
+    if (claim) {
+        const armed = armSiteChainFollowUp(claim, region);
+        assert.equal(armed.siteId, siteId, "the deterministic claim must land on the selected landmark");
+    }
+    const site = expedition.sites.find(entry => entry.id === siteId);
+    const candidate = expeditionCandidates()[0];
+    const leader = state.entities.find(entity => String(entity.personId || entity.id) === candidate.personId);
+    const person = ensurePersonProfile(leader);
+    person.skills = { command: 95, learning: 95, care: 95, trade: 95 };
+    state.resources = { wood: 100, stone: 100, gold: 100, food: 200 };
+    state.tick = 100;
+    const started = startExpedition(site.id, candidate.personId, "grand");
+    assert.equal(started.ok, true);
+    const active = expedition.active;
+    state.tick = active.arriveTick;
+    updateExpeditions();
+    state.tick = active.returnTick;
+    const outcome = updateExpeditions();
+    assert.ok(outcome);
+    return { expedition, site, outcome };
+}
+
+test("a successful follow-up closes its chain and pays the advertised fixed bonus", () => {
+    setupWorld();
+    const region = { x: 12, y: 44 };
+    const seeded = armSiteChainFollowUp("study", region);
+    const siteId = seeded.siteId;
+    const baseline = runFollowUpExpedition(siteId, null, region);
+    const claimed = runFollowUpExpedition(siteId, "study", region);
+    assert.equal(baseline.site.chainStage, 1, "an ordinary successful survey is merely surveyed");
+    assert.equal(baseline.outcome.chainBonus, 0);
+    assert.equal(claimed.outcome.tier, "triumph");
+    assert.equal(claimed.outcome.chainClaim, "study");
+    assert.equal(claimed.outcome.chainBonus, 6);
+    assert.equal(claimed.site.chainStage, 3);
+    assert.equal(claimed.site.claim, "study");
+    assert.ok(claimed.site.notes.includes(SITE_CHAINS[claimed.site.type].study.closure),
+        "closure must be written to the field notes");
+    assert.equal(claimed.expedition.history[0].chainClaim, "study");
+    assert.equal(claimed.expedition.history.length, 1);
+    assert.equal(getExpeditionSnapshot().stats.chainClosed, 1);
+    assert.equal(getExpeditionSnapshot().stats.chainReady, 0);
+    const claimedGold = claimed.outcome.loot.gold || 0;
+    const baselineGold = baseline.outcome.loot.gold || 0;
+    assert.ok(claimedGold > baselineGold, "the claimed cache must exceed the same ordinary visit");
+});
+
+test("a failed follow-up stays armed and can be attempted again", () => {
+    setupWorld();
+    const armed = armSiteChainFollowUp("quarantine");
+    const site = ensureExpeditions().sites.find(entry => entry.id === armed.siteId);
+    site.danger = 3;
+    const candidate = expeditionCandidates()[0];
+    const leader = state.entities.find(entity => String(entity.personId || entity.id) === candidate.personId);
+    const person = ensurePersonProfile(leader);
+    person.skills = { command: 1, learning: 1, care: 1, trade: 1, farming: 1, crafting: 1, labour: 1 };
+    state.resources = { wood: 100, stone: 100, gold: 100, food: 200 };
+    state.tick = 400;
+    const started = startExpedition(site.id, candidate.personId, "light");
+    assert.equal(started.ok, true);
+    const active = ensureExpeditions().active;
+    state.tick = active.arriveTick;
+    updateExpeditions();
+    state.tick = active.returnTick;
+    const outcome = updateExpeditions();
+    assert.equal(outcome.tier, "disaster");
+    assert.equal(outcome.chainClaim, "quarantine");
+    assert.equal(site.chainStage, 2, "a failed follow-up must remain open");
+    assert.equal(site.claim, "quarantine");
+    assert.ok(site.notes.some(note => note.includes("driven back")));
+    assert.equal(getExpeditionSnapshot().stats.chainReady, 1);
+    assert.equal(getExpeditionSnapshot().stats.chainClosed, 0);
 });

@@ -35,9 +35,30 @@ function activeCard(active) {
 
 function siteCard(site, active, hasLeader) {
     const disabled = Boolean(active);
-    const label = site.cleared ? "SURVEY AGAIN" : "CHARTER";
+    const stage = Number(site.chainStage) || 0;
+    const followUp = stage === 2 && Boolean(site.claim);
+    const label = followUp ? "SURVEY FOLLOW-UP" : site.cleared ? "SURVEY AGAIN" : "CHARTER";
     const stateClass = site.cleared ? " is-cleared" : site.known ? " is-known" : " is-uncharted";
-    return '<article class="expedition-site' + stateClass + '" data-expedition-site="' + esc(site.id) + '"><div class="expedition-site__head"><span class="expedition-glyph" aria-hidden="true">' + esc(site.glyph) + '</span><div><span class="expedition-kicker">' + esc(site.region) + ' · ' + esc(site.known ? site.typeLabel : "UNCHARTED") + '</span><h4>' + esc(site.name) + '</h4></div><span class="expedition-danger" aria-label="Danger ' + site.danger + ' of 3">' + danger(site.danger) + '</span></div><div class="expedition-site__meta"><span>DISTANCE<b>' + number(site.distance) + ' TILES</b></span><span>DANGER<b>' + site.danger + ' / 3</b></span><span>STATUS<b>' + esc(site.cleared ? "SURVEYED" : site.known ? "RUMOURED" : "UNCHARTED") + '</b></span></div><p class="expedition-site__note">' + esc(site.cleared ? "The principal find is already recorded. A second visit can still map the approaches and recover a smaller cache." : site.known ? "Tracks and old reports agree on this place. The party can be sent to recover what remains." : "Only a direction and a rumour. The first party to arrive will put the landmark on the royal map.") + '</p><button type="button" class="expedition-launch" data-command="expedition-start" data-value="' + esc(site.id) + '"' + (disabled ? " disabled" : "") + '>' + label + (active ? " · PARTY AWAY" : !hasLeader ? " · CHOOSE A LEADER" : "") + '</button></article>';
+    const chainBadge = stage > 0
+        ? '<div class="expedition-site__chain" data-chain-stage="' + stage + '" data-site-claim="' + esc(site.claim || "") + '"><span>FOLLOW-UP · ' + esc(site.chainLabel || "RUMOUR") + '</span>'
+            + (site.claimLabel ? '<strong>' + esc(site.claimLabel) + '</strong>' : '')
+            + (site.chainTitle && site.known ? '<small>' + esc(site.chainTitle) + '</small>' : '')
+            + '</div>'
+        : "";
+    const notes = Array.isArray(site.notes) ? site.notes.slice(0, 2) : [];
+    const notesMarkup = site.known && notes.length
+        ? '<div class="expedition-site__notes">' + notes.map(note => '<p>' + esc(note) + '</p>').join("") + '</div>'
+        : "";
+    const noteText = followUp
+        ? (site.claimLabel
+            ? "A royal field order waits: " + site.claimLabel + ". A successful follow-up closes this chain and improves the recovered cache."
+            : "A sealed royal order waits here. The first party to arrive will learn which field task the crown has set.")
+        : site.cleared
+            ? "The principal find is already recorded. A second visit can still map the approaches and recover a smaller cache."
+            : site.known
+                ? "Tracks and old reports agree on this place. The party can be sent to recover what remains."
+                : "Only a direction and a rumour. The first party to arrive will put the landmark on the royal map.";
+    return '<article class="expedition-site' + stateClass + (followUp ? " has-follow-up" : "") + '" data-expedition-site="' + esc(site.id) + '" data-chain-stage="' + stage + '" data-site-claim="' + esc(site.claim || "") + '"><div class="expedition-site__head"><span class="expedition-glyph" aria-hidden="true">' + esc(site.glyph) + '</span><div><span class="expedition-kicker">' + esc(site.region) + ' · ' + esc(site.known ? site.typeLabel : "UNCHARTED") + '</span><h4>' + esc(site.name) + '</h4></div><span class="expedition-danger" aria-label="Danger ' + site.danger + ' of 3">' + danger(site.danger) + '</span></div><div class="expedition-site__meta"><span>DISTANCE<b>' + number(site.distance) + ' TILES</b></span><span>DANGER<b>' + site.danger + ' / 3</b></span><span>STATUS<b>' + esc(site.cleared ? "SURVEYED" : site.known ? "RUMOURED" : "UNCHARTED") + '</b></span></div>' + chainBadge + '<p class="expedition-site__note">' + esc(noteText) + '</p>' + notesMarkup + '<button type="button" class="expedition-launch" data-command="expedition-start" data-value="' + esc(site.id) + '"' + (disabled ? " disabled" : "") + '>' + label + (active ? " · PARTY AWAY" : !hasLeader ? " · CHOOSE A LEADER" : "") + '</button></article>';
 }
 
 function rareGoodCard(good) {
@@ -315,8 +336,8 @@ export function renderExpeditionsPanel() {
     const lore = snapshot.lore.length
         ? snapshot.lore.slice(0, 5).map(entry => '<article class="expedition-lore" data-expedition-lore="' + esc(entry.id) + '"><span class="expedition-kicker">' + esc(entry.siteName) + ' · YEAR ' + entry.year + '</span><h4>' + esc(entry.title) + '</h4><p>' + esc(entry.text) + '</p></article>').join("")
         : '<p class="command-note">No written discovery has been recovered. Successful expeditions bring back a fragment for the royal archive.</p>';
-    return intro("THE WILDS BEYOND THE WALLS", "Royal expeditions", "Eight seeded landmarks lie outside the settlement. A named resident leads one party at a time; their command, learning, care and trade skills, the supply level and the site's danger decide what returns. The party reveals the map when it arrives, can be wounded, and feeds real resources, prestige, memories and the chronicle.") +
-        '<div class="command-summary"><div><small>LANDMARKS</small><strong>' + snapshot.stats.sites + '</strong></div><div><small>SURVEYED</small><strong>' + snapshot.stats.known + '</strong></div><div><small>PARTIES RETURNED</small><strong>' + snapshot.stats.completed + '</strong></div><div><small>FRAGMENTS RECOVERED</small><strong>' + snapshot.stats.discoveries + '</strong></div></div>' +
+    return intro("THE WILDS BEYOND THE WALLS", "Royal expeditions", "Eight seeded landmarks lie outside the settlement. A named resident leads one party at a time; their command, learning, care and trade skills, the supply level and the site's danger decide what returns. Studying or quarantining a blight decree places one bounded follow-up order on a landmark; the next successful visit closes that chain. The party reveals the map when it arrives, can be wounded, and feeds real resources, prestige, memories and the chronicle.") +
+        '<div class="command-summary"><div><small>LANDMARKS</small><strong>' + snapshot.stats.sites + '</strong></div><div><small>SURVEYED</small><strong>' + snapshot.stats.known + '</strong></div><div><small>FOLLOW-UPS READY</small><strong>' + snapshot.stats.chainReady + '</strong></div><div><small>CHAINS CLOSED</small><strong>' + snapshot.stats.chainClosed + '</strong></div><div><small>PARTIES RETURNED</small><strong>' + snapshot.stats.completed + '</strong></div><div><small>FRAGMENTS RECOVERED</small><strong>' + snapshot.stats.discoveries + '</strong></div></div>' +
         '<div class="command-section-title">THE ROYAL SURVEY</div>' + activeCard(snapshot.active) +
         '<div class="command-section-title">EQUIP THE NEXT PARTY</div><div class="expedition-controls"><label>NAMED LEADER<select id="expedition-leader-select" aria-label="Choose the expedition leader"><option value="">Choose an adult resident…</option>' + leaderOptions + '</select></label><label>SUPPLY LEVEL<select id="expedition-supply-select" aria-label="Choose expedition supplies">' + supplyOptions + '</select></label><p>Food and gold are paid on departure; distance adds a small food surcharge. A light pack is cheaper but riskier. A grand equipage carries rope, medicine, mules and a surveyor.</p></div>' +
         (candidates.length ? "" : '<p class="command-note"><strong>NO LEADER AVAILABLE.</strong> Every named adult is already away, deceased or serving as the sovereign. A royal expedition needs a living resident, not an anonymous unit.</p>') +
@@ -326,5 +347,5 @@ export function renderExpeditionsPanel() {
         '<section class="transition-biome-section" data-transition-biome-section>' + transitionBiomeSection() + '</section>' +
         '<section class="vegetation-density-section" data-vegetation-density-section>' + vegetationDensitySection() + '</section>' +
         specialBiomeSection() +
-        '<p class="command-note">Expeditions are deliberately bounded: eight sites per world, one active party, 24 reports and 40 fragments. A cleared site can be surveyed again for a smaller cache, but its principal discovery is recorded only once.</p>';
+        '<p class="command-note">Expeditions are deliberately bounded: eight sites per world, one active party, 24 reports and 40 fragments. Each landmark carries at most one four-stage chain with eight short field notes. A cleared site can be surveyed again for a smaller cache, but its principal discovery is recorded only once.</p>';
 }

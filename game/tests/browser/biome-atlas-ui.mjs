@@ -464,10 +464,156 @@ try {
     assert.match(legendText, /stay above the wash/);
     assert.match(legendText, /obey survey visibility/);
 
-    const beforeSave = await page.evaluate(async ({ regionId, craftRegionId, market }) => {
+    // Backlog 25: answer a live blight decree through the rendered Explore
+    // panel and close its expedition chain. This seed has no guaranteed
+    // pressure-2 blight, so create the decree with the app's own exported
+    // internals; the study answer and the expedition launch are real clicks on
+    // rendered controls, and the return resolves through the real game loop.
+    await page.locator("#command-open-btn").click();
+    await page.locator('[data-command-tab="explore"]').click();
+    await page.waitForFunction(() => (document.querySelector("#command-panel-content")?.textContent || "").includes("THE EIGHT LANDMARKS"), null, { timeout: 20000 });
+    const chainSetup = await page.evaluate(async () => {
+        const [{ state }, { getExpeditionSnapshot }, couplings] = await Promise.all([
+            import("./js/core/state.js"),
+            import("./js/systems/expeditions.js"),
+            import("./js/systems/special-biome-couplings.js")
+        ]);
+        const target = [...getExpeditionSnapshot().sites]
+            .sort((a, b) => a.danger - b.danger || a.distance - b.distance)[0];
+        for (const entry of state.expeditions.sites) entry.chainStage = entry.id === target.id ? 1 : 0;
+        const targetSite = state.expeditions.sites.find(entry => entry.id === target.id);
+        targetSite.known = true;
+        targetSite.cleared = false;
+        const blight = state.specialBiomes.regions.find(region => region.family === "blighted-land")
+            || state.specialBiomes.regions[0];
+        blight.family = "blighted-land";
+        blight.discovered = true;
+        blight.cleansed = false;
+        blight.spread = 4;
+        state.resources.gold = Math.max(Number(state.resources.gold) || 0, 300);
+        state.resources.food = Math.max(Number(state.resources.food) || 0, 300);
+        couplings.invalidateSpecialBiomeInfluence();
+        const decision = couplings.__internals.createBlightDecision();
+        window.dispatchEvent(new Event("kac:special-biome-change"));
+        return { targetId: target.id, decisionId: decision?.id || null };
+    });
+    assert.ok(chainSetup.decisionId, "the seeded blight decree must exist");
+    await page.locator('[data-blight-decree="' + chainSetup.decisionId + '"]').waitFor({ timeout: 15000 });
+    const studyButton = page.locator('[data-blight-decree="' + chainSetup.decisionId + '"] [data-command="special-blight-choice"][data-value="study"]:not([disabled])');
+    assert.equal(await studyButton.count(), 1, "the rendered decree must offer an affordable study choice");
+    await studyButton.click();
+    await page.waitForFunction(async siteId => {
+        const { getExpeditionSnapshot } = await import("./js/systems/expeditions.js");
+        const site = getExpeditionSnapshot().sites.find(entry => entry.id === siteId);
+        return site?.chainStage === 2 && site.claim === "study";
+    }, chainSetup.targetId, { timeout: 15000 });
+
+    const readChainUI = siteId => page.evaluate(async id => {
+        const { getExpeditionSnapshot } = await import("./js/systems/expeditions.js");
+        const snapshot = getExpeditionSnapshot();
+        const site = snapshot.sites.find(entry => entry.id === id);
+        const card = document.querySelector('[data-expedition-site="' + id + '"]');
+        const badge = card?.querySelector(".expedition-site__chain");
+        return {
+            snapshot: {
+                stage: site.chainStage, label: site.chainLabel, claim: site.claim,
+                claimLabel: site.claimLabel, notes: [...site.notes],
+                ready: snapshot.stats.chainReady, closed: snapshot.stats.chainClosed
+            },
+            card: {
+                stage: card?.dataset.chainStage || "",
+                claim: card?.dataset.siteClaim || "",
+                hasFollowUp: Boolean(card?.classList.contains("has-follow-up")),
+                badgeStage: badge?.dataset.chainStage || "",
+                badgeClaim: badge?.dataset.siteClaim || "",
+                badgeText: badge?.textContent?.trim() || "",
+                claimLabel: badge?.querySelector("strong")?.textContent?.trim() || "",
+                notes: card?.querySelector(".expedition-site__notes")?.textContent?.trim() || "",
+                button: card?.querySelector('[data-command="expedition-start"]')?.textContent?.trim() || ""
+            },
+            summary: [...document.querySelectorAll("#command-panel-content .command-summary > div")].map(entry => ({
+                label: entry.querySelector("small")?.textContent?.trim(),
+                value: entry.querySelector("strong")?.textContent?.trim()
+            }))
+        };
+    }, siteId);
+    const chainReady = await readChainUI(chainSetup.targetId);
+    const summaryValue = (proof, label) => proof.summary.find(entry => entry.label === label)?.value;
+    assert.equal(chainReady.snapshot.stage, 2);
+    assert.equal(chainReady.snapshot.label, "FOLLOW-UP READY");
+    assert.equal(chainReady.snapshot.claim, "study");
+    assert.ok(chainReady.snapshot.claimLabel, "the snapshot must expose the study claim label");
+    assert.ok(chainReady.snapshot.notes.length >= 1, "the field order must add a site note");
+    assert.equal(chainReady.card.stage, "2");
+    assert.equal(chainReady.card.badgeStage, "2");
+    assert.equal(chainReady.card.badgeClaim, "study");
+    assert.equal(chainReady.card.hasFollowUp, true);
+    assert.match(chainReady.card.badgeText, /FOLLOW-UP · FOLLOW-UP READY/);
+    assert.equal(chainReady.card.claimLabel, chainReady.snapshot.claimLabel);
+    assert.ok(chainReady.card.notes.includes(chainReady.snapshot.notes[0]), "the notes block must render the field order");
+    assert.match(chainReady.card.button, /SURVEY FOLLOW-UP/);
+    assert.equal(summaryValue(chainReady, "FOLLOW-UPS READY"), "1");
+    assert.equal(summaryValue(chainReady, "CHAINS CLOSED"), "0");
+    await page.screenshot({ path: "artifacts/biome-expedition-chain-ready.png", fullPage: false });
+
+    const chainLeaderId = await page.evaluate(() => [...document.querySelectorAll("#expedition-leader-select option")]
+        .slice(1)
+        .map(option => ({ value: option.value, skill: Number((option.textContent.match(/skill (\d+)/) || [])[1]) || 0 }))
+        .sort((a, b) => b.skill - a.skill)[0]?.value);
+    assert.ok(chainLeaderId, "the chain proof needs a named adult leader");
+    await page.locator("#expedition-leader-select").selectOption(chainLeaderId);
+    await page.locator("#expedition-supply-select").selectOption("grand");
+    await page.locator('[data-expedition-site="' + chainSetup.targetId + '"] [data-command="expedition-start"]').click();
+    await page.locator('.expedition-active[data-expedition-active]').waitFor({ timeout: 10000 });
+    const activeExpedition = await page.evaluate(async () => {
         const { state } = await import("./js/core/state.js");
+        return {
+            id: state.expeditions.active.id, siteId: state.expeditions.active.siteId,
+            returnTick: state.expeditions.active.returnTick, tick: state.tick
+        };
+    });
+    assert.equal(activeExpedition.siteId, chainSetup.targetId);
+    assert.equal(await page.locator(".expedition-launch:enabled").count(), 0, "no second party may leave while one is away");
+    await page.locator("#command-close").click();
+    // Jump to the scheduled return, then let the real, unpaused game loop
+    // resolve the party through its normal expedition update.
+    await page.evaluate(async returnTick => {
+        const { state } = await import("./js/core/state.js");
+        state.tick = Math.max(Number(state.tick) || 0, returnTick);
+    }, activeExpedition.returnTick);
+    await page.locator("#pause-btn").click();
+    await page.waitForFunction(async ({ id, siteId }) => {
+        const { state } = await import("./js/core/state.js");
+        const { getExpeditionSnapshot } = await import("./js/systems/expeditions.js");
+        const site = getExpeditionSnapshot().sites.find(entry => entry.id === siteId);
+        return state.expeditions?.history?.some(entry => entry.id === id) && site?.chainStage === 3;
+    }, { id: activeExpedition.id, siteId: chainSetup.targetId }, { timeout: 15000 });
+    await page.locator("#command-open-btn").click();
+    await page.locator('[data-command-tab="explore"]').click();
+    await page.waitForFunction(siteId => document.querySelector('[data-expedition-site="' + siteId + '"]')?.dataset.chainStage === "3", chainSetup.targetId, { timeout: 15000 });
+    const chainClosed = await readChainUI(chainSetup.targetId);
+    assert.equal(chainClosed.snapshot.stage, 3);
+    assert.equal(chainClosed.snapshot.label, "CHAIN CLOSED");
+    assert.equal(chainClosed.snapshot.claim, "study");
+    assert.ok(chainClosed.snapshot.notes.length > chainReady.snapshot.notes.length, "closure must append a field note");
+    assert.equal(chainClosed.card.stage, "3");
+    assert.equal(chainClosed.card.badgeStage, "3");
+    assert.match(chainClosed.card.badgeText, /FOLLOW-UP · CHAIN CLOSED/);
+    assert.equal(chainClosed.card.claimLabel, chainClosed.snapshot.claimLabel);
+    assert.equal(summaryValue(chainClosed, "FOLLOW-UPS READY"), "0");
+    assert.equal(summaryValue(chainClosed, "CHAINS CLOSED"), "1");
+    await page.screenshot({ path: "artifacts/biome-expedition-chain-closed.png", fullPage: false });
+    await page.locator("#command-close").click();
+    await page.locator("#pause-btn").click();
+    await page.waitForFunction(async () => (await import("./js/core/state.js")).state.isPaused, null, { timeout: 5000 });
+
+    const beforeSave = await page.evaluate(async ({ regionId, craftRegionId, market, chainSiteId }) => {
+        const { state } = await import("./js/core/state.js");
+        const { getExpeditionSnapshot } = await import("./js/systems/expeditions.js");
         const region = state.biomeAtlas.regions.find(entry => entry.id === regionId);
         const craftRegion = state.biomeAtlas.regions.find(entry => entry.id === craftRegionId);
+        const expedition = getExpeditionSnapshot();
+        const chainSite = expedition.sites.find(entry => entry.id === chainSiteId);
         return {
             policy: region.policy,
             surveyLevel: region.surveyLevel,
@@ -480,12 +626,17 @@ try {
                 craftsSold: Number(state.biomeAtlas.stats.craftsSold) || 0,
                 gold: state.resources.gold
             },
+            chain: {
+                id: chainSite.id, stage: chainSite.chainStage, label: chainSite.chainLabel,
+                claim: chainSite.claim, claimLabel: chainSite.claimLabel, notes: [...chainSite.notes],
+                ready: expedition.stats.chainReady, closed: expedition.stats.chainClosed
+            },
             frontier: (await import("./js/systems/biome-market-link.js")).getBiomeFrontierSupply().categories[market],
             marketFrontier: state.market.frontierSupply.categories[market],
             marketPrice: state.market.prices[market],
             ecology: (await import("./js/systems/cross-biome-state.js")).serializeCrossBiomeState(region.systems)
         };
-    }, { regionId: initial.regionId, craftRegionId: craftTarget.regionId, market: frontierTarget.market });
+    }, { regionId: initial.regionId, craftRegionId: craftTarget.regionId, market: frontierTarget.market, chainSiteId: chainSetup.targetId });
     await page.locator("#save-btn").click();
     await page.waitForFunction(() => (document.querySelector("#save-status")?.textContent || "").startsWith("LAST SAVED"), null, { timeout: 20000 });
     await page.reload({ waitUntil: "networkidle", timeout: 60000 });
@@ -517,10 +668,13 @@ try {
     await page.locator("#command-open-btn").click();
     await page.locator('[data-command-tab="biome"]').click();
     await page.waitForFunction(() => (document.querySelector("#command-panel-content")?.textContent || "").includes("ECOLOGICAL RECORD"), null, { timeout: 20000 });
-    const restored = await page.evaluate(async ({ regionId, craftRegionId, market }) => {
+    const restored = await page.evaluate(async ({ regionId, craftRegionId, market, chainSiteId }) => {
         const { state } = await import("./js/core/state.js");
+        const { getExpeditionSnapshot } = await import("./js/systems/expeditions.js");
         const region = state.biomeAtlas.regions.find(entry => entry.id === regionId);
         const craftRegion = state.biomeAtlas.regions.find(entry => entry.id === craftRegionId);
+        const expedition = getExpeditionSnapshot();
+        const chainSite = expedition.sites.find(entry => entry.id === chainSiteId);
         return {
             policy: region.policy,
             surveyLevel: region.surveyLevel,
@@ -533,13 +687,18 @@ try {
                 craftsSold: Number(state.biomeAtlas.stats.craftsSold) || 0,
                 gold: state.resources.gold
             },
+            chain: {
+                id: chainSite.id, stage: chainSite.chainStage, label: chainSite.chainLabel,
+                claim: chainSite.claim, claimLabel: chainSite.claimLabel, notes: [...chainSite.notes],
+                ready: expedition.stats.chainReady, closed: expedition.stats.chainClosed
+            },
             frontier: (await import("./js/systems/biome-market-link.js")).getBiomeFrontierSupply().categories[market],
             marketFrontier: state.market.frontierSupply.categories[market],
             marketPrice: state.market.prices[market],
             text: document.querySelector("#command-panel-content")?.textContent || "",
             ecology: (await import("./js/systems/cross-biome-state.js")).serializeCrossBiomeState(region.systems)
         };
-    }, { regionId: initial.regionId, craftRegionId: craftTarget.regionId, market: frontierTarget.market });
+    }, { regionId: initial.regionId, craftRegionId: craftTarget.regionId, market: frontierTarget.market, chainSiteId: chainSetup.targetId });
     assert.equal(restored.policy, "conservation");
     assert.equal(restored.protectedArea, true, "protected-habitat status must survive reload");
     assert.ok(restored.surveyLevel >= 1);
@@ -550,6 +709,10 @@ try {
     assert.deepEqual(restored.marketFrontier, beforeSave.marketFrontier, "the saved market quote must survive reload");
     assert.equal(restored.marketPrice, beforeSave.marketPrice);
     assert.deepEqual(restored.ecology, beforeSave.ecology, "soil, water, land-use and legacy state must survive reload");
+    assert.deepEqual(restored.chain, beforeSave.chain, "the expedition chain must survive reload with its stage, claim and notes intact");
+    assert.equal(restored.chain.stage, 3);
+    assert.equal(restored.chain.claim, "study");
+    assert.equal(restored.chain.closed, 1);
     assert.equal(restored.craft.crafts, 2);
     assert.equal(restored.craft.craftsSold, 1);
     assert.deepEqual(restored.craft.crafted, { ["craft-" + craftTarget.recipeId]: 1 });
@@ -561,6 +724,19 @@ try {
     assert.match(restoredCraftText, /LOCAL CRAFT RECIPES/);
     assert.match(restoredCraftText, /SELL · 1/);
     assert.match(restoredCraftText, /CRAFT · \d+G/);
+    await page.locator('[data-command-tab="explore"]').click();
+    await page.waitForFunction(siteId => document.querySelector('[data-expedition-site="' + siteId + '"]')?.dataset.chainStage === "3", chainSetup.targetId, { timeout: 15000 });
+    const restoredChainUI = await readChainUI(chainSetup.targetId);
+    assert.equal(restoredChainUI.snapshot.stage, 3, "the reloaded Explore panel must read the closed chain");
+    assert.equal(restoredChainUI.snapshot.claim, "study");
+    assert.equal(restoredChainUI.snapshot.claimLabel, chainClosed.snapshot.claimLabel);
+    assert.deepEqual(restoredChainUI.snapshot.notes, chainClosed.snapshot.notes);
+    assert.equal(restoredChainUI.card.badgeStage, "3");
+    assert.match(restoredChainUI.card.badgeText, /FOLLOW-UP · CHAIN CLOSED/);
+    assert.equal(restoredChainUI.card.claimLabel, chainClosed.snapshot.claimLabel);
+    assert.ok(restoredChainUI.card.notes.includes(chainClosed.snapshot.notes[chainClosed.snapshot.notes.length - 1]));
+    assert.equal(summaryValue(restoredChainUI, "CHAINS CLOSED"), "1");
+    await page.screenshot({ path: "artifacts/biome-expedition-chain-restored.png", fullPage: false });
 
     assert.deepEqual(pageErrors, []);
     assert.deepEqual(consoleErrors, []);
@@ -582,6 +758,7 @@ try {
             band: restored.frontier.band, quotedPrice: restored.marketPrice
         },
         protectedArea: restored.protectedArea,
+        chain: { siteId: restored.chain.id, stage: restored.chain.stage, claim: restored.chain.claim, notes: restored.chain.notes.length },
         loaded: loadStatus,
         pageErrors: pageErrors.length,
         consoleErrors: consoleErrors.length

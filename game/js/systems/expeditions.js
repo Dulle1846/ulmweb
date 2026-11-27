@@ -19,7 +19,11 @@ export const EXPEDITION_VERSION = 1;
 export const MAX_SITES = 8;
 export const MAX_HISTORY = 24;
 export const MAX_LORE = 40;
+export const MAX_SITE_NOTES = 8;
+export const MAX_SITE_NOTE_CHARS = 220;
 export const MIN_SITE_DISTANCE = 7;
+export const SITE_CHAIN_CLAIMS = Object.freeze(["study", "quarantine"]);
+const CHAIN_STAGE_LABELS = Object.freeze(["RUMOUR", "SURVEYED", "FOLLOW-UP READY", "CHAIN CLOSED"]);
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, Number.isFinite(Number(value)) ? Number(value) : min));
 const clean = (value, max) => String(value ?? "").replace(/[\u0000-\u001f\u007f]/g, "").trim().slice(0, max);
@@ -118,6 +122,128 @@ const SITE_TYPES = Object.freeze([
 const SITE_BY_ID = new Map(SITE_TYPES.map(type => [type.id, type]));
 const SUPPLY_BY_ID = new Map(SUPPLY_OPTIONS.map(supply => [supply.id, supply]));
 
+// Each landmark owns one short follow-up chain. The biome decree supplies the
+// claim; the next successful visit to that landmark closes it. These are fixed
+// labels and fixed modifiers, not new currencies or per-tick content.
+export const SITE_CHAINS = Object.freeze({
+    ruins: Object.freeze({
+        title: "The old archive road",
+        study: Object.freeze({
+            label: "Archive cross-check", score: 6, reward: 0.12,
+            opening: "The blight ledger names a road beneath the ruins. Copy the archive before the next thaw.",
+            closure: "Archive cross-check complete: the lost road is mapped and the rot's route is understood."
+        }),
+        quarantine: Object.freeze({
+            label: "Sealed approach", score: 3, reward: 0.05,
+            opening: "The crown orders the ruin approach sealed while the archive is watched from a safe distance.",
+            closure: "The sealed approach held. A smaller cache was recovered without opening the infected court."
+        })
+    }),
+    cave: Object.freeze({
+        title: "The notch-language vein",
+        study: Object.freeze({
+            label: "Sample the vein", score: 6, reward: 0.12,
+            opening: "A blight sample must be taken from the pale vein before the cave floods again.",
+            closure: "The vein was sampled and its notch-language marks copied into the royal survey."
+        }),
+        quarantine: Object.freeze({
+            label: "Fence the fissure", score: 3, reward: 0.05,
+            opening: "A fence goes up around the fissure so nothing in the cave can carry the rot outward.",
+            closure: "The fissure fence held; the party returned with a cautious sample and a safe map."
+        })
+    }),
+    shrine: Object.freeze({
+        title: "The pilgrim spring",
+        study: Object.freeze({
+            label: "Read the pilgrim route", score: 6, reward: 0.12,
+            opening: "The shrine's doorpost names a pilgrim route that may explain how the blight travelled.",
+            closure: "The pilgrim route was read and the spring's older path entered into the atlas."
+        }),
+        quarantine: Object.freeze({
+            label: "Ward the spring", score: 3, reward: 0.05,
+            opening: "The crown wards the spring and asks the next party to test the water without drinking it.",
+            closure: "The ward held. The spring was tested, recorded and left for the pilgrims to return to."
+        })
+    }),
+    tower: Object.freeze({
+        title: "The border beacon map",
+        study: Object.freeze({
+            label: "Copy the dispatch map", score: 6, reward: 0.12,
+            opening: "A dispatch case in the tower may hold the old border map the blight decree asks for.",
+            closure: "The dispatch map was copied. Border beacons can now be read against the royal roads."
+        }),
+        quarantine: Object.freeze({
+            label: "Hold the beacon", score: 3, reward: 0.05,
+            opening: "The beacon floor is quarantined until a party can inspect it in dry weather.",
+            closure: "The beacon was held and its supply ledger recovered without disturbing the infected floor."
+        })
+    }),
+    crater: Object.freeze({
+        title: "The starfall glass",
+        study: Object.freeze({
+            label: "Assay the iron root", score: 6, reward: 0.12,
+            opening: "The crater's iron root may explain the blight's resistance. A sample is ordered.",
+            closure: "The iron root was assayed and the crater's glass entered the crown's mineral record."
+        }),
+        quarantine: Object.freeze({
+            label: "Ring the crater", score: 3, reward: 0.05,
+            opening: "A ring is marked around the crater; the next party must survey it from outside.",
+            closure: "The ring held and a rim fragment was recovered without entering the warm centre."
+        })
+    }),
+    grove: Object.freeze({
+        title: "The old boundary grove",
+        study: Object.freeze({
+            label: "Seed-cone survey", score: 6, reward: 0.12,
+            opening: "Seed cones from the oldest tree may show how the old boundary resisted blight.",
+            closure: "The seed cones were catalogued and the grove's boundary entered on the royal map."
+        }),
+        quarantine: Object.freeze({
+            label: "Grove cordon", score: 3, reward: 0.05,
+            opening: "A cordon goes around the grove while the crown decides whether its spring is safe.",
+            closure: "The cordon held. The party returned with clean seed and a measured boundary record."
+        })
+    }),
+    barrow: Object.freeze({
+        title: "The named boundary barrow",
+        study: Object.freeze({
+            label: "Transcribe the names", score: 6, reward: 0.12,
+            opening: "The carved names on the barrow may name the first blight wardens. Send a clerk.",
+            closure: "The names were transcribed and the barrow's place on the old boundary confirmed."
+        }),
+        quarantine: Object.freeze({
+            label: "Seal the chair", score: 3, reward: 0.05,
+            opening: "The stone chair is sealed until a party can inspect the chamber without opening it.",
+            closure: "The chair remained sealed; the party copied the outer names and withdrew cleanly."
+        })
+    }),
+    caravanserai: Object.freeze({
+        title: "The lost caravan route",
+        study: Object.freeze({
+            label: "Tally the old goods", score: 6, reward: 0.12,
+            opening: "The gate tally names goods the realm no longer trades. A follow-up party must copy it.",
+            closure: "The old tally was copied and the lost caravan route restored to the trade atlas."
+        }),
+        quarantine: Object.freeze({
+            label: "Close the eastern stable", score: 3, reward: 0.05,
+            opening: "The eastern stable is closed until the cistern can be tested by a royal party.",
+            closure: "The stable stayed closed while the cistern was tested and the route safely remapped."
+        })
+    })
+});
+
+function chainClaim(value) {
+    return SITE_CHAIN_CLAIMS.includes(value) ? value : null;
+}
+
+function pushSiteNote(site, text) {
+    const note = clean(text, MAX_SITE_NOTE_CHARS);
+    if (!note) return;
+    const notes = Array.isArray(site.notes) ? site.notes.filter(entry => typeof entry === "string") : [];
+    notes.unshift(note);
+    site.notes = notes.slice(0, MAX_SITE_NOTES);
+}
+
 function hash32(...values) {
     let hash = 2166136261;
     for (const value of values) {
@@ -214,6 +340,9 @@ function makeSites() {
             distance: distanceBetween(chosen, start),
             known,
             cleared: false,
+            chainStage: 0,
+            claim: null,
+            notes: [],
             loreId: null
         });
     }
@@ -241,6 +370,17 @@ function normalizeSite(site, index) {
     if (!type) return null;
     const x = Math.round(Number(site.x)), y = Math.round(Number(site.y));
     if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+    let chainStage = clamp(Math.floor(Number(site.chainStage) || 0), 0, 3);
+    // A stage below 2 never carries a claim; stage 3 keeps the final claim as
+    // history so the card can still explain which follow-up was closed. A bad
+    // or missing order can never leave a half-armed site in a loaded save.
+    let claim = chainStage >= 2 ? chainClaim(site.claim) : null;
+    if (chainStage >= 2 && !claim) chainStage = 1;
+    const notes = (Array.isArray(site.notes) ? site.notes : [])
+        .filter(entry => typeof entry === "string")
+        .map(entry => clean(entry, MAX_SITE_NOTE_CHARS))
+        .filter(Boolean)
+        .slice(0, MAX_SITE_NOTES);
     return {
         id: clean(site.id || "site-" + (index + 1), 32) || "site-" + (index + 1),
         type: type.id,
@@ -252,6 +392,9 @@ function normalizeSite(site, index) {
         distance: clamp(site.distance, 1, 4096),
         known: Boolean(site.known),
         cleared: Boolean(site.cleared),
+        chainStage,
+        claim,
+        notes,
         loreId: site.loreId ? clean(site.loreId, 64) : null
     };
 }
@@ -268,7 +411,9 @@ function normalizeOutcome(outcome) {
             ? Object.fromEntries(["wood", "stone", "gold", "food"].filter(key => Number(outcome.loot[key]) > 0)
                 .map(key => [key, round(outcome.loot[key])]))
             : {},
-        prestige: clamp(outcome.prestige, 0, 8)
+        prestige: clamp(outcome.prestige, 0, 8),
+        chainClaim: chainClaim(outcome.chainClaim),
+        chainBonus: clamp(outcome.chainBonus, 0, 20)
     };
 }
 
@@ -314,6 +459,7 @@ export function normalizeExpeditionsState(value = state.expeditions) {
             leaderId: clean(entry.leaderId, 80),
             leaderName: clean(entry.leaderName || "An unnamed leader", 64),
             tier: ["triumph", "success", "costly", "disaster"].includes(entry.tier) ? entry.tier : "success",
+            chainClaim: chainClaim(entry.chainClaim),
             title: clean(entry.title || "The party returns", 96),
             year: Math.max(1, Math.floor(Number(entry.year) || 1)),
             tick: round(entry.tick),
@@ -374,6 +520,13 @@ export function ensureExpeditions() {
     if (!Array.isArray(current.sites)) current.sites = [];
     if (!Array.isArray(current.history)) current.history = [];
     if (!Array.isArray(current.lore)) current.lore = [];
+    // Old snapshots predate the follow-up fields. Normalize them in place the
+    // first time the live layer is touched, without changing the save version.
+    if (current.sites.some(site => Number(site.chainStage) !== Math.floor(Number(site.chainStage))
+        || !Array.isArray(site.notes)
+        || (Number(site.chainStage) >= 2 && !chainClaim(site.claim)))) {
+        current.sites = current.sites.map(normalizeSite).filter(Boolean);
+    }
     // Keep the live active object stable while it is travelling. Replacing it
     // on every ensure() would detach references held by the UI or a caller.
     if (current.active && (!current.active.id || !current.active.siteId)) current.active = normalizeActive(current.active);
@@ -446,7 +599,7 @@ export function getExpeditionSnapshot() {
         return {
             sites: [], candidates: [], active: null, history: [], lore: [],
             supplies: SUPPLY_OPTIONS.map(item => ({ ...item })),
-            stats: { sites: 0, known: 0, cleared: 0, completed: 0, discoveries: 0, active: false }
+            stats: { sites: 0, known: 0, cleared: 0, chainReady: 0, chainClosed: 0, completed: 0, discoveries: 0, active: false }
         };
     }
     const expeditions = ensureExpeditions();
@@ -457,21 +610,32 @@ export function getExpeditionSnapshot() {
         ? state.entities.find(entity => !entity.dead && String(entity.personId || entity.id) === active.leaderId)
         : null;
     return {
-        sites: expeditions.sites.map(site => ({
-            id: site.id,
-            type: site.type,
-            typeLabel: SITE_BY_ID.get(site.type)?.label || site.name,
-            name: site.known || site.cleared ? site.name : `Uncharted ${SITE_BY_ID.get(site.type)?.label || "landmark"}`,
-            glyph: site.glyph,
-            danger: site.danger,
-            x: site.x,
-            y: site.y,
-            region: site.region,
-            distance: site.distance,
-            known: Boolean(site.known || site.cleared),
-            cleared: Boolean(site.cleared),
-            loreId: site.loreId || null
-        })),
+        sites: expeditions.sites.map(site => {
+            const stage = clamp(Math.floor(Number(site.chainStage) || 0), 0, 3);
+            const claim = stage >= 2 ? chainClaim(site.claim) : null;
+            const visible = Boolean(site.known || site.cleared || stage === 2);
+            return {
+                id: site.id,
+                type: site.type,
+                typeLabel: SITE_BY_ID.get(site.type)?.label || site.name,
+                name: site.known || site.cleared ? site.name : `Uncharted ${SITE_BY_ID.get(site.type)?.label || "landmark"}`,
+                glyph: site.glyph,
+                danger: site.danger,
+                x: site.x,
+                y: site.y,
+                region: site.region,
+                distance: site.distance,
+                known: Boolean(site.known || site.cleared),
+                cleared: Boolean(site.cleared),
+                chainStage: stage,
+                chainLabel: CHAIN_STAGE_LABELS[stage],
+                chainTitle: visible ? SITE_CHAINS[site.type]?.title || null : null,
+                claim,
+                claimLabel: visible && claim ? SITE_CHAINS[site.type]?.[claim]?.label || null : null,
+                notes: visible ? [...(Array.isArray(site.notes) ? site.notes : [])] : [],
+                loreId: site.loreId || null
+            };
+        }),
         candidates: expeditionCandidates(),
         active: active ? {
             ...active,
@@ -491,6 +655,8 @@ export function getExpeditionSnapshot() {
             sites: expeditions.sites.length,
             known: expeditions.sites.filter(site => site.known || site.cleared).length,
             cleared: expeditions.sites.filter(site => site.cleared).length,
+            chainReady: expeditions.sites.filter(site => Number(site.chainStage) === 2 && chainClaim(site.claim)).length,
+            chainClosed: expeditions.sites.filter(site => Number(site.chainStage) === 3).length,
             completed: Math.max(0, Math.floor(Number(expeditions.completed) || 0)),
             discoveries: Math.max(0, Math.floor(Number(expeditions.discoveries) || 0)),
             active: Boolean(active)
@@ -559,14 +725,20 @@ function resolveOutcome(active, site, person) {
     const rng = stream(hash32(active.id, site.id, active.leaderId, active.departTick, state.worldSeed));
     const skill = leaderSkill(person);
     const supply = SUPPLY_BY_ID.get(active.supplyId) || SUPPLY_BY_ID.get("standard");
-    const score = skill + supply.bonus + rng() * 46 - site.danger * 11 + (site.cleared ? -18 : 0);
+    // A claimed follow-up changes the settled score and cache by fixed amounts.
+    // It consumes no extra randomness and cannot be armed twice.
+    const claim = Number(site.chainStage) === 2 ? chainClaim(site.claim) : null;
+    const chain = claim ? SITE_CHAINS[site.type]?.[claim] : null;
+    const chainBonus = chain ? Number(chain.score) || 0 : 0;
+    const score = skill + supply.bonus + rng() * 46 - site.danger * 11 + (site.cleared ? -18 : 0) + chainBonus;
     const tier = score >= 82 ? "triumph" : score >= 61 ? "success" : score >= 39 ? "costly" : "disaster";
     const type = SITE_BY_ID.get(site.type);
     const loreIndex = Math.floor(rng() * (type?.lore.length || 1));
     const lore = type?.lore[loreIndex] || "The party returns with a map of an empty road.";
     const scale = (tier === "triumph" ? 2.2 : tier === "success" ? 1.3 : tier === "costly" ? 0.55 : 0)
         * Number(supply.rewardScale || 1)
-        * (site.cleared ? 0.55 : 1);
+        * (site.cleared ? 0.55 : 1)
+        * (chain ? 1 + (Number(chain.reward) || 0) : 1);
     const loot = Object.fromEntries(Object.entries(type?.base || {})
         .map(([key, value]) => [key, Math.round(Number(value) * scale)])
         .filter(([, value]) => value > 0));
@@ -580,7 +752,9 @@ function resolveOutcome(active, site, person) {
         text: lore,
         injuryDays,
         loot,
-        prestige: tier === "triumph" ? 3 : tier === "success" ? 1 : 0
+        prestige: tier === "triumph" ? 3 : tier === "success" ? 1 : 0,
+        chainClaim: claim,
+        chainBonus
     };
 }
 
@@ -607,8 +781,20 @@ function finishExpedition(expeditions, active, site) {
     }
     site.known = true;
     const wasCleared = site.cleared;
-    site.cleared = site.cleared || outcome.tier === "triumph" || outcome.tier === "success";
-    const loreEntry = !wasCleared && (outcome.tier === "success" || outcome.tier === "triumph")
+    const successful = outcome.tier === "triumph" || outcome.tier === "success";
+    site.cleared = site.cleared || successful;
+    const claim = Number(site.chainStage) === 2 ? chainClaim(site.claim) : null;
+    const claimLabel = claim ? SITE_CHAINS[site.type]?.[claim]?.label || claim : null;
+    if (claim && successful) {
+        site.chainStage = 3;
+        pushSiteNote(site, SITE_CHAINS[site.type]?.[claim]?.closure || "The follow-up order was closed.");
+    } else if (claim && !successful) {
+        pushSiteNote(site, "The " + claimLabel + " follow-up was driven back; the order remains open.");
+    } else if (Number(site.chainStage) === 0 && successful) {
+        site.chainStage = 1;
+        pushSiteNote(site, "First survey recorded: " + outcome.text);
+    }
+    const loreEntry = !wasCleared && successful
         ? {
             id: "lore-" + site.id + "-" + year + "-" + (expeditions.discoveries + 1),
             siteId: site.id,
@@ -638,6 +824,7 @@ function finishExpedition(expeditions, active, site) {
         leaderId: active.leaderId,
         leaderName: active.leaderName,
         tier: outcome.tier,
+        chainClaim: chainClaim(outcome.chainClaim),
         title: outcome.title,
         year,
         tick: state.tick,
@@ -648,9 +835,53 @@ function finishExpedition(expeditions, active, site) {
     if (expeditions.active?.id === active.id) expeditions.active = null;
     if (leader) delete leader.expeditionId;
     addLog("EXPEDITION RETURNS FROM " + site.name.toUpperCase() + ": " + outcome.title.toUpperCase()
-        + (lootText ? " · " + lootText : "") + (outcome.injuryDays ? " · THE LEADER IS WOUNDED" : ""), outcome.tier === "disaster" ? "#b99a9a" : "#a3d6a7", "exploration");
+        + (lootText ? " · " + lootText : "") + (outcome.injuryDays ? " · THE LEADER IS WOUNDED" : "")
+        + (claim && successful ? " · " + String(claimLabel).toUpperCase() + " FOLLOW-UP CLOSED" : ""), outcome.tier === "disaster" ? "#b99a9a" : "#a3d6a7", "exploration");
     notifyExpeditionChange();
     return outcome;
+}
+
+// A blight study or quarantine does not invent a new landmark; it places a
+// bounded follow-up order on one of the eight existing sites. Surveyed sites
+// are preferred so the order is actionable, then known sites, then the site
+// nearest the afflicted atlas region. The sort is total and deterministic.
+export function armSiteChainFollowUp(choiceId, region = null) {
+    const claim = chainClaim(choiceId);
+    if (!claim || !state.hasStarted) return null;
+    const expeditions = ensureExpeditions();
+    const eligible = expeditions.sites.filter(site => Number(site.chainStage) < 2);
+    if (!eligible.length) return null;
+    const rx = Number(region?.x), ry = Number(region?.y);
+    const hasRegion = Number.isFinite(rx) && Number.isFinite(ry);
+    const regionDistance = site => hasRegion
+        ? Math.hypot(Number(site.x) - rx, Number(site.y) - ry)
+        : Math.max(0, Number(site.distance) || 0);
+    eligible.sort((a, b) => {
+        const stageDelta = Number(b.chainStage) - Number(a.chainStage);
+        if (stageDelta) return stageDelta;
+        const knownDelta = Number(Boolean(b.known || b.cleared)) - Number(Boolean(a.known || a.cleared));
+        if (knownDelta) return knownDelta;
+        const distanceDelta = regionDistance(a) - regionDistance(b);
+        if (Math.abs(distanceDelta) > 0.001) return distanceDelta;
+        const marchDelta = Number(a.distance) - Number(b.distance);
+        if (Math.abs(marchDelta) > 0.001) return marchDelta;
+        return String(a.id).localeCompare(String(b.id));
+    });
+    const site = eligible[0];
+    const chain = SITE_CHAINS[site.type]?.[claim];
+    if (!chain) return null;
+    site.chainStage = 2;
+    site.claim = claim;
+    pushSiteNote(site, chain.opening);
+    notifyExpeditionChange();
+    return {
+        siteId: site.id,
+        siteName: site.name,
+        region: site.region,
+        claim,
+        claimLabel: chain.label,
+        chainTitle: SITE_CHAINS[site.type].title
+    };
 }
 
 export function updateExpeditions() {
@@ -697,6 +928,17 @@ export function validateExpeditionsState(input) {
     for (const site of input.sites) {
         if (!site || typeof site !== "object" || !SITE_BY_ID.has(String(site.type || ""))) throw new Error("Expedition site is invalid.");
         if (!Number.isFinite(Number(site.x)) || !Number.isFinite(Number(site.y))) throw new Error("Expedition site coordinates are invalid.");
+        const stage = site.chainStage === undefined ? 0 : Number(site.chainStage);
+        if (!Number.isInteger(stage) || stage < 0 || stage > 3) throw new Error("Expedition follow-up stage is invalid.");
+        const claim = site.claim == null ? null : chainClaim(site.claim);
+        if (site.claim != null && !claim) throw new Error("Expedition follow-up claim is invalid.");
+        if (stage >= 2 && !claim) throw new Error("Expedition follow-up order is missing.");
+        if (stage < 2 && claim) throw new Error("Expedition follow-up claim has no open order.");
+        const notes = site.notes === undefined ? [] : site.notes;
+        if (!Array.isArray(notes) || notes.length > MAX_SITE_NOTES
+            || notes.some(note => typeof note !== "string" || note.length > MAX_SITE_NOTE_CHARS)) {
+            throw new Error("Expedition follow-up notes are invalid.");
+        }
     }
     return true;
 }

@@ -1,15 +1,15 @@
 {
   "version": 2,
   "generatedBy": "scripts/spec-audit.mjs",
-  "scope": "All numbered 1.1 and 1.2.1–1.2.18 requirements, including the 1.2.23.1.151–210 forest economy and forest culture, plus the documented 2.x phases and 3.3–4.0 roadmap points.",
-  "commit": "654d9a517442d1beda5e04525b89be5ba62910b0",
-  "sourceHash": "8e6510c987257c03d9216790bcf818edabb30178d08da73aa5ca3e5cd7635e52",
-  "generatedAt": "2026-11-26T23:56:24+00:00",
+  "scope": "All numbered 1.1 and 1.2.1–1.2.18 requirements, including the 1.2.23.1.151–210 forest economy and forest culture, plus the documented 2.x phases, 3.3–4.0 roadmap points and the 3.11 expedition follow-up chain contract.",
+  "commit": "9322f42c653d96177a5497baf5af38b6edd90cac",
+  "sourceHash": "679d398d7588c0365d6ba1c1785c167319a821517289c4a0fc794ffe76717ab1",
+  "generatedAt": "2026-11-27T00:34:36Z",
   "totals": {
-    "total": 1712,
-    "implemented": 1712,
+    "total": 1722,
+    "implemented": 1722,
     "open": 0,
-    "sections": 41
+    "sections": 42
   },
   "collisions": [
     {
@@ -23297,6 +23297,177 @@
             "tests/systems/special-biome-couplings.test.js"
           ],
           "probe": null
+        },
+        {
+          "id": "1.2.16.chain.blight",
+          "label": "Blight study and quarantine arm one landmark follow-up; purge and ignore do not",
+          "evidence": [
+            {
+              "file": "js/systems/special-biome-couplings.js",
+              "symbol": "blightChoices",
+              "role": "decision catalog"
+            },
+            {
+              "file": "js/systems/special-biome-couplings.js",
+              "symbol": "resolveBlightDecision",
+              "role": "decision action"
+            },
+            {
+              "file": "js/systems/expeditions.js",
+              "symbol": "armSiteChainFollowUp",
+              "role": "field order"
+            }
+          ],
+          "tests": [
+            "tests/systems/special-biomes.test.js",
+            "tests/systems/special-biome-couplings.test.js",
+            "tests/systems/special-biome-couplings.test.js",
+            "tests/browser/biome-atlas-ui.mjs"
+          ],
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/world/special-biomes.js#generateSpecialBiomeRegions (simulation)",
+            "js/world/special-biomes.js#specialBiomeRegionAt (simulation)",
+            "js/presentation/rendering/special-biome-render.js#drawSpecialBiomeOverlay (renderer)",
+            "js/systems/special-biome-state.js#getSpecialBiomeSnapshot (gameplay)",
+            "js/presentation/expeditions-panel.js#renderExpeditionsPanel (survey)",
+            "js/systems/special-biome-couplings.js#blightChoices (decision catalog)",
+            "js/systems/special-biome-couplings.js#resolveBlightDecision (decision action)",
+            "js/systems/expeditions.js#armSiteChainFollowUp (field order)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.16.chain.catalog",
+          "label": "All eight existing landmarks own one bounded chain without a new site",
+          "evidence": [
+            {
+              "file": "js/systems/expeditions.js",
+              "symbol": "SITE_CHAINS",
+              "role": "chain catalog"
+            },
+            {
+              "file": "js/systems/expeditions.js",
+              "symbol": "armSiteChainFollowUp",
+              "role": "claim"
+            },
+            {
+              "file": "js/presentation/expeditions-panel.js",
+              "symbol": "renderExpeditionsPanel",
+              "role": "survey"
+            }
+          ],
+          "tests": [
+            "tests/systems/special-biomes.test.js",
+            "tests/systems/special-biome-couplings.test.js",
+            "tests/systems/expeditions.test.js",
+            "tests/browser/expeditions-ui.mjs"
+          ],
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/world/special-biomes.js#generateSpecialBiomeRegions (simulation)",
+            "js/world/special-biomes.js#specialBiomeRegionAt (simulation)",
+            "js/presentation/rendering/special-biome-render.js#drawSpecialBiomeOverlay (renderer)",
+            "js/systems/special-biome-state.js#getSpecialBiomeSnapshot (gameplay)",
+            "js/presentation/expeditions-panel.js#renderExpeditionsPanel (survey)",
+            "js/systems/expeditions.js#SITE_CHAINS (chain catalog)",
+            "js/systems/expeditions.js#armSiteChainFollowUp (claim)",
+            "js/presentation/expeditions-panel.js#renderExpeditionsPanel (survey)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.16.chain.stages",
+          "label": "RUMOUR, SURVEYED, FOLLOW-UP READY and CHAIN CLOSED are visible in Explore",
+          "evidence": [
+            {
+              "file": "js/systems/expeditions.js",
+              "symbol": "chainStage",
+              "role": "stage"
+            },
+            {
+              "file": "js/presentation/expeditions-panel.js",
+              "symbol": "SURVEY FOLLOW-UP",
+              "role": "ui action"
+            },
+            {
+              "file": "js/presentation/expeditions-panel.js",
+              "symbol": "FOLLOW-UPS READY",
+              "role": "ui counter"
+            },
+            {
+              "file": "css/diplomacy.css",
+              "symbol": "expedition-site__chain",
+              "role": "presentation"
+            }
+          ],
+          "tests": [
+            "tests/systems/special-biomes.test.js",
+            "tests/systems/special-biome-couplings.test.js",
+            "tests/systems/expeditions.test.js",
+            "tests/browser/expeditions-ui.mjs"
+          ],
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/world/special-biomes.js#generateSpecialBiomeRegions (simulation)",
+            "js/world/special-biomes.js#specialBiomeRegionAt (simulation)",
+            "js/presentation/rendering/special-biome-render.js#drawSpecialBiomeOverlay (renderer)",
+            "js/systems/special-biome-state.js#getSpecialBiomeSnapshot (gameplay)",
+            "js/presentation/expeditions-panel.js#renderExpeditionsPanel (survey)",
+            "js/systems/expeditions.js#chainStage (stage)",
+            "js/presentation/expeditions-panel.js#SURVEY FOLLOW-UP (ui action)",
+            "js/presentation/expeditions-panel.js#FOLLOW-UPS READY (ui counter)",
+            "css/diplomacy.css#expedition-site__chain (presentation)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.16.chain.rewards",
+          "label": "Fixed study +6/+0.12 and quarantine +3/+0.05 rewards survive a failed retry",
+          "evidence": [
+            {
+              "file": "js/systems/expeditions.js",
+              "symbol": "SITE_CHAINS",
+              "role": "fixed modifiers"
+            },
+            {
+              "file": "js/systems/expeditions.js",
+              "symbol": "chainReady",
+              "role": "snapshot"
+            },
+            {
+              "file": "js/systems/expeditions.js",
+              "symbol": "chainClosed",
+              "role": "snapshot"
+            },
+            {
+              "file": "js/presentation/expeditions-panel.js",
+              "symbol": "CHAINS CLOSED",
+              "role": "ui counter"
+            }
+          ],
+          "tests": [
+            "tests/systems/special-biomes.test.js",
+            "tests/systems/special-biome-couplings.test.js",
+            "tests/systems/expeditions.test.js"
+          ],
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/world/special-biomes.js#generateSpecialBiomeRegions (simulation)",
+            "js/world/special-biomes.js#specialBiomeRegionAt (simulation)",
+            "js/presentation/rendering/special-biome-render.js#drawSpecialBiomeOverlay (renderer)",
+            "js/systems/special-biome-state.js#getSpecialBiomeSnapshot (gameplay)",
+            "js/presentation/expeditions-panel.js#renderExpeditionsPanel (survey)",
+            "js/systems/expeditions.js#SITE_CHAINS (fixed modifiers)",
+            "js/systems/expeditions.js#chainReady (snapshot)",
+            "js/systems/expeditions.js#chainClosed (snapshot)",
+            "js/presentation/expeditions-panel.js#CHAINS CLOSED (ui counter)"
+          ],
+          "probe": null
         }
       ],
       "consumers": [
@@ -23342,15 +23513,15 @@
         }
       ],
       "source": "js/world/special-biomes.js",
-      "note": "100 atlas and integration contract rows.",
+      "note": "100 atlas and integration contract rows plus 4 blight follow-up chain rows.",
       "probeFunction": null,
       "probeClimate": "temperate",
       "probeExtra": {},
       "probeAvailable": false,
       "probeObserved": 0,
-      "implemented": 100,
+      "implemented": 104,
       "open": 0,
-      "total": 100
+      "total": 104
     },
     {
       "id": "1.2.17",
@@ -45266,6 +45437,337 @@
       "implemented": 7,
       "open": 0,
       "total": 7
+    },
+    {
+      "id": "3.11",
+      "title": "Royal expeditions and biome follow-up chains",
+      "points": [
+        {
+          "id": "3.11.1",
+          "label": "One bounded follow-up chain per existing landmark from SITE_CHAINS",
+          "evidence": [
+            {
+              "file": "js/systems/expeditions.js",
+              "symbol": "SITE_CHAINS",
+              "role": "chain catalog"
+            },
+            {
+              "file": "js/systems/expeditions.js",
+              "symbol": "MAX_SITES",
+              "role": "site bound"
+            }
+          ],
+          "tests": [
+            "tests/systems/expeditions.test.js",
+            "tests/systems/special-biome-couplings.test.js",
+            "tests/browser/expeditions-ui.mjs",
+            "tests/browser/biome-atlas-ui.mjs",
+            "tests/systems/expeditions.test.js"
+          ],
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/systems/expeditions.js#armSiteChainFollowUp (follow-up)",
+            "js/systems/special-biome-couplings.js#resolveBlightDecision (blight)",
+            "js/presentation/expeditions-panel.js#renderExpeditionsPanel (survey)",
+            "css/diplomacy.css#expedition-site__chain (presentation)",
+            "js/systems/expeditions.js#SITE_CHAINS (chain catalog)",
+            "js/systems/expeditions.js#MAX_SITES (site bound)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "3.11.2",
+          "label": "Blight study and quarantine arm one follow-up; purge and ignore do not",
+          "evidence": [
+            {
+              "file": "js/systems/special-biome-couplings.js",
+              "symbol": "blightChoices",
+              "role": "decision catalog"
+            },
+            {
+              "file": "js/systems/special-biome-couplings.js",
+              "symbol": "resolveBlightDecision",
+              "role": "decision"
+            },
+            {
+              "file": "js/systems/expeditions.js",
+              "symbol": "armSiteChainFollowUp",
+              "role": "field order"
+            },
+            {
+              "file": "js/systems/expeditions.js",
+              "symbol": "SITE_CHAIN_CLAIMS",
+              "role": "claim guard"
+            }
+          ],
+          "tests": [
+            "tests/systems/expeditions.test.js",
+            "tests/systems/special-biome-couplings.test.js",
+            "tests/browser/expeditions-ui.mjs",
+            "tests/browser/biome-atlas-ui.mjs",
+            "tests/systems/special-biome-couplings.test.js",
+            "tests/browser/biome-atlas-ui.mjs"
+          ],
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/systems/expeditions.js#armSiteChainFollowUp (follow-up)",
+            "js/systems/special-biome-couplings.js#resolveBlightDecision (blight)",
+            "js/presentation/expeditions-panel.js#renderExpeditionsPanel (survey)",
+            "css/diplomacy.css#expedition-site__chain (presentation)",
+            "js/systems/special-biome-couplings.js#blightChoices (decision catalog)",
+            "js/systems/special-biome-couplings.js#resolveBlightDecision (decision)",
+            "js/systems/expeditions.js#armSiteChainFollowUp (field order)",
+            "js/systems/expeditions.js#SITE_CHAIN_CLAIMS (claim guard)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "3.11.3",
+          "label": "Four named stages are exposed through chainStage and the Explore panel",
+          "evidence": [
+            {
+              "file": "js/systems/expeditions.js",
+              "symbol": "CHAIN_STAGE_LABELS",
+              "role": "stage labels"
+            },
+            {
+              "file": "js/systems/expeditions.js",
+              "symbol": "chainStage",
+              "role": "state"
+            },
+            {
+              "file": "js/presentation/expeditions-panel.js",
+              "symbol": "FOLLOW-UP ·",
+              "role": "badge"
+            },
+            {
+              "file": "js/presentation/expeditions-panel.js",
+              "symbol": "CHAINS CLOSED",
+              "role": "counter"
+            },
+            {
+              "file": "css/diplomacy.css",
+              "symbol": "expedition-site__chain",
+              "role": "presentation"
+            }
+          ],
+          "tests": [
+            "tests/systems/expeditions.test.js",
+            "tests/systems/special-biome-couplings.test.js",
+            "tests/browser/expeditions-ui.mjs",
+            "tests/browser/biome-atlas-ui.mjs",
+            "tests/systems/expeditions.test.js",
+            "tests/browser/expeditions-ui.mjs"
+          ],
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/systems/expeditions.js#armSiteChainFollowUp (follow-up)",
+            "js/systems/special-biome-couplings.js#resolveBlightDecision (blight)",
+            "js/presentation/expeditions-panel.js#renderExpeditionsPanel (survey)",
+            "css/diplomacy.css#expedition-site__chain (presentation)",
+            "js/systems/expeditions.js#CHAIN_STAGE_LABELS (stage labels)",
+            "js/systems/expeditions.js#chainStage (state)",
+            "js/presentation/expeditions-panel.js#FOLLOW-UP · (badge)",
+            "js/presentation/expeditions-panel.js#CHAINS CLOSED (counter)",
+            "css/diplomacy.css#expedition-site__chain (presentation)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "3.11.4",
+          "label": "Fixed +6/+0.12 study and +3/+0.05 quarantine modifiers reuse the existing score stream",
+          "evidence": [
+            {
+              "file": "js/systems/expeditions.js",
+              "symbol": "SITE_CHAINS",
+              "role": "fixed modifiers"
+            },
+            {
+              "file": "js/systems/expeditions.js",
+              "symbol": "chainBonus",
+              "role": "score"
+            },
+            {
+              "file": "js/systems/expeditions.js",
+              "symbol": "rewardScale",
+              "role": "cache scale"
+            }
+          ],
+          "tests": [
+            "tests/systems/expeditions.test.js",
+            "tests/systems/special-biome-couplings.test.js",
+            "tests/browser/expeditions-ui.mjs",
+            "tests/browser/biome-atlas-ui.mjs",
+            "tests/systems/expeditions.test.js"
+          ],
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/systems/expeditions.js#armSiteChainFollowUp (follow-up)",
+            "js/systems/special-biome-couplings.js#resolveBlightDecision (blight)",
+            "js/presentation/expeditions-panel.js#renderExpeditionsPanel (survey)",
+            "css/diplomacy.css#expedition-site__chain (presentation)",
+            "js/systems/expeditions.js#SITE_CHAINS (fixed modifiers)",
+            "js/systems/expeditions.js#chainBonus (score)",
+            "js/systems/expeditions.js#rewardScale (cache scale)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "3.11.5",
+          "label": "A failed follow-up stays armed at stage 2 and can be attempted again",
+          "evidence": [
+            {
+              "file": "js/systems/expeditions.js",
+              "symbol": "chainStage",
+              "role": "stage"
+            },
+            {
+              "file": "js/systems/expeditions.js",
+              "symbol": "chainClaim",
+              "role": "claim"
+            },
+            {
+              "file": "js/systems/expeditions.js",
+              "symbol": "pushSiteNote",
+              "role": "failure note"
+            },
+            {
+              "file": "js/systems/expeditions.js",
+              "symbol": "chainReady",
+              "role": "snapshot"
+            }
+          ],
+          "tests": [
+            "tests/systems/expeditions.test.js",
+            "tests/systems/special-biome-couplings.test.js",
+            "tests/browser/expeditions-ui.mjs",
+            "tests/browser/biome-atlas-ui.mjs",
+            "tests/systems/expeditions.test.js"
+          ],
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/systems/expeditions.js#armSiteChainFollowUp (follow-up)",
+            "js/systems/special-biome-couplings.js#resolveBlightDecision (blight)",
+            "js/presentation/expeditions-panel.js#renderExpeditionsPanel (survey)",
+            "css/diplomacy.css#expedition-site__chain (presentation)",
+            "js/systems/expeditions.js#chainStage (stage)",
+            "js/systems/expeditions.js#chainClaim (claim)",
+            "js/systems/expeditions.js#pushSiteNote (failure note)",
+            "js/systems/expeditions.js#chainReady (snapshot)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "3.11.6",
+          "label": "Eight field notes of 220 characters normalize without a save bump or per-tick work",
+          "evidence": [
+            {
+              "file": "js/systems/expeditions.js",
+              "symbol": "MAX_SITE_NOTES",
+              "role": "note cap"
+            },
+            {
+              "file": "js/systems/expeditions.js",
+              "symbol": "MAX_SITE_NOTE_CHARS",
+              "role": "length cap"
+            },
+            {
+              "file": "js/systems/expeditions.js",
+              "symbol": "normalizeExpeditionsState",
+              "role": "persistence"
+            },
+            {
+              "file": "js/systems/expeditions.js",
+              "symbol": "updateExpeditions",
+              "role": "tick guard"
+            },
+            {
+              "file": "js/presentation/expeditions-panel.js",
+              "symbol": "expedition-site__notes",
+              "role": "notes ui"
+            }
+          ],
+          "tests": [
+            "tests/systems/expeditions.test.js",
+            "tests/systems/special-biome-couplings.test.js",
+            "tests/browser/expeditions-ui.mjs",
+            "tests/browser/biome-atlas-ui.mjs",
+            "tests/systems/expeditions.test.js",
+            "tests/browser/expeditions-ui.mjs"
+          ],
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/systems/expeditions.js#armSiteChainFollowUp (follow-up)",
+            "js/systems/special-biome-couplings.js#resolveBlightDecision (blight)",
+            "js/presentation/expeditions-panel.js#renderExpeditionsPanel (survey)",
+            "css/diplomacy.css#expedition-site__chain (presentation)",
+            "js/systems/expeditions.js#MAX_SITE_NOTES (note cap)",
+            "js/systems/expeditions.js#MAX_SITE_NOTE_CHARS (length cap)",
+            "js/systems/expeditions.js#normalizeExpeditionsState (persistence)",
+            "js/systems/expeditions.js#updateExpeditions (tick guard)",
+            "js/presentation/expeditions-panel.js#expedition-site__notes (notes ui)"
+          ],
+          "probe": null
+        }
+      ],
+      "consumers": [
+        {
+          "file": "js/systems/expeditions.js",
+          "symbol": "armSiteChainFollowUp",
+          "role": "follow-up",
+          "valid": true
+        },
+        {
+          "file": "js/systems/special-biome-couplings.js",
+          "symbol": "resolveBlightDecision",
+          "role": "blight",
+          "valid": true
+        },
+        {
+          "file": "js/presentation/expeditions-panel.js",
+          "symbol": "renderExpeditionsPanel",
+          "role": "survey",
+          "valid": true
+        },
+        {
+          "file": "css/diplomacy.css",
+          "symbol": "expedition-site__chain",
+          "role": "presentation",
+          "valid": true
+        }
+      ],
+      "tests": [
+        {
+          "file": "tests/systems/expeditions.test.js",
+          "valid": true
+        },
+        {
+          "file": "tests/systems/special-biome-couplings.test.js",
+          "valid": true
+        },
+        {
+          "file": "tests/browser/expeditions-ui.mjs",
+          "valid": true
+        },
+        {
+          "file": "tests/browser/biome-atlas-ui.mjs",
+          "valid": true
+        }
+      ],
+      "source": "",
+      "note": "",
+      "probeFunction": null,
+      "probeClimate": "temperate",
+      "probeExtra": {},
+      "implemented": 6,
+      "open": 0,
+      "total": 6
     },
     {
       "id": "4.0",

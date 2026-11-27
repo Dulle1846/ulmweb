@@ -282,6 +282,31 @@ test("core counsel extends a completed opening into a ready envoy mission", () =
     }
 });
 
+test("core counsel extends a completed opening into a ready expedition follow-up", () => {
+    resetState();
+    try {
+        for (const ambition of AMBITIONS) state.ambitions.completed[ambition.id] = 1;
+        const site = {
+            id: "site-3", name: "Whispering Cave", chainStage: 2,
+            claim: "study", notes: ["A blight sample must be taken from the pale vein."]
+        };
+        const realmState = realm({ expeditions: { sites: [site] } });
+        const before = JSON.stringify(realmState);
+        const counsel = getCoreCounsel(realmState);
+        assert.equal(counsel.id, "expedition-chain");
+        assert.equal(counsel.stepId, null);
+        assert.equal(counsel.panel, "explore");
+        assert.equal(counsel.actionLabel, "OPEN EXPLORE");
+        assert.match(counsel.text, /study follow-up at Whispering Cave in Explore/i);
+        assert.match(counsel.evidence, /FOLLOW-UP READY · 1 field notes/);
+        assert.equal(JSON.stringify(realmState), before, "counsel must not arm or mutate the chain");
+        site.chainStage = 3;
+        assert.notEqual(getCoreCounsel(realmState).id, "expedition-chain", "a closed chain must leave the next step");
+    } finally {
+        resetState();
+    }
+});
+
 test("core counsel extends a completed opening into the live theatre campaign", () => {
     resetState();
     try {

@@ -9,7 +9,7 @@ import {
 } from "../../js/systems/special-biome-state.js";
 import {
     createSpecialBiomeCouplingState, getBiomeCombatModifiersAt, getBiomeQuestSnapshot,
-    getBlightDecisionSnapshot, getSpecialBiomeInfluence, onSpecialBiomeDiscovered,
+    blightChoices, getBlightDecisionSnapshot, getSpecialBiomeInfluence, onSpecialBiomeDiscovered,
     resolveBiomeQuest, resolveBlightDecision, updateSpecialBiomeCouplings
 } from "../../js/systems/special-biome-couplings.js";
 import { getSpecialBiomeInfluence as getCachedInfluence } from "../../js/systems/special-biome-couplings.js";
@@ -19,6 +19,7 @@ import { getHarvestYieldFactor } from "../../js/systems/economy-cycle.js";
 import { getPopulationGrowthAllowance } from "../../js/systems/population.js";
 import { getBuildingEfficiency } from "../../js/systems/economy.js";
 import { updateRealmCycle, getRealmCycleSnapshot } from "../../js/systems/realm-cycle.js";
+import { getExpeditionSnapshot } from "../../js/systems/expeditions.js";
 
 const SEED = 20261161;
 const SIZE = 100;
@@ -275,4 +276,49 @@ test("malformed coupling blocks are rejected and the influence cache is bounded"
     assert.equal(first.regions, undefined);
     assert.ok(Object.isFrozen(first));
     assert.equal(createSpecialBiomeCouplingState({ quests: "bad" }).quests.length, 0);
+});
+
+test("blight study and quarantine open one expedition follow-up; purge and ignore do not", () => {
+    setAtlas([region({ family: "blighted-land", name: "The Grey Wound", spread: 4, attuned: false })]);
+    state.year = 2;
+    updateSpecialBiomeCouplings();
+    assert.ok(getBlightDecisionSnapshot(), "pressure 4 blight must place a decree before the crown");
+    assert.ok(blightChoices().find(choice => choice.id === "study").detail.includes("one landmark follow-up"));
+    assert.ok(blightChoices().find(choice => choice.id === "quarantine").detail.includes("one landmark follow-up"));
+    const studied = resolveBlightDecision("study");
+    assert.equal(studied.ok, true);
+    assert.equal(studied.siteChain.claim, "study");
+    let snapshot = getExpeditionSnapshot();
+    assert.equal(snapshot.stats.chainReady, 1);
+    assert.equal(snapshot.stats.chainClosed, 0);
+    assert.equal(snapshot.sites.filter(site => site.chainStage === 2).length, 1);
+    assert.equal(snapshot.sites.find(site => site.id === studied.siteChain.siteId).claimLabel, studied.siteChain.claimLabel);
+
+    setAtlas([region({ family: "blighted-land", name: "The Grey Wound", spread: 4, attuned: false })]);
+    state.year = 2;
+    updateSpecialBiomeCouplings();
+    const purged = resolveBlightDecision("purge");
+    assert.equal(purged.ok, true);
+    assert.equal(purged.siteChain, null);
+    snapshot = getExpeditionSnapshot();
+    assert.equal(snapshot.stats.chainReady, 0);
+    assert.equal(snapshot.sites.filter(site => site.chainStage === 2).length, 0);
+
+    setAtlas([region({ family: "blighted-land", name: "The Grey Wound", spread: 4, attuned: false })]);
+    state.year = 2;
+    updateSpecialBiomeCouplings();
+    const quarantined = resolveBlightDecision("quarantine");
+    assert.equal(quarantined.ok, true);
+    assert.equal(quarantined.siteChain.claim, "quarantine");
+    snapshot = getExpeditionSnapshot();
+    assert.equal(snapshot.stats.chainReady, 1);
+    assert.equal(snapshot.sites.filter(site => site.id === quarantined.siteChain.siteId)[0].claim, "quarantine");
+
+    setAtlas([region({ family: "blighted-land", name: "The Grey Wound", spread: 4, attuned: false })]);
+    state.year = 2;
+    updateSpecialBiomeCouplings();
+    const ignored = resolveBlightDecision("ignore");
+    assert.equal(ignored.ok, true);
+    assert.equal(ignored.siteChain, null);
+    assert.equal(getExpeditionSnapshot().stats.chainReady, 0);
 });

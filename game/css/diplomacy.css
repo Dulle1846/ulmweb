@@ -128,6 +128,13 @@
 .expedition-site__meta span{padding:5px 6px;border:1px solid #c6ae7c;border-radius:5px;background:#f8ebcd;color:#806d52;font:1000 6px/1.3 Arial,sans-serif;letter-spacing:.06em}
 .expedition-site__meta b{display:block;margin-top:3px;color:#263b52;font:bold 10px Georgia,serif;letter-spacing:0}
 .expedition-site__note{margin:6px 0 9px;color:#675b49;font-size:8px;line-height:1.45}
+.expedition-site.has-follow-up{border-color:#8a5f9c;box-shadow:inset 0 1px #fff8,0 0 0 1px #8a5f9c2e}
+.expedition-site__chain{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 7px;margin:7px 0;padding:5px 7px;border:1px solid #b28bbd;border-radius:5px;background:#f7ecfa;min-width:0}
+.expedition-site__chain span{color:#6d4879;font:1000 6px/1.3 Arial,sans-serif;letter-spacing:.07em}
+.expedition-site__chain strong{color:#42294d;font:bold 9px Georgia,serif}
+.expedition-site__chain small{flex:1 1 100%;color:#7c627f;font-size:7px;line-height:1.35}
+.expedition-site__notes{display:grid;gap:3px;margin:0 0 8px;padding-left:7px;border-left:2px solid #c4a4cf;min-width:0}
+.expedition-site__notes p{margin:0;color:#5d4f62;font-size:7px;line-height:1.4;overflow-wrap:anywhere}
 .expedition-launch{width:100%;min-height:30px;border:1px solid #20374d;border-radius:5px;background:linear-gradient(#f7d67f,#d69a37);color:#24384d;font:1000 7px Arial,sans-serif;letter-spacing:.08em;cursor:pointer}
 .expedition-launch:disabled{opacity:.45;cursor:not-allowed}
 .expedition-history{display:grid;gap:2px;margin-top:8px}

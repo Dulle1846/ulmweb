@@ -74,7 +74,7 @@ export function getFirstSessionSnapshot() {
         ? counsel.text
         : null;
     const continuationText = allComplete &&
-        (counsel.id === "scenario" || counsel.id === "next-ambition" || counsel.id === "campaign" || counsel.id === "council" || counsel.id === "envoy-mission") &&
+        (counsel.id === "scenario" || counsel.id === "next-ambition" || counsel.id === "campaign" || counsel.id === "council" || counsel.id === "envoy-mission" || counsel.id === "expedition-chain") &&
         counsel.text && counsel.evidence
         ? counsel.text + " · " + counsel.evidence
         : null;

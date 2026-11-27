@@ -2,13 +2,13 @@
 export const SPEC_COVERAGE = Object.freeze({
   "version": 2,
   "generatedBy": "scripts/spec-audit.mjs",
-  "commit": "654d9a517442d1beda5e04525b89be5ba62910b0",
-  "sourceHash": "8e6510c987257c03d9216790bcf818edabb30178d08da73aa5ca3e5cd7635e52",
+  "commit": "9322f42c653d96177a5497baf5af38b6edd90cac",
+  "sourceHash": "679d398d7588c0365d6ba1c1785c167319a821517289c4a0fc794ffe76717ab1",
   "totals": {
-    "total": 1712,
-    "implemented": 1712,
+    "total": 1722,
+    "implemented": 1722,
     "open": 0,
-    "sections": 41
+    "sections": 42
   },
   "nextSection": null,
   "collisions": [
@@ -489,8 +489,8 @@ export const SPEC_COVERAGE = Object.freeze({
     {
       "id": "1.2.16",
       "title": "Fantastic and rare biomes",
-      "total": 100,
-      "implemented": 100,
+      "total": 104,
+      "implemented": 104,
       "open": 0,
       "source": "js/world/special-biomes.js"
     },
@@ -667,6 +667,14 @@ export const SPEC_COVERAGE = Object.freeze({
       "title": "Full creature ecosystem and comic-art expansion",
       "total": 7,
       "implemented": 7,
+      "open": 0,
+      "source": "system registry"
+    },
+    {
+      "id": "3.11",
+      "title": "Royal expeditions and biome follow-up chains",
+      "total": 6,
+      "implemented": 6,
       "open": 0,
       "source": "system registry"
     },

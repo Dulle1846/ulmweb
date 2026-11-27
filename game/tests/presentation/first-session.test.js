@@ -179,6 +179,31 @@ test("a completed first session continues into a ready envoy mission", () => {
     }
 });
 
+test("a completed first session continues into a ready expedition follow-up", () => {
+    resetState();
+    try {
+        for (const ambition of AMBITIONS) state.ambitions.completed[ambition.id] = 1;
+        state.hasStarted = true;
+        state.entities = [{ dead: false, type: TYPE.HOUSE }];
+        state.statistics.totalHousesBuilt = 1;
+        state.statistics.totalRoadTilesBuilt = 1;
+        state.statistics.totalCardsDrawn = 1;
+        state.expeditions = {
+            sites: [{
+                id: "site-4", name: "Broken Watchtower", chainStage: 2,
+                claim: "quarantine", notes: ["The beacon floor is quarantined."]
+            }]
+        };
+        const snapshot = getFirstSessionSnapshot();
+        assert.equal(snapshot.allComplete, true);
+        assert.equal(snapshot.counselId, "expedition-chain");
+        assert.match(snapshot.continuationText, /quarantine follow-up at Broken Watchtower in Explore/i);
+        assert.match(snapshot.continuationText, /FOLLOW-UP READY · 1 field notes/);
+    } finally {
+        resetState();
+    }
+});
+
 test("the first-session HUD carries the real latest twenty-day ledger in plain language", () => {
     resetState();
     state.hasStarted = true;

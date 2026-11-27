@@ -113,7 +113,12 @@ try {
     await page.locator("#player-name-input").fill("Expedition Audit");
     await runFor(300);
     await page.locator("#start-new-game-btn").click();
-    for (let attempt = 0; attempt < 40 && !(await hasStarted()); attempt++) await runFor(250);
+    for (let attempt = 0; attempt < 40 && !(await hasStarted()); attempt++) {
+        await runFor(250);
+        // Let one real animation frame run so the clock-driven loading chapters
+        // can paint between virtual-time steps.
+        await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => resolve())));
+    }
     assert.equal(await hasStarted(), true, "the visible founding button must start a realm");
     await runFor(1200);
     await quietScene(false);
@@ -165,6 +170,101 @@ try {
     decks.push(await auditDeck("1440x900"));
     await page.screenshot({ path: resolve(EVIDENCE, "expedition-deck-1440x900.png"), animations: "disabled" });
 
+    // Backlog 25: answer a live blight decree through the rendered Explore
+    // panel. This seed has no guaranteed pressure-2 blight, so the decree is
+    // created with the app's own exported internals; the study answer and the
+    // expedition that closes the chain are still real clicks on real controls.
+    const chainSetup = await page.evaluate(async () => {
+        const [{ state }, { getExpeditionSnapshot }, couplings] = await Promise.all([
+            import("./js/core/state.js"),
+            import("./js/systems/expeditions.js"),
+            import("./js/systems/special-biome-couplings.js")
+        ]);
+        const target = [...getExpeditionSnapshot().sites]
+            .sort((a, b) => a.danger - b.danger || a.distance - b.distance)[0];
+        // Surveyed sites are preferred when a decree arms a follow-up. Mark
+        // exactly one so the field order lands on the party we already equip.
+        for (const entry of state.expeditions.sites) entry.chainStage = entry.id === target.id ? 1 : 0;
+        // The card only prints field notes for a known landmark; the survey
+        // already knows this site, so keep that flag explicit for determinism.
+        const targetSite = state.expeditions.sites.find(entry => entry.id === target.id);
+        targetSite.known = true;
+        targetSite.cleared = false;
+        const blight = state.specialBiomes.regions.find(region => region.family === "blighted-land")
+            || state.specialBiomes.regions[0];
+        blight.family = "blighted-land";
+        blight.discovered = true;
+        blight.cleansed = false;
+        blight.spread = 4;
+        couplings.invalidateSpecialBiomeInfluence();
+        const decision = couplings.__internals.createBlightDecision();
+        window.dispatchEvent(new Event("kac:special-biome-change"));
+        return { targetId: target.id, decisionId: decision?.id || null, regionId: blight.id };
+    });
+    assert.ok(chainSetup.decisionId, "the seeded blight decree must exist");
+    await page.locator('[data-blight-decree="' + chainSetup.decisionId + '"]').waitFor({ timeout: 15000 });
+    const studyButton = page.locator('[data-blight-decree="' + chainSetup.decisionId + '"] [data-command="special-blight-choice"][data-value="study"]:not([disabled])');
+    assert.equal(await studyButton.count(), 1, "the rendered decree must offer an affordable study choice");
+    await studyButton.click();
+    await page.waitForFunction(async siteId => {
+        const { getExpeditionSnapshot } = await import("./js/systems/expeditions.js");
+        const site = getExpeditionSnapshot().sites.find(entry => entry.id === siteId);
+        return site?.chainStage === 2 && site.claim === "study";
+    }, chainSetup.targetId, { timeout: 15000 });
+
+    const readChainUI = siteId => page.evaluate(async id => {
+        const { getExpeditionSnapshot } = await import("./js/systems/expeditions.js");
+        const site = getExpeditionSnapshot().sites.find(entry => entry.id === id);
+        const card = document.querySelector('[data-expedition-site="' + id + '"]');
+        const badge = card?.querySelector(".expedition-site__chain");
+        return {
+            snapshot: {
+                stage: site.chainStage, label: site.chainLabel, claim: site.claim,
+                claimLabel: site.claimLabel, notes: [...site.notes],
+                ready: getExpeditionSnapshot().stats.chainReady,
+                closed: getExpeditionSnapshot().stats.chainClosed
+            },
+            card: {
+                stage: card?.dataset.chainStage || "",
+                claim: card?.dataset.siteClaim || "",
+                hasFollowUp: Boolean(card?.classList.contains("has-follow-up")),
+                badgeStage: badge?.dataset.chainStage || "",
+                badgeClaim: badge?.dataset.siteClaim || "",
+                badgeText: badge?.textContent?.trim() || "",
+                claimLabel: badge?.querySelector("strong")?.textContent?.trim() || "",
+                notes: card?.querySelector(".expedition-site__notes")?.textContent?.trim() || "",
+                button: card?.querySelector('[data-command="expedition-start"]')?.textContent?.trim() || ""
+            },
+            summary: [...document.querySelectorAll("#command-panel-content .command-summary > div")].map(entry => ({
+                label: entry.querySelector("small")?.textContent?.trim(),
+                value: entry.querySelector("strong")?.textContent?.trim()
+            }))
+        };
+    }, siteId);
+    const chainReady = await readChainUI(chainSetup.targetId);
+    const summaryValue = (proof, label) => proof.summary.find(entry => entry.label === label)?.value;
+    assert.equal(chainReady.snapshot.stage, 2);
+    assert.equal(chainReady.snapshot.label, "FOLLOW-UP READY");
+    assert.equal(chainReady.snapshot.claim, "study");
+    assert.ok(chainReady.snapshot.claimLabel, "the snapshot must expose the study claim label");
+    assert.ok(chainReady.snapshot.notes.length >= 1, "the field order must add a site note");
+    assert.equal(chainReady.snapshot.ready, 1);
+    assert.equal(chainReady.snapshot.closed, 0);
+    assert.equal(chainReady.card.stage, "2");
+    assert.equal(chainReady.card.claim, "study");
+    assert.equal(chainReady.card.badgeStage, "2");
+    assert.equal(chainReady.card.badgeClaim, "study");
+    assert.equal(chainReady.card.hasFollowUp, true);
+    assert.match(chainReady.card.badgeText, /FOLLOW-UP · FOLLOW-UP READY/);
+    assert.equal(chainReady.card.claimLabel, chainReady.snapshot.claimLabel, "the badge must render the exported claim label");
+    assert.ok(chainReady.card.notes.includes(chainReady.snapshot.notes[0]), "the notes block must render the field order");
+    assert.match(chainReady.card.button, /SURVEY FOLLOW-UP/);
+    assert.equal(summaryValue(chainReady, "FOLLOW-UPS READY"), "1", "the summary must count the armed chain");
+    assert.equal(summaryValue(chainReady, "CHAINS CLOSED"), "0");
+    await page.screenshot({ path: resolve(EVIDENCE, "expedition-chain-follow-up-ready.png"), animations: "disabled" });
+
+    // Answering the decree re-rendered the Explore panel, so equip after that
+    // render instead of holding a stale select value.
     await page.locator("#expedition-leader-select").selectOption(leaderId);
     await page.locator("#expedition-supply-select").selectOption("grand");
     await quietScene();
@@ -175,6 +275,7 @@ try {
         const { getExpeditionSnapshot } = await import("./js/systems/expeditions.js");
         return [...getExpeditionSnapshot().sites].sort((a, b) => a.danger - b.danger || a.distance - b.distance)[0].id;
     });
+    assert.equal(firstSiteId, chainSetup.targetId, "the answered decree must arm the site this proof charters");
     await page.locator('[data-expedition-site="' + firstSiteId + '"] [data-command="expedition-start"]').click();
     await page.locator(".expedition-active[data-expedition-active]").waitFor({ timeout: 10000 });
     const active = await page.evaluate(async () => {
@@ -243,9 +344,71 @@ try {
     await page.locator("#command-panel-content").evaluate(element => { element.scrollTop = element.scrollHeight; });
     await page.screenshot({ path: resolve(OUT, "explore-report.png"), animations: "disabled" });
 
+    // The claimed follow-up is closed by the successful party that just
+    // returned; the same card must now show the terminal stage.
+    await page.locator("#command-panel-content").evaluate(element => { element.scrollTop = 0; });
+    const chainClosed = await readChainUI(firstSiteId);
+    assert.ok(["success", "triumph"].includes(returned.tier), "the audited follow-up must be a successful party: " + returned.tier);
+    assert.equal(chainClosed.snapshot.stage, 3);
+    assert.equal(chainClosed.snapshot.label, "CHAIN CLOSED");
+    assert.equal(chainClosed.snapshot.claim, "study");
+    assert.ok(chainClosed.snapshot.claimLabel, "the closed chain must retain its claim label");
+    assert.ok(chainClosed.snapshot.notes.length > chainReady.snapshot.notes.length, "closure must append a field note");
+    assert.equal(chainClosed.snapshot.ready, 0);
+    assert.equal(chainClosed.snapshot.closed, 1);
+    assert.equal(chainClosed.card.stage, "3");
+    assert.equal(chainClosed.card.badgeStage, "3");
+    assert.equal(chainClosed.card.badgeClaim, "study");
+    assert.match(chainClosed.card.badgeText, /FOLLOW-UP · CHAIN CLOSED/);
+    assert.equal(chainClosed.card.claimLabel, chainClosed.snapshot.claimLabel);
+    assert.ok(chainClosed.card.notes.includes(chainClosed.snapshot.notes[chainClosed.snapshot.notes.length - 1]));
+    assert.match(chainClosed.card.button, /SURVEY AGAIN/);
+    assert.equal(summaryValue(chainClosed, "FOLLOW-UPS READY"), "0");
+    assert.equal(summaryValue(chainClosed, "CHAINS CLOSED"), "1");
+    await page.screenshot({ path: resolve(EVIDENCE, "expedition-chain-closed.png"), animations: "disabled" });
+
+    const savedChain = await page.evaluate(async siteId => {
+        const { createSaveSnapshot } = await import("./js/core/save-runtime.js");
+        const save = createSaveSnapshot();
+        const site = save.expeditions.sites.find(entry => entry.id === siteId);
+        return { stage: site?.chainStage, claim: site?.claim, notes: [...(site?.notes || [])], closed: save.expeditions.sites.filter(entry => Number(entry.chainStage) === 3).length };
+    }, firstSiteId);
+    assert.equal(savedChain.stage, 3, "the save snapshot must carry the closed chain stage");
+    assert.equal(savedChain.claim, "study");
+    assert.deepEqual(savedChain.notes, chainClosed.snapshot.notes, "the save snapshot must carry the chain notes");
+    assert.equal(savedChain.closed, 1);
+
+    // Save through the visible control and prove the chain survives a real
+    // reload/continue, not just an in-memory snapshot.
+    await page.locator("#command-close").click();
+    await page.locator("#save-btn").click();
+    await page.waitForFunction(() => (document.querySelector("#save-status")?.textContent || "").startsWith("LAST SAVED"), null, { timeout: 20000 });
+    await page.reload({ waitUntil: "domcontentloaded", timeout: 60000 });
+    await page.locator("#start-screen").waitFor({ state: "visible", timeout: 30000 });
+    await page.waitForFunction(() => {
+        const button = document.querySelector("#continue-game-btn");
+        return Boolean(button && !button.disabled);
+    }, null, { timeout: 15000 });
+    await page.locator("#continue-game-btn").click();
+    await page.waitForFunction(() => (document.querySelector("#status-message")?.textContent || "").includes("Loaded realm"), null, { timeout: 20000 });
+    await page.locator("#command-open-btn").click();
+    await page.locator('[data-command-tab="explore"]').click();
+    await page.waitForFunction(siteId => document.querySelector('[data-expedition-site="' + siteId + '"]')?.dataset.chainStage === "3", firstSiteId, { timeout: 15000 });
+    const restoredChain = await readChainUI(firstSiteId);
+    assert.equal(restoredChain.snapshot.stage, 3, "the closed chain must survive reload");
+    assert.equal(restoredChain.snapshot.label, "CHAIN CLOSED");
+    assert.equal(restoredChain.snapshot.claim, "study");
+    assert.equal(restoredChain.snapshot.claimLabel, chainClosed.snapshot.claimLabel);
+    assert.deepEqual(restoredChain.snapshot.notes, chainClosed.snapshot.notes, "chain notes must survive reload");
+    assert.equal(restoredChain.card.badgeStage, "3");
+    assert.equal(restoredChain.card.claimLabel, chainClosed.snapshot.claimLabel);
+    assert.ok(restoredChain.card.notes.includes(chainClosed.snapshot.notes[chainClosed.snapshot.notes.length - 1]));
+    assert.equal(summaryValue(restoredChain, "CHAINS CLOSED"), "1");
+    await page.screenshot({ path: resolve(EVIDENCE, "expedition-chain-restored.png"), animations: "disabled" });
+
     assert.deepEqual(pageErrors, [], "the Explore flow must not raise page errors");
     assert.deepEqual(consoleErrors, [], "the Explore flow must not raise console errors");
-    console.log(JSON.stringify({ seed: SEED, siteCount: 8, leaderId, activeId: active.active.id, decks, history: returned.history, lore: returned.lore, screenshots: OUT }, null, 2));
+    console.log(JSON.stringify({ seed: SEED, siteCount: 8, leaderId, activeId: active.active.id, decks, history: returned.history, lore: returned.lore, chain: { siteId: chainSetup.targetId, claim: chainClosed.snapshot.claim, stage: restoredChain.snapshot.stage, notes: restoredChain.snapshot.notes.length }, screenshots: OUT }, null, 2));
 } finally {
     await browser.close();
 }

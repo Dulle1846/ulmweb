@@ -1,13 +1,54 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.80.1`
-**Next development line:** `3.81.0-dev`
+**Current production version:** `3.81.0`
+**Next development line:** `3.82.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
 **Last repository verification:** 2026-11-27 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.81.0 — Expedition-to-biome follow-up chains
+
+This release follows the 3.80.0/3.80.1 woodland culture line; the envoy missions
+from 3.79.0 remain part of the same production line.
+
+A blight decree now has a second, player-facing answer. Choosing **Study the
+blight** or **Quarantine** leaves a royal field order on one of the eight
+landmarks the realm already owns; **Burn the rot** and **Leave it** deliberately
+leave no order. The Explore panel shows each order on its landmark card, so a
+player can read the task, send a named party and close the chain through normal
+expedition play. No ninth landmark is generated and no new currency is added.
+
+- **Four named stages.** Every site moves from **RUMOUR** to **SURVEYED** after a
+  first successful visit, then to **FOLLOW-UP READY** when a blight study or
+  quarantine arms it, and finally to **CHAIN CLOSED** when the next party
+  succeeds. A follow-up that returns `costly` or `disaster` stays at
+  **FOLLOW-UP READY** with the same claim and can be attempted again; the order
+  is never consumed by failure.
+- **Fixed, advertised rewards.** Study orders add exactly **+6 score** and
+  **+12 % (×1.12) cache** to that follow-up; quarantine orders add exactly
+  **+3 score** and **+5 % (×1.05)**. These are the same eight per-site chains in
+  `SITE_CHAINS`; there is no hidden scaling, no new loot table and no extra
+  random draw. The existing expedition score stream is reused unchanged.
+- **Field notes.** Each site keeps at most **8 notes of 220 characters**. The
+  arming order, the closure text and a driven-back report are written there and
+  shown on the Explore landmark card beside the chain badge and summary counters.
+- **Save compatibility.** `chainStage`, `claim` and `notes` are optional fields
+  inside the existing `state.expeditions` block. Old saves normalize to stage 0
+  with no claim and no notes; malformed stages or claims are repaired on load.
+  There is no save-schema bump, and no new RNG stream or per-tick scan: arming
+  happens only in the blight decision, and progress is resolved on expedition
+  return.
+- **Verification.** Focused expedition and special-biome coupling tests
+  **21/21** green, including all eight chains, both fixed reward pairs, the
+  study/quarantine-only arming rule, failed-follow-up retry and note bounds.
+  The spec audit regenerates at **1,722/1,722 implemented, 0 open, 42 sections**
+  with its **3/3** contract test green; new points `1.2.16.chain.*` and `3.11.*`
+  carry live consumers and tests. The Explore and Atlas browser harnesses are
+  registered as browser evidence for the chain points; see
+  [Expedition follow-up chains](docs/EXPEDITIONS.md).
 
 ## 3.80.1 — Waldkultur im vollständigen Live-Spielerdurchlauf
 
