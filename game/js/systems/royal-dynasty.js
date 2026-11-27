@@ -7,6 +7,7 @@ import {recordResourceMovement} from "./goods-book.js";
 import {addResource} from "./resources.js";
 import {normalizeRoyalCrisisState} from "./royal-crisis-state.js";
 import {DIPLOMATIC_REALMS} from "./diplomacy-config.js";
+import {normalizeRoyalEducationState} from "./royal-education.js";
 const MAX_HISTORY=48,personId=e=>String(e?.personId||e?.person?.id||e?.id||""),alive=e=>Boolean(e&&!e.dead);
 function normalizeForeignMarriage(value){
  if(!value||typeof value!=="object"||Array.isArray(value))return null;
@@ -40,6 +41,7 @@ function royalState(){
  s.foreignMarriage=normalizeForeignMarriage(s.foreignMarriage);
  s.history=Array.isArray(s.history)?s.history.filter(x=>x&&typeof x==="object").slice(-MAX_HISTORY):[];
  normalizeRoyalCrisisState(s);
+  s.education=normalizeRoyalEducationState(s.education);
  state.royal=s;
  return s;
 }

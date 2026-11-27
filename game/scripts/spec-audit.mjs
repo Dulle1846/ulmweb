@@ -758,14 +758,25 @@ const SYSTEM_SPECS = [
             { file: "js/systems/diplomacy.js", symbol: "getDiplomaticMissionSnapshot" },
             { file: "js/simulation/simulation.js", symbol: "diplomaticMissions" },
             { file: "js/presentation/management-ui.js", symbol: "diplomacy" }
-        ], tests: ["tests/systems/diplomatic-missions.test.js", "tests/browser/diplomatic-missions-ui.mjs"] }
+        ], tests: ["tests/systems/diplomatic-missions.test.js", "tests/browser/diplomatic-missions-ui.mjs"] },
+        { id: "3.9.11", label: "Royal education, annual tutelage and coming-of-age audiences", evidence: [
+            { file: "js/systems/royal-education.js", symbol: "ROYAL_CURRICULA" },
+            { file: "js/systems/royal-education.js", symbol: "appointRoyalTutor" },
+            { file: "js/systems/royal-education.js", symbol: "enrollRoyalStudent" },
+            { file: "js/systems/royal-education.js", symbol: "updateRoyalEducation" },
+            { file: "js/systems/royal-education.js", symbol: "holdRoyalAudience" },
+            { file: "js/systems/royal-education.js", symbol: "getRoyalEducationSnapshot" },
+            { file: "js/simulation/simulation.js", symbol: "royalEducation" },
+            { file: "js/presentation/management-ui.js", symbol: "royalEducationPanel" }
+        ], tests: ["tests/systems/royal-education.test.js", "tests/browser/royal-education-ui.mjs"] }
     ], {
         consumers: [
             { file: "js/systems/diplomacy.js", symbol: "getDiplomacySnapshot", role: "diplomacy" },
             { file: "js/systems/royal-dynasty.js", symbol: "updateRoyalSuccession", role: "dynasty" },
             { file: "js/systems/royal-crisis.js", symbol: "updateRoyalCrisis", role: "dynasty-crisis" },
             { file: "js/presentation/management-ui.js", symbol: "royalCrisisPanel", role: "gameplay" },
-            { file: "js/presentation/management-ui.js", symbol: "councilSection", role: "gameplay" }
+            { file: "js/presentation/management-ui.js", symbol: "councilSection", role: "gameplay" },
+            { file: "js/presentation/management-ui.js", symbol: "royalEducationPanel", role: "gameplay" }
         ],
         tests: ["tests/systems/diplomacy.test.js"]
     }),

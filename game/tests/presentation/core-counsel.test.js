@@ -247,6 +247,41 @@ test("core counsel extends a completed opening into a live council bill", () => 
     }
 });
 
+test("core counsel extends a completed opening into royal education", () => {
+    resetState();
+    try {
+        for (const ambition of AMBITIONS) state.ambitions.completed[ambition.id] = 1;
+        const child = { dead: false, type: TYPE.KNIGHT, isRoyalFamily: true, person: { role: "royal-child" } };
+        const sibling = { dead: false, type: TYPE.KNIGHT, isRoyalFamily: true, person: { role: "royal-child" } };
+        const noTutor = getCoreCounsel(realm({
+            entities: [child, sibling, { dead: false, type: TYPE.HOUSE }],
+            royal: { education: { tutorId: null, students: [] } }
+        }));
+        assert.equal(noTutor.id, "royal-education");
+        assert.equal(noTutor.panel, "decisions");
+        assert.equal(noTutor.actionLabel, "OPEN DECISIONS");
+        assert.match(noTutor.text, /Appoint a royal Tutor in Decisions/);
+
+        const student = { id: "student-1", curriculumId: "letters", stage: "tutelage", yearsTaught: 1, yearsRequired: 3 };
+        const enrolled = getCoreCounsel(realm({
+            entities: [child, sibling, { dead: false, type: TYPE.HOUSE }],
+            royal: { education: { tutorId: "tutor-1", students: [student] } }
+        }));
+        assert.equal(enrolled.id, "royal-education");
+        assert.match(enrolled.text, /Enrol a royal child in a curriculum in Decisions/);
+
+        const ready = getCoreCounsel(realm({
+            entities: [child, sibling, { dead: false, type: TYPE.HOUSE }],
+            royal: { education: { tutorId: "tutor-1", students: [{ ...student, stage: "ready", yearsTaught: 3 }] } }
+        }));
+        assert.equal(ready.id, "royal-education");
+        assert.match(ready.text, /Hold the coming-of-age audience in Decisions/);
+        assert.match(ready.evidence, /LETTERS & CHANCERY · READY · 3\/3 YEARS/);
+    } finally {
+        resetState();
+    }
+});
+
 test("core counsel extends a completed opening into a ready envoy mission", () => {
     resetState();
     try {

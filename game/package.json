@@ -1,6 +1,6 @@
 {
   "name": "kings-and-cards",
-  "version": "3.81.0",
+  "version": "3.82.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -79,6 +79,7 @@
     "test:expeditions": "node tests/browser/expeditions-ui.mjs",
     "test:nobility-ui": "node tests/browser/nobility-ui.mjs",
     "test:royal-crisis-ui": "node tests/browser/royal-crisis-ui.mjs",
+    "test:royal-education-ui": "node tests/browser/royal-education-ui.mjs",
     "test:diplomacy-guarantees-ui": "node tests/browser/diplomacy-guarantees-ui.mjs",
     "test:random-start-ui": "node tests/browser/random-start-ui.mjs",
     "test:biome-ui": "node tests/browser/biome-atlas-ui.mjs",

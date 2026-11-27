@@ -153,6 +153,34 @@ test("a completed first session continues into a live council docket", () => {
     }
 });
 
+test("a completed first session continues into a ready royal audience", () => {
+    resetState();
+    try {
+        for (const ambition of AMBITIONS) state.ambitions.completed[ambition.id] = 1;
+        state.hasStarted = true;
+        state.entities = [{ dead: false, type: TYPE.HOUSE }];
+        state.statistics.totalHousesBuilt = 1;
+        state.statistics.totalRoadTilesBuilt = 1;
+        state.statistics.totalCardsDrawn = 1;
+        state.royal = {
+            education: {
+                tutorId: "tutor-1",
+                students: [{
+                    id: "student-1", curriculumId: "letters", stage: "ready",
+                    yearsTaught: 3, yearsRequired: 3
+                }]
+            }
+        };
+        const snapshot = getFirstSessionSnapshot();
+        assert.equal(snapshot.allComplete, true);
+        assert.equal(snapshot.counselId, "royal-education");
+        assert.match(snapshot.continuationText, /Hold the coming-of-age audience in Decisions/);
+        assert.match(snapshot.continuationText, /LETTERS & CHANCERY · READY · 3\/3 YEARS/);
+    } finally {
+        resetState();
+    }
+});
+
 test("a completed first session continues into a ready envoy mission", () => {
     resetState();
     try {

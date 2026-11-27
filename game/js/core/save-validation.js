@@ -37,6 +37,7 @@ import { validateCraftedItems } from "../systems/item-lexicon.js";
 import { COUNCIL_DOCKET_LIMIT, COUNCIL_HISTORY_LIMIT } from "../systems/council-laws.js";
 import { DIPLOMATIC_REALMS } from "../systems/diplomacy-config.js";
 import { DIPLOMACY_MISSION_LIMIT, DIPLOMACY_MISSION_GOALS, DIPLOMACY_MISSION_STAGES } from "../systems/diplomacy.js";
+import { ROYAL_CURRICULA, ROYAL_EDUCATION_HISTORY_LIMIT, ROYAL_EDUCATION_LIMIT, ROYAL_EDUCATION_STAGES } from "../systems/royal-education.js";
 import { resolveWorldDimensions } from "../world/terrain-model.js";
 
 export const SAVE_SCHEMA_VERSION = 15;
@@ -362,6 +363,38 @@ export function validateSaveSnapshot(snapshot) {
         }
         if (council.counters !== undefined && (typeof council.counters !== "object" || Array.isArray(council.counters))) {
             fail("Save data contains invalid council counters.", { code:"INVALID_COUNCIL_COUNTERS", field:"government.council.counters", valueType:typeOf(council.counters), phase:"government" });
+        }
+    }
+    // Royal education is optional inside the royal DTO. Saves written before
+    // this system arrive without it and royalState() rebuilds an empty dossier;
+    // a present but malformed or oversized dossier is rejected rather than
+    // silently truncated on import.
+    if (snapshot.royal !== undefined && snapshot.royal !== null &&
+        typeof snapshot.royal === "object" && !Array.isArray(snapshot.royal) &&
+        snapshot.royal.education !== undefined && snapshot.royal.education !== null) {
+        const education = snapshot.royal.education;
+        if (typeof education !== "object" || Array.isArray(education) ||
+            !Array.isArray(education.students) || education.students.length > ROYAL_EDUCATION_LIMIT ||
+            !Array.isArray(education.history) || education.history.length > ROYAL_EDUCATION_HISTORY_LIMIT ||
+            (education.tutorId !== null && typeof education.tutorId !== "string") ||
+            !Number.isFinite(Number(education.lastUpdateYear)) ||
+            !Number.isFinite(Number(education.audienceCounter))) {
+            fail("Save data contains an invalid royal education dossier.", { code:"INVALID_ROYAL_EDUCATION", field:"royal.education", valueType:typeOf(education), phase:"royal" });
+        } else {
+            for (const [index, student] of education.students.entries()) {
+                const field = "royal.education.students[" + index + "]";
+                if (!student || typeof student !== "object" || Array.isArray(student) ||
+                    typeof student.id !== "string" || typeof student.personId !== "string" ||
+                    !ROYAL_CURRICULA[student.curriculumId] || !ROYAL_EDUCATION_STAGES.includes(student.stage) ||
+                    !Number.isFinite(Number(student.startYear)) || !Number.isFinite(Number(student.yearsTaught))) {
+                    fail("Save data contains an invalid royal student.", { code:"INVALID_ROYAL_STUDENT", field, valueType:typeOf(student), phase:"royal" });
+                }
+            }
+            for (const [index, entry] of education.history.entries()) {
+                if (!entry || typeof entry !== "object" || Array.isArray(entry) || !Number.isFinite(Number(entry.year))) {
+                    fail("Save data contains an invalid royal education record.", { code:"INVALID_ROYAL_EDUCATION_RECORD", field:"royal.education.history[" + index + "]", valueType:typeOf(entry), phase:"royal" });
+                }
+            }
         }
     }
 

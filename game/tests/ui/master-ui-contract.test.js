@@ -4,7 +4,7 @@ import {readFile} from "node:fs/promises";
 import {MANAGEMENT_TABS} from "../../js/presentation/management-tabs.js";
 
 const root=new URL("../../",import.meta.url);
-const [html,css,cardCss,ui,management,populationPanel,dossier,main,saveRuntime,economy,economyCycle,renderer,hud,gameCss]=await Promise.all([
+const [html,css,cardCss,ui,management,populationPanel,dossier,main,saveRuntime,saveValidation,economy,economyCycle,renderer,hud,gameCss]=await Promise.all([
   readFile(new URL("index.html",root),"utf8"),
   readFile(new URL("css/ui-design-system.css",root),"utf8"),
   readFile(new URL("css/medieval.css",root),"utf8"),
@@ -14,6 +14,7 @@ const [html,css,cardCss,ui,management,populationPanel,dossier,main,saveRuntime,e
   readFile(new URL("js/presentation/character-dossier.js",root),"utf8"),
   readFile(new URL("js/app/main.js",root),"utf8"),
   readFile(new URL("js/core/save-runtime.js",root),"utf8"),
+  readFile(new URL("js/core/save-validation.js",root),"utf8"),
   readFile(new URL("js/systems/economy.js",root),"utf8"),
   readFile(new URL("js/systems/economy-cycle.js",root),"utf8"),
   readFile(new URL("js/presentation/rendering/renderer.js",root),"utf8"),
@@ -194,6 +195,21 @@ test("diplomacy exposes persistent neighbours, treaties and trade consequences",
   assert.ok(compactSaveRuntime.includes("diplomacy:JSON.parse(JSON.stringify(state.diplomacy"));
 });
 
+test("royal education exposes the visible Tutor, enrolment and audience commands",()=>{
+  assert.ok(tabIds.has("decisions"));
+  assert.ok(management.includes("function royalEducationPanel()"));
+  assert.ok(management.includes("ROYAL EDUCATION · TUTOR & TUTELAGE"));
+  assert.ok(management.includes("AUTHORED CURRICULA"));
+  assert.ok(management.includes("data-education-student="));
+  assert.ok(management.includes('id="royal-tutor-select"'));
+  assert.ok(management.includes('id="royal-curriculum-'));
+  for(const command of ["royal-education-tutor","royal-education-enroll","royal-education-audience","royal-education-dismiss"]) {
+    assert.ok(management.includes('data-command="'+command+'"'),"royal education command is missing: "+command);
+  }
+  assert.ok(saveRuntime.includes("royal: JSON.parse(JSON.stringify(state.royal || {}))"));
+  assert.ok(saveValidation.includes("INVALID_ROYAL_EDUCATION"));
+});
+
 test("the population panel explains a stalled growth gate and its recovery hint",()=>{
   assert.ok(populationPanel.includes("population-growth-gate"));
   assert.ok(populationPanel.includes("GROWTH GATE · BLOCKED"));
@@ -231,7 +247,7 @@ test("settings expose local save slots, import/export and version/credits metada
   assert.ok(html.includes('id="export-save-btn"'));
   assert.ok(html.includes('id="import-save-input"'));
   assert.ok(html.includes('id="save-archive-status"'));
-  assert.ok(html.includes("KINGS &amp; CARDS · <b>v3.81.0</b>"));
+  assert.ok(html.includes("KINGS &amp; CARDS · <b>v3.82.0</b>"));
   assert.ok(management.includes('data-command="crown-grain"'));
   assert.ok(management.includes('data-command="crown-water"'));
   assert.ok(management.includes('data-command="crown-housing"'));

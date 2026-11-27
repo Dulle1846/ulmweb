@@ -1,13 +1,49 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.81.0`
-**Next development line:** `3.82.0-dev`
+**Current production version:** `3.82.0`
+**Next development line:** `3.83.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
 **Last repository verification:** 2026-11-27 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.82.0 — Royal education and coming-of-age offices
+
+Royal children now have a real, bounded education path in **Decisions**. One
+adult, non-kin **Tutor** can guide up to three children through four authored
+curricula. Tutelage advances once in the existing annual maintenance, never on
+a per-tick scan and never with a hidden random roll. A course and the student's
+species maturity must both be complete before the player holds a coming-of-age
+audience.
+
+- **Four curricula, four offices.** Letters & Chancery (3 years → Royal
+  Chancellor), Stewardship & Granaries (4 → Royal Steward), Command & Campaigns
+  (5 → Royal Marshal) and Law & Templecustom (4 → High Justiciar) advertise
+  their trait changes, political effects and office endowment before enrolment.
+  The audience pays `18 gold` and `12 food`, returns the advertised endowment,
+  applies the effects through the existing politics ledger and writes a real
+  personal memory and named role to the graduate.
+- **Save-compatible, bounded state.** `state.royal.education` is an optional
+  nested DTO: old saves normalize to an empty dossier, `SAVE_SCHEMA_VERSION`
+  stays at **15**, active students are capped at **3** and history at **18**.
+  Import validation rejects malformed or oversized dossiers instead of silently
+  truncating them. Education survives succession and exact save/load.
+- **One annual hook.** The `royalEducation` task runs immediately after royal
+  succession in `ANNUAL_TASKS`. A child enrolled during a year cannot receive
+  backdated lessons; finished students wait for maturity and then remain ready
+  until the player holds the audience.
+- **Player guidance and documentation.** NEXT MOVE and FIRST SESSION extend
+  into the live Tutor/enrolment/audience step rather than duplicating the
+  opening checklist. The full player guide is in `docs/ROYAL_EDUCATION.md`;
+  spec point **3.9.11** carries live code and test evidence.
+- **Verification.** Focused system, counsel, first-session, UI-contract, depth,
+  family, guardianship, royal-crisis and dossier tests are green; the
+  deterministic 25-year campaign remains healthy. A real browser proof walks
+  Start → Decisions → marriage → royal birth → Tutor → enrolment → annual
+  tutelage → audience → Save/Load with zero page and console errors. Final gate
+  totals are recorded in the release backlog entry.
 
 ## 3.81.0 — Expedition-to-biome follow-up chains
 

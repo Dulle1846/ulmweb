@@ -1,7 +1,7 @@
 # Kings & Cards
 
-**Production version:** 3.81.0
-**Next development line:** 3.82.0-dev
+**Production version:** 3.82.0
+**Next development line:** 3.83.0-dev
 **Production branch:** `ulmweb-branch`  
 **Production URL:** https://kings-and-cards.pages.dev/
 
@@ -36,6 +36,7 @@
 27. [Envoy missions](docs/ENVOY_MISSIONS.md) — bounded Send → Negotiate → Report → Ratify mandates for the four neighbouring courts, deterministic Chancellor/foreign-desk negotiation, real treaty effects, save-compatible nested DTOs and the 3.79.0 browser proof.
 
 28. [Expedition follow-up chains](docs/EXPEDITIONS.md) — 3.81.0 blight study/quarantine field orders on the eight existing landmarks, RUMOUR → SURVEYED → FOLLOW-UP READY → CHAIN CLOSED, two fixed reward pairs, bounded site notes, save-compatible state and the Explore panel proof.
+29. [Royal education](docs/ROYAL_EDUCATION.md) — one Tutor, three authored curricula for royal children, bounded annual tutelage, coming-of-age audiences with political effects and named offices, save-compatible nested DTO, Decisions panel, NEXT MOVE/FIRST SESSION continuation and browser proof.
 
 ## Development rules
 

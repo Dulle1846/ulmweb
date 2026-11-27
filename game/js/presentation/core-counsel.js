@@ -7,6 +7,7 @@ import { getAmbitionSnapshot } from "../systems/ambitions.js";
 import { getScenarioSnapshot } from "../systems/scenario.js";
 import { WAR_AIMS, CAMPAIGN_GOAL } from "../systems/feudal-campaigns.js";
 import { COUNCIL_BILLS } from "../systems/council-laws.js";
+import { ROYAL_CURRICULA, ROYAL_EDUCATION_LIMIT } from "../systems/royal-education.js";
 
 function canAfford(state, cost) {
     return Object.entries(cost || {}).every(([resource, amount]) =>
@@ -421,6 +422,58 @@ export function getCoreCounsel(state) {
                 " · SUPPORT " + Math.round(Number(councilBill.support) || 0) + "/" + Math.round(Number(councilBill.threshold) || 0),
             actionLabel: "OPEN GOVERNMENT",
             panel: "government",
+            buildCategory: null,
+            buildType: null
+        };
+    }
+    // Royal education joins the same continuation path as the council and
+    // envoy work. Read the optional nested DTO directly; a loading frame must
+    // not create education state just to render NEXT MOVE.
+    const education = state?.royal?.education;
+    const students = Array.isArray(education?.students) ? education.students : [];
+    const readyStudent = students.find(student => student?.stage === "ready");
+    const activeStudents = students.filter(student => ["tutelage", "ready"].includes(student?.stage));
+    const royalChildren = Array.isArray(state?.entities) ? state.entities.filter(entity =>
+        entity && !entity.dead && entity.isRoyalFamily && !entity.isKing &&
+        ["royal-child", "heir"].includes(entity.person?.role)).length : 0;
+    const unassignedChildren = Math.max(0, royalChildren - activeStudents.length);
+    if (readyStudent) {
+        const course = ROYAL_CURRICULA[readyStudent.curriculumId];
+        return {
+            id: "royal-education",
+            stepId: null,
+            text: "Hold the coming-of-age audience in Decisions.",
+            evidence: (course?.label || "ROYAL TUTELAGE").toUpperCase() + " · READY · " +
+                Math.round(Number(readyStudent.yearsTaught) || 0) + "/" +
+                Math.round(Number(readyStudent.yearsRequired) || 0) + " YEARS",
+            actionLabel: "OPEN DECISIONS",
+            panel: "decisions",
+            buildCategory: null,
+            buildType: null
+        };
+    }
+    if (!education?.tutorId && royalChildren > 0) {
+        return {
+            id: "royal-education",
+            stepId: null,
+            text: "Appoint a royal Tutor in Decisions.",
+            evidence: royalChildren + " royal child" + (royalChildren === 1 ? "" : "ren") +
+                " · no Tutor appointed · up to " + ROYAL_EDUCATION_LIMIT + " students",
+            actionLabel: "OPEN DECISIONS",
+            panel: "decisions",
+            buildCategory: null,
+            buildType: null
+        };
+    }
+    if (education?.tutorId && unassignedChildren > 0 && activeStudents.length < ROYAL_EDUCATION_LIMIT) {
+        return {
+            id: "royal-education",
+            stepId: null,
+            text: "Enrol a royal child in a curriculum in Decisions.",
+            evidence: unassignedChildren + " child" + (unassignedChildren === 1 ? "" : "ren") +
+                " available · " + activeStudents.length + "/" + ROYAL_EDUCATION_LIMIT + " in tutelage",
+            actionLabel: "OPEN DECISIONS",
+            panel: "decisions",
             buildCategory: null,
             buildType: null
         };

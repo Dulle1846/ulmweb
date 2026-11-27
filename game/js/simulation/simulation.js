@@ -48,6 +48,7 @@ import { updatePersonalAgency } from "../systems/agency.js";
 import { updateMortality } from "../systems/mortality.js";
 import { updateGuardianships } from "../systems/guardianship.js";
 import { updateRoyalSuccession } from "../systems/royal-dynasty.js";
+import { updateRoyalEducation } from "../systems/royal-education.js";
 import { updateRoyalCrisis } from "../systems/royal-crisis.js";
 import { updateCreatures } from "../systems/creatures.js";
 import { updateAmbitions } from "../systems/ambitions.js";
@@ -87,6 +88,7 @@ const ANNUAL_TASKS = [
     { name: "mortality", run(annual) { annual.deaths = updateMortality(); } },
     { name: "guardianships", run(annual) { annual.guardianships = updateGuardianships(); } },
     { name: "succession", run(annual) { annual.succession = updateRoyalSuccession(); } },
+    { name: "royalEducation", run(annual) { annual.royalEducation = updateRoyalEducation(); } },
     { name: "royalCrisis", run(annual) { annual.royalCrisis = updateRoyalCrisis(); } },
     { name: "creatures", run() { updateCreatures(); } },
     { name: "social", run(annual) { annual.socialResult = updateSocialLife(); } },
@@ -196,6 +198,7 @@ function createAnnualMaintenance() {
         newborn: null,
         succession: null,
         royalCrisis: null,
+        royalEducation: null,
         volcanoHazards: null,
         coastHazards: null,
         roadSurvey: null,
@@ -221,6 +224,9 @@ function runAnnualTasks(annual, forceAll = false) {
 function logAnnualResults(annual) {
     if (annual.succession?.changed) {
         addLog("THE CROWN PASSES TO " + (annual.succession.king.person?.name || "THE HEIR"), "#e8c77b", "dynasty");
+    }
+    if (annual.royalEducation?.ready?.length) {
+        addLog("A ROYAL STUDENT IS READY FOR A COMING-OF-AGE AUDIENCE", "#e8c77b", "dynasty");
     }
     for (const death of annual.deaths) {
         addLog("A RESIDENT DIED: " + death.name + " · " + death.cause, "#b99a9a", "death");
