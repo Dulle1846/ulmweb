@@ -262,6 +262,16 @@ test("the save, simulation and UI source contracts include the expedition layer"
     assert.ok(panel.includes("FOLLOW-UPS READY") && panel.includes("CHAINS CLOSED"), "the summary must expose chain progress");
     assert.ok(ui.includes("r.siteChain") && css.includes(".expedition-site__chain") && css.includes(".expedition-site__notes"),
         "the decree toast and chain styling must be wired");
+    assert.ok(couplings.includes("export function resolveBiomeQuestFollowUp") &&
+        couplings.includes("export function getBiomeFollowUpSnapshot"),
+        "completed atlas quests must arm a bounded, readable follow-up chain");
+    assert.ok(panel.includes("data-special-follow-up") && panel.includes("data-command=\"special-biome-quest-followup\"") &&
+        panel.includes("QUEST FOLLOW-UPS"),
+        "the Explore panel must render real follow-up cards and choices");
+    assert.ok(ui.includes("special-biome-quest-followup") && ui.includes("ATLAS FOLLOW-UP CLOSED"),
+        "the command deck must dispatch and report atlas follow-up choices");
+    assert.doesNotMatch(couplings, /Math\.random\s*\(/,
+        "atlas follow-ups must stay on the deterministic coupling path");
 });
 
 test("all eight landmarks carry one bounded, deterministic follow-up chain", () => {

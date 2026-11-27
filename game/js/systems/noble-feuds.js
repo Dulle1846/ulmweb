@@ -1,22 +1,39 @@
 // Noble feuds: durable disputes between two living houses. Causes are selected
 // deterministically from the houses' identities and year, escalation is annual
 // and bounded, and every court action has a real treasury/political cost.
+// Item 27 adds a short, bounded chain: a grievance can be taken into crown
+// arbitration and formally settled, or it breaks into a blood feud that costs
+// dues, levies and legitimacy until the crown spends to end it.
 import { state } from "../core/state.js";
 import { addLog } from "../core/event-log.js";
 import { addResource } from "./resources.js";
+import { recordResourceMovement } from "./goods-book.js";
 import { applyPoliticalEffects } from "./politics.js";
 import { addPersonMemory } from "./people.js";
 import { ensureNobility, getNobilitySnapshot } from "./nobility.js";
 import {
     NOBLE_ACTIVE_FEUD_LIMIT,
     NOBLE_FEUD_LIMIT,
+    NOBLE_FEUD_STAGES,
     createNobleFeud,
-    nobleFeudHistory
+    nobleFeudHistory,
+    nobleFeudPenalty
 } from "./noble-state.js";
 
 export const FEUD_MEDIATION_COST = 12;
 export const FEUD_INFLAME_COST = 5;
 export const FEUD_IGNORE_LEGITIMACY_COST = 0.2;
+export const FEUD_ARBITRATION_COST = 16;
+export const FEUD_SETTLEMENT_COSTS = Object.freeze({
+    compensation: Object.freeze({ gold: 24 }),
+    charter: Object.freeze({ gold: 10, wood: 8 })
+});
+export const FEUD_ARBITRATION_WINDOW_YEARS = 2;
+export const FEUD_STAGE_LABELS = Object.freeze({
+    grievance: "Grievance",
+    arbitration: "Crown arbitration",
+    "blood-feud": "Blood feud"
+});
 
 const clamp = (value, min = 0, max = 100) => Math.max(min, Math.min(max, Number.isFinite(Number(value)) ? Number(value) : min));
 const yearNow = () => Math.max(1, Math.floor(Number(state.year) || 1));
@@ -48,8 +65,37 @@ function houseById(id) {
     return nobility.houses.find(house => house.id === String(id)) || null;
 }
 
-function feudPenaltyFromSeverity(severity) {
-    return clamp(Number(severity) || 0, 0, 5) * 0.036;
+function feudPenaltyFromSeverity(severity, stage = "grievance") {
+    return nobleFeudPenalty({ status: "active", severity, stage });
+}
+
+function payFeudCost(cost, cause, key) {
+    for (const [resource, amount] of Object.entries(cost)) {
+        const value = Math.floor(Number(amount) || 0);
+        if (!value) continue;
+        recordResourceMovement(resource, -value, cause, {
+            from: { kind: "realm", id: "royal-stores" },
+            to: { kind: "nobility", id: "feud-crown-court" },
+            key: key + ":" + resource
+        });
+        addResource(resource, -value);
+    }
+}
+
+function affordable(cost) {
+    return Object.entries(cost).every(([resource, amount]) =>
+        (Number(state.resources?.[resource]) || 0) >= Math.floor(Number(amount) || 0));
+}
+
+function activeFeudStageFor(houseId) {
+    const nobility = ensureNobility();
+    let stage = "";
+    for (const feud of Array.isArray(nobility.feuds) ? nobility.feuds : []) {
+        if (feud.status !== "active" || !feud.houses.includes(String(houseId))) continue;
+        if (feud.stage === "blood-feud") return "blood-feud";
+        if (feud.stage === "arbitration") stage = "arbitration";
+    }
+    return stage;
 }
 
 export function activeFeudSeverityFor(houseId) {
@@ -63,7 +109,13 @@ export function activeFeudSeverityFor(houseId) {
 }
 
 export function nobleFeudPenaltyFor(houseId) {
-    return feudPenaltyFromSeverity(activeFeudSeverityFor(houseId));
+    const nobility = ensureNobility();
+    let penalty = 0;
+    for (const feud of Array.isArray(nobility.feuds) ? nobility.feuds : []) {
+        if (feud.status !== "active" || !feud.houses.includes(String(houseId))) continue;
+        penalty = Math.max(penalty, nobleFeudPenalty(feud));
+    }
+    return penalty;
 }
 
 function recordFeudState(nobility, kind, summary) {
@@ -77,12 +129,37 @@ function recordFeudState(nobility, kind, summary) {
     addLog(summary, "#d8c18a", "nobility");
 }
 
-function settle(feud, reason) {
+function promoteFeud(feud, stage, reason) {
+    if (!feud || !NOBLE_FEUD_STAGES.includes(stage) || feud.stage === stage) return false;
+    const before = String(feud.stage || "grievance");
+    feud.stage = stage;
+    feud.stageYear = yearNow();
+    if (stage === "arbitration") feud.arbitratedYear = yearNow();
+    if (stage === "blood-feud") feud.bloodFeudYear = yearNow();
+    nobleFeudHistory(feud, "stage-" + stage.replace(/-/g, ""),
+        "Feud stage " + before + " -> " + stage + ". " + reason, yearNow());
+    return true;
+}
+
+function settle(feud, reason, terms = "") {
     if (!feud || feud.status === "settled") return false;
     feud.status = "settled";
     feud.settledYear = yearNow();
+    if (terms) feud.settlement = terms;
     nobleFeudHistory(feud, "settled", reason, yearNow());
     return true;
+}
+
+function crownMemory(text, id) {
+    const king = state.entities.find(entity => !entity.dead && entity.isKing) || null;
+    if (!king) return;
+    addPersonMemory(king, {
+        id,
+        type: "nobility",
+        text,
+        tick: tickNow(),
+        importance: 78
+    });
 }
 
 function compactFeuds(nobility) {
@@ -108,6 +185,11 @@ function applyEscalation(feud, delta) {
     state.morale = clamp((Number(state.morale) || 0) - 0.35 * Math.max(1, delta), 0, 100);
     nobleFeudHistory(feud, delta > 0 ? "escalated" : "deescalated",
         "Feud severity " + before + " -> " + feud.severity + ".", yearNow());
+    if (delta > 0 && feud.severity >= 4) {
+        promoteFeud(feud, "blood-feud", "The houses stopped answering letters and called their retainers.");
+    } else if (delta < 0 && feud.severity <= 2) {
+        promoteFeud(feud, "arbitration", "The dispute is now small enough for the crown to arbitrate.");
+    }
 }
 
 function createFeud(nobility, snapshot) {
@@ -162,6 +244,16 @@ export function updateNobleFeuds() {
             continue;
         }
         if (feud.lastEscalationYear >= year) continue;
+        // Arbitration is a real deadline, not a permanent safe state. If the
+        // crown fails to settle the terms within two annual audits, the houses
+        // abandon the court and the grievance becomes a blood feud.
+        if (feud.stage === "arbitration" && Number(feud.arbitratedYear) > 0 &&
+            year - Number(feud.arbitratedYear) >= FEUD_ARBITRATION_WINDOW_YEARS && feud.severity > 0) {
+            promoteFeud(feud, "blood-feud", "The arbitration deadline passed without settlement.");
+            applyEscalation(feud, 1);
+            recordFeudState(nobility, "feud-arbitration-failed", "A noble arbitration collapsed into a blood feud.");
+            continue;
+        }
         const averageLoyalty = feud.houses.reduce((sum, id) => {
             const house = snapshot.houses.find(entry => entry.id === id);
             return sum + (Number(house?.loyalty) || 0);
@@ -192,7 +284,7 @@ export function updateNobleFeuds() {
         (!active.length || year % 3 === 0) && Number(nobility.lastFeudYear || 0) < year;
     if (canOpen) createFeud(nobility, snapshot);
     nobility.feudPenalty = active.length
-        ? Math.max(...active.map(feud => feudPenaltyFromSeverity(feud.severity)))
+        ? Math.max(...active.map(feud => nobleFeudPenalty(feud)))
         : 0;
     nobility.activeFeuds = active.length;
     compactFeuds(nobility);
@@ -208,18 +300,89 @@ export function getNobleFeudSnapshot() {
             const house = houses.get(id);
             return {id, familyName: house?.familyName || id, loyalty: Math.round(Number(house?.loyalty) || 0)};
         }),
-        penalty: feudPenaltyFromSeverity(feud.severity)
+        penalty: nobleFeudPenalty(feud)
     }));
+    const active = feuds.filter(feud => feud.status === "active");
     return {
         feuds,
-        active: feuds.filter(feud => feud.status === "active").length,
+        active: active.length,
         settled: feuds.filter(feud => feud.status === "settled").length,
-        penalty: Math.max(0, ...feuds.filter(feud => feud.status === "active").map(feud => feud.penalty), 0),
+        grievance: active.filter(feud => feud.stage === "grievance").length,
+        arbitration: active.filter(feud => feud.stage === "arbitration").length,
+        bloodFeuds: active.filter(feud => feud.stage === "blood-feud").length,
+        compensated: feuds.filter(feud => feud.settlement === "compensation").length,
+        charteredSettlements: feuds.filter(feud => feud.settlement === "charter").length,
+        penalty: Math.max(0, ...active.map(feud => feud.penalty), 0),
         activeLimit: NOBLE_ACTIVE_FEUD_LIMIT,
         feudLimit: NOBLE_FEUD_LIMIT,
         mediationCost: FEUD_MEDIATION_COST,
-        inflameCost: FEUD_INFLAME_COST
+        inflameCost: FEUD_INFLAME_COST,
+        arbitrationCost: FEUD_ARBITRATION_COST,
+        settlementCosts: JSON.parse(JSON.stringify(FEUD_SETTLEMENT_COSTS)),
+        arbitrationWindowYears: FEUD_ARBITRATION_WINDOW_YEARS,
+        stageLabels: { ...FEUD_STAGE_LABELS }
     };
+}
+
+export function arbitrateFeud(feudId) {
+    const nobility = ensureNobility();
+    const feud = (nobility.feuds || []).find(entry => entry.id === String(feudId) && entry.status === "active");
+    if (!feud) return { ok: false, reason: "no-active-feud" };
+    if (feud.stage === "arbitration") return { ok: false, reason: "already-in-arbitration" };
+    if (!affordable({ gold: FEUD_ARBITRATION_COST })) return { ok: false, reason: "not-enough-gold" };
+    payFeudCost({ gold: FEUD_ARBITRATION_COST }, "noble-feud-arbitration", "arbitration:" + feud.id + ":" + yearNow());
+    const before = feud.severity;
+    feud.severity = Math.max(1, clamp(before - 2, 0, 5));
+    feud.lastEscalationYear = yearNow();
+    feud.mediatorId = state.entities.find(entity => !entity.dead && entity.isKing)?.personId || null;
+    promoteFeud(feud, "arbitration", "The crown heard both houses and set written terms.");
+    for (const houseId of feud.houses) {
+        const house = houseById(houseId);
+        if (!house) continue;
+        house.loyalty = clamp(Number(house.loyalty) + 4);
+        house.wealth = clamp(Number(house.wealth) + 2);
+    }
+    applyPoliticalEffects({ legitimacy: 0.8, nobility: 0.6 });
+    crownMemory("I called " + feud.houses.map(id => houseById(id)?.familyName || id).join(" and ") +
+        " to crown arbitration in year " + yearNow() + ".", "feud-arbitration:" + feud.id + ":" + yearNow());
+    nobleFeudHistory(feud, "arbitrated", "The crown spent " + FEUD_ARBITRATION_COST + " gold to set terms; severity " + before + " -> " + feud.severity + ".", yearNow());
+    recordFeudState(nobility, "feud-arbitration", "The crown opened arbitration over " + feud.cause + ".");
+    compactFeuds(nobility);
+    return { ok: true, feud: { ...feud }, snapshot: getNobleFeudSnapshot(),
+        message: "NOBLE FEUD IN ARBITRATION · " + FEUD_ARBITRATION_WINDOW_YEARS + " YEARS TO SETTLE" };
+}
+
+export function settleFeudWithTerms(feudId, terms) {
+    const nobility = ensureNobility();
+    const feud = (nobility.feuds || []).find(entry => entry.id === String(feudId) && entry.status === "active");
+    if (!feud) return { ok: false, reason: "no-active-feud" };
+    if (feud.stage !== "arbitration") return { ok: false, reason: "arbitration-required" };
+    const settlement = String(terms || "");
+    const cost = FEUD_SETTLEMENT_COSTS[settlement];
+    if (!cost) return { ok: false, reason: "unknown-settlement" };
+    if (Number(feud.severity) > 3) return { ok: false, reason: "feud-still-too-severe" };
+    if (!affordable(cost)) return { ok: false, reason: "not-enough-resources" };
+    payFeudCost(cost, "noble-feud-settlement", "settlement:" + feud.id + ":" + settlement + ":" + yearNow());
+    const houses = feud.houses.map(id => houseById(id)).filter(Boolean);
+    for (const house of houses) {
+        house.loyalty = clamp(Number(house.loyalty) + (settlement === "charter" ? 7 : 5));
+        house.wealth = clamp(Number(house.wealth) + (settlement === "charter" ? 5 : 3));
+        if (settlement === "charter") house.charter = true;
+    }
+    const effects = settlement === "charter"
+        ? { legitimacy: 0.9, nobility: 1.2, commons: -0.4 }
+        : { legitimacy: 0.5, nobility: 0.8, commons: -0.2 };
+    applyPoliticalEffects(effects);
+    state.morale = clamp((Number(state.morale) || 0) + 1);
+    settle(feud, settlement === "charter"
+        ? "The crown closed the arbitration with estate charters."
+        : "The crown closed the arbitration with compensation.", settlement);
+    crownMemory("I settled the feud with " + feud.houses.map(id => houseById(id)?.familyName || id).join(" and ") +
+        " by " + settlement + " in year " + yearNow() + ".", "feud-settlement:" + feud.id + ":" + yearNow());
+    recordFeudState(nobility, "feud-settled", "Crown arbitration ended a noble feud by " + settlement + ".");
+    compactFeuds(nobility);
+    return { ok: true, feud: { ...feud }, snapshot: getNobleFeudSnapshot(), settlement,
+        message: "NOBLE FEUD SETTLED · " + settlement.toUpperCase() };
 }
 
 export function mediateFeud(feudId) {
@@ -227,7 +390,8 @@ export function mediateFeud(feudId) {
     const feud = (nobility.feuds || []).find(entry => entry.id === String(feudId) && entry.status === "active");
     if (!feud) return {ok: false, reason: "no-active-feud"};
     if ((Number(state.resources?.gold) || 0) < FEUD_MEDIATION_COST) return {ok: false, reason: "not-enough-gold"};
-    addResource("gold", -FEUD_MEDIATION_COST);
+    payFeudCost({ gold: FEUD_MEDIATION_COST }, "noble-feud-mediation", "mediation:" + feud.id + ":" + yearNow());
+    feud.mediatorId = state.entities.find(entity => !entity.dead && entity.isKing)?.personId || null;
     applyEscalation(feud, -2);
     for (const houseId of feud.houses) {
         const house = houseById(houseId);
@@ -260,7 +424,7 @@ export function inflameFeud(feudId) {
     const feud = (nobility.feuds || []).find(entry => entry.id === String(feudId) && entry.status === "active");
     if (!feud) return {ok: false, reason: "no-active-feud"};
     if ((Number(state.resources?.gold) || 0) < FEUD_INFLAME_COST) return {ok: false, reason: "not-enough-gold"};
-    addResource("gold", -FEUD_INFLAME_COST);
+    payFeudCost({ gold: FEUD_INFLAME_COST }, "noble-feud-inflame", "inflame:" + feud.id + ":" + yearNow());
     applyEscalation(feud, 1);
     applyPoliticalEffects({legitimacy: -0.4});
     nobleFeudHistory(feud, "inflamed", "Crown agents inflamed the dispute for " + FEUD_INFLAME_COST + " gold.", yearNow());

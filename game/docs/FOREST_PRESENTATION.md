@@ -1,6 +1,6 @@
 # Wald-Darstellung, Audio, UI und Accessibility 1.2.23.1.241–270
 
-**Status: implementiert, vertieft, verdrahtet und im Browser geprüft (v3.84.2).**
+**Status: implementiert, vertieft, verdrahtet und im Browser geprüft (v3.85.1).**
 
 Die dreißig Punkte bilden eine gemeinsame Präsentations-, Audio- und
 Zugänglichkeitsschicht über dem vorhandenen Waldmodell. Sie verändern keine
@@ -25,7 +25,7 @@ Alle 60 Profile werden deterministisch aus `REGIONAL_FOREST_TYPES`,
 zweiten Waldgenerator und keinen Per-Frame-Scan. Die Referenzszene wird alle
 1,8 Sekunden neu gesampled; Render-Tuning und Ambience lesen nur dieses Ergebnis.
 
-## Waldkunde-Erweiterung (v3.84.2)
+## Waldkunde-Erweiterung (v3.85.1)
 
 Die dreißig Punkte waren vollständig, aber ein großer Teil ihrer Tiefe war nur
 passiv sichtbar. Die Erweiterung macht dieselben Profildaten im Atlas lesbar,

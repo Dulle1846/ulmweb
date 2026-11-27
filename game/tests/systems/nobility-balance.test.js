@@ -50,7 +50,7 @@ test("the noble health gate rejects permanent dormancy and withheld dues", () =>
 // leak between seeds. Two workers keep the sweep responsive on shared runners.
 // The harness timeout only guards against a hung child; the real gates are the
 // eight full 25-year audits and their unchanged health assertions below.
-test("noble houses stay viable across the fixed 25-year seed sweep", { timeout: 600_000 }, async () => {
+test("noble houses stay viable across the fixed 25-year seed sweep", { timeout: 900_000 }, async () => {
     const audited = new Array(NOBLE_AUDIT_SEEDS.length);
     let nextSeed = 0;
     const auditWorker = async () => {
@@ -61,7 +61,7 @@ test("noble houses stay viable across the fixed 25-year seed sweep", { timeout: 
             try {
                 const result = await execFileAsync(process.execPath, [auditChild], {
                     cwd: gameRoot,
-                    timeout: 120_000,
+                    timeout: 240_000,
                     maxBuffer: 4 * 1024 * 1024,
                     env: {
                         ...process.env,

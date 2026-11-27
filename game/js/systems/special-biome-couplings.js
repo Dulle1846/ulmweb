@@ -13,12 +13,17 @@ import { state } from "../core/state.js";
 import { addLog } from "../core/event-log.js";
 import { applyPoliticalEffects } from "./politics.js";
 import { armSiteChainFollowUp } from "./expeditions.js";
+import { recordResourceMovement } from "./goods-book.js";
 import { RARE_GOODS, SPECIAL_BIOME_FAMILIES, specialBiomeRegionAt } from "../world/special-biomes.js";
 
 export const SPECIAL_BIOME_COUPLING_VERSION = 1;
 export const BIOME_QUEST_LIMIT = 6;
 export const BIOME_QUEST_ARCHIVE_LIMIT = 12;
 export const BIOME_DECISION_HISTORY_LIMIT = 12;
+export const BIOME_FOLLOW_UP_LIMIT = 4;
+export const BIOME_FOLLOW_UP_ARCHIVE_LIMIT = 10;
+export const BIOME_FOLLOW_UP_YEARS = 3;
+export const BIOME_FOLLOW_UP_STAGES = Object.freeze(["open", "resolved", "failed"]);
 
 const COUNT_LIMIT = 1_000_000;
 const clamp = (value, min, max) => Math.max(min, Math.min(max, Number.isFinite(Number(value)) ? Number(value) : min));
@@ -36,6 +41,60 @@ function clean(value, max) {
 const QUEST_KINDS = new Set(["survey", "rite", "omen"]);
 const QUEST_STATUSES = new Set(["active", "completed", "failed"]);
 const BLIGHT_CHOICES = new Set(["quarantine", "purge", "study", "ignore"]);
+
+// A completed atlas quest leaves one authored follow-up. The kind is derived
+// from the player's original choice; no dice are rolled and no landmark chain
+// from the expedition system is reused.
+const FOLLOW_UP_KINDS = Object.freeze({
+    "survey:survey": Object.freeze({
+        kind: "trail", label: "Map the feeder trails",
+        detail: "The survey found paths the first map missed. Send surveyors back or open a pack trail.",
+        choices: Object.freeze([
+            Object.freeze({ id: "surveyors", label: "SEND THE SURVEYORS", detail: "8 food + 6 gold · +2 rare goods · guilds +0.5", cost: { food: 8, gold: 6 }, rareReward: 2, effects: { guilds: 0.5, legitimacy: 0.2 }, morale: 0.5 }),
+            Object.freeze({ id: "pack-trail", label: "OPEN A PACK TRAIL", detail: "10 gold · commons +0.6 · guilds +0.3", cost: { gold: 10 }, effects: { commons: 0.6, guilds: 0.3 } })
+        ])
+    }),
+    "survey:seal": Object.freeze({
+        kind: "watch", label: "Keep the sealed cairn watched",
+        detail: "The sealed site still draws visitors. Post crown watchers or let the locality keep its own vigil.",
+        choices: Object.freeze([
+            Object.freeze({ id: "watchers", label: "POST CROWN WATCHERS", detail: "8 gold + 4 food · legitimacy +0.8 · morale +0.5", cost: { gold: 8, food: 4 }, effects: { legitimacy: 0.8 }, morale: 0.5 }),
+            Object.freeze({ id: "local-vigil", label: "TRUST THE LOCAL VIGIL", detail: "No treasury cost · commons +0.4 · legitimacy -0.2", cost: {}, effects: { commons: 0.4, legitimacy: -0.2 } })
+        ])
+    }),
+    "rite:perform": Object.freeze({
+        kind: "hearth", label: "Keep the temple fire lit",
+        detail: "The rite worked only while the fire was tended. Endow a hearth or fold it into the local calendar.",
+        choices: Object.freeze([
+            Object.freeze({ id: "endow", label: "ENDOW THE HEARTH", detail: "10 gold + 1 rare good · morale +2 · clergy +0.8", cost: { gold: 10 }, rareCost: 1, effects: { clergy: 0.8, legitimacy: 0.3 }, morale: 2 }),
+            Object.freeze({ id: "calendar", label: "FOLD IT INTO THE CALENDAR", detail: "4 wood · morale +1 · commons +0.4", cost: { wood: 4 }, effects: { commons: 0.4, clergy: 0.2 }, morale: 1 })
+        ])
+    }),
+    "rite:refuse": Object.freeze({
+        kind: "atonement", label: "Answer the neglected altar",
+        detail: "Refusing the rite did not silence it. Make a modest atonement or record the refusal as law.",
+        choices: Object.freeze([
+            Object.freeze({ id: "atonement", label: "MAKE ATONEMENT", detail: "6 gold + 2 food · legitimacy +0.6 · clergy +0.4", cost: { gold: 6, food: 2 }, effects: { legitimacy: 0.6, clergy: 0.4 } }),
+            Object.freeze({ id: "record", label: "RECORD THE REFUSAL", detail: "No treasury cost · legitimacy +0.3 · morale -0.5", cost: {}, effects: { legitimacy: 0.3 }, morale: -0.5 })
+        ])
+    }),
+    "omen:follow": Object.freeze({
+        kind: "sign", label: "Read the second sign",
+        detail: "The first omen came true. A second reading can guide policy or be sealed away.",
+        choices: Object.freeze([
+            Object.freeze({ id: "second-reading", label: "READ THE SECOND SIGN", detail: "8 food + 5 gold · +1 rare good · guilds +0.6", cost: { food: 8, gold: 5 }, rareReward: 1, effects: { guilds: 0.6, legitimacy: 0.2 } }),
+            Object.freeze({ id: "seal-archive", label: "SEAL IT IN THE ARCHIVE", detail: "4 wood · legitimacy +0.4 · morale +0.5", cost: { wood: 4 }, effects: { legitimacy: 0.4 }, morale: 0.5 })
+        ])
+    }),
+    "omen:ignore": Object.freeze({
+        kind: "memory", label: "The road remembers",
+        detail: "Ignoring an omen leaves a story behind. Commission an honest account or let the rumour stand.",
+        choices: Object.freeze([
+            Object.freeze({ id: "chronicle", label: "COMMISSION A CHRONICLE", detail: "8 gold · commons +0.6 · legitimacy +0.4", cost: { gold: 8 }, effects: { commons: 0.6, legitimacy: 0.4 } }),
+            Object.freeze({ id: "let-rumour", label: "LET THE RUMOUR STAND", detail: "No treasury cost · morale -0.5 · commons -0.3", cost: {}, effects: { commons: -0.3 }, morale: -0.5 })
+        ])
+    })
+});
 
 function emptyInfluence() {
     return Object.freeze({
@@ -127,6 +186,31 @@ function normalizeHistory(entry) {
     };
 }
 
+function normalizeFollowUp(entry, index) {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) return null;
+    const kind = clean(entry.kind, 32);
+    if (!Object.values(FOLLOW_UP_KINDS).some(spec => spec.kind === kind)) return null;
+    const regionId = clean(entry.regionId, 48);
+    if (!regionId) return null;
+    const stage = BIOME_FOLLOW_UP_STAGES.includes(entry.stage) ? entry.stage : "open";
+    return {
+        id: clean(entry.id || "biome-follow-up-" + (index + 1), 96),
+        sourceQuestId: clean(entry.sourceQuestId, 96),
+        regionId,
+        regionName: clean(entry.regionName || "the charted region", 90),
+        family: SPECIAL_BIOME_FAMILIES[entry.family] ? entry.family : "enchanted-wood",
+        kind,
+        title: clean(entry.title || "A follow-up at " + regionId, 120),
+        detail: clean(entry.detail, 220),
+        stage,
+        createdYear: positiveYear(entry.createdYear),
+        expiresYear: positiveYear(entry.expiresYear || (positiveYear(entry.createdYear) + BIOME_FOLLOW_UP_YEARS)),
+        resolvedYear: nonNegative(entry.resolvedYear),
+        choice: entry.choice ? clean(entry.choice, 32) : null,
+        note: clean(entry.note, 220)
+    };
+}
+
 export function createSpecialBiomeCouplingState(source = {}) {
     const safe = source && typeof source === "object" && !Array.isArray(source) ? source : {};
     const quests = (Array.isArray(safe.quests) ? safe.quests : [])
@@ -141,6 +225,10 @@ export function createSpecialBiomeCouplingState(source = {}) {
         totalQuests: Math.min(COUNT_LIMIT, nonNegative(safe.totalQuests)),
         completedQuests: Math.min(COUNT_LIMIT, nonNegative(safe.completedQuests)),
         failedQuests: Math.min(COUNT_LIMIT, nonNegative(safe.failedQuests)),
+        armedFollowUps: Math.min(COUNT_LIMIT, nonNegative(safe.armedFollowUps)),
+        completedFollowUps: Math.min(COUNT_LIMIT, nonNegative(safe.completedFollowUps)),
+        failedFollowUps: Math.min(COUNT_LIMIT, nonNegative(safe.failedFollowUps)),
+        lastFollowUpYear: nonNegative(safe.lastFollowUpYear),
         totalBlightDecisions: Math.min(COUNT_LIMIT, nonNegative(safe.totalBlightDecisions)),
         ignoredBlightDecisions: Math.min(COUNT_LIMIT, nonNegative(safe.ignoredBlightDecisions)),
         blightActions: {
@@ -150,6 +238,8 @@ export function createSpecialBiomeCouplingState(source = {}) {
             ignore: Math.min(COUNT_LIMIT, nonNegative(safe.blightActions?.ignore))
         },
         quests,
+        questFollowUps: (Array.isArray(safe.questFollowUps) ? safe.questFollowUps : [])
+            .map(normalizeFollowUp).filter(Boolean).slice(0, BIOME_FOLLOW_UP_ARCHIVE_LIMIT),
         blightDecision: normalizeDecision(safe.blightDecision),
         history: (Array.isArray(safe.history) ? safe.history : []).map(normalizeHistory).filter(Boolean).slice(0, BIOME_DECISION_HISTORY_LIMIT)
     };
@@ -172,6 +262,19 @@ export function validateSpecialBiomeCouplingState(source) {
     }
     if (source.quests !== undefined && (!Array.isArray(source.quests) || source.quests.length > BIOME_QUEST_ARCHIVE_LIMIT)) {
         throw new Error("special-biome quests must be a bounded array");
+    }
+    if (source.questFollowUps !== undefined && (!Array.isArray(source.questFollowUps) || source.questFollowUps.length > BIOME_FOLLOW_UP_ARCHIVE_LIMIT)) {
+        throw new Error("special-biome quest follow-ups must be a bounded array");
+    }
+    if (Array.isArray(source.questFollowUps)) {
+        for (const followUp of source.questFollowUps) {
+            if (!followUp || typeof followUp !== "object" || !clean(followUp.kind, 32)) {
+                throw new Error("special-biome quest follow-up has an unknown kind");
+            }
+            if (followUp.stage !== undefined && !BIOME_FOLLOW_UP_STAGES.includes(followUp.stage)) {
+                throw new Error("special-biome quest follow-up has an unknown stage");
+            }
+        }
     }
     if (source.blightDecision !== undefined && source.blightDecision !== null
         && (typeof source.blightDecision !== "object" || Array.isArray(source.blightDecision))) {
@@ -376,6 +479,28 @@ function spendResources(cost) {
     return true;
 }
 
+function affordableFollowUp(choice, rareId) {
+    for (const [key, amount] of Object.entries(choice.cost || {})) {
+        if (finite(amount) > 0 && finite(state.resources?.[key]) < finite(amount)) return false;
+    }
+    if (choice.rareCost && (!rareId || finite(state.specialBiomes?.rareGoods?.[rareId]) < choice.rareCost)) return false;
+    return true;
+}
+
+function payFollowUpCost(cost, cause, key, regionId) {
+    for (const [resource, amount] of Object.entries(cost || {})) {
+        const value = Math.floor(finite(amount));
+        if (!value) continue;
+        recordResourceMovement(resource, -value, cause, {
+            from: { kind: "realm", id: "royal-stores" },
+            to: { kind: "atlas", id: "quest-follow-up" },
+            key: key + ":" + resource,
+            regionId
+        });
+        state.resources[resource] = Math.max(0, finite(state.resources[resource]) - value);
+    }
+}
+
 function questChoices(kind, region) {
     if (kind === "survey") {
         return [
@@ -455,6 +580,41 @@ export function onSpecialBiomeCleansed(region) {
     return true;
 }
 
+function armQuestFollowUp(quest, choiceId) {
+    const couplings = ensureCouplings();
+    if (!couplings || !quest || quest.status !== "completed") return null;
+    const spec = FOLLOW_UP_KINDS[quest.kind + ":" + choiceId];
+    if (!spec) return null;
+    if (couplings.questFollowUps.some(followUp => followUp.sourceQuestId === quest.id)) return null;
+    if (couplings.questFollowUps.filter(followUp => followUp.stage === "open").length >= BIOME_FOLLOW_UP_LIMIT) return null;
+    const region = state.specialBiomes?.regions.find(entry => entry.id === quest.regionId) || null;
+    const year = currentYear();
+    const followUp = {
+        id: "biome-follow:" + quest.id + ":" + year,
+        sourceQuestId: quest.id,
+        regionId: quest.regionId,
+        regionName: quest.regionName,
+        family: quest.family,
+        kind: spec.kind,
+        title: spec.label,
+        detail: spec.detail,
+        stage: "open",
+        createdYear: year,
+        expiresYear: year + BIOME_FOLLOW_UP_YEARS,
+        resolvedYear: 0,
+        choice: null,
+        note: "Opened by the " + quest.kind + " choice " + choiceId + "."
+    };
+    couplings.questFollowUps.unshift(followUp);
+    couplings.questFollowUps = couplings.questFollowUps.slice(0, BIOME_FOLLOW_UP_ARCHIVE_LIMIT);
+    couplings.armedFollowUps++;
+    couplings.lastFollowUpYear = year;
+    pushCouplingHistory("follow-up", region, spec.label + " opened at " + quest.regionName + ".", choiceId);
+    addLog("ATLAS FOLLOW-UP · " + spec.label.toUpperCase() + " · " + quest.regionName.toUpperCase(), "#d8bd82", "exploration");
+    invalidateSpecialBiomeInfluence();
+    return followUp;
+}
+
 export function resolveBiomeQuest(questId, choiceId) {
     const couplings = ensureCouplings();
     const atlas = state.specialBiomes;
@@ -494,8 +654,62 @@ export function resolveBiomeQuest(questId, choiceId) {
     couplings.completedQuests++;
     pushCouplingHistory("quest", region, quest.regionName + " resolved: " + choice.label + ".", choice.id);
     addLog("ATLAS QUEST RESOLVED · " + quest.regionName.toUpperCase() + " · " + choice.label.toUpperCase(), "#d8bd82", "exploration");
+    const followUp = armQuestFollowUp(quest, choice.id);
     invalidateSpecialBiomeInfluence();
-    return { ok: true, quest: { ...quest }, choice: choice.id, influence: getSpecialBiomeInfluence() };
+    return { ok: true, quest: { ...quest }, choice: choice.id, followUp: followUp ? { ...followUp } : null,
+        influence: getSpecialBiomeInfluence() };
+}
+
+export function biomeFollowUpChoices(followUp) {
+    if (!followUp) return [];
+    const spec = Object.values(FOLLOW_UP_KINDS).find(entry => entry.kind === followUp.kind);
+    return spec ? spec.choices.map(choice => ({ ...choice, cost: { ...(choice.cost || {}) } })) : [];
+}
+
+export function resolveBiomeQuestFollowUp(followUpId, choiceId) {
+    const couplings = ensureCouplings();
+    if (!couplings || !state.specialBiomes) return { ok: false, reason: "atlas-unavailable" };
+    const followUp = couplings.questFollowUps.find(entry => entry.id === String(followUpId));
+    if (!followUp || followUp.stage !== "open") return { ok: false, reason: "follow-up-not-open" };
+    if (followUp.expiresYear < currentYear()) return { ok: false, reason: "follow-up-expired" };
+    const choice = biomeFollowUpChoices(followUp).find(entry => entry.id === String(choiceId));
+    if (!choice) return { ok: false, reason: "unknown-follow-up-choice" };
+    const region = state.specialBiomes.regions.find(entry => entry.id === followUp.regionId) || null;
+    const rareId = region?.resource || null;
+    if (!affordableFollowUp(choice, rareId)) return { ok: false, reason: "not-enough-resources" };
+    payFollowUpCost(choice.cost, "atlas-follow-up", followUp.id + ":" + choice.id + ":" + currentYear(), followUp.regionId);
+    if (choice.rareCost) spendRareGood(rareId, choice.rareCost);
+    if (choice.rareReward) addRareGood(rareId, choice.rareReward);
+    if (choice.effects) applyPoliticalEffects(choice.effects);
+    if (choice.morale) state.morale = clamp(finite(state.morale, 0) + choice.morale, 0, 100);
+    followUp.stage = "resolved";
+    followUp.resolvedYear = currentYear();
+    followUp.choice = choice.id;
+    followUp.note = "Closed by " + choice.label.toLowerCase() + " in year " + currentYear() + ".";
+    couplings.completedFollowUps++;
+    pushCouplingHistory("follow-up", region, followUp.title + " closed: " + choice.label + ".", choice.id);
+    addLog("ATLAS FOLLOW-UP CLOSED · " + followUp.title.toUpperCase() + " · " + choice.label.toUpperCase(), "#d8bd82", "exploration");
+    invalidateSpecialBiomeInfluence();
+    return { ok: true, followUp: { ...followUp }, choice: choice.id, region: region ? { ...region } : null,
+        snapshot: getBiomeFollowUpSnapshot() };
+}
+
+export function getBiomeFollowUpSnapshot() {
+    const couplings = ensureCouplings();
+    if (!couplings) return { followUps: [], open: 0, resolved: 0, failed: 0, armed: 0, limit: BIOME_FOLLOW_UP_LIMIT };
+    const followUps = couplings.questFollowUps.map(followUp => ({
+        ...followUp,
+        choices: followUp.stage === "open" ? biomeFollowUpChoices(followUp) : []
+    }));
+    return {
+        followUps,
+        open: followUps.filter(followUp => followUp.stage === "open").length,
+        resolved: followUps.filter(followUp => followUp.stage === "resolved").length,
+        failed: followUps.filter(followUp => followUp.stage === "failed").length,
+        armed: couplings.armedFollowUps,
+        limit: BIOME_FOLLOW_UP_LIMIT,
+        years: BIOME_FOLLOW_UP_YEARS
+    };
 }
 
 export function getBiomeQuestSnapshot() {
@@ -509,7 +723,8 @@ export function getBiomeQuestSnapshot() {
         active: couplings.quests.filter(quest => quest.status === "active").length,
         completed: couplings.completedQuests,
         failed: couplings.failedQuests,
-        rites: couplings.rites
+        rites: couplings.rites,
+        followUps: getBiomeFollowUpSnapshot()
     };
 }
 
@@ -641,6 +856,17 @@ export function updateSpecialBiomeCouplings() {
         state.morale = clamp(finite(state.morale, 0) - 0.5, 0, 100);
         pushCouplingHistory("quest", atlas?.regions.find(region => region.id === quest.regionId), quest.regionName + " was left unanswered.");
     }
+    for (const followUp of couplings.questFollowUps) {
+        if (followUp.stage !== "open" || followUp.expiresYear >= year) continue;
+        followUp.stage = "failed";
+        followUp.resolvedYear = year;
+        followUp.note = "The follow-up window closed without a crown decision.";
+        couplings.failedFollowUps++;
+        state.morale = clamp(finite(state.morale, 0) - 0.5, 0, 100);
+        pushCouplingHistory("follow-up", atlas?.regions.find(region => region.id === followUp.regionId),
+            followUp.title + " was left unanswered at " + followUp.regionName + ".");
+        addLog("ATLAS FOLLOW-UP EXPIRED · " + followUp.title.toUpperCase() + " · " + followUp.regionName.toUpperCase(), "#c77c62", "exploration");
+    }
     expireBlightDecision();
     createBlightDecision();
 
@@ -660,4 +886,4 @@ export function getBiomeCouplingState() {
     return ensureCouplings();
 }
 
-export const __internals = { atlasProfile, createBlightDecision, expireBlightDecision, keepPosition };
+export const __internals = { atlasProfile, armQuestFollowUp, createBlightDecision, expireBlightDecision, keepPosition };

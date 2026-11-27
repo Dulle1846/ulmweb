@@ -105,7 +105,7 @@ const ANNUAL_TASKS = [
     // Feuds resolve before the hosts so a new dispute immediately changes who
     // will march. Host upkeep then reaches the same treasury as every other
     // annual system.
-    { name: "nobleFeuds", run() { updateNobleFeuds(); } },
+    { name: "nobleFeuds", run(annual) { annual.nobleFeuds = updateNobleFeuds(); } },
     { name: "nobleHosts", run() { updateNobleHosts(); } },
     // The Whisper Court reads the houses and realms settled above, pays its
     // agents once a year and writes the insight combat and trade then read.
@@ -205,6 +205,7 @@ function createAnnualMaintenance() {
         succession: null,
         royalCrisis: null,
         royalEducation: null,
+        nobleFeuds: null,
         volcanoHazards: null,
         coastHazards: null,
         roadSurvey: null,
@@ -233,6 +234,12 @@ function logAnnualResults(annual) {
     }
     if (annual.royalEducation?.ready?.length) {
         addLog("A ROYAL STUDENT IS READY FOR A COMING-OF-AGE AUDIENCE", "#e8c77b", "dynasty");
+    }
+    if (annual.nobleFeuds?.bloodFeuds) {
+        addLog("A NOBLE GRIEVANCE BECAME A BLOOD FEUD · DUES AND LEVIES AT RISK", "#b99a9a", "nobility");
+    }
+    if (annual.nobleFeuds?.arbitration) {
+        addLog("NOBLE ARBITRATION IS OPEN · SETTLE BEFORE THE DEADLINE", "#d8c18a", "nobility");
     }
     for (const death of annual.deaths) {
         addLog("A RESIDENT DIED: " + death.name + " · " + death.cause, "#b99a9a", "death");

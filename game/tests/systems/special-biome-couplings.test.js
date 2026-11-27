@@ -8,9 +8,11 @@ import {
     updateSpecialBiomes, attuneSpecialBiome, validateSpecialBiomeState
 } from "../../js/systems/special-biome-state.js";
 import {
-    createSpecialBiomeCouplingState, getBiomeCombatModifiersAt, getBiomeQuestSnapshot,
+    BIOME_FOLLOW_UP_ARCHIVE_LIMIT, biomeFollowUpChoices, createSpecialBiomeCouplingState,
+    getBiomeCombatModifiersAt, getBiomeFollowUpSnapshot, getBiomeQuestSnapshot,
     blightChoices, getBlightDecisionSnapshot, getSpecialBiomeInfluence, onSpecialBiomeDiscovered,
-    resolveBiomeQuest, resolveBlightDecision, updateSpecialBiomeCouplings
+    resolveBiomeQuest, resolveBiomeQuestFollowUp, resolveBlightDecision, updateSpecialBiomeCouplings,
+    validateSpecialBiomeCouplingState
 } from "../../js/systems/special-biome-couplings.js";
 import { getSpecialBiomeInfluence as getCachedInfluence } from "../../js/systems/special-biome-couplings.js";
 import { getDiplomacySnapshot, updateDiplomacy } from "../../js/systems/diplomacy.js";
@@ -180,6 +182,55 @@ test("discovery and attunement open quests; resolving a rite has a consequence",
     assert.equal(riteResult.ok, true);
     assert.equal(getBiomeQuestSnapshot().rites >= 1, true);
     assert.ok(state.morale > beforeMorale, "performing the rite must change the realm state");
+    const followUps = getBiomeFollowUpSnapshot();
+    assert.equal(followUps.open, 2);
+    assert.equal(followUps.armed, 2);
+    assert.ok(followUps.followUps.some(entry => entry.sourceQuestId === survey.id));
+    assert.ok(followUps.followUps.some(entry => entry.sourceQuestId === rite.id));
+});
+
+test("a completed atlas quest arms one bounded follow-up with real costs and rewards", () => {
+    setAtlas([region({ attuned: false, rareGoods: {} })], { rareGoods: { "aether-herb": 4 } });
+    onSpecialBiomeDiscovered(state.specialBiomes.regions[0]);
+    const survey = getBiomeQuestSnapshot().quests.find(quest => quest.kind === "survey");
+    const resolved = resolveBiomeQuest(survey.id, "survey");
+    assert.equal(resolved.ok, true);
+    assert.equal(resolved.followUp.kind, "trail");
+    assert.equal(resolved.followUp.stage, "open");
+    assert.equal(resolved.followUp.expiresYear, state.year + 3);
+    assert.equal(getBiomeFollowUpSnapshot().open, 1);
+    assert.equal(biomeFollowUpChoices(resolved.followUp).length, 2);
+
+    const food = state.resources.food;
+    const gold = state.resources.gold;
+    const rareId = state.specialBiomes.regions[0].resource;
+    const rareBefore = state.specialBiomes.rareGoods[rareId];
+    const result = resolveBiomeQuestFollowUp(resolved.followUp.id, "surveyors");
+    assert.equal(result.ok, true);
+    assert.equal(result.choice, "surveyors");
+    assert.equal(state.resources.food, food - 8);
+    assert.equal(state.resources.gold, gold - 6);
+    assert.equal(state.specialBiomes.rareGoods[rareId], rareBefore + 2);
+    assert.equal(result.followUp.stage, "resolved");
+    assert.equal(result.snapshot.resolved, 1);
+    assert.equal(result.snapshot.open, 0);
+    assert.equal(resolveBiomeQuestFollowUp(resolved.followUp.id, "surveyors").reason, "follow-up-not-open");
+    assert.equal(getExpeditionSnapshot().stats.chainReady, 0, "atlas follow-ups never arm an expedition landmark chain");
+});
+
+test("an unanswered atlas follow-up lapses once at its annual deadline", () => {
+    setAtlas([region({ attuned: false, rareGoods: {} })], {});
+    onSpecialBiomeDiscovered(state.specialBiomes.regions[0]);
+    const survey = getBiomeQuestSnapshot().quests.find(quest => quest.kind === "survey");
+    const resolved = resolveBiomeQuest(survey.id, "seal");
+    assert.equal(resolved.followUp.stage, "open");
+    state.year = resolved.followUp.expiresYear + 1;
+    state.specialBiomes.lastYear = state.year - 1;
+    updateSpecialBiomeCouplings();
+    const snapshot = getBiomeFollowUpSnapshot();
+    assert.equal(snapshot.failed, 1);
+    assert.equal(snapshot.open, 0);
+    assert.match(snapshot.followUps[0].note, /window closed/i);
 });
 
 test("blight forces a costed administrative decision and expiry spreads the rot", () => {
@@ -253,16 +304,19 @@ test("the full coupling state survives save/load and old atlas saves get a fresh
     updateSpecialBiomeCouplings();
     const before = serializeSpecialBiomeState();
     assert.ok(before.couplings.quests.length >= 2);
+    assert.equal(before.couplings.questFollowUps.length, 1);
     const restored = normalizeSpecialBiomeState(JSON.parse(JSON.stringify(before)));
     const after = serializeSpecialBiomeState();
     assert.deepEqual(after.couplings, before.couplings);
     assert.deepEqual(getSpecialBiomeInfluence(), getCachedInfluence());
     assert.equal(getSpecialBiomeSnapshot().quests.completed, before.couplings.completedQuests);
+    assert.equal(getSpecialBiomeSnapshot().quests.followUps.followUps.length, 1);
 
     state.specialBiomes = null;
     const legacy = normalizeSpecialBiomeState(null, SEED, [region({ attuned: false })]);
     assert.ok(legacy.couplings);
     assert.equal(legacy.couplings.quests.length, 0);
+    assert.equal(legacy.couplings.questFollowUps.length, 0);
     assert.equal(legacy.couplings.version, 1);
 });
 
@@ -276,6 +330,10 @@ test("malformed coupling blocks are rejected and the influence cache is bounded"
     assert.equal(first.regions, undefined);
     assert.ok(Object.isFrozen(first));
     assert.equal(createSpecialBiomeCouplingState({ quests: "bad" }).quests.length, 0);
+    assert.throws(() => validateSpecialBiomeCouplingState({ questFollowUps: [{ kind: "trail", stage: "mythic" }] }), /stage/);
+    assert.throws(() => validateSpecialBiomeCouplingState({
+        questFollowUps: Array.from({ length: BIOME_FOLLOW_UP_ARCHIVE_LIMIT + 1 }, () => ({ kind: "trail", stage: "open" }))
+    }), /bounded array/);
 });
 
 test("blight study and quarantine open one expedition follow-up; purge and ignore do not", () => {
