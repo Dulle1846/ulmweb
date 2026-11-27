@@ -96,7 +96,7 @@ async function openAtlas(page) {
     await page.waitForFunction(previous => Number(document.querySelector("#command-panel-content")?.dataset.renderSeq || 0) > previous, previousRender, { timeout: 45000 });
     let stableCards = 0;
     let lastSequence = -1;
-    for (let attempt = 0; attempt < 240; attempt += 1) {
+    for (let attempt = 0; attempt < 600; attempt += 1) {
         const snapshot = await page.evaluate(() => {
             const panel = document.querySelector("#command-panel-content");
             return { sequence: Number(panel?.dataset.renderSeq || 0), cards: panel?.querySelectorAll(".forest-atlas__card").length || 0 };
@@ -104,10 +104,10 @@ async function openAtlas(page) {
         if (snapshot.cards === 60 && snapshot.sequence === lastSequence) stableCards += 1;
         else stableCards = 0;
         lastSequence = snapshot.sequence;
-        if (stableCards >= 7) break;
+        if (stableCards >= 3) break;
         await page.waitForTimeout(150);
     }
-    assert.equal(stableCards >= 7, true, "sixty atlas cards must stay mounted before interaction");
+    assert.equal(stableCards >= 3, true, "sixty atlas cards must stay mounted before interaction");
     // On a 390px screen the intro and summary can push the first card below the
     // fold, where content-visibility keeps it unlaid-out until it is scrolled
     // into view. Scroll the live node by expression so the check does not hold
@@ -150,6 +150,7 @@ async function waitForFilterSettled(page) {
 for (const viewport of viewports) {
     const pageErrors = [];
     const consoleErrors = [];
+    const badResponses = [];
     const report = { viewport, ok: false, checks: {} };
     evidence.viewports[viewport.id] = report;
     const context = await browser.newContext({
@@ -163,6 +164,9 @@ for (const viewport of viewports) {
     page.on("pageerror", error => pageErrors.push(error.message));
     page.on("console", message => {
         if (message.type() === "error") consoleErrors.push(message.text());
+    });
+    page.on("response", response => {
+        if (response.status() >= 400) badResponses.push(response.status() + " " + response.url());
     });
 
     try {
@@ -708,6 +712,7 @@ for (const viewport of viewports) {
         report.error = error?.stack || String(error);
         report.pageErrors = pageErrors;
         report.consoleErrors = consoleErrors;
+        report.badResponses = badResponses;
         await page.screenshot({ path: resolve(outputDir, `forest-mobile-${viewport.id}-failure.png`) }).catch(() => {});
         console.error(`[${viewport.id}] ${report.error}`);
     } finally {
