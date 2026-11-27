@@ -617,6 +617,38 @@
 .culture-roles>div{display:flex;justify-content:space-between;align-items:baseline;gap:6px;padding:5px 6px;border:1px solid rgba(185,154,89,.2);border-radius:3px;background:rgba(28,31,26,.6)}
 .culture-roles small{color:#c9b99a;font:700 6px/1.2 var(--ui-number-font,monospace)}
 .culture-roles strong{color:#f2e5c4;font:700 10px/1 var(--ui-number-font,monospace)}
+/* 1.2.23.1.211–240: forest war, borders and strategy. */
+.forest-war{display:grid;gap:6px;padding:8px 0 10px;border-top:1px solid rgba(185,154,89,.24);margin-top:8px}
+.war-summary>div,.war-totals>div,.war-modifiers>div{background:rgba(28,31,26,.78);border-color:rgba(185,154,89,.38)}
+.war-fronts{display:grid;gap:7px}
+.forest-war-front{display:grid;gap:5px;padding:8px;border:1px solid rgba(185,154,89,.45);border-radius:5px;background:rgba(28,31,26,.82)}
+.forest-war-front__head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:start;padding-bottom:5px;border-bottom:1px solid rgba(185,154,89,.2)}
+.forest-war-front__head strong{display:block;margin-top:2px;color:#f2e5c4;font:700 12px/1.2 var(--ui-title-font,Georgia,serif)}
+.forest-war-front__head p{margin:2px 0 0;color:#c9b99a;font:400 7.5px/1.4 var(--ui-body-font,sans-serif)}
+.forest-war-front__head .command-ribbon{display:block;color:var(--color-antique-gold);font:700 6px/1.2 var(--ui-number-font,monospace)}
+.forest-war-front__control{text-align:right;padding:4px 7px;border:1px solid rgba(185,154,89,.28);border-radius:4px;background:rgba(12,16,12,.32)}
+.forest-war-front__control small{display:block;color:#c9b99a;font:700 6px/1.2 var(--ui-number-font,monospace)}
+.forest-war-front__control strong{display:block;color:#f2e5c4;font:700 12px/1.2 var(--ui-number-font,monospace)}
+.forest-war-front__control span{display:block;margin-top:2px;color:#c9b99a;font:400 6px/1.35 var(--ui-body-font,sans-serif)}
+.war-tradition{padding:5px 6px;border-left:2px solid rgba(185,154,89,.5);background:rgba(12,16,12,.22)}
+.war-tradition small{display:block;color:var(--color-antique-gold);font:700 6px/1.2 var(--ui-number-font,monospace);letter-spacing:.05em}
+.war-tradition p{margin:2px 0 0;color:#c9b99a;font:400 7px/1.4 var(--ui-body-font,sans-serif)}
+.war-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:4px}
+.war-action{display:grid;gap:2px;text-align:left}
+.war-action small{color:#c9b99a;font:400 6px/1.35 var(--ui-body-font,sans-serif)}
+.war-embargoes,.war-customs{grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
+.war-roads{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
+.war-roads>div{display:grid;gap:2px;padding:5px;border:1px solid rgba(185,154,89,.24);border-radius:3px;background:rgba(28,31,26,.7)}
+.war-roads>div.is-current{border-color:rgba(214,178,106,.8);background:rgba(73,63,38,.55)}
+.war-roads>div.is-closed{border-color:rgba(170,95,80,.5)}
+.war-roads small{color:#c9b99a;font:700 6px/1.2 var(--ui-number-font,monospace)}
+.war-roads strong{color:#f2e5c4;font:700 7px/1 var(--ui-number-font,monospace)}
+.war-roads span{color:#c9b99a;font:400 6px/1.35 var(--ui-body-font,sans-serif)}
+.war-scars{display:grid;gap:3px}
+.war-scar{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:6px;align-items:baseline;padding:5px 6px;border:1px solid rgba(170,95,80,.45);border-radius:3px;background:rgba(48,28,24,.45)}
+.war-scar small{color:#c9b99a;font:700 6px/1.2 var(--ui-number-font,monospace)}
+.war-scar strong{color:#f2e5c4;font:700 7.5px/1.3 var(--ui-body-font,sans-serif)}
+.war-scar span{color:#c9b99a;font:400 6.5px/1.3 var(--ui-body-font,sans-serif)}
 .culture-knowledge{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:4px}
 .culture-knowledge>div{display:grid;gap:2px;padding:5px 6px;border:1px solid rgba(185,154,89,.2);border-radius:3px;background:rgba(28,31,26,.6)}
 .culture-knowledge>div.is-known{border-color:rgba(110,150,100,.55);background:rgba(60,80,52,.4)}

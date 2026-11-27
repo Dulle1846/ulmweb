@@ -2,14 +2,14 @@
   "version": 2,
   "generatedBy": "scripts/spec-audit.mjs",
   "scope": "All numbered 1.1 and 1.2.1–1.2.18 requirements, including the 1.2.23.1.151–210 forest economy and forest culture, plus the documented 2.x phases, 3.3–4.0 roadmap points and the 3.11 expedition follow-up chain contract.",
-  "commit": "6d1fa0afb8fb368b40ac6aa99adcf3e382de8af4",
-  "sourceHash": "ad478c881a9b39ba8e4b5596ab2c1416f545dce924dbb7beea44be235bcc8d46",
-  "generatedAt": "2026-11-27T02:50:14+01:00",
+  "commit": "cc02b102e280ea8467cde629645f8df1f7cefda2",
+  "sourceHash": "ca7dd2250b752b420a9f6498856d89462d09395fb77ec3e60742822a6f138e09",
+  "generatedAt": "2026-11-27T06:25:08+00:00",
   "totals": {
-    "total": 1723,
-    "implemented": 1723,
+    "total": 1753,
+    "implemented": 1753,
     "open": 0,
-    "sections": 42
+    "sections": 43
   },
   "collisions": [
     {
@@ -42073,6 +42073,978 @@
       ],
       "source": "js/world/forest-culture.js",
       "note": "30 player-facing forest-culture requirements from FOREST_CULTURE_REQUIREMENTS; each names its live consumer in the atlas.",
+      "probeFunction": null,
+      "probeClimate": "temperate",
+      "probeExtra": {},
+      "probeAvailable": false,
+      "probeObserved": 0,
+      "implemented": 30,
+      "open": 0,
+      "total": 30
+    },
+    {
+      "id": "1.2.23.1.211-240",
+      "title": "Forest war, diplomacy, borders and strategy",
+      "points": [
+        {
+          "id": "1.2.23.1.211",
+          "label": "Wälder als natürliche Grenzen zwischen Regionen",
+          "key": "Every front has a real regional forest profile: its border terrain, ambush cover, sight lines and movement cost come from the forest type, not a generic map edge.",
+          "group": "FOREST WAR",
+          "status": "implemented",
+          "docEvidence": "FOREST_WARFARE_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-warfare.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-warfare.js#FOREST_WARFARE_REQUIREMENTS (catalog)",
+            "js/world/forest-warfare.js#FOREST_WAR_PROFILES (regional war profiles)",
+            "js/systems/forest-warfare.js#forestWarfareSummary (simulation)",
+            "js/systems/forest-warfare.js#fightForestBattle (battle)",
+            "js/systems/forest-warfare.js#updateForestWarfare (annual pass)",
+            "js/presentation/forest-atlas-panel.js#warfareBlock (ui)",
+            "js/presentation/management-ui.js#raiseBorderPost (ui action)",
+            "js/simulation/simulation.js#updateForestWarfare (annual wiring)",
+            "js/world/sacred-groves.js#sacredGroveTileAt (joint preserve guard)",
+            "js/systems/world-map.js#pressRegionClaim (province ownership)",
+            "js/systems/diplomacy.js#cancelTradeAgreement (embargo)",
+            "js/systems/military.js#recordMilitaryWound (soldier losses)",
+            "js/systems/forest-succession.js#controlledBurnNearestForestTile (war fire)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.212",
+          "label": "Grenzposten und Waldwachen",
+          "key": "A border post is a real construction of wood and gold; it raises the province's control and lowers frontier pressure. A forest watch adds detection.",
+          "group": "FOREST WAR",
+          "status": "implemented",
+          "docEvidence": "FOREST_WARFARE_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-warfare.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-warfare.js#FOREST_WARFARE_REQUIREMENTS (catalog)",
+            "js/world/forest-warfare.js#FOREST_WAR_PROFILES (regional war profiles)",
+            "js/systems/forest-warfare.js#forestWarfareSummary (simulation)",
+            "js/systems/forest-warfare.js#fightForestBattle (battle)",
+            "js/systems/forest-warfare.js#updateForestWarfare (annual pass)",
+            "js/presentation/forest-atlas-panel.js#warfareBlock (ui)",
+            "js/presentation/management-ui.js#raiseBorderPost (ui action)",
+            "js/simulation/simulation.js#updateForestWarfare (annual wiring)",
+            "js/world/sacred-groves.js#sacredGroveTileAt (joint preserve guard)",
+            "js/systems/world-map.js#pressRegionClaim (province ownership)",
+            "js/systems/diplomacy.js#cancelTradeAgreement (embargo)",
+            "js/systems/military.js#recordMilitaryWound (soldier losses)",
+            "js/systems/forest-succession.js#controlledBurnNearestForestTile (war fire)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.213",
+          "label": "Waldwege mit saisonaler Befahrbarkeit",
+          "key": "A forest road has three upgrade levels and a per-season passability derived from the regional type; a closed season halves movement and trade.",
+          "group": "FOREST WAR",
+          "status": "implemented",
+          "docEvidence": "FOREST_WARFARE_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-warfare.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-warfare.js#FOREST_WARFARE_REQUIREMENTS (catalog)",
+            "js/world/forest-warfare.js#FOREST_WAR_PROFILES (regional war profiles)",
+            "js/systems/forest-warfare.js#forestWarfareSummary (simulation)",
+            "js/systems/forest-warfare.js#fightForestBattle (battle)",
+            "js/systems/forest-warfare.js#updateForestWarfare (annual pass)",
+            "js/presentation/forest-atlas-panel.js#warfareBlock (ui)",
+            "js/presentation/management-ui.js#raiseBorderPost (ui action)",
+            "js/simulation/simulation.js#updateForestWarfare (annual wiring)",
+            "js/world/sacred-groves.js#sacredGroveTileAt (joint preserve guard)",
+            "js/systems/world-map.js#pressRegionClaim (province ownership)",
+            "js/systems/diplomacy.js#cancelTradeAgreement (embargo)",
+            "js/systems/military.js#recordMilitaryWound (soldier losses)",
+            "js/systems/forest-succession.js#controlledBurnNearestForestTile (war fire)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.214",
+          "label": "Hinterhalte in dichten Waldtypen",
+          "key": "An ambush needs a dense forest front, scouts, food and a war; it strengthens the next battle and bleeds the enemy column.",
+          "group": "FOREST WAR",
+          "status": "implemented",
+          "docEvidence": "FOREST_WARFARE_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-warfare.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-warfare.js#FOREST_WARFARE_REQUIREMENTS (catalog)",
+            "js/world/forest-warfare.js#FOREST_WAR_PROFILES (regional war profiles)",
+            "js/systems/forest-warfare.js#forestWarfareSummary (simulation)",
+            "js/systems/forest-warfare.js#fightForestBattle (battle)",
+            "js/systems/forest-warfare.js#updateForestWarfare (annual pass)",
+            "js/presentation/forest-atlas-panel.js#warfareBlock (ui)",
+            "js/presentation/management-ui.js#raiseBorderPost (ui action)",
+            "js/simulation/simulation.js#updateForestWarfare (annual wiring)",
+            "js/world/sacred-groves.js#sacredGroveTileAt (joint preserve guard)",
+            "js/systems/world-map.js#pressRegionClaim (province ownership)",
+            "js/systems/diplomacy.js#cancelTradeAgreement (embargo)",
+            "js/systems/military.js#recordMilitaryWound (soldier losses)",
+            "js/systems/forest-succession.js#controlledBurnNearestForestTile (war fire)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.215",
+          "label": "Späher mit regionalem Waldwissen",
+          "key": "Scouts are recruited by realm; each one adds regional wood knowledge, ambush detection and a better sight modifier.",
+          "group": "FOREST WAR",
+          "status": "implemented",
+          "docEvidence": "FOREST_WARFARE_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-warfare.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-warfare.js#FOREST_WARFARE_REQUIREMENTS (catalog)",
+            "js/world/forest-warfare.js#FOREST_WAR_PROFILES (regional war profiles)",
+            "js/systems/forest-warfare.js#forestWarfareSummary (simulation)",
+            "js/systems/forest-warfare.js#fightForestBattle (battle)",
+            "js/systems/forest-warfare.js#updateForestWarfare (annual pass)",
+            "js/presentation/forest-atlas-panel.js#warfareBlock (ui)",
+            "js/presentation/management-ui.js#raiseBorderPost (ui action)",
+            "js/simulation/simulation.js#updateForestWarfare (annual wiring)",
+            "js/world/sacred-groves.js#sacredGroveTileAt (joint preserve guard)",
+            "js/systems/world-map.js#pressRegionClaim (province ownership)",
+            "js/systems/diplomacy.js#cancelTradeAgreement (embargo)",
+            "js/systems/military.js#recordMilitaryWound (soldier losses)",
+            "js/systems/forest-succession.js#controlledBurnNearestForestTile (war fire)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.216",
+          "label": "Waldkampf mit Sicht- und Bewegungsmodifikatoren",
+          "key": "A forest battle computes power from real soldiers plus sight, movement, maps, works and terrain, then applies wounds and casualties to the actual soldiers.",
+          "group": "FOREST WAR",
+          "status": "implemented",
+          "docEvidence": "FOREST_WARFARE_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-warfare.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-warfare.js#FOREST_WARFARE_REQUIREMENTS (catalog)",
+            "js/world/forest-warfare.js#FOREST_WAR_PROFILES (regional war profiles)",
+            "js/systems/forest-warfare.js#forestWarfareSummary (simulation)",
+            "js/systems/forest-warfare.js#fightForestBattle (battle)",
+            "js/systems/forest-warfare.js#updateForestWarfare (annual pass)",
+            "js/presentation/forest-atlas-panel.js#warfareBlock (ui)",
+            "js/presentation/management-ui.js#raiseBorderPost (ui action)",
+            "js/simulation/simulation.js#updateForestWarfare (annual wiring)",
+            "js/world/sacred-groves.js#sacredGroveTileAt (joint preserve guard)",
+            "js/systems/world-map.js#pressRegionClaim (province ownership)",
+            "js/systems/diplomacy.js#cancelTradeAgreement (embargo)",
+            "js/systems/military.js#recordMilitaryWound (soldier losses)",
+            "js/systems/forest-succession.js#controlledBurnNearestForestTile (war fire)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.217",
+          "label": "Belagerungsmaterial aus regionalem Holz",
+          "key": "Siege timber is cut from the realm's wood and spent to reduce an enemy province's garrison and control.",
+          "group": "FOREST WAR",
+          "status": "implemented",
+          "docEvidence": "FOREST_WARFARE_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-warfare.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-warfare.js#FOREST_WARFARE_REQUIREMENTS (catalog)",
+            "js/world/forest-warfare.js#FOREST_WAR_PROFILES (regional war profiles)",
+            "js/systems/forest-warfare.js#forestWarfareSummary (simulation)",
+            "js/systems/forest-warfare.js#fightForestBattle (battle)",
+            "js/systems/forest-warfare.js#updateForestWarfare (annual pass)",
+            "js/presentation/forest-atlas-panel.js#warfareBlock (ui)",
+            "js/presentation/management-ui.js#raiseBorderPost (ui action)",
+            "js/simulation/simulation.js#updateForestWarfare (annual wiring)",
+            "js/world/sacred-groves.js#sacredGroveTileAt (joint preserve guard)",
+            "js/systems/world-map.js#pressRegionClaim (province ownership)",
+            "js/systems/diplomacy.js#cancelTradeAgreement (embargo)",
+            "js/systems/military.js#recordMilitaryWound (soldier losses)",
+            "js/systems/forest-succession.js#controlledBurnNearestForestTile (war fire)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.218",
+          "label": "Schiffsbauholz als strategische Ressource",
+          "key": "Reserved mast and keel timber is a separate strategic reserve; twelve units become a real hull for the crown fleet.",
+          "group": "FOREST WAR",
+          "status": "implemented",
+          "docEvidence": "FOREST_WARFARE_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-warfare.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-warfare.js#FOREST_WARFARE_REQUIREMENTS (catalog)",
+            "js/world/forest-warfare.js#FOREST_WAR_PROFILES (regional war profiles)",
+            "js/systems/forest-warfare.js#forestWarfareSummary (simulation)",
+            "js/systems/forest-warfare.js#fightForestBattle (battle)",
+            "js/systems/forest-warfare.js#updateForestWarfare (annual pass)",
+            "js/presentation/forest-atlas-panel.js#warfareBlock (ui)",
+            "js/presentation/management-ui.js#raiseBorderPost (ui action)",
+            "js/simulation/simulation.js#updateForestWarfare (annual wiring)",
+            "js/world/sacred-groves.js#sacredGroveTileAt (joint preserve guard)",
+            "js/systems/world-map.js#pressRegionClaim (province ownership)",
+            "js/systems/diplomacy.js#cancelTradeAgreement (embargo)",
+            "js/systems/military.js#recordMilitaryWound (soldier losses)",
+            "js/systems/forest-succession.js#controlledBurnNearestForestTile (war fire)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.219",
+          "label": "Kriegselefanten in tropischen Waldregionen",
+          "key": "War elephants can only be mustered on a tropical or savanna front; they add shock power and cost food every year.",
+          "group": "FOREST WAR",
+          "status": "implemented",
+          "docEvidence": "FOREST_WARFARE_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-warfare.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-warfare.js#FOREST_WARFARE_REQUIREMENTS (catalog)",
+            "js/world/forest-warfare.js#FOREST_WAR_PROFILES (regional war profiles)",
+            "js/systems/forest-warfare.js#forestWarfareSummary (simulation)",
+            "js/systems/forest-warfare.js#fightForestBattle (battle)",
+            "js/systems/forest-warfare.js#updateForestWarfare (annual pass)",
+            "js/presentation/forest-atlas-panel.js#warfareBlock (ui)",
+            "js/presentation/management-ui.js#raiseBorderPost (ui action)",
+            "js/simulation/simulation.js#updateForestWarfare (annual wiring)",
+            "js/world/sacred-groves.js#sacredGroveTileAt (joint preserve guard)",
+            "js/systems/world-map.js#pressRegionClaim (province ownership)",
+            "js/systems/diplomacy.js#cancelTradeAgreement (embargo)",
+            "js/systems/military.js#recordMilitaryWound (soldier losses)",
+            "js/systems/forest-succession.js#controlledBurnNearestForestTile (war fire)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.220",
+          "label": "Kavalleriehindernisse durch Unterholz und Sümpfe",
+          "key": "Abatis and undergrowth add a real cavalry drag to the front and a defensive bonus in battle.",
+          "group": "FOREST WAR",
+          "status": "implemented",
+          "docEvidence": "FOREST_WARFARE_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-warfare.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-warfare.js#FOREST_WARFARE_REQUIREMENTS (catalog)",
+            "js/world/forest-warfare.js#FOREST_WAR_PROFILES (regional war profiles)",
+            "js/systems/forest-warfare.js#forestWarfareSummary (simulation)",
+            "js/systems/forest-warfare.js#fightForestBattle (battle)",
+            "js/systems/forest-warfare.js#updateForestWarfare (annual pass)",
+            "js/presentation/forest-atlas-panel.js#warfareBlock (ui)",
+            "js/presentation/management-ui.js#raiseBorderPost (ui action)",
+            "js/simulation/simulation.js#updateForestWarfare (annual wiring)",
+            "js/world/sacred-groves.js#sacredGroveTileAt (joint preserve guard)",
+            "js/systems/world-map.js#pressRegionClaim (province ownership)",
+            "js/systems/diplomacy.js#cancelTradeAgreement (embargo)",
+            "js/systems/military.js#recordMilitaryWound (soldier losses)",
+            "js/systems/forest-succession.js#controlledBurnNearestForestTile (war fire)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.221",
+          "label": "Partisanen und Waldwiderstand",
+          "key": "Partisans can be raised on a contested or war-weary front; every year they drain enemy control and supply.",
+          "group": "FOREST WAR",
+          "status": "implemented",
+          "docEvidence": "FOREST_WARFARE_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-warfare.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-warfare.js#FOREST_WARFARE_REQUIREMENTS (catalog)",
+            "js/world/forest-warfare.js#FOREST_WAR_PROFILES (regional war profiles)",
+            "js/systems/forest-warfare.js#forestWarfareSummary (simulation)",
+            "js/systems/forest-warfare.js#fightForestBattle (battle)",
+            "js/systems/forest-warfare.js#updateForestWarfare (annual pass)",
+            "js/presentation/forest-atlas-panel.js#warfareBlock (ui)",
+            "js/presentation/management-ui.js#raiseBorderPost (ui action)",
+            "js/simulation/simulation.js#updateForestWarfare (annual wiring)",
+            "js/world/sacred-groves.js#sacredGroveTileAt (joint preserve guard)",
+            "js/systems/world-map.js#pressRegionClaim (province ownership)",
+            "js/systems/diplomacy.js#cancelTradeAgreement (embargo)",
+            "js/systems/military.js#recordMilitaryWound (soldier losses)",
+            "js/systems/forest-succession.js#controlledBurnNearestForestTile (war fire)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.222",
+          "label": "Waldbrände als militärische Waffe",
+          "key": "A war fire burns a real forest tile, damages the enemy supply and leaves a scar that takes years to heal.",
+          "group": "FOREST WAR",
+          "status": "implemented",
+          "docEvidence": "FOREST_WARFARE_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-warfare.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-warfare.js#FOREST_WARFARE_REQUIREMENTS (catalog)",
+            "js/world/forest-warfare.js#FOREST_WAR_PROFILES (regional war profiles)",
+            "js/systems/forest-warfare.js#forestWarfareSummary (simulation)",
+            "js/systems/forest-warfare.js#fightForestBattle (battle)",
+            "js/systems/forest-warfare.js#updateForestWarfare (annual pass)",
+            "js/presentation/forest-atlas-panel.js#warfareBlock (ui)",
+            "js/presentation/management-ui.js#raiseBorderPost (ui action)",
+            "js/simulation/simulation.js#updateForestWarfare (annual wiring)",
+            "js/world/sacred-groves.js#sacredGroveTileAt (joint preserve guard)",
+            "js/systems/world-map.js#pressRegionClaim (province ownership)",
+            "js/systems/diplomacy.js#cancelTradeAgreement (embargo)",
+            "js/systems/military.js#recordMilitaryWound (soldier losses)",
+            "js/systems/forest-succession.js#controlledBurnNearestForestTile (war fire)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.223",
+          "label": "Brandrodung als Kriegs- und Siedlungsstrategie",
+          "key": "Slash-and-burn clears a real tile for fields, adds food and settlers, and creates a long-lived scar and resistance.",
+          "group": "FOREST WAR",
+          "status": "implemented",
+          "docEvidence": "FOREST_WARFARE_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-warfare.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-warfare.js#FOREST_WARFARE_REQUIREMENTS (catalog)",
+            "js/world/forest-warfare.js#FOREST_WAR_PROFILES (regional war profiles)",
+            "js/systems/forest-warfare.js#forestWarfareSummary (simulation)",
+            "js/systems/forest-warfare.js#fightForestBattle (battle)",
+            "js/systems/forest-warfare.js#updateForestWarfare (annual pass)",
+            "js/presentation/forest-atlas-panel.js#warfareBlock (ui)",
+            "js/presentation/management-ui.js#raiseBorderPost (ui action)",
+            "js/simulation/simulation.js#updateForestWarfare (annual wiring)",
+            "js/world/sacred-groves.js#sacredGroveTileAt (joint preserve guard)",
+            "js/systems/world-map.js#pressRegionClaim (province ownership)",
+            "js/systems/diplomacy.js#cancelTradeAgreement (embargo)",
+            "js/systems/military.js#recordMilitaryWound (soldier losses)",
+            "js/systems/forest-succession.js#controlledBurnNearestForestTile (war fire)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.224",
+          "label": "Deportation und Vertreibung aus Waldgebieten",
+          "key": "Deportation lowers rebel strength and settler pressure but costs legitimacy and morale and can create refugees.",
+          "group": "FOREST WAR",
+          "status": "implemented",
+          "docEvidence": "FOREST_WARFARE_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-warfare.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-warfare.js#FOREST_WARFARE_REQUIREMENTS (catalog)",
+            "js/world/forest-warfare.js#FOREST_WAR_PROFILES (regional war profiles)",
+            "js/systems/forest-warfare.js#forestWarfareSummary (simulation)",
+            "js/systems/forest-warfare.js#fightForestBattle (battle)",
+            "js/systems/forest-warfare.js#updateForestWarfare (annual pass)",
+            "js/presentation/forest-atlas-panel.js#warfareBlock (ui)",
+            "js/presentation/management-ui.js#raiseBorderPost (ui action)",
+            "js/simulation/simulation.js#updateForestWarfare (annual wiring)",
+            "js/world/sacred-groves.js#sacredGroveTileAt (joint preserve guard)",
+            "js/systems/world-map.js#pressRegionClaim (province ownership)",
+            "js/systems/diplomacy.js#cancelTradeAgreement (embargo)",
+            "js/systems/military.js#recordMilitaryWound (soldier losses)",
+            "js/systems/forest-succession.js#controlledBurnNearestForestTile (war fire)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.225",
+          "label": "Holzkontingente für Flotten und Belagerungen",
+          "key": "A timber quota consumes real wood and food, pays gold and siege material, and raises frontier unrest.",
+          "group": "FOREST WAR",
+          "status": "implemented",
+          "docEvidence": "FOREST_WARFARE_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-warfare.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-warfare.js#FOREST_WARFARE_REQUIREMENTS (catalog)",
+            "js/world/forest-warfare.js#FOREST_WAR_PROFILES (regional war profiles)",
+            "js/systems/forest-warfare.js#forestWarfareSummary (simulation)",
+            "js/systems/forest-warfare.js#fightForestBattle (battle)",
+            "js/systems/forest-warfare.js#updateForestWarfare (annual pass)",
+            "js/presentation/forest-atlas-panel.js#warfareBlock (ui)",
+            "js/presentation/management-ui.js#raiseBorderPost (ui action)",
+            "js/simulation/simulation.js#updateForestWarfare (annual wiring)",
+            "js/world/sacred-groves.js#sacredGroveTileAt (joint preserve guard)",
+            "js/systems/world-map.js#pressRegionClaim (province ownership)",
+            "js/systems/diplomacy.js#cancelTradeAgreement (embargo)",
+            "js/systems/military.js#recordMilitaryWound (soldier losses)",
+            "js/systems/forest-succession.js#controlledBurnNearestForestTile (war fire)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.226",
+          "label": "Embargo auf wertvolle Waldgüter",
+          "key": "An embargo on timber, resin or medicine cancels the trade agreement, cuts relation and raises fear.",
+          "group": "FOREST WAR",
+          "status": "implemented",
+          "docEvidence": "FOREST_WARFARE_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-warfare.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-warfare.js#FOREST_WARFARE_REQUIREMENTS (catalog)",
+            "js/world/forest-warfare.js#FOREST_WAR_PROFILES (regional war profiles)",
+            "js/systems/forest-warfare.js#forestWarfareSummary (simulation)",
+            "js/systems/forest-warfare.js#fightForestBattle (battle)",
+            "js/systems/forest-warfare.js#updateForestWarfare (annual pass)",
+            "js/presentation/forest-atlas-panel.js#warfareBlock (ui)",
+            "js/presentation/management-ui.js#raiseBorderPost (ui action)",
+            "js/simulation/simulation.js#updateForestWarfare (annual wiring)",
+            "js/world/sacred-groves.js#sacredGroveTileAt (joint preserve guard)",
+            "js/systems/world-map.js#pressRegionClaim (province ownership)",
+            "js/systems/diplomacy.js#cancelTradeAgreement (embargo)",
+            "js/systems/military.js#recordMilitaryWound (soldier losses)",
+            "js/systems/forest-succession.js#controlledBurnNearestForestTile (war fire)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.227",
+          "label": "Handelsrouten durch Waldregionen",
+          "key": "A forest route is opened with wood and gold, earns annual income, and is stronger when the forest road is open.",
+          "group": "FOREST WAR",
+          "status": "implemented",
+          "docEvidence": "FOREST_WARFARE_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-warfare.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-warfare.js#FOREST_WARFARE_REQUIREMENTS (catalog)",
+            "js/world/forest-warfare.js#FOREST_WAR_PROFILES (regional war profiles)",
+            "js/systems/forest-warfare.js#forestWarfareSummary (simulation)",
+            "js/systems/forest-warfare.js#fightForestBattle (battle)",
+            "js/systems/forest-warfare.js#updateForestWarfare (annual pass)",
+            "js/presentation/forest-atlas-panel.js#warfareBlock (ui)",
+            "js/presentation/management-ui.js#raiseBorderPost (ui action)",
+            "js/simulation/simulation.js#updateForestWarfare (annual wiring)",
+            "js/world/sacred-groves.js#sacredGroveTileAt (joint preserve guard)",
+            "js/systems/world-map.js#pressRegionClaim (province ownership)",
+            "js/systems/diplomacy.js#cancelTradeAgreement (embargo)",
+            "js/systems/military.js#recordMilitaryWound (soldier losses)",
+            "js/systems/forest-succession.js#controlledBurnNearestForestTile (war fire)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.228",
+          "label": "Zoll auf Holz, Harz und Medizin",
+          "key": "Customs rates of 0, 5, 10 or 15 percent earn gold from the forest trade and raise smuggling risk and court resentment.",
+          "group": "FOREST WAR",
+          "status": "implemented",
+          "docEvidence": "FOREST_WARFARE_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-warfare.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-warfare.js#FOREST_WARFARE_REQUIREMENTS (catalog)",
+            "js/world/forest-warfare.js#FOREST_WAR_PROFILES (regional war profiles)",
+            "js/systems/forest-warfare.js#forestWarfareSummary (simulation)",
+            "js/systems/forest-warfare.js#fightForestBattle (battle)",
+            "js/systems/forest-warfare.js#updateForestWarfare (annual pass)",
+            "js/presentation/forest-atlas-panel.js#warfareBlock (ui)",
+            "js/presentation/management-ui.js#raiseBorderPost (ui action)",
+            "js/simulation/simulation.js#updateForestWarfare (annual wiring)",
+            "js/world/sacred-groves.js#sacredGroveTileAt (joint preserve guard)",
+            "js/systems/world-map.js#pressRegionClaim (province ownership)",
+            "js/systems/diplomacy.js#cancelTradeAgreement (embargo)",
+            "js/systems/military.js#recordMilitaryWound (soldier losses)",
+            "js/systems/forest-succession.js#controlledBurnNearestForestTile (war fire)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.229",
+          "label": "Schmuggel über versteckte Waldwege",
+          "key": "Hidden forest paths allow a smuggling run with a real risk and reward; scouts and watch levels change the odds.",
+          "group": "FOREST WAR",
+          "status": "implemented",
+          "docEvidence": "FOREST_WARFARE_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-warfare.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-warfare.js#FOREST_WARFARE_REQUIREMENTS (catalog)",
+            "js/world/forest-warfare.js#FOREST_WAR_PROFILES (regional war profiles)",
+            "js/systems/forest-warfare.js#forestWarfareSummary (simulation)",
+            "js/systems/forest-warfare.js#fightForestBattle (battle)",
+            "js/systems/forest-warfare.js#updateForestWarfare (annual pass)",
+            "js/presentation/forest-atlas-panel.js#warfareBlock (ui)",
+            "js/presentation/management-ui.js#raiseBorderPost (ui action)",
+            "js/simulation/simulation.js#updateForestWarfare (annual wiring)",
+            "js/world/sacred-groves.js#sacredGroveTileAt (joint preserve guard)",
+            "js/systems/world-map.js#pressRegionClaim (province ownership)",
+            "js/systems/diplomacy.js#cancelTradeAgreement (embargo)",
+            "js/systems/military.js#recordMilitaryWound (soldier losses)",
+            "js/systems/forest-succession.js#controlledBurnNearestForestTile (war fire)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.230",
+          "label": "Waldkarten als Militärgeheimnis",
+          "key": "Charted war maps improve sight and ambush defence; they cost gold and research and are a guarded strategic asset.",
+          "group": "FOREST WAR",
+          "status": "implemented",
+          "docEvidence": "FOREST_WARFARE_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-warfare.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-warfare.js#FOREST_WARFARE_REQUIREMENTS (catalog)",
+            "js/world/forest-warfare.js#FOREST_WAR_PROFILES (regional war profiles)",
+            "js/systems/forest-warfare.js#forestWarfareSummary (simulation)",
+            "js/systems/forest-warfare.js#fightForestBattle (battle)",
+            "js/systems/forest-warfare.js#updateForestWarfare (annual pass)",
+            "js/presentation/forest-atlas-panel.js#warfareBlock (ui)",
+            "js/presentation/management-ui.js#raiseBorderPost (ui action)",
+            "js/simulation/simulation.js#updateForestWarfare (annual wiring)",
+            "js/world/sacred-groves.js#sacredGroveTileAt (joint preserve guard)",
+            "js/systems/world-map.js#pressRegionClaim (province ownership)",
+            "js/systems/diplomacy.js#cancelTradeAgreement (embargo)",
+            "js/systems/military.js#recordMilitaryWound (soldier losses)",
+            "js/systems/forest-succession.js#controlledBurnNearestForestTile (war fire)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.231",
+          "label": "Grenzverträge über Waldnutzung",
+          "key": "A border treaty costs gold, raises relation and trust, and blocks ambush, war fire and partisans for eight years.",
+          "group": "FOREST WAR",
+          "status": "implemented",
+          "docEvidence": "FOREST_WARFARE_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-warfare.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-warfare.js#FOREST_WARFARE_REQUIREMENTS (catalog)",
+            "js/world/forest-warfare.js#FOREST_WAR_PROFILES (regional war profiles)",
+            "js/systems/forest-warfare.js#forestWarfareSummary (simulation)",
+            "js/systems/forest-warfare.js#fightForestBattle (battle)",
+            "js/systems/forest-warfare.js#updateForestWarfare (annual pass)",
+            "js/presentation/forest-atlas-panel.js#warfareBlock (ui)",
+            "js/presentation/management-ui.js#raiseBorderPost (ui action)",
+            "js/simulation/simulation.js#updateForestWarfare (annual wiring)",
+            "js/world/sacred-groves.js#sacredGroveTileAt (joint preserve guard)",
+            "js/systems/world-map.js#pressRegionClaim (province ownership)",
+            "js/systems/diplomacy.js#cancelTradeAgreement (embargo)",
+            "js/systems/military.js#recordMilitaryWound (soldier losses)",
+            "js/systems/forest-succession.js#controlledBurnNearestForestTile (war fire)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.232",
+          "label": "Gemeinsame Schutzgebiete zwischen Reichen",
+          "key": "A joint preserve needs a treaty and a grove; it protects a real border tile from every axe and raises relation.",
+          "group": "FOREST WAR",
+          "status": "implemented",
+          "docEvidence": "FOREST_WARFARE_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-warfare.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-warfare.js#FOREST_WARFARE_REQUIREMENTS (catalog)",
+            "js/world/forest-warfare.js#FOREST_WAR_PROFILES (regional war profiles)",
+            "js/systems/forest-warfare.js#forestWarfareSummary (simulation)",
+            "js/systems/forest-warfare.js#fightForestBattle (battle)",
+            "js/systems/forest-warfare.js#updateForestWarfare (annual pass)",
+            "js/presentation/forest-atlas-panel.js#warfareBlock (ui)",
+            "js/presentation/management-ui.js#raiseBorderPost (ui action)",
+            "js/simulation/simulation.js#updateForestWarfare (annual wiring)",
+            "js/world/sacred-groves.js#sacredGroveTileAt (joint preserve guard)",
+            "js/systems/world-map.js#pressRegionClaim (province ownership)",
+            "js/systems/diplomacy.js#cancelTradeAgreement (embargo)",
+            "js/systems/military.js#recordMilitaryWound (soldier losses)",
+            "js/systems/forest-succession.js#controlledBurnNearestForestTile (war fire)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.233",
+          "label": "Rechte indigener Waldgemeinschaften",
+          "key": "Recognising the woodland communities costs gold, adds legitimacy and morale, reduces rebels and limits the timber levy.",
+          "group": "FOREST WAR",
+          "status": "implemented",
+          "docEvidence": "FOREST_WARFARE_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-warfare.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-warfare.js#FOREST_WARFARE_REQUIREMENTS (catalog)",
+            "js/world/forest-warfare.js#FOREST_WAR_PROFILES (regional war profiles)",
+            "js/systems/forest-warfare.js#forestWarfareSummary (simulation)",
+            "js/systems/forest-warfare.js#fightForestBattle (battle)",
+            "js/systems/forest-warfare.js#updateForestWarfare (annual pass)",
+            "js/presentation/forest-atlas-panel.js#warfareBlock (ui)",
+            "js/presentation/management-ui.js#raiseBorderPost (ui action)",
+            "js/simulation/simulation.js#updateForestWarfare (annual wiring)",
+            "js/world/sacred-groves.js#sacredGroveTileAt (joint preserve guard)",
+            "js/systems/world-map.js#pressRegionClaim (province ownership)",
+            "js/systems/diplomacy.js#cancelTradeAgreement (embargo)",
+            "js/systems/military.js#recordMilitaryWound (soldier losses)",
+            "js/systems/forest-succession.js#controlledBurnNearestForestTile (war fire)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.234",
+          "label": "Siedlerdruck an Waldrändern",
+          "key": "Settler claims add population pressure and food but convert a real forest tile each year and raise resistance.",
+          "group": "FOREST WAR",
+          "status": "implemented",
+          "docEvidence": "FOREST_WARFARE_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-warfare.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-warfare.js#FOREST_WARFARE_REQUIREMENTS (catalog)",
+            "js/world/forest-warfare.js#FOREST_WAR_PROFILES (regional war profiles)",
+            "js/systems/forest-warfare.js#forestWarfareSummary (simulation)",
+            "js/systems/forest-warfare.js#fightForestBattle (battle)",
+            "js/systems/forest-warfare.js#updateForestWarfare (annual pass)",
+            "js/presentation/forest-atlas-panel.js#warfareBlock (ui)",
+            "js/presentation/management-ui.js#raiseBorderPost (ui action)",
+            "js/simulation/simulation.js#updateForestWarfare (annual wiring)",
+            "js/world/sacred-groves.js#sacredGroveTileAt (joint preserve guard)",
+            "js/systems/world-map.js#pressRegionClaim (province ownership)",
+            "js/systems/diplomacy.js#cancelTradeAgreement (embargo)",
+            "js/systems/military.js#recordMilitaryWound (soldier losses)",
+            "js/systems/forest-succession.js#controlledBurnNearestForestTile (war fire)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.235",
+          "label": "Kolonisation tropischer und borealer Wälder",
+          "key": "Colonisation needs three settler claims and a real payment; it transfers the frontier province to the crown and creates resistance.",
+          "group": "FOREST WAR",
+          "status": "implemented",
+          "docEvidence": "FOREST_WARFARE_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-warfare.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-warfare.js#FOREST_WARFARE_REQUIREMENTS (catalog)",
+            "js/world/forest-warfare.js#FOREST_WAR_PROFILES (regional war profiles)",
+            "js/systems/forest-warfare.js#forestWarfareSummary (simulation)",
+            "js/systems/forest-warfare.js#fightForestBattle (battle)",
+            "js/systems/forest-warfare.js#updateForestWarfare (annual pass)",
+            "js/presentation/forest-atlas-panel.js#warfareBlock (ui)",
+            "js/presentation/management-ui.js#raiseBorderPost (ui action)",
+            "js/simulation/simulation.js#updateForestWarfare (annual wiring)",
+            "js/world/sacred-groves.js#sacredGroveTileAt (joint preserve guard)",
+            "js/systems/world-map.js#pressRegionClaim (province ownership)",
+            "js/systems/diplomacy.js#cancelTradeAgreement (embargo)",
+            "js/systems/military.js#recordMilitaryWound (soldier losses)",
+            "js/systems/forest-succession.js#controlledBurnNearestForestTile (war fire)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.236",
+          "label": "Widerstand gegen Entwaldung",
+          "key": "Deforestation scars and colonization create resistance; suppressing it costs gold and food and hurts morale and legitimacy.",
+          "group": "FOREST WAR",
+          "status": "implemented",
+          "docEvidence": "FOREST_WARFARE_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-warfare.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-warfare.js#FOREST_WARFARE_REQUIREMENTS (catalog)",
+            "js/world/forest-warfare.js#FOREST_WAR_PROFILES (regional war profiles)",
+            "js/systems/forest-warfare.js#forestWarfareSummary (simulation)",
+            "js/systems/forest-warfare.js#fightForestBattle (battle)",
+            "js/systems/forest-warfare.js#updateForestWarfare (annual pass)",
+            "js/presentation/forest-atlas-panel.js#warfareBlock (ui)",
+            "js/presentation/management-ui.js#raiseBorderPost (ui action)",
+            "js/simulation/simulation.js#updateForestWarfare (annual wiring)",
+            "js/world/sacred-groves.js#sacredGroveTileAt (joint preserve guard)",
+            "js/systems/world-map.js#pressRegionClaim (province ownership)",
+            "js/systems/diplomacy.js#cancelTradeAgreement (embargo)",
+            "js/systems/military.js#recordMilitaryWound (soldier losses)",
+            "js/systems/forest-succession.js#controlledBurnNearestForestTile (war fire)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.237",
+          "label": "Waldflüchtlinge nach Krieg und Brand",
+          "key": "War, fire, deportation and colonization create refugees; settling them costs food and wood and restores morale.",
+          "group": "FOREST WAR",
+          "status": "implemented",
+          "docEvidence": "FOREST_WARFARE_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-warfare.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-warfare.js#FOREST_WARFARE_REQUIREMENTS (catalog)",
+            "js/world/forest-warfare.js#FOREST_WAR_PROFILES (regional war profiles)",
+            "js/systems/forest-warfare.js#forestWarfareSummary (simulation)",
+            "js/systems/forest-warfare.js#fightForestBattle (battle)",
+            "js/systems/forest-warfare.js#updateForestWarfare (annual pass)",
+            "js/presentation/forest-atlas-panel.js#warfareBlock (ui)",
+            "js/presentation/management-ui.js#raiseBorderPost (ui action)",
+            "js/simulation/simulation.js#updateForestWarfare (annual wiring)",
+            "js/world/sacred-groves.js#sacredGroveTileAt (joint preserve guard)",
+            "js/systems/world-map.js#pressRegionClaim (province ownership)",
+            "js/systems/diplomacy.js#cancelTradeAgreement (embargo)",
+            "js/systems/military.js#recordMilitaryWound (soldier losses)",
+            "js/systems/forest-succession.js#controlledBurnNearestForestTile (war fire)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.238",
+          "label": "Militärkolonien zur Grenzsicherung",
+          "key": "A military colony is a paid border settlement that adds control and a garrison but eats food every year.",
+          "group": "FOREST WAR",
+          "status": "implemented",
+          "docEvidence": "FOREST_WARFARE_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-warfare.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-warfare.js#FOREST_WARFARE_REQUIREMENTS (catalog)",
+            "js/world/forest-warfare.js#FOREST_WAR_PROFILES (regional war profiles)",
+            "js/systems/forest-warfare.js#forestWarfareSummary (simulation)",
+            "js/systems/forest-warfare.js#fightForestBattle (battle)",
+            "js/systems/forest-warfare.js#updateForestWarfare (annual pass)",
+            "js/presentation/forest-atlas-panel.js#warfareBlock (ui)",
+            "js/presentation/management-ui.js#raiseBorderPost (ui action)",
+            "js/simulation/simulation.js#updateForestWarfare (annual wiring)",
+            "js/world/sacred-groves.js#sacredGroveTileAt (joint preserve guard)",
+            "js/systems/world-map.js#pressRegionClaim (province ownership)",
+            "js/systems/diplomacy.js#cancelTradeAgreement (embargo)",
+            "js/systems/military.js#recordMilitaryWound (soldier losses)",
+            "js/systems/forest-succession.js#controlledBurnNearestForestTile (war fire)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.239",
+          "label": "Wald als Rückzugsraum für Rebellen",
+          "key": "Rebel camps hide in the wood; clearing one needs a soldier, food and scouts, and can wound the soldier.",
+          "group": "FOREST WAR",
+          "status": "implemented",
+          "docEvidence": "FOREST_WARFARE_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-warfare.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-warfare.js#FOREST_WARFARE_REQUIREMENTS (catalog)",
+            "js/world/forest-warfare.js#FOREST_WAR_PROFILES (regional war profiles)",
+            "js/systems/forest-warfare.js#forestWarfareSummary (simulation)",
+            "js/systems/forest-warfare.js#fightForestBattle (battle)",
+            "js/systems/forest-warfare.js#updateForestWarfare (annual pass)",
+            "js/presentation/forest-atlas-panel.js#warfareBlock (ui)",
+            "js/presentation/management-ui.js#raiseBorderPost (ui action)",
+            "js/simulation/simulation.js#updateForestWarfare (annual wiring)",
+            "js/world/sacred-groves.js#sacredGroveTileAt (joint preserve guard)",
+            "js/systems/world-map.js#pressRegionClaim (province ownership)",
+            "js/systems/diplomacy.js#cancelTradeAgreement (embargo)",
+            "js/systems/military.js#recordMilitaryWound (soldier losses)",
+            "js/systems/forest-succession.js#controlledBurnNearestForestTile (war fire)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.240",
+          "label": "Ökologische Kriegsfolgen über Jahrzehnte",
+          "key": "Every war fire, slash-and-burn and colonial clearance leaves a scar; the annual ecology pass tracks recovery over the region's own recovery years.",
+          "group": "FOREST WAR",
+          "status": "implemented",
+          "docEvidence": "FOREST_WARFARE_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-warfare.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-warfare.js#FOREST_WARFARE_REQUIREMENTS (catalog)",
+            "js/world/forest-warfare.js#FOREST_WAR_PROFILES (regional war profiles)",
+            "js/systems/forest-warfare.js#forestWarfareSummary (simulation)",
+            "js/systems/forest-warfare.js#fightForestBattle (battle)",
+            "js/systems/forest-warfare.js#updateForestWarfare (annual pass)",
+            "js/presentation/forest-atlas-panel.js#warfareBlock (ui)",
+            "js/presentation/management-ui.js#raiseBorderPost (ui action)",
+            "js/simulation/simulation.js#updateForestWarfare (annual wiring)",
+            "js/world/sacred-groves.js#sacredGroveTileAt (joint preserve guard)",
+            "js/systems/world-map.js#pressRegionClaim (province ownership)",
+            "js/systems/diplomacy.js#cancelTradeAgreement (embargo)",
+            "js/systems/military.js#recordMilitaryWound (soldier losses)",
+            "js/systems/forest-succession.js#controlledBurnNearestForestTile (war fire)"
+          ],
+          "probe": null
+        }
+      ],
+      "consumers": [
+        {
+          "file": "js/world/forest-warfare.js",
+          "symbol": "FOREST_WARFARE_REQUIREMENTS",
+          "role": "catalog",
+          "valid": true
+        },
+        {
+          "file": "js/world/forest-warfare.js",
+          "symbol": "FOREST_WAR_PROFILES",
+          "role": "regional war profiles",
+          "valid": true
+        },
+        {
+          "file": "js/systems/forest-warfare.js",
+          "symbol": "forestWarfareSummary",
+          "role": "simulation",
+          "valid": true
+        },
+        {
+          "file": "js/systems/forest-warfare.js",
+          "symbol": "fightForestBattle",
+          "role": "battle",
+          "valid": true
+        },
+        {
+          "file": "js/systems/forest-warfare.js",
+          "symbol": "updateForestWarfare",
+          "role": "annual pass",
+          "valid": true
+        },
+        {
+          "file": "js/presentation/forest-atlas-panel.js",
+          "symbol": "warfareBlock",
+          "role": "ui",
+          "valid": true
+        },
+        {
+          "file": "js/presentation/management-ui.js",
+          "symbol": "raiseBorderPost",
+          "role": "ui action",
+          "valid": true
+        },
+        {
+          "file": "js/simulation/simulation.js",
+          "symbol": "updateForestWarfare",
+          "role": "annual wiring",
+          "valid": true
+        },
+        {
+          "file": "js/world/sacred-groves.js",
+          "symbol": "sacredGroveTileAt",
+          "role": "joint preserve guard",
+          "valid": true
+        },
+        {
+          "file": "js/systems/world-map.js",
+          "symbol": "pressRegionClaim",
+          "role": "province ownership",
+          "valid": true
+        },
+        {
+          "file": "js/systems/diplomacy.js",
+          "symbol": "cancelTradeAgreement",
+          "role": "embargo",
+          "valid": true
+        },
+        {
+          "file": "js/systems/military.js",
+          "symbol": "recordMilitaryWound",
+          "role": "soldier losses",
+          "valid": true
+        },
+        {
+          "file": "js/systems/forest-succession.js",
+          "symbol": "controlledBurnNearestForestTile",
+          "role": "war fire",
+          "valid": true
+        }
+      ],
+      "tests": [
+        {
+          "file": "tests/systems/forest-warfare.test.js",
+          "valid": true
+        }
+      ],
+      "source": "js/world/forest-warfare.js",
+      "note": "30 player-facing forest-war requirements from FOREST_WARFARE_REQUIREMENTS; each names its live consumer in the atlas.",
       "probeFunction": null,
       "probeClimate": "temperate",
       "probeExtra": {},

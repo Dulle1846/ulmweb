@@ -1,13 +1,56 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.82.0`
-**Next development line:** `3.83.0-dev`
+**Current production version:** `3.83.0`
+**Next development line:** `3.84.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
 **Last repository verification:** 2026-11-27 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.83.0 — Waldkrieg, Diplomatie, Grenzen und Strategie
+
+Adds points 1.2.23.1.211–240 as one war-and-diplomacy layer over the living
+wood. Four real fronts (Northmere, Ironvale, Goldcoast, Redpass) each derive a
+deterministic military profile from their regional forest type: border terrain,
+ambush cover, sight penalty, movement cost, cavalry drag, elephant ground, ship
+and siege timber grades, hidden paths and ecological recovery time.
+
+- **Borders are built, not painted.** Border posts, forest watches, scouts and
+  three road grades spend real wood, stone, food and gold. Posts raise the
+  actual province control and lower frontier pressure; roads open or close by
+  season and change battle movement and route income.
+- **The wood fights.** Ambushes need cover, scouts and a war. A forest battle
+  computes power from the named soldiers, sight, movement, cavalry drag, war
+  maps, abatis, elephants, partisans and siege material, then writes wounds and
+  casualties into the same soldier records the military panel uses. Victory
+  shifts province control; defeat costs morale and war exhaustion.
+- **Timber is strategy.** Siege material is cut from real wood and spent to
+  strip a garrison. Reserved mast and keel timber is a separate capped reserve;
+  twelve units become a real hull in the royal fleet during the annual pass.
+- **Terrain has limits.** War elephants can only be mustered on tropical or
+  savanna fronts and eat food every year. Abatis belts and the regional
+  undergrowth slow cavalry. Partisans only rise on a contested or war-weary
+  front and drain enemy control each year.
+- **War reaches the forest and its people.** War fire and slash-and-burn use the
+  existing controlled-burn path, altering real forest stock and leaving scars
+  that heal over the region's own recovery years. Deportation, settler claims,
+  colonisation, resistance, rebel camps, refugees and military colonies change
+  province ownership, control, legitimacy, morale and rebellion.
+- **Trade is a weapon.** Embargoes on timber, resin or medicine end the standing
+  trade agreement and move relation and fear. Forest routes, customs rates and
+  smuggling produce real annual gold and risk. Border treaties block ambush,
+  war fire and partisans for eight years; a joint preserve protects a real
+  border tile through the shared sacred-grove guard.
+- **Save-compatible and bounded.** The whole ledger lives additively under
+  `state.economy.productionChains.forestWarfare`, normalises old saves and caps
+  every list. One annual pass reads four fronts and at most twelve scars each;
+  no per-frame or per-tick work is added.
+
+Verification: focused `forest-warfare` suite 15/15 green, full `npm test`, the
+deterministic 25-year campaign, the Chromium forest-war reference and a live
+player run on both production hosts. The 60-year soak remains nightly.
 
 ## 3.82.0 — Royal education and coming-of-age offices
 

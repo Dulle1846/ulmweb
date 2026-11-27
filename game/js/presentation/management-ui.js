@@ -40,6 +40,7 @@ import { FOREST_WORKS_MODES, SAW_PROFILES, INDUSTRY_GOODS } from "../world/fores
 import { forestMasteryFor, forestMasterworkArchive, forestWorksStatus, runForestWorks, sawProfileIdFor, sellForestIndustryGood, setForestWorksMode, setSawProfile, supplyClinicMedicine } from "../systems/forest-industries.js";
 import { deliverForestCommission, dispatchGuildCaravan } from "../systems/forest-guild.js";
 import { brewForestRemedies, collectForestLore, consultForestHermit, dedicateSacredGrove, holdForestFestival, holdForestSchool, makeForestOffering, mediateForestConflict, performHuntRite, performTreeWedding, setForestDoctrine, setForestRights, tendSacredGrove } from "../systems/forest-culture.js";
+import { burnForFields, clearRebelCamp, colonizeWoodland, commissionWarMaps, createJointPreserve, cutSiegeTimber, deportWoodlanders, fellAbatis, fightForestBattle, foundMilitaryColony, fundWarEcologyRecovery, layForestAmbush, levyTimberQuota, liftForestEmbargo, musterWarElephants, openForestRoad, openForestTradeRoute, pressForestSiege, pressSettlerClaims, raiseBorderPost, raiseForestPartisans, recognizeWoodlandRights, recruitForestScouts, reserveShipTimber, runForestSmuggling, setForestCustoms, setForestEmbargo, setWarFire, settleForestRefugees, signBorderTreaty, strengthenForestWatch, suppressForestResistance } from "../systems/forest-warfare.js";
 import { grandConsumerStatusFor } from "../systems/grand-consumers.js";
 import { renderScenarioPanel } from "./scenario-panel.js";
 import { renderWorldMapPanel } from "./world-map-panel.js";
@@ -2044,6 +2045,90 @@ export function setupManagementUI(){
    const result=entity?runForestWorks(entity):{ok:false,reason:"Building not found"};
    if(result.ok){toast("FOREST BATCH · "+Object.entries(result.output).map(([good,value])=>value+" "+(INDUSTRY_GOODS[good]?.label||good)).join(" + ")+(result.style?" · "+result.style.label:""));renderUI();render();}
    else toast(String(result.reason||"FOREST BATCH FAILED").toUpperCase());
+   return;
+  }
+     const warAction=e.target.closest("[data-war-action]");
+  if(warAction){
+   const realm=warAction.dataset.warRealm;
+   const action=warAction.dataset.warAction;
+   const good=warAction.dataset.warGood;
+   let result;
+   switch(action){
+    case "post": result=raiseBorderPost(realm); break;
+    case "watch": result=strengthenForestWatch(realm); break;
+    case "road": result=openForestRoad(realm); break;
+    case "scouts": result=recruitForestScouts(realm); break;
+    case "ambush": result=layForestAmbush(realm); break;
+    case "battle": result=fightForestBattle(realm); break;
+    case "siegeTimber": result=cutSiegeTimber(realm); break;
+    case "siege": result=pressForestSiege(realm); break;
+    case "shipTimber": result=reserveShipTimber(realm); break;
+    case "elephants": result=musterWarElephants(realm); break;
+    case "abatis": result=fellAbatis(realm); break;
+    case "partisans": result=raiseForestPartisans(realm); break;
+    case "warFire": result=setWarFire(realm); break;
+    case "burnFields": result=burnForFields(realm); break;
+    case "deport": result=deportWoodlanders(realm); break;
+    case "quota": result=levyTimberQuota(realm); break;
+    case "embargo": result=setForestEmbargo(realm,good); break;
+    case "liftEmbargo": result=liftForestEmbargo(realm); break;
+    case "route": result=openForestTradeRoute(realm); break;
+    case "smuggling": result=runForestSmuggling(realm); break;
+    case "maps": result=commissionWarMaps(realm); break;
+    case "treaty": result=signBorderTreaty(realm); break;
+    case "preserve": result=createJointPreserve(realm); break;
+    case "rights": result=recognizeWoodlandRights(realm); break;
+    case "settlers": result=pressSettlerClaims(realm); break;
+    case "colonize": result=colonizeWoodland(realm); break;
+    case "suppress": result=suppressForestResistance(realm); break;
+    case "refugees": result=settleForestRefugees(realm); break;
+    case "colony": result=foundMilitaryColony(realm); break;
+    case "clearCamp": result=clearRebelCamp(realm); break;
+    case "recovery": result=fundWarEcologyRecovery(realm); break;
+    default: result={ok:false,reason:"Unknown frontier action"};
+   }
+   if(result.ok){
+    const message=action==="battle"?"FOREST "+(result.victory?"VICTORY":"REVERSE")+" · "+result.wounded+" WOUNDED · "+result.fallen+" FALLEN"
+     :action==="post"?"BORDER POST · CONTROL "+result.control
+     :action==="watch"?"FOREST WATCH · "+result.watch+" / 3"
+     :action==="road"?"FOREST ROAD · GRADE "+result.road
+     :action==="scouts"?"FOREST SCOUTS · "+result.scouts+" / 3"
+     :action==="ambush"?"AMBUSH LAID IN THE WOOD"
+     :action==="siegeTimber"?"SIEGE MATERIAL +"+result.gain
+     :action==="siege"?"SIEGE PRESSED · GARRISON "+result.garrison
+     :action==="shipTimber"?"SHIP TIMBER +"+result.gain
+     :action==="elephants"?"WAR ELEPHANTS · "+result.elephants
+     :action==="abatis"?"ABATIS · "+result.abatis+" BELTS"
+     :action==="partisans"?"FOREST PARTISANS · "+result.partisans
+     :action==="warFire"?"WAR FIRE · TILE "+result.x+", "+result.y
+     :action==="burnFields"?"FIELDS CLEARED · +"+result.food+" FOOD · "+result.settlers+" CLAIMS"
+     :action==="deport"?"DEPORTATION · REBELS "+result.rebels+" · REFUGEES "+result.refugees
+     :action==="quota"?"TIMBER QUOTA · +8 GOLD · MATERIAL "+result.siegeMaterial
+     :action==="embargo"?"EMBARGO · "+String(result.good).toUpperCase()
+     :action==="liftEmbargo"?"EMBARGO LIFTED · "+String(result.good).toUpperCase()
+     :action==="route"?"FOREST ROUTE OPEN"
+     :action==="smuggling"?result.caught?"SMUGGLING RUN CAUGHT":"SMUGGLING RUN · +"+result.gold+" GOLD"
+     :action==="maps"?"WAR MAPS CHARTED"
+     :action==="treaty"?"BORDER TREATY · UNTIL "+result.treaty.untilYear
+     :action==="preserve"?"JOINT PRESERVE · TILE "+result.preserve.x+", "+result.preserve.y
+     :action==="rights"?"WOODLAND RIGHTS RECOGNISED"
+     :action==="settlers"?"SETTLER CLAIMS · "+result.settlers
+     :action==="colonize"?"PROVINCE COLONISED · REBELS "+result.rebels
+     :action==="suppress"?"RESISTANCE · "+result.cleared+" CAMPS CLEARED"
+     :action==="refugees"?"REFUGEES SETTLED · "+result.settled
+     :action==="colony"?"MILITARY COLONY · CONTROL "+result.control
+     :action==="clearCamp"?result.cleared?"REBEL CAMP CLEARED":"REBEL CAMP HOLDS · PATROL WOUNDED"
+     :action==="recovery"?"WAR ECOLOGY · "+result.restored+" FOREST RESTORED"
+     :String(action).toUpperCase()+" · DONE";
+    toast(message);renderUI();render();
+   }else toast(String(result.reason||"FRONTIER ACTION FAILED").toUpperCase());
+   return;
+  }
+  const warCustoms=e.target.closest("[data-war-customs]");
+  if(warCustoms){
+   const result=setForestCustoms(warCustoms.dataset.warRealm,Number(warCustoms.dataset.warCustoms));
+   if(result.ok){toast("FOREST CUSTOMS · "+result.customs+"% · +"+result.annual+" GOLD / YEAR");renderUI();render();}
+   else toast(String(result.reason||"CUSTOMS FAILED").toUpperCase());
    return;
   }
      const cultureAction=e.target.closest("[data-culture-action]");

@@ -1,7 +1,7 @@
 # Kings & Cards
 
-**Production version:** 3.82.0
-**Next development line:** 3.83.0-dev
+**Production version:** 3.83.0
+**Next development line:** 3.84.0-dev
 **Production branch:** `ulmweb-branch`  
 **Production URL:** https://kings-and-cards.pages.dev/
 
@@ -37,6 +37,7 @@
 
 28. [Expedition follow-up chains](docs/EXPEDITIONS.md) — 3.81.0 blight study/quarantine field orders on the eight existing landmarks, RUMOUR → SURVEYED → FOLLOW-UP READY → CHAIN CLOSED, two fixed reward pairs, bounded site notes, save-compatible state and the Explore panel proof.
 29. [Royal education](docs/ROYAL_EDUCATION.md) — one Tutor, three authored curricula for royal children, bounded annual tutelage, coming-of-age audiences with political effects and named offices, save-compatible nested DTO, Decisions panel, NEXT MOVE/FIRST SESSION continuation and browser proof.
+30. [Waldkrieg, Diplomatie, Grenzen und Strategie 1.2.23.1.211–240](docs/FOREST_WARFARE.md) — four regional forest fronts with seasonal roads, border posts and watches, scouts and ambushes, sight/movement/cavalry battle modifiers, siege and ship timber, war elephants, abatis and partisans, war fire and slash-and-burn, deportation and refugees, timber quotas, embargoes, forest routes, customs and smuggling, war maps and border treaties, joint preserves and indigenous rights, settler pressure and colonisation, resistance and rebel camps, military colonies and decades-long ecological war scars — all wired into the real world map, diplomacy, army, forest succession and sacred-grove guard (v3.83.0).
 
 ## Development rules
 

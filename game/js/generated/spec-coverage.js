@@ -2,13 +2,13 @@
 export const SPEC_COVERAGE = Object.freeze({
   "version": 2,
   "generatedBy": "scripts/spec-audit.mjs",
-  "commit": "6d1fa0afb8fb368b40ac6aa99adcf3e382de8af4",
-  "sourceHash": "ad478c881a9b39ba8e4b5596ab2c1416f545dce924dbb7beea44be235bcc8d46",
+  "commit": "cc02b102e280ea8467cde629645f8df1f7cefda2",
+  "sourceHash": "ca7dd2250b752b420a9f6498856d89462d09395fb77ec3e60742822a6f138e09",
   "totals": {
-    "total": 1723,
-    "implemented": 1723,
+    "total": 1753,
+    "implemented": 1753,
     "open": 0,
-    "sections": 42
+    "sections": 43
   },
   "nextSection": null,
   "collisions": [
@@ -565,6 +565,14 @@ export const SPEC_COVERAGE = Object.freeze({
       "implemented": 30,
       "open": 0,
       "source": "js/world/forest-culture.js"
+    },
+    {
+      "id": "1.2.23.1.211-240",
+      "title": "Forest war, diplomacy, borders and strategy",
+      "total": 30,
+      "implemented": 30,
+      "open": 0,
+      "source": "js/world/forest-warfare.js"
     },
     {
       "id": "2.1",

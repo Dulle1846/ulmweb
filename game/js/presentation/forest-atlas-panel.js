@@ -23,6 +23,7 @@ import {
 } from "../world/forest-industries.js";
 import { forestIndustrySummary } from "../systems/forest-industries.js";
 import { forestCultureSummary } from "../systems/forest-culture.js";
+import { forestWarfareSummary } from "../systems/forest-warfare.js";
 import { forestGuildSummary } from "../systems/forest-guild.js";
 import { forestMasterworkArchive } from "../systems/forest-industries.js";
 import { grandConsumersSummary } from "../systems/grand-consumers.js";
@@ -730,6 +731,129 @@ function cultureBlock() {
         + '</section>';
 }
 
+function warActionButton(front, action, label, detail, ok) {
+    return '<button type="button" class="command-choice war-action" data-war-realm="' + esc(front.realmId) + '" data-war-action="' + esc(action) + '"'
+        + ' title="' + esc(detail) + '"' + (ok ? '' : ' disabled')
+        + '><strong>' + esc(label) + '</strong><small>' + esc(detail) + '</small></button>';
+}
+
+function warfareBlock() {
+    const war = forestWarfareSummary();
+    const totals = war.totals;
+    const fronts = war.fronts.map(front => {
+        const acts = front.actions;
+        const profile = front.profile || {};
+        const mods = front.modifiers || {};
+        const stateLabel = front.war ? 'AT WAR' : front.treaty ? 'TREATY' : 'PEACE';
+        const ownerLabel = front.ownerId === 'crown' ? 'CROWN' : (front.ownerId || 'UNHELD').toUpperCase();
+        const scars = front.scars.length
+            ? front.scars.map(scar => '<div class="war-scar" data-war-scar="' + number(scar.x) + ',' + number(scar.y) + '"><small>' + esc(String(scar.cause).toUpperCase()) + ' · ' + number(scar.year) + '</small><strong>Tile ' + number(scar.x) + ', ' + number(scar.y) + '</strong><span>Severity ' + number(scar.severity) + '</span></div>').join('')
+            : '<p class="command-note">No war scar is open on this frontier. Fire and clearance would create one.</p>';
+        const roads = (profile.roads || []).map(road => '<div class="' + (road.season === war.season ? 'is-current' : '') + (road.open ? '' : ' is-closed') + '"><small>' + esc(seasonNames[road.season].toUpperCase()) + '</small><strong>' + (road.open ? 'OPEN' : 'CLOSED') + '</strong><span>' + esc(road.label) + '</span></div>').join('');
+        const embargoButtons = war.embargoGoods.map(good => '<button type="button" class="command-choice' + (front.embargo === good.id ? ' is-current' : '') + '" data-war-realm="' + esc(front.realmId) + '" data-war-action="embargo" data-war-good="' + esc(good.id) + '"'
+            + (acts.embargo.ok ? '' : ' disabled title="' + esc(acts.embargo.reason) + '"') + '><strong>EMBARGO ' + esc(good.label.toUpperCase()) + '</strong><small>' + esc(good.detail) + '</small></button>').join('');
+        const customsButtons = war.customsRates.map(rate => '<button type="button" class="command-choice' + (front.customs === rate ? ' is-current' : '') + '" data-war-realm="' + esc(front.realmId) + '" data-war-customs="' + rate + '"><strong>' + rate + '%</strong><small>Customs on forest trade</small></button>').join('');
+        return '<article class="forest-war-front" data-war-front="' + esc(front.realmId) + '" data-war-state="' + (front.war ? 'war' : front.treaty ? 'treaty' : 'peace') + '" data-war-control="' + number(front.control) + '" data-war-battles="' + number(front.battles) + '">'
+            + '<header class="forest-war-front__head"><div><span class="command-ribbon">' + esc(stateLabel) + ' · ' + esc(ownerLabel) + ' PROVINCE</span><strong>' + esc(front.realmName) + ' · ' + esc(front.provinceName) + '</strong><p>' + esc(profile.label || '') + ' · ' + esc(profile.border || '') + '</p></div>'
+            + '<div class="forest-war-front__control" data-war-control-value="' + number(front.control) + '"><small>CONTROL</small><strong>' + number(front.control) + ' / 100</strong><span>Relation ' + number(front.relation) + ' · Trust ' + number(front.trust) + ' · Fear ' + number(front.fear) + (front.war ? ' · exhaustion ' + number(front.warExhaustion) : '') + '</span></div></header>'
+            + '<div class="command-summary war-summary">'
+            + '<div><small>BORDER POSTS</small><strong>' + number(front.posts) + ' / 3</strong></div>'
+            + '<div><small>FOREST WATCH</small><strong>' + number(front.watch) + ' / 3</strong></div>'
+            + '<div><small>ROAD GRADE</small><strong>' + number(front.road) + ' / 3</strong></div>'
+            + '<div><small>SCOUTS</small><strong>' + number(front.scouts) + ' / 3</strong></div>'
+            + '<div><small>SIEGE MATERIAL</small><strong>' + number(front.siegeMaterial) + '</strong></div>'
+            + '<div><small>SHIP TIMBER</small><strong>' + number(front.shipTimber) + '</strong></div>'
+            + '<div><small>ELEPHANTS</small><strong>' + number(front.elephants) + '</strong></div>'
+            + '<div><small>ABATIS</small><strong>' + number(front.abatis) + ' / 3</strong></div>'
+            + '<div><small>PARTISANS</small><strong>' + number(front.partisans) + '</strong></div>'
+            + '<div><small>SETTLERS</small><strong>' + number(front.settlers) + ' / 4</strong></div>'
+            + '<div><small>REBEL CAMPS</small><strong>' + number(front.rebels) + '</strong></div>'
+            + '<div><small>REFUGEES</small><strong>' + number(front.refugees) + '</strong></div>'
+            + '<div><small>BATTLES</small><strong>' + number(front.battles) + ' · ' + number(front.victories) + ' WON</strong></div>'
+            + '<div><small>ROUTE / CUSTOMS</small><strong>' + (front.route ? '+' + number(front.annualRoute) + 'G' : 'NO ROUTE') + ' · ' + number(front.customs) + '% · +' + number(front.annualCustoms) + 'G</strong></div>'
+            + '<div><small>PRESSURE</small><strong>' + number(front.pressure) + ' / 100</strong></div>'
+            + '<div><small>WAR SCARS</small><strong>' + number(front.scars.length) + '</strong></div>'
+            + '</div>'
+            + '<div class="war-tradition"><small>REGIONAL WAR TRADITION</small><p>' + esc(profile.warTradition || '') + '</p><small>STRATEGIC WOOD</small><p>' + esc((profile.strategicGoods || []).join(' · ')) + ' · recovery ' + number(profile.recoveryYears) + ' years</p></div>'
+            + '<div class="command-summary war-modifiers">'
+            + '<div><small>SIGHT</small><strong>×' + amount(mods.sight) + '</strong></div>'
+            + '<div><small>MOVEMENT</small><strong>×' + amount(mods.movement) + '</strong></div>'
+            + '<div><small>CAVALRY DRAG</small><strong>×' + amount(mods.cavalry) + '</strong></div>'
+            + '<div><small>ENEMY AMBUSH</small><strong>' + number(mods.ambushChance) + '%</strong></div>'
+            + '<div><small>SMUGGLING RISK</small><strong>' + number(mods.smugglingRisk) + '%</strong></div>'
+            + '<div><small>TRADE FACTOR</small><strong>×' + amount(mods.trade) + '</strong></div>'
+            + '<div><small>ELEPHANT POWER</small><strong>+' + amount(mods.elephant) + '</strong></div>'
+            + '<div><small>ROAD THIS SEASON</small><strong>' + (mods.roadOpen ? 'OPEN' : 'CLOSED') + '</strong></div>'
+            + '</div>'
+            + '<div class="command-section-title">BORDER WORKS · POSTS, WATCH AND ROADS</div><div class="war-actions">'
+            + warActionButton(front, 'post', 'BORDER POST', '10 wood · 6 gold · ' + acts.post.reason, acts.post.ok)
+            + warActionButton(front, 'watch', 'STRENGTHEN WATCH', '8 gold · 2 food · ' + acts.watch.reason, acts.watch.ok)
+            + warActionButton(front, 'road', 'OPEN FOREST ROAD', '12 wood · 4 stone · 8 gold · ' + acts.road.reason, acts.road.ok)
+            + warActionButton(front, 'scouts', 'RECRUIT SCOUTS', '6 gold · 3 food · ' + acts.scouts.reason, acts.scouts.ok)
+            + warActionButton(front, 'maps', 'COMMISSION WAR MAPS', '12 gold · 4 research · ' + acts.maps.reason, acts.maps.ok)
+            + '</div>'
+            + '<div class="command-section-title">FOREST BATTLE · AMBUSH AND SIEGE</div><div class="war-actions">'
+            + warActionButton(front, 'ambush', 'LAY AMBUSH', '3 food · ' + acts.ambush.reason, acts.ambush.ok)
+            + warActionButton(front, 'battle', 'FIGHT FOREST BATTLE', 'soldiers · ' + acts.battle.reason, acts.battle.ok)
+            + warActionButton(front, 'siegeTimber', 'CUT SIEGE TIMBER', '15 wood · ' + acts.siegeTimber.reason, acts.siegeTimber.ok)
+            + warActionButton(front, 'siege', 'PRESS SIEGE', '10 material · ' + acts.siege.reason, acts.siege.ok)
+            + warActionButton(front, 'shipTimber', 'RESERVE SHIP TIMBER', '12 wood · 4 gold · ' + acts.shipTimber.reason, acts.shipTimber.ok)
+            + warActionButton(front, 'elephants', 'MUSTER ELEPHANTS', '12 food · 10 gold · ' + acts.elephants.reason, acts.elephants.ok)
+            + warActionButton(front, 'abatis', 'FELL ABATIS', '6 wood · 4 food · ' + acts.abatis.reason, acts.abatis.ok)
+            + warActionButton(front, 'partisans', 'RAISE PARTISANS', '5 food · 3 gold · ' + acts.partisans.reason, acts.partisans.ok)
+            + '</div>'
+            + '<div class="command-section-title">TRADE, EMBARGO AND THE HIDDEN PATHS</div><div class="war-actions">'
+            + warActionButton(front, 'route', 'OPEN FOREST ROUTE', '10 wood · 5 gold · ' + acts.route.reason, acts.route.ok)
+            + warActionButton(front, 'smuggling', 'RUN SMUGGLING', '2 food · ' + acts.smuggling.reason, acts.smuggling.ok)
+            + '<button type="button" class="command-choice' + (front.embargo ? ' is-current' : '') + '" data-war-realm="' + esc(front.realmId) + '" data-war-action="liftEmbargo"' + (acts.clearEmbargo.ok ? '' : ' disabled title="' + esc(acts.clearEmbargo.reason) + '"') + '><strong>LIFT EMBARGO</strong><small>' + (front.embargo ? 'Currently banning ' + esc(front.embargo) : 'No embargo in force') + '</small></button>'
+            + '</div><div class="war-actions war-embargoes">' + embargoButtons + '</div>'
+            + '<div class="command-section-title">CUSTOMS ON WOOD, RESIN AND MEDICINE</div><div class="war-actions war-customs">' + customsButtons + '</div>'
+            + '<div class="command-section-title">PEOPLE, SETTLEMENT AND THE FOREST</div><div class="war-actions">'
+            + warActionButton(front, 'warFire', 'SET WAR FIRE', '3 food · ' + acts.warFire.reason, acts.warFire.ok)
+            + warActionButton(front, 'burnFields', 'BURN FOR FIELDS', '2 food · 6 gold · ' + acts.burnFields.reason, acts.burnFields.ok)
+            + warActionButton(front, 'deport', 'DEPORT WOODLANDERS', '6 gold · ' + acts.deport.reason, acts.deport.ok)
+            + warActionButton(front, 'quota', 'LEVY TIMBER QUOTA', '10 wood · 4 food · ' + acts.quota.reason, acts.quota.ok)
+            + warActionButton(front, 'treaty', 'SIGN BORDER TREATY', '8 gold · ' + acts.treaty.reason, acts.treaty.ok)
+            + warActionButton(front, 'preserve', 'CREATE JOINT PRESERVE', '12 gold · ' + acts.preserve.reason, acts.preserve.ok)
+            + warActionButton(front, 'rights', 'RECOGNISE WOODLAND RIGHTS', '10 gold · ' + acts.rights.reason, acts.rights.ok)
+            + warActionButton(front, 'settlers', 'PRESS SETTLER CLAIMS', '6 food · ' + acts.settlers.reason, acts.settlers.ok)
+            + warActionButton(front, 'colonize', 'COLONISE WOODLAND', '20 wood · 10 food · 15 gold · ' + acts.colonize.reason, acts.colonize.ok)
+            + warActionButton(front, 'suppress', 'SUPPRESS RESISTANCE', '10 gold · 4 food · ' + acts.suppress.reason, acts.suppress.ok)
+            + warActionButton(front, 'refugees', 'SETTLE REFUGEES', '10 food · 6 wood · ' + acts.refugees.reason, acts.refugees.ok)
+            + warActionButton(front, 'colony', 'FOUND MILITARY COLONY', '18 wood · 10 stone · 12 gold · ' + acts.colony.reason, acts.colony.ok)
+            + warActionButton(front, 'clearCamp', 'CLEAR REBEL CAMP', '3 food · ' + acts.clearCamp.reason, acts.clearCamp.ok)
+            + warActionButton(front, 'recovery', 'FUND WAR ECOLOGY', '8 gold · 4 wood · ' + acts.recovery.reason, acts.recovery.ok)
+            + '</div>'
+            + '<div class="command-section-title">SEASONAL FOREST ROADS</div><div class="war-roads">' + roads + '</div>'
+            + '<div class="command-section-title">WAR SCARS ON REAL TILES</div><div class="war-scars">' + scars + '</div>'
+            + (front.treaty ? '<p class="command-note">Border treaty until year ' + number(front.treaty.untilYear) + ': ' + esc(front.treaty.term) + '. Ambush, war fire and partisans are refused while it holds.</p>' : '')
+            + (front.preserve ? '<p class="command-note">Joint preserve on tile ' + number(front.preserve.x) + ', ' + number(front.preserve.y) + ' since ' + number(front.preserve.year) + '. The shared grove guard refuses every axe there.</p>' : '')
+            + (front.colony ? '<p class="command-note">' + (front.colony.military ? 'Military colony' : 'Colonised settlement') + ' founded in ' + number(front.colony.year) + '. ' + (front.colony.military ? 'It adds control each year and eats 2 food.' : 'The province is claimed; resistance remains.') + '</p>' : '')
+            + '</article>';
+    }).join('');
+    const guide = war.requirements.map(requirement => '<details class="culture-requirement" data-war-requirement="' + esc(requirement.id) + '"><summary><span>' + esc(requirement.id) + '</span><strong>' + esc(requirement.title) + '</strong></summary><p>' + esc(requirement.point) + '</p><small>' + esc(requirement.consumer) + '</small><p>' + esc(requirement.detail) + '</p></details>').join('');
+    return '<section class="forest-war" data-forest-war="' + number(war.requirementCount) + '" data-war-fronts="' + number(war.fronts.length) + '">'
+        + '<div class="command-section-title">FOREST WAR, DIPLOMACY AND BORDERS · 1.2.23.1.211–240 · ' + number(war.requirementCount) + ' POINTS</div>'
+        + '<p class="command-note">Four real woodland frontiers sit between the crown and its neighbours. Every post, road, ambush, battle, embargo and scar writes the same world-map province, soldier, diplomatic court, forest tile and sacred-grove record the rest of the game already uses. The season changes which roads are open; a closed road still exists, but it slows an army and carries less trade.</p>'
+        + '<div class="command-summary war-totals">'
+        + '<div><small>FOREST FRONTS</small><strong>' + number(totals.fronts) + '</strong></div>'
+        + '<div><small>WARS</small><strong>' + number(totals.wars) + '</strong></div>'
+        + '<div><small>PROVINCES HELD</small><strong>' + number(totals.frontsHeld) + ' / ' + number(totals.fronts) + '</strong></div>'
+        + '<div><small>BATTLES / WINS</small><strong>' + number(totals.battles) + ' / ' + number(totals.victories) + '</strong></div>'
+        + '<div><small>BORDER POSTS</small><strong>' + number(totals.posts) + '</strong></div>'
+        + '<div><small>FOREST ROUTES</small><strong>' + number(totals.routes) + '</strong></div>'
+        + '<div><small>SHIP TIMBER</small><strong>' + number(totals.shipTimber) + '</strong></div>'
+        + '<div><small>SIEGE MATERIAL</small><strong>' + number(totals.siegeMaterial) + '</strong></div>'
+        + '<div><small>REBEL CAMPS</small><strong>' + number(totals.rebels) + '</strong></div>'
+        + '<div><small>REFUGEES</small><strong>' + number(totals.refugees) + '</strong></div>'
+        + '<div><small>WAR SCARS</small><strong>' + number(totals.scars) + '</strong></div>'
+        + '<div><small>CUSTOMS INCOME</small><strong>+' + number(totals.customs) + ' G / YEAR</strong></div>'
+        + '</div>'
+        + '<div class="war-fronts">' + fronts + '</div>'
+        + '<details class="culture-guide" data-war-guide="' + number(war.requirementCount) + '"><summary>THIRTY-POINT WAR, DIPLOMACY, BORDER AND STRATEGY FIELD GUIDE</summary><div class="culture-requirements">' + guide + '</div></details>'
+        + '</section>';
+}
+
 function grandConsumersBlock() {
     const summary = grandConsumersSummary();
     const rows = summary.rows.length ? summary.rows.map(row => '<article class="forest-atlas__grand-consumer" data-grand-consumer-card="' + esc(row.id) + '" data-grand-status="' + esc(row.status) + '"><header><b>' + esc(row.label) + '</b><span>' + esc(String(row.status).toUpperCase()) + '</span></header><p>' + esc(row.story) + '</p><small>' + esc(row.text) + '</small><em>Batches ' + number(row.batches) + ' · ' + Object.entries(row.inputs || {}).map(([good, value]) => value + ' ' + good).join(' · ') + '</em></article>').join("") : '<p class="command-note">No shipyard or paper mill stands yet. Build one from the GRAND CONSUMERS category.</p>';
@@ -844,6 +968,7 @@ export function renderForestAtlasPanel() {
         + processBlock
         + industryBlock()
         + cultureBlock()
+        + warfareBlock()
         + regionHistoryBlock(survey)
         + faunaFieldGuide(survey)
         + '<div class="forest-atlas">' + cards + '</div>'

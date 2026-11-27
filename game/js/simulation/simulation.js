@@ -69,6 +69,7 @@ import { updateRoadWear } from "../systems/roads.js";
 import { updateSettlementMaintenance } from "../systems/settlement-owners.js";
 import { updateScenario } from "../systems/scenario.js";
 import { updateWorldMap } from "../systems/world-map.js";
+import { updateForestWarfare } from "../systems/forest-warfare.js";
 import { updateCampaignProgress, settleAnnualCampaigns } from "../systems/feudal-campaigns.js";
 import { updateCouncilDocket } from "../systems/council-laws.js";
 
@@ -121,6 +122,11 @@ const ANNUAL_TASKS = [
     // obligation. Neither pass touches the per-tick hot path.
     { name: "settlementMaintenance", run(annual) { annual.settlementMaintenance = updateSettlementMaintenance(); } },
     { name: "roadSurvey", run(annual) { annual.roadSurvey = updateRoadWear(); } },
+    // The forest war council settles one bounded year on the same fronts the
+    // world map is about to survey. It reads the treaty the court just settled
+    // and writes province control, pressure, scars and reserved timber before
+    // the world survey sees them.
+    { name: "forestWarfare", run(annual) { annual.forestWarfare = updateForestWarfare(); } },
     // The world survey runs once per year, after diplomacy and the settlement
     // grants: it moves standing caravans through the existing market stock and
     // reads the border pressure the realms just settled.

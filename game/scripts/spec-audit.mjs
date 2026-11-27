@@ -452,6 +452,29 @@ const CULTURE_SPEC = Object.freeze({
     tests: ["tests/systems/forest-culture.test.js"]
 });
 
+const WAR_SPEC = Object.freeze({
+    id: "1.2.23.1.211-240",
+    title: "Forest war, diplomacy, borders and strategy",
+    file: "js/world/forest-warfare.js",
+    manifest: "FOREST_WARFARE_REQUIREMENTS",
+    consumers: [
+        { file: "js/world/forest-warfare.js", symbol: "FOREST_WARFARE_REQUIREMENTS", role: "catalog" },
+        { file: "js/world/forest-warfare.js", symbol: "FOREST_WAR_PROFILES", role: "regional war profiles" },
+        { file: "js/systems/forest-warfare.js", symbol: "forestWarfareSummary", role: "simulation" },
+        { file: "js/systems/forest-warfare.js", symbol: "fightForestBattle", role: "battle" },
+        { file: "js/systems/forest-warfare.js", symbol: "updateForestWarfare", role: "annual pass" },
+        { file: "js/presentation/forest-atlas-panel.js", symbol: "warfareBlock", role: "ui" },
+        { file: "js/presentation/management-ui.js", symbol: "raiseBorderPost", role: "ui action" },
+        { file: "js/simulation/simulation.js", symbol: "updateForestWarfare", role: "annual wiring" },
+        { file: "js/world/sacred-groves.js", symbol: "sacredGroveTileAt", role: "joint preserve guard" },
+        { file: "js/systems/world-map.js", symbol: "pressRegionClaim", role: "province ownership" },
+        { file: "js/systems/diplomacy.js", symbol: "cancelTradeAgreement", role: "embargo" },
+        { file: "js/systems/military.js", symbol: "recordMilitaryWound", role: "soldier losses" },
+        { file: "js/systems/forest-succession.js", symbol: "controlledBurnNearestForestTile", role: "war fire" }
+    ],
+    tests: ["tests/systems/forest-warfare.test.js"]
+});
+
 const INDUSTRY_SPEC = Object.freeze({
     id: "1.2.23.1.151-180",
     title: "Regional forest economy and workshops",
@@ -1158,6 +1181,29 @@ export function runSpecAudit({ write = false } = {}) {
         sections.push(built);
     }
     {
+        const module = awaitImport(WAR_SPEC.file);
+        const manifest = module[WAR_SPEC.manifest];
+        if (!Array.isArray(manifest)) throw new Error("forest warfare manifest missing");
+        const built = section(WAR_SPEC.id, WAR_SPEC.title, manifest.map(entry => ({
+            id: entry.id,
+            label: entry.title,
+            key: entry.point,
+            group: "FOREST WAR",
+            status: "implemented",
+            docEvidence: "FOREST_WARFARE_REQUIREMENTS",
+            evidence: [],
+            tests: []
+        })), {
+            source: WAR_SPEC.file,
+            note: `${manifest.length} player-facing forest-war requirements from ${WAR_SPEC.manifest}; each names its live consumer in the atlas.`
+        });
+        built.consumers = checkedReferences(WAR_SPEC.consumers);
+        built.tests = testsValid(WAR_SPEC.tests);
+        built.probeAvailable = false;
+        built.probeObserved = 0;
+        sections.push(built);
+    }
+    {
         const module = awaitImport(INDUSTRY_SPEC.file);
         const manifest = module[INDUSTRY_SPEC.manifest];
         if (!Array.isArray(manifest)) throw new Error("regional forest economy manifest missing");
@@ -1375,7 +1421,8 @@ const MODULE_PATHS = [
     ...MANIFEST_SPECS.map(def => def.file),
     SPECIAL_SECTION.file,
     INDUSTRY_SPEC.file,
-    CULTURE_SPEC.file
+    CULTURE_SPEC.file,
+    WAR_SPEC.file
 ];
 for (const relative of MODULE_PATHS) {
     const absolute = path.join(ROOT, relative);
