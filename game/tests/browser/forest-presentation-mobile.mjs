@@ -568,6 +568,11 @@ for (const viewport of viewports) {
             const point = document.querySelector("[data-presentation-point] p");
             const note = document.querySelector(".forest-atlas__presentation .command-note");
             const panel = document.querySelector("#command-panel-content");
+            const textLuminance = element => {
+                const channels = element ? (getComputedStyle(element).color.match(/\d+(?:\.\d+)?/g) || []).slice(0, 3).map(Number) : [];
+                return channels.length === 3 ? Math.round(0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2]) : 0;
+            };
+            const firstCard = document.querySelector(".forest-atlas__card");
             return {
                 cards: document.querySelectorAll("#command-panel-content .forest-atlas__card").length,
                 points: document.querySelectorAll("[data-presentation-point]").length,
@@ -578,6 +583,12 @@ for (const viewport of viewports) {
                 pointFont: point ? parseFloat(getComputedStyle(point).fontSize) : 0,
                 noteFont: note ? parseFloat(getComputedStyle(note).fontSize) : 0,
                 settingsText: document.querySelector(".forest-atlas__presentation-settings")?.innerText.replace(/\s+/g, " ").trim() || "",
+                cardTextLuminance: textLuminance(document.querySelector(".forest-atlas__card .forest-atlas__title strong")),
+                guideTextLuminance: textLuminance(document.querySelector(".forest-atlas__guide-point h4")),
+                cardBackground: firstCard ? getComputedStyle(firstCard).backgroundColor : "",
+                cardOpacity: firstCard ? getComputedStyle(firstCard).opacity : "",
+                cardFilter: firstCard ? getComputedStyle(firstCard).filter : "",
+                panelBackground: getComputedStyle(panel).backgroundColor,
                 panelOverflow: panel.scrollWidth > panel.clientWidth + 1,
                 docWidth: document.documentElement.scrollWidth,
             };
@@ -592,6 +603,8 @@ for (const viewport of viewports) {
         assert.ok(symbolic.noteFont > baseline.noteFont, "large text must enlarge atlas notes");
         assert.ok(symbolic.settingsText.includes("SYMBOLIC"));
         assert.ok(symbolic.settingsText.includes("ON"));
+        assert.ok(symbolic.cardTextLuminance > 180, "symbolic atlas cards need light ink on their dark ground");
+        assert.ok(symbolic.guideTextLuminance > 180, "the dark field guide needs light ink for its entries");
         assert.equal(symbolic.panelOverflow, false);
         assert.ok(symbolic.docWidth <= viewport.width + 1);
         await page.screenshot({ path: resolve(outputDir, `forest-mobile-${viewport.id}-symbolic.png`) });

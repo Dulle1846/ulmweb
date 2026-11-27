@@ -1,6 +1,6 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.86.1`
+**Current production version:** `3.86.2`
 **Next development line:** `3.87.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
@@ -8,6 +8,24 @@
 **Last repository verification:** 2026-11-27 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.86.2 — Lesbare Tinte im symbolischen Atlas
+
+Die Screenshot-Kontrolle auf 390×844 zeigte zwei echte Kontrastfehler. Im
+symbolischen Kartenmodus wurde der Kartengrund dunkel, die Papiertextfarbe
+blieb aber dunkelbraun. Der dunkle Feldguide erbte ebenfalls die dunklen
+Papier-Token für seine Einträge, obwohl seine Überschrift bereits helle Tinte
+nutzte.
+
+- Symbolische Atlas-Karten setzen ihre Text-, Linien- und Sekundärfarben lokal
+  auf helle Tinte; der Grund wird etwas dichter, damit die Karte als ruhige
+  Fläche lesbar bleibt.
+- Der Feldguide setzt dieselben hellen Token für alle Punkte, nicht nur für
+  seine Überschrift.
+- Der 390×844-Test misst die Helligkeit der tatsächlich gerenderten Karten-
+  und Guide-Texte und verlangt helle Tinte auf beiden dunklen Flächen.
+
+Keine Sim-, Wirtschafts- oder Save-Änderung.
 
 ## 3.86.1 — Atlas öffnet ohne Doppel-Render
 

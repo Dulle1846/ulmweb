@@ -570,7 +570,7 @@
 /* The atlas lives inside the parchment management panel; its archive headers
    and patron rows need their own dark contrast instead of inheriting the
    light-on-dark world-map colours. */
-.forest-atlas__field-guide{background:rgba(28,31,26,.88);border-color:rgba(185,154,89,.5)}
+.forest-atlas__field-guide{--ui-paper-text:#f2e5c4;--ui-paper-muted:#c9b99a;--ui-line:rgba(227,201,143,.38);background:rgba(28,31,26,.88);border-color:rgba(185,154,89,.5)}
 .forest-atlas__field-guide>summary strong{color:#f2e5c4}
 .forest-atlas__field-guide>summary em,.forest-atlas__guide-intro{color:#c9b99a}
 .forest-atlas__patron b{font-size:8px}
@@ -904,7 +904,7 @@ body.ui-modal-open .forest-subtitle{opacity:0}
 /* One shared tooltip element serves every atlas species and goods button. */
 .forest-tip{position:fixed;z-index:1190;max-width:min(280px,calc(100vw - 16px));padding:7px 9px;border:1px solid rgba(214,191,150,.6);border-radius:4px;background:rgba(13,20,15,.97);color:#f2e6c9;font:600 10px/1.4 var(--ui-body-font,sans-serif);letter-spacing:.02em;text-align:left;transform:translateX(-50%);pointer-events:none;box-shadow:0 4px 16px rgba(0,0,0,.45)}
 .forest-tip.hidden{display:none}
-body.ui-forest-symbolic .forest-atlas__card{background:rgba(24,30,23,.55)}
+body.ui-forest-symbolic .forest-atlas__card{--ui-paper-text:#f2e5c4;--ui-paper-muted:#c9b99a;--ui-line:rgba(227,201,143,.4);--ui-line-strong:rgba(227,201,143,.7);background:rgba(24,30,23,.82)}
 @media(max-width:900px),(pointer:coarse){
  .forest-atlas__year{grid-template-columns:repeat(2,minmax(0,1fr))}
  .forest-atlas__season{padding:8px}

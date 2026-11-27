@@ -1,6 +1,6 @@
 # Wald-Darstellung, Audio, UI und Accessibility 1.2.23.1.241–270
 
-**Status: implementiert, vertieft, verdrahtet und im Browser geprüft (v3.86.1).**
+**Status: implementiert, vertieft, verdrahtet und im Browser geprüft (v3.86.2).**
 
 Die dreißig Punkte bilden eine gemeinsame Präsentations-, Audio- und
 Zugänglichkeitsschicht über dem vorhandenen Waldmodell. Sie verändern keine
@@ -25,7 +25,7 @@ Alle 60 Profile werden deterministisch aus `REGIONAL_FOREST_TYPES`,
 zweiten Waldgenerator und keinen Per-Frame-Scan. Die Referenzszene wird alle
 1,8 Sekunden neu gesampled; Render-Tuning und Ambience lesen nur dieses Ergebnis.
 
-## Audit 241–270 (Stand 3.86.1)
+## Audit 241–270 (Stand 3.86.2)
 
 Die Einordnung entstand vor dem Tiefenpass gegen den echten Code, nicht gegen
 CHANGELOG oder diese Dokumentation. „Nominell“ heißt: sichtbar vorhanden, aber
@@ -64,7 +64,7 @@ ohne echten Effekt im laufenden Spiel.
 | 269 Weniger Partikel | nominell (nur Flag) | 8 → 2,7 Insekten, keine Blattmoten, 34 % Regen |
 | 270 Symbolische Karte | real, aber flach | zusammenhängende Regionalfläche, Typ-/Nutzungs-/Gefahrenicons, 0 Kronen |
 
-## Tiefenpass gegen den echten Code (v3.86.1)
+## Tiefenpass gegen den echten Code (v3.86.2)
 
 Der Audit der dreißig Punkte gegen Renderer, Ambience, Atlas und Settings fand
 fünf nominelle Stellen. Sie sind jetzt echte Spielmechanik der Darstellung:

@@ -2,9 +2,9 @@
   "version": 2,
   "generatedBy": "scripts/spec-audit.mjs",
   "scope": "All numbered 1.1 and 1.2.1–1.2.18 requirements, including the 1.2.23.1.151–210 forest economy and forest culture, plus the documented 2.x phases, 3.3–4.0 roadmap points, the 3.11 expedition follow-up chain contract, the 3.12 royal education contract, the 3.13 noble arbitration contract and the atlas quest follow-up contract.",
-  "commit": "6a2fb8ad1f2bdfc425c91f237adf44e5cc57c095",
+  "commit": "6a25c971392322197be084a2d3bd954ae00cf894",
   "sourceHash": "2432c40157c49530433dbd3bd5ccbf9fa5fbfb9d7c670ca16a6e21496b575faa",
-  "generatedAt": "2026-11-27T17:03:07+00:00",
+  "generatedAt": "2026-11-27T17:16:10+00:00",
   "totals": {
     "total": 1785,
     "implemented": 1785,
