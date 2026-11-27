@@ -1,13 +1,13 @@
 {
   "version": 2,
   "generatedBy": "scripts/spec-audit.mjs",
-  "scope": "All numbered 1.1 and 1.2.1–1.2.18 requirements, including the 1.2.23.1.151–210 forest economy and forest culture, plus the documented 2.x phases, 3.3–4.0 roadmap points and the 3.11 expedition follow-up chain contract.",
-  "commit": "28d4251473aef097c801fedbf7e04cb3b2151c32",
-  "sourceHash": "54ba8a8e4edd8e70efd337af17e9e63fbd294411e0a19b09ebd6846b44710c24",
-  "generatedAt": "2026-11-27T11:10:27+00:00",
+  "scope": "All numbered 1.1 and 1.2.1–1.2.18 requirements, including the 1.2.23.1.151–210 forest economy and forest culture, plus the documented 2.x phases, 3.3–4.0 roadmap points, the 3.11 expedition follow-up chain contract, the 3.12 royal education contract, the 3.13 noble arbitration contract and the atlas quest follow-up contract.",
+  "commit": "27f2a4e1dcf7ae5439fcbda34b1480a0e4b8e016",
+  "sourceHash": "26fdf19e3e6cf0497eaaf820baeddc9f5d5dd4916ca401a47de89060d293cc05",
+  "generatedAt": "2026-11-27T14:55:26+01:00",
   "totals": {
-    "total": 1783,
-    "implemented": 1783,
+    "total": 1785,
+    "implemented": 1785,
     "open": 0,
     "sections": 44
   },
@@ -46622,6 +46622,63 @@
             "js/presentation/world-map-panel.js#renderWorldMapPanel (point)"
           ],
           "probe": null
+        },
+        {
+          "id": "3.8.14",
+          "label": "Noble grievance arbitration and costed formal settlement",
+          "evidence": [
+            {
+              "file": "js/systems/noble-state.js",
+              "symbol": "NOBLE_FEUD_STAGES"
+            },
+            {
+              "file": "js/systems/noble-state.js",
+              "symbol": "nobleFeudPenalty"
+            },
+            {
+              "file": "js/systems/noble-feuds.js",
+              "symbol": "arbitrateFeud"
+            },
+            {
+              "file": "js/systems/noble-feuds.js",
+              "symbol": "settleFeudWithTerms"
+            },
+            {
+              "file": "js/simulation/simulation.js",
+              "symbol": "nobleFeuds"
+            },
+            {
+              "file": "js/presentation/management-ui.js",
+              "symbol": "noble-feud-settle"
+            }
+          ],
+          "tests": [
+            "tests/systems/court-diplomacy.test.js",
+            "tests/systems/nobility.test.js",
+            "tests/systems/noble-host.test.js",
+            "tests/systems/noble-feuds.test.js",
+            "tests/systems/feudal-campaigns.test.js",
+            "tests/systems/noble-feuds.test.js",
+            "tests/systems/noble-host.test.js",
+            "tests/browser/nobility-ui.mjs"
+          ],
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/systems/court.js#updateCourt (simulation)",
+            "js/systems/nobility.js#getNobilitySnapshot (gameplay)",
+            "js/systems/noble-host.js#updateNobleHosts (military)",
+            "js/systems/noble-feuds.js#updateNobleFeuds (conflict)",
+            "js/systems/feudal-campaigns.js#settleAnnualCampaigns (campaign)",
+            "js/presentation/world-map-panel.js#renderWorldMapPanel (theatre)",
+            "js/systems/noble-state.js#NOBLE_FEUD_STAGES (point)",
+            "js/systems/noble-state.js#nobleFeudPenalty (point)",
+            "js/systems/noble-feuds.js#arbitrateFeud (point)",
+            "js/systems/noble-feuds.js#settleFeudWithTerms (point)",
+            "js/simulation/simulation.js#nobleFeuds (point)",
+            "js/presentation/management-ui.js#noble-feud-settle (point)"
+          ],
+          "probe": null
         }
       ],
       "consumers": [
@@ -46689,9 +46746,9 @@
       "probeFunction": null,
       "probeClimate": "temperate",
       "probeExtra": {},
-      "implemented": 13,
+      "implemented": 14,
       "open": 0,
-      "total": 13
+      "total": 14
     },
     {
       "id": "3.9",
@@ -47165,6 +47222,64 @@
             "js/presentation/management-ui.js#royalEducationPanel (point)"
           ],
           "probe": null
+        },
+        {
+          "id": "3.9.12",
+          "label": "Atlas quest follow-ups with bounded annual expiry and real costs",
+          "evidence": [
+            {
+              "file": "js/systems/special-biome-couplings.js",
+              "symbol": "BIOME_FOLLOW_UP_YEARS"
+            },
+            {
+              "file": "js/systems/special-biome-couplings.js",
+              "symbol": "armQuestFollowUp"
+            },
+            {
+              "file": "js/systems/special-biome-couplings.js",
+              "symbol": "resolveBiomeQuestFollowUp"
+            },
+            {
+              "file": "js/systems/special-biome-couplings.js",
+              "symbol": "getBiomeFollowUpSnapshot"
+            },
+            {
+              "file": "js/systems/special-biome-couplings.js",
+              "symbol": "updateSpecialBiomeCouplings"
+            },
+            {
+              "file": "js/presentation/expeditions-panel.js",
+              "symbol": "followUpCard"
+            },
+            {
+              "file": "js/presentation/management-ui.js",
+              "symbol": "special-biome-quest-followup"
+            }
+          ],
+          "tests": [
+            "tests/systems/diplomacy.test.js",
+            "tests/systems/special-biome-couplings.test.js",
+            "tests/systems/expeditions.test.js",
+            "tests/browser/biome-atlas-ui.mjs"
+          ],
+          "status": "implemented",
+          "missing": [],
+          "consumers": [
+            "js/systems/diplomacy.js#getDiplomacySnapshot (diplomacy)",
+            "js/systems/royal-dynasty.js#updateRoyalSuccession (dynasty)",
+            "js/systems/royal-crisis.js#updateRoyalCrisis (dynasty-crisis)",
+            "js/presentation/management-ui.js#royalCrisisPanel (gameplay)",
+            "js/presentation/management-ui.js#councilSection (gameplay)",
+            "js/presentation/management-ui.js#royalEducationPanel (gameplay)",
+            "js/systems/special-biome-couplings.js#BIOME_FOLLOW_UP_YEARS (point)",
+            "js/systems/special-biome-couplings.js#armQuestFollowUp (point)",
+            "js/systems/special-biome-couplings.js#resolveBiomeQuestFollowUp (point)",
+            "js/systems/special-biome-couplings.js#getBiomeFollowUpSnapshot (point)",
+            "js/systems/special-biome-couplings.js#updateSpecialBiomeCouplings (point)",
+            "js/presentation/expeditions-panel.js#followUpCard (point)",
+            "js/presentation/management-ui.js#special-biome-quest-followup (point)"
+          ],
+          "probe": null
         }
       ],
       "consumers": [
@@ -47216,9 +47331,9 @@
       "probeFunction": null,
       "probeClimate": "temperate",
       "probeExtra": {},
-      "implemented": 11,
+      "implemented": 12,
       "open": 0,
-      "total": 11
+      "total": 12
     },
     {
       "id": "3.10",

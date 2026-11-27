@@ -176,6 +176,9 @@ test("the noble panel exposes host orders and feud actions to the browser", asyn
     assert.match(ui, /getNobleFeudSnapshot/);
     assert.match(ui, /data-command="noble-host-order"/);
     assert.match(ui, /data-command="noble-feud-mediate"/);
+    assert.match(ui, /data-command="noble-feud-arbitrate"/);
+    assert.match(ui, /data-command="noble-feud-settle" data-value="'\+esc\(f\.id\)\+'" data-terms="compensation"/);
+    assert.match(ui, /data-command="noble-feud-settle" data-value="'\+esc\(f\.id\)\+'" data-terms="charter"/);
     assert.match(ui, /data-command="noble-feud-inflame"/);
     assert.match(ui, /data-command="noble-feud-ignore"/);
 });

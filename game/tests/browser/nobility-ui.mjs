@@ -189,14 +189,37 @@ try {
     assert.match(hostText, /MUSTERING/);
 
     if (newSystems.feudId) {
-        await page.locator('[data-noble-feud="' + newSystems.feudId + '"] [data-command="noble-feud-mediate"]').click();
+        await page.locator('[data-noble-feud="' + newSystems.feudId + '"] [data-command="noble-feud-arbitrate"]:not([disabled])').click();
+        await page.waitForFunction(async id => {
+            const { state } = await import("./js/core/state.js");
+            return state.nobility?.feuds?.find(entry => entry.id === id)?.stage === "arbitration";
+        }, newSystems.feudId, { timeout: 10000 });
+        const arbitrating = await page.evaluate(async id => {
+            const { state } = await import("./js/core/state.js");
+            const feud = state.nobility.feuds.find(entry => entry.id === id);
+            return { stage: feud.stage, severity: feud.severity, gold: state.resources.gold,
+                text: document.querySelector("#command-panel-content")?.textContent || "" };
+        }, newSystems.feudId);
+        assert.equal(arbitrating.stage, "arbitration");
+        assert.ok(arbitrating.severity <= 3, "arbitration must make the written terms settleable");
+        assert.match(arbitrating.text, /IN ARBITRATION/);
+        await page.locator('[data-noble-feud="' + newSystems.feudId + '"] [data-command="noble-feud-settle"][data-terms="compensation"]:not([disabled])').click();
         await page.waitForFunction(async id => {
             const { state } = await import("./js/core/state.js");
             const feud = state.nobility?.feuds?.find(entry => entry.id === id);
-            return !feud || feud.status === "settled";
+            return feud?.status === "settled" && feud.settlement === "compensation";
         }, newSystems.feudId, { timeout: 10000 });
-        const feudText = await page.locator("#command-panel-content").innerText();
-        assert.match(feudText, /SETTLED/);
+        const settled = await page.evaluate(async id => {
+            const { state } = await import("./js/core/state.js");
+            const feud = state.nobility.feuds.find(entry => entry.id === id);
+            return { status: feud.status, settlement: feud.settlement, gold: state.resources.gold,
+                text: document.querySelector("#command-panel-content")?.textContent || "" };
+        }, newSystems.feudId);
+        assert.equal(settled.status, "settled");
+        assert.equal(settled.settlement, "compensation");
+        assert.ok(settled.gold < arbitrating.gold, "the settlement must spend real treasury gold");
+        assert.match(settled.text, /COMPENSATION/);
+        assert.match(settled.text, /SETTLED/);
     }
 
     await page.locator("#command-close").click();

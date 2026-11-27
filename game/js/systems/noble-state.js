@@ -5,6 +5,8 @@ export const NOBLE_HOST_HISTORY_LIMIT = 8;
 export const NOBLE_FEUD_HISTORY_LIMIT = 12;
 export const NOBLE_FEUD_LIMIT = 8;
 export const NOBLE_ACTIVE_FEUD_LIMIT = 4;
+export const NOBLE_FEUD_STAGES = Object.freeze(["grievance", "arbitration", "blood-feud"]);
+export const NOBLE_FEUD_SETTLEMENTS = Object.freeze(["compensation", "charter"]);
 
 const clamp = (value, min = 0, max = 100) => Math.max(min, Math.min(max, Number.isFinite(Number(value)) ? Number(value) : min));
 const integer = (value, min = 0, max = 1_000_000_000) => Math.max(min, Math.min(max, Math.floor(Number(value) || 0)));
@@ -80,18 +82,34 @@ export function normalizeNobleHost(value) {
     };
 }
 
-export function createNobleFeud({id, houses, cause, year, severity = 1} = {}) {
+function feudStage(value) {
+    const stage = String(value || "");
+    return NOBLE_FEUD_STAGES.includes(stage) ? stage : "grievance";
+}
+
+function feudSettlement(value) {
+    const settlement = String(value || "");
+    return NOBLE_FEUD_SETTLEMENTS.includes(settlement) ? settlement : "";
+}
+
+export function createNobleFeud({id, houses, cause, year, severity = 1, stage = "grievance"} = {}) {
+    const startedYear = integer(year, 1, 1_000_000);
     return {
         id: string(id || "feud", 80),
         houses: [...new Set((houses || []).map(house => string(house, 80)).filter(Boolean))].slice(0, 2),
         cause: string(cause || "competing claims", 100),
         severity: integer(severity, 1, 5),
         status: "active",
-        startedYear: integer(year, 1, 1_000_000),
-        lastEscalationYear: integer(year, 1, 1_000_000),
+        stage: feudStage(stage),
+        stageYear: startedYear,
+        startedYear,
+        lastEscalationYear: startedYear,
         settledYear: 0,
         ignoredYear: 0,
+        arbitratedYear: 0,
+        bloodFeudYear: 0,
         mediatorId: null,
+        settlement: "",
         history: []
     };
 }
@@ -102,20 +120,56 @@ export function normalizeNobleFeud(value) {
         .map(house => string(house, 80)).filter(Boolean))].slice(0, 2);
     if (houses.length !== 2) return null;
     const status = value.status === "settled" ? "settled" : "active";
+    const stage = feudStage(value.stage);
+    const startedYear = integer(value.startedYear, 1, 1_000_000);
+    const arbitratedYear = integer(value.arbitratedYear, 0, 1_000_000);
+    const bloodFeudYear = integer(value.bloodFeudYear, 0, 1_000_000);
     return {
         id: string(value.id || "feud", 80),
         houses,
         cause: string(value.cause || "competing claims", 100),
-        severity: integer(value.severity, 1, 5),
+        severity: integer(value.severity, status === "settled" ? 0 : 1, 5),
         status,
-        startedYear: integer(value.startedYear, 1, 1_000_000),
-        lastEscalationYear: integer(value.lastEscalationYear, 1, 1_000_000),
+        stage,
+        stageYear: integer(value.stageYear, 1, 1_000_000) || startedYear,
+        startedYear,
+        lastEscalationYear: integer(value.lastEscalationYear, 1, 1_000_000) || startedYear,
         settledYear: integer(value.settledYear, 0, 1_000_000),
         ignoredYear: integer(value.ignoredYear, 0, 1_000_000),
+        arbitratedYear: stage === "arbitration" && !arbitratedYear ? startedYear : arbitratedYear,
+        bloodFeudYear: stage === "blood-feud" && !bloodFeudYear ? startedYear : bloodFeudYear,
         mediatorId: value.mediatorId ? string(value.mediatorId, 100) : null,
+        settlement: status === "settled" ? feudSettlement(value.settlement) : "",
         history: (Array.isArray(value.history) ? value.history : [])
             .map(normalizeHistoryEntry).filter(Boolean).slice(0, NOBLE_FEUD_HISTORY_LIMIT)
     };
+}
+
+// One pure penalty source keeps the court view, the house ledger and the feud
+// snapshot in agreement. A blood feud costs more than the same severity of a
+// grievance; a formal arbitration calms the estate while the terms are held.
+export function nobleFeudPenalty(feud) {
+    if (!feud || feud.status !== "active") return 0;
+    const base = clamp(Number(feud.severity) || 0, 0, 5) * 0.036;
+    const factor = feudStage(feud.stage) === "blood-feud" ? 1.25
+        : feudStage(feud.stage) === "arbitration" ? 0.85 : 1;
+    return clamp(base * factor, 0, 0.25);
+}
+
+export function validateNobleFeud(value) {
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+        throw new Error("Save data contains an invalid noble feud.");
+    }
+    if (value.stage !== undefined && !NOBLE_FEUD_STAGES.includes(String(value.stage))) {
+        throw new Error("Save data contains an invalid noble-feud stage.");
+    }
+    if (value.settlement !== undefined && value.settlement !== "" && !NOBLE_FEUD_SETTLEMENTS.includes(String(value.settlement))) {
+        throw new Error("Save data contains an invalid noble-feud settlement.");
+    }
+    if (value.history !== undefined && (!Array.isArray(value.history) || value.history.length > NOBLE_FEUD_HISTORY_LIMIT)) {
+        throw new Error("Save data contains an invalid noble-feud history.");
+    }
+    return true;
 }
 
 export function normalizeNobleFeuds(value) {

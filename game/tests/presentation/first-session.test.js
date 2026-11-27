@@ -232,6 +232,33 @@ test("a completed first session continues into a ready expedition follow-up", ()
     }
 });
 
+test("a completed first session continues into an open atlas follow-up", () => {
+    resetState();
+    try {
+        for (const ambition of AMBITIONS) state.ambitions.completed[ambition.id] = 1;
+        state.hasStarted = true;
+        state.entities = [{ dead: false, type: TYPE.HOUSE }];
+        state.statistics.totalHousesBuilt = 1;
+        state.statistics.totalRoadTilesBuilt = 1;
+        state.statistics.totalCardsDrawn = 1;
+        state.specialBiomes = {
+            couplings: {
+                questFollowUps: [{
+                    id: "biome-follow:2", kind: "hearth", title: "Keep the temple fire lit",
+                    regionName: "Amber Hollow", stage: "open", expiresYear: 6
+                }]
+            }
+        };
+        const snapshot = getFirstSessionSnapshot();
+        assert.equal(snapshot.allComplete, true);
+        assert.equal(snapshot.counselId, "biome-follow-up");
+        assert.match(snapshot.continuationText, /atlas follow-up at Amber Hollow in Explore/i);
+        assert.match(snapshot.continuationText, /HEARTH · KEEP THE TEMPLE FIRE LIT · OPEN · EXPIRES YEAR 6/);
+    } finally {
+        resetState();
+    }
+});
+
 test("the first-session HUD carries the real latest twenty-day ledger in plain language", () => {
     resetState();
     state.hasStarted = true;

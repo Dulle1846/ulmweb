@@ -8,6 +8,7 @@ import { getScenarioSnapshot } from "../systems/scenario.js";
 import { WAR_AIMS, CAMPAIGN_GOAL } from "../systems/feudal-campaigns.js";
 import { COUNCIL_BILLS } from "../systems/council-laws.js";
 import { ROYAL_CURRICULA, ROYAL_EDUCATION_LIMIT } from "../systems/royal-education.js";
+import { FEUD_ARBITRATION_COST, FEUD_STAGE_LABELS, FEUD_SETTLEMENT_COSTS } from "../systems/noble-feuds.js";
 
 function canAfford(state, cost) {
     return Object.entries(cost || {}).every(([resource, amount]) =>
@@ -93,6 +94,12 @@ function roadCost() {
 function readyExpeditionChain(state) {
     return (Array.isArray(state?.expeditions?.sites) ? state.expeditions.sites : [])
         .find(site => Number(site?.chainStage) === 2 && (site?.claim === "study" || site?.claim === "quarantine")) || null;
+}
+
+function openBiomeFollowUp(state) {
+    const followUps = Array.isArray(state?.specialBiomes?.couplings?.questFollowUps)
+        ? state.specialBiomes.couplings.questFollowUps : [];
+    return followUps.find(followUp => followUp?.stage === "open") || null;
 }
 
 export function getCoreCounsel(state) {
@@ -377,6 +384,21 @@ export function getCoreCounsel(state) {
             buildType: null
         };
     }
+    const atlasFollowUp = openBiomeFollowUp(state);
+    if (atlasFollowUp) {
+        return {
+            id: "biome-follow-up",
+            stepId: null,
+            text: "Answer the atlas follow-up at " + String(atlasFollowUp.regionName || "the charted region") + " in Explore.",
+            evidence: String(atlasFollowUp.kind || "follow-up").toUpperCase() + " · " +
+                String(atlasFollowUp.title || "ATLAS FOLLOW-UP").toUpperCase() + " · OPEN · EXPIRES YEAR " +
+                Math.max(1, Math.round(Number(atlasFollowUp.expiresYear) || 0)),
+            actionLabel: "OPEN EXPLORE",
+            panel: "explore",
+            buildCategory: null,
+            buildType: null
+        };
+    }
     const missions = Array.isArray(state?.diplomacy?.missions) ? state.diplomacy.missions.slice(0, 6) : [];
     const year = Number(state?.year) || 1;
     const readyNegotiation = missions.find(mission => mission?.stage === "sent" && year > Number(mission?.sentYear || 0));
@@ -474,6 +496,57 @@ export function getCoreCounsel(state) {
                 " available · " + activeStudents.length + "/" + ROYAL_EDUCATION_LIMIT + " in tutelage",
             actionLabel: "OPEN DECISIONS",
             panel: "decisions",
+            buildCategory: null,
+            buildType: null
+        };
+    }
+    // Noble feuds are a post-opening continuation, not another checklist step.
+    // Read the optional feud list directly so a loading frame never creates
+    // nobility state just to render NEXT MOVE.
+    const feuds = Array.isArray(state?.nobility?.feuds) ? state.nobility.feuds : [];
+    const activeFeuds = feuds.filter(feud => feud?.status === "active");
+    const bloodFeud = activeFeuds.find(feud => feud.stage === "blood-feud");
+    const arbitration = activeFeuds.find(feud => feud.stage === "arbitration" && Number(feud.severity) <= 3);
+    const grievance = activeFeuds.find(feud => feud.stage !== "arbitration" && feud.stage !== "blood-feud");
+    if (bloodFeud) {
+        return {
+            id: "noble-feud",
+            stepId: null,
+            text: "End the blood feud before the houses refuse their levies.",
+            evidence: (FEUD_STAGE_LABELS["blood-feud"] || "BLOOD FEUD").toUpperCase() +
+                " · SEVERITY " + Math.round(Number(bloodFeud.severity) || 0) + "/5 · " +
+                (bloodFeud.houses || []).length + " houses withhold strength",
+            actionLabel: "OPEN NOBILITY",
+            panel: "nobility",
+            buildCategory: null,
+            buildType: null
+        };
+    }
+    if (arbitration) {
+        const terms = Number(state?.resources?.gold) >= Number(FEUD_SETTLEMENT_COSTS.compensation?.gold || 0)
+            ? "COMPENSATION READY"
+            : "COMPENSATION NEEDS GOLD";
+        return {
+            id: "noble-feud",
+            stepId: null,
+            text: "Settle the crown arbitration in Nobility.",
+            evidence: (FEUD_STAGE_LABELS.arbitration || "ARBITRATION").toUpperCase() + " · SEVERITY " +
+                Math.round(Number(arbitration.severity) || 0) + "/5 · " + terms,
+            actionLabel: "OPEN NOBILITY",
+            panel: "nobility",
+            buildCategory: null,
+            buildType: null
+        };
+    }
+    if (grievance && (Number(state?.resources?.gold) || 0) >= Number(FEUD_ARBITRATION_COST)) {
+        return {
+            id: "noble-feud",
+            stepId: null,
+            text: "Take the noble grievance into crown arbitration.",
+            evidence: (FEUD_STAGE_LABELS[grievance.stage] || "GRIEVANCE").toUpperCase() +
+                " · SEVERITY " + Math.round(Number(grievance.severity) || 0) + "/5 · " + FEUD_ARBITRATION_COST + " GOLD",
+            actionLabel: "OPEN NOBILITY",
+            panel: "nobility",
             buildCategory: null,
             buildType: null
         };

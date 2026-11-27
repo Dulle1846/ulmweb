@@ -342,6 +342,31 @@ test("core counsel extends a completed opening into a ready expedition follow-up
     }
 });
 
+test("core counsel extends a completed opening into an open atlas follow-up", () => {
+    resetState();
+    try {
+        for (const ambition of AMBITIONS) state.ambitions.completed[ambition.id] = 1;
+        const followUp = {
+            id: "biome-follow:1", kind: "trail", title: "Map the feeder trails",
+            regionName: "Violet Gloaming", stage: "open", expiresYear: 5
+        };
+        const realmState = realm({ specialBiomes: { couplings: { questFollowUps: [followUp] } } });
+        const before = JSON.stringify(realmState);
+        const counsel = getCoreCounsel(realmState);
+        assert.equal(counsel.id, "biome-follow-up");
+        assert.equal(counsel.stepId, null);
+        assert.equal(counsel.panel, "explore");
+        assert.equal(counsel.actionLabel, "OPEN EXPLORE");
+        assert.match(counsel.text, /atlas follow-up at Violet Gloaming in Explore/i);
+        assert.match(counsel.evidence, /TRAIL · MAP THE FEEDER TRAILS · OPEN · EXPIRES YEAR 5/);
+        assert.equal(JSON.stringify(realmState), before, "counsel must not arm or mutate the follow-up");
+        followUp.stage = "resolved";
+        assert.notEqual(getCoreCounsel(realmState).id, "biome-follow-up", "a closed follow-up must leave the next step");
+    } finally {
+        resetState();
+    }
+});
+
 test("core counsel extends a completed opening into the live theatre campaign", () => {
     resetState();
     try {

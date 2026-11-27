@@ -44,6 +44,7 @@ page.on("console", message => {
     if (message.type() === "error") consoleErrors.push(message.text());
 });
 
+let questFollowUp = null;
 try {
     await page.goto("http://127.0.0.1:" + port + "/", { waitUntil: "domcontentloaded", timeout: 60000 });
     await page.locator("#world-seed-input").fill("20261119");
@@ -472,6 +473,68 @@ try {
     await page.locator("#command-open-btn").click();
     await page.locator('[data-command-tab="explore"]').click();
     await page.waitForFunction(() => (document.querySelector("#command-panel-content")?.textContent || "").includes("THE EIGHT LANDMARKS"), null, { timeout: 20000 });
+
+    // Backlog 27: a completed atlas quest opens one authored follow-up. The
+    // quest is opened through the exported coupling hook; both the original
+    // answer and the follow-up answer are clicks on the rendered Explore cards.
+    const questSetup = await page.evaluate(async () => {
+        const [{ state }, couplings] = await Promise.all([
+            import("./js/core/state.js"),
+            import("./js/systems/special-biome-couplings.js")
+        ]);
+        const region = state.specialBiomes.regions.find(entry => entry.discovered) || state.specialBiomes.regions[0];
+        region.discovered = true;
+        couplings.onSpecialBiomeDiscovered(region);
+        state.resources.gold = Math.max(Number(state.resources.gold) || 0, 300);
+        state.resources.food = Math.max(Number(state.resources.food) || 0, 300);
+        couplings.invalidateSpecialBiomeInfluence();
+        window.dispatchEvent(new Event("kac:special-biome-change"));
+        const active = couplings.getBiomeQuestSnapshot().quests.find(entry => entry.kind === "survey" && entry.status === "active");
+        return { regionId: region.id, questId: active?.id || null };
+    });
+    assert.ok(questSetup.questId, "the atlas must offer a real survey quest");
+    await page.locator('[data-special-quest="' + questSetup.questId + '"] [data-command="special-biome-quest"][data-choice="survey"]:not([disabled])').click();
+    await page.waitForFunction(async questId => {
+        const { getBiomeFollowUpSnapshot } = await import("./js/systems/special-biome-couplings.js");
+        return getBiomeFollowUpSnapshot().followUps.some(entry => entry.sourceQuestId === questId && entry.stage === "open");
+    }, questSetup.questId, { timeout: 15000 });
+    questFollowUp = await page.evaluate(async questId => {
+        const { getBiomeFollowUpSnapshot } = await import("./js/systems/special-biome-couplings.js");
+        return getBiomeFollowUpSnapshot().followUps.find(entry => entry.sourceQuestId === questId) || null;
+    }, questSetup.questId);
+    assert.ok(questFollowUp?.id, "the survey must arm one bounded follow-up");
+    const followUpCard = page.locator('[data-special-follow-up="' + questFollowUp.id + '"]');
+    await followUpCard.waitFor({ timeout: 15000 });
+    assert.match(await followUpCard.innerText(), /Expires year/i);
+    const beforeFollowUp = await page.evaluate(async () => {
+        const { state } = await import("./js/core/state.js");
+        return { food: state.resources.food, gold: state.resources.gold };
+    });
+    await followUpCard.locator('[data-command="special-biome-quest-followup"][data-choice="surveyors"]:not([disabled])').click();
+    await page.waitForFunction(async id => {
+        const { getBiomeFollowUpSnapshot } = await import("./js/systems/special-biome-couplings.js");
+        return getBiomeFollowUpSnapshot().followUps.find(entry => entry.id === id)?.stage === "resolved";
+    }, questFollowUp.id, { timeout: 15000 });
+    const afterFollowUp = await page.evaluate(async id => {
+        const { state } = await import("./js/core/state.js");
+        const { getBiomeFollowUpSnapshot } = await import("./js/systems/special-biome-couplings.js");
+        const followUp = getBiomeFollowUpSnapshot().followUps.find(entry => entry.id === id);
+        return {
+            followUp: { id: followUp.id, stage: followUp.stage, choice: followUp.choice, resolvedYear: followUp.resolvedYear, note: followUp.note },
+            food: state.resources.food, gold: state.resources.gold,
+            open: getBiomeFollowUpSnapshot().open,
+            resolvedCard: [...document.querySelectorAll("#command-panel-content .special-quest.is-resolved")]
+                .map(entry => entry.textContent || "").join(" | ")
+        };
+    }, questFollowUp.id);
+    assert.equal(afterFollowUp.followUp.stage, "resolved");
+    assert.equal(afterFollowUp.followUp.choice, "surveyors");
+    assert.equal(afterFollowUp.food, beforeFollowUp.food - 8);
+    assert.equal(afterFollowUp.gold, beforeFollowUp.gold - 6);
+    assert.equal(afterFollowUp.open, 0);
+    assert.match(afterFollowUp.resolvedCard, /CLOSED/);
+    await page.screenshot({ path: "artifacts/biome-quest-follow-up-closed.png", fullPage: false });
+
     const chainSetup = await page.evaluate(async () => {
         const [{ state }, { getExpeditionSnapshot }, couplings] = await Promise.all([
             import("./js/core/state.js"),
@@ -736,6 +799,13 @@ try {
     assert.equal(restoredChainUI.card.claimLabel, chainClosed.snapshot.claimLabel);
     assert.ok(restoredChainUI.card.notes.includes(chainClosed.snapshot.notes[chainClosed.snapshot.notes.length - 1]));
     assert.equal(summaryValue(restoredChainUI, "CHAINS CLOSED"), "1");
+    const restoredFollowUp = await page.evaluate(async id => {
+        const { getBiomeFollowUpSnapshot } = await import("./js/systems/special-biome-couplings.js");
+        const followUp = getBiomeFollowUpSnapshot().followUps.find(entry => entry.id === id);
+        return followUp ? { id: followUp.id, stage: followUp.stage, choice: followUp.choice,
+            resolvedYear: followUp.resolvedYear, note: followUp.note } : null;
+    }, questFollowUp.id);
+    assert.deepEqual(restoredFollowUp, afterFollowUp.followUp, "the closed atlas follow-up must survive save/load");
     await page.screenshot({ path: "artifacts/biome-expedition-chain-restored.png", fullPage: false });
 
     assert.deepEqual(pageErrors, []);
@@ -759,6 +829,7 @@ try {
         },
         protectedArea: restored.protectedArea,
         chain: { siteId: restored.chain.id, stage: restored.chain.stage, claim: restored.chain.claim, notes: restored.chain.notes.length },
+        questFollowUp: { id: restoredFollowUp.id, stage: restoredFollowUp.stage, choice: restoredFollowUp.choice },
         loaded: loadStatus,
         pageErrors: pageErrors.length,
         consoleErrors: consoleErrors.length

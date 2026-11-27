@@ -1,13 +1,36 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.84.1`
-**Next development line:** `3.85.0-dev`
+**Current production version:** `3.85.0`
+**Next development line:** `3.86.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
 **Last repository verification:** 2026-11-27 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.85.0 — Noble arbitration and atlas quest follow-ups
+
+Noble feuds now have a bounded, save-compatible chain inside the existing house
+system. A grievance can be arbitrated, then closed through a costed compensation
+or a charter settlement; inflaming a dispute still raises a blood feud and
+mediation still resolves it. Arbitration softens and blood feuds harden the
+shared house penalty, written terms appear in counsel and first-session
+continuations, and annual maintenance ages open cases with bounded relapse.
+
+Completed biome quests can now arm one authored follow-up in the coupling layer.
+The player answers a real **Explore** card once or lets it lapse at its annual
+deadline. Choices spend and grant real resources through the deterministic
+ledger, survive save/load in `state.specialBiomes.couplings.questFollowUps` and
+never reuse the site-chain, claim, `SITE_CHAINS` or protected-forest state.
+
+- **Noble chain:** `noble-feud-arbitrate`, `noble-feud-settle`, stage-aware
+  buttons, shared penalty multipliers, settlement ledgers and annual audit.
+- **Atlas chain:** `special-biome-quest-followup`, six authored follow-up kinds,
+  bounded expiry, Explore cards, counsel and first-session continuation.
+- **Save-safe:** schema stays at 15, no new RNG stream, no new top-level DTO.
+- **Proof:** focused suites, real browser button proofs and the full campaign
+  gate remain unchanged in strength.
 
 ## 3.84.1 — Mobile Wald-Atlas und Touch-Bedienung
 

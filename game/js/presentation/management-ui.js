@@ -9,12 +9,12 @@ import { getNobilitySnapshot, grantNobleCharter, callNobleLevy } from "../system
 import { getNobleHostSnapshot, orderNobleHost } from "../systems/noble-host.js";
 import { aimCampaign, commitCampaign, settleReadyCampaigns } from "../systems/feudal-campaigns.js";
 import { getCouncilSnapshot, proposeCouncilBill, lobbyCouncilBill, callCouncilVote } from "../systems/council-laws.js";
-import { getNobleFeudSnapshot, mediateFeud, inflameFeud, ignoreFeud } from "../systems/noble-feuds.js";
+import { getNobleFeudSnapshot, mediateFeud, inflameFeud, ignoreFeud, arbitrateFeud, settleFeudWithTerms } from "../systems/noble-feuds.js";
 import { getDiplomacySnapshot, sendGift, proposeTradePact, proposeAlliance, declareWar, sueForPeace, appointEnvoy, recallEnvoy, sendEnvoyMission, negotiateEnvoyMission, reportEnvoyMission, ratifyEnvoyMission, grantGuarantee, withdrawGuarantee, honorGuaranteeCall, refuseGuaranteeCall, signTradeAgreement, cancelTradeAgreement } from "../systems/diplomacy.js";
 import { describeStanding } from "../systems/diplomatic-standing.js";
 import { startExpedition } from "../systems/expeditions.js";
 import { attuneSpecialBiome, cleanseSpecialBiome, sellSpecialGood } from "../systems/special-biome-state.js";
-import { resolveBiomeQuest, resolveBlightDecision } from "../systems/special-biome-couplings.js";
+import { resolveBiomeQuest, resolveBiomeQuestFollowUp, resolveBlightDecision } from "../systems/special-biome-couplings.js";
 import { refreshTransitionSurvey, refreshVegetationDensity, renderExpeditionsPanel, stepTransitionSurvey } from "./expeditions-panel.js";
 import { getRoyalHouse, appointRoyalConsort, createRoyalChild, designateHeir } from "../systems/royal-dynasty.js";
 import { getRoyalEducationSnapshot, appointRoyalTutor, enrollRoyalStudent, holdRoyalAudience, dismissRoyalStudent } from "../systems/royal-education.js";
@@ -519,7 +519,7 @@ function realmCycleSection(){
 function nobleRealmNote(){
  const n=getNobilitySnapshot(),hosts=getNobleHostSnapshot(),feuds=getNobleFeudSnapshot();
  const houses=n.houses.filter(h=>h.memberCount>0).sort((a,b)=>b.loyalty-a.loyalty||a.familyName.localeCompare(b.familyName)).slice(0,3).map(h=>esc(h.familyName)+" "+Math.round(h.loyalty)).join(" · ");
- return '<div class="command-note"><strong>NOBLE HOUSES · '+n.houseCount+'</strong> '+(houses?houses+" loyalty":'No living noble house is recorded yet.')+' · defence +'+Math.round((n.defenseBonus-1)*100)+'% · '+hosts.activeHosts+' land host'+(hosts.activeHosts===1?'':'s')+' ('+hosts.totalStrength+' men, '+hosts.upkeep.wages+'G/'+hosts.upkeep.supplies+'F upkeep) · '+feuds.active+' active feud'+(feuds.active===1?'':'s')+' · '+n.duesThisYear+' gold dues in the last audit. Charters cost gold and timber; feuds and withheld charters erode loyalty and dues, while court office, loyalty and a paid host strengthen the house.</div>';
+ return '<div class="command-note"><strong>NOBLE HOUSES · '+n.houseCount+'</strong> '+(houses?houses+" loyalty":'No living noble house is recorded yet.')+' · defence +'+Math.round((n.defenseBonus-1)*100)+'% · '+hosts.activeHosts+' land host'+(hosts.activeHosts===1?'':'s')+' ('+hosts.totalStrength+' men, '+hosts.upkeep.wages+'G/'+hosts.upkeep.supplies+'F upkeep) · '+feuds.active+' active feud'+(feuds.active===1?'':'s')+' ('+feuds.bloodFeuds+' blood, '+feuds.arbitration+' in arbitration) · '+n.duesThisYear+' gold dues in the last audit. Charters cost gold and timber; feuds and withheld charters erode loyalty and dues, while court office, loyalty and a paid host strengthen the house.</div>';
 }
 function nobilityPanel(){
  if(!state.hasStarted)return intro("THE NOBLE HOUSES","Awaiting their founding","Noble houses emerge from the named residents of a living realm.")+'<div class="command-note">Begin a campaign to record its families, estates, dues and levies.</div>';
@@ -542,8 +542,23 @@ function nobilityPanel(){
  }).join("");
  const feudCards=feuds.feuds.length?feuds.feuds.map(f=>{
   const active=f.status==="active",names=f.houses.map(house=>house.familyName).join(" vs ");
-  return '<article class="command-policy" data-noble-feud="'+esc(f.id)+'"><div><span class="command-ribbon">'+esc(String(f.status).toUpperCase())+' · SEVERITY '+f.severity+'/5</span><strong>'+esc(names)+'</strong><p>'+esc(f.cause)+' · opened year '+number(f.startedYear)+(f.settledYear?' · settled year '+number(f.settledYear):'')+'</p><small>Dues penalty '+Math.round(f.penalty*100)+'% · host size reduced while the feud burns · loyalty '+f.houses.map(house=>house.loyalty).join(" / ")+'</small></div>'+(active?'<div class="noble-house__actions"><button type="button" data-command="noble-feud-mediate" data-value="'+esc(f.id)+'"'+(gold>=feuds.mediationCost?'':' disabled')+'>MEDIATE · '+feuds.mediationCost+'G</button><button type="button" data-command="noble-feud-inflame" data-value="'+esc(f.id)+'"'+(gold>=feuds.inflameCost?'':' disabled')+'>INFLAME · '+feuds.inflameCost+'G</button><button type="button" data-command="noble-feud-ignore" data-value="'+esc(f.id)+'">IGNORE</button></div>':'<small>Settled feuds remain in the bounded court memory.</small>')+'</article>';
- }).join(""):'<p class="command-note">No noble feud is burning. Competing claims, inheritance disputes, old insults and resource conflicts can open one; unresolved disputes escalate and reduce dues, loyalty and the house host.</p>';
+  const stage=String(f.stage||"grievance"),stageLabel=feuds.stageLabels?.[stage]||stage;
+  const arbitrationCost=Number(feuds.arbitrationCost)||16,compensation=feuds.settlementCosts?.compensation||{gold:24},charterTerms=feuds.settlementCosts?.charter||{gold:10,wood:8};
+  const canArbitrate=active&&stage!=="arbitration"&&gold>=arbitrationCost;
+  const canSettle=active&&stage==="arbitration"&&Number(f.severity)<=3;
+  const canCompensate=canSettle&&gold>=(Number(compensation.gold)||0);
+  const canCharter=canSettle&&gold>=(Number(charterTerms.gold)||0)&&wood>=(Number(charterTerms.wood)||0);
+  const actions=active
+   ?'<button type="button" data-command="noble-feud-mediate" data-value="'+esc(f.id)+'"'+(gold>=feuds.mediationCost?'':' disabled')+'>MEDIATE · '+feuds.mediationCost+'G</button>'+
+     '<button type="button" data-command="noble-feud-arbitrate" data-value="'+esc(f.id)+'"'+(canArbitrate?'':' disabled')+'>'+(stage==="arbitration"?'IN ARBITRATION':'ARBITRATE · '+arbitrationCost+'G')+'</button>'+
+     '<button type="button" data-command="noble-feud-settle" data-value="'+esc(f.id)+'" data-terms="compensation"'+(canCompensate?'':' disabled')+'>COMPENSATE · '+(Number(compensation.gold)||0)+'G</button>'+
+     '<button type="button" data-command="noble-feud-settle" data-value="'+esc(f.id)+'" data-terms="charter"'+(canCharter?'':' disabled')+'>ESTATE CHARTERS · '+(Number(charterTerms.gold)||0)+'G / '+(Number(charterTerms.wood)||0)+' WOOD</button>'+
+     '<button type="button" data-command="noble-feud-inflame" data-value="'+esc(f.id)+'"'+(gold>=feuds.inflameCost?'':' disabled')+'>INFLAME · '+feuds.inflameCost+'G</button>'+
+     '<button type="button" data-command="noble-feud-ignore" data-value="'+esc(f.id)+'">IGNORE</button>'
+   :'<small>Settled by '+(f.settlement?esc(String(f.settlement).toUpperCase().replace("-"," ")):'cooling')+' · the bounded court keeps the record.</small>';
+  return '<article class="command-policy" data-noble-feud="'+esc(f.id)+'"><div><span class="command-ribbon">'+esc(String(f.status).toUpperCase())+' · '+esc(String(stageLabel).toUpperCase())+' · SEVERITY '+f.severity+'/5</span><strong>'+esc(names)+'</strong><p>'+esc(f.cause)+' · opened year '+number(f.startedYear)+(f.settledYear?' · settled year '+number(f.settledYear):'')+'</p><small>Dues penalty '+Math.round(f.penalty*100)+'% · host size reduced while the feud burns · loyalty '+f.houses.map(house=>house.loyalty).join(" / ")+
+   (stage==="arbitration"?' · settle within '+feuds.arbitrationWindowYears+' audits or it becomes a blood feud':stage==="blood-feud"?' · no levy until the crown settles it':'')+'</small></div><div class="noble-house__actions">'+actions+'</div></article>';
+ }).join(""):'<p class="command-note">No noble feud is burning. Competing claims, inheritance disputes, old insults and resource conflicts can open one; unresolved disputes escalate into blood feuds, while crown arbitration can settle them for good.</p>';
  const audit=n.lastAudit?'<p class="command-note">Last audit year '+n.lastAudit.year+' · '+n.lastAudit.houses+' living houses · '+n.lastAudit.dues+' gold dues · '+n.lastAudit.withheld+' withheld · defence multiplier '+n.lastAudit.defenseBonus.toFixed(2)+'.</p>':'';
  const hostAudit=hostSnapshot.lastAudit?'<p class="command-note">Last host audit year '+hostSnapshot.lastAudit.year+' · '+hostSnapshot.lastAudit.hosts+' hosts · '+hostSnapshot.lastAudit.strength+' effective strength · '+hostSnapshot.lastAudit.wages+'G / '+hostSnapshot.lastAudit.supplies+'F upkeep · '+hostSnapshot.lastAudit.joinedWar+' at war · '+hostSnapshot.lastAudit.revolts+' revolt(s).</p>':'';
  const contracts=n.contracts||{active:[],history:[],counters:{signed:0,fulfilled:0}};
@@ -1685,6 +1700,8 @@ function act(b){ const a=b.dataset.command,v=b.dataset.value;let r={ok:false,rea
  else if(a==="noble-levy")r=callNobleLevy(v);
  else if(a==="noble-host-order")r=orderNobleHost(v,b.dataset.order);
  else if(a==="noble-feud-mediate")r=mediateFeud(v);
+ else if(a==="noble-feud-arbitrate")r=arbitrateFeud(v);
+ else if(a==="noble-feud-settle")r=settleFeudWithTerms(v,b.dataset.terms);
  else if(a==="noble-feud-inflame")r=inflameFeud(v);
  else if(a==="noble-feud-ignore")r=ignoreFeud(v);
  else if(a==="campaign-aim")r=aimCampaign({aim:v,theatre:$("campaign-theatre-"+v)?.value,houseId:$("campaign-house-"+v)?.value||null});
@@ -1693,6 +1710,7 @@ function act(b){ const a=b.dataset.command,v=b.dataset.value;let r={ok:false,rea
  else if(a==="special-biome-attune")r=attuneSpecialBiome(v);
  else if(a==="special-biome-cleanse")r=cleanseSpecialBiome(v);
  else if(a==="special-biome-quest")r=resolveBiomeQuest(v,b.dataset.choice);
+ else if(a==="special-biome-quest-followup")r=resolveBiomeQuestFollowUp(v,b.dataset.choice);
  else if(a==="special-blight-choice")r=resolveBlightDecision(v);
  else if(a==="special-good-sell")r=sellSpecialGood(v);
  else if(a==="timber-sell")r=sellRegionalTimber(v);
@@ -1777,7 +1795,8 @@ function act(b){ const a=b.dataset.command,v=b.dataset.value;let r={ok:false,rea
   else if(a==="repair-all")toast(r.ok?("REPAIRED · "+r.repaired+" STRUCTURES · "+Math.round(r.restored)+" HP"):String(r.reason||"REPAIR FAILED").replaceAll("-"," ").toUpperCase());
   else if(a==="manual-order")toast(r.ok?r.message:String(r.reason||"ORDER FAILED").replaceAll("-"," ").toUpperCase());
   else if(a==="timber-sell")toast(r.ok?("TIMBER SOLD · "+(r.amount||0)+" FOR "+(r.gold||0)+" GOLD"):String(r.reason||"TIMBER NOT SOLD").toUpperCase());
-  else if(a==="special-biome-quest")toast("ATLAS QUEST RESOLVED · "+String(r.choice||"CHOICE").toUpperCase());
+  else if(a==="special-biome-quest")toast("ATLAS QUEST RESOLVED · "+String(r.choice||"CHOICE").toUpperCase()+(r.followUp?" · FOLLOW-UP "+String(r.followUp.title).toUpperCase():""));
+  else if(a==="special-biome-quest-followup")toast(r.ok?"ATLAS FOLLOW-UP CLOSED · "+String(r.choice||"CHOICE").toUpperCase():String(r.reason||"FOLLOW-UP FAILED").replaceAll("-"," ").toUpperCase());
   else if(a==="special-blight-choice")toast("BLIGHT DECREE ANSWERED · "+String(r.choice||"CHOICE").toUpperCase()+(r.siteChain?" · FOLLOW-UP "+String(r.siteChain.siteName).toUpperCase():""));
   else if(a.startsWith("special-biome-"))toast("RARE BIOME UPDATED");
   else if(a.startsWith("biome-"))toast(String(r.message||"BIOME ATLAS UPDATED").toUpperCase());

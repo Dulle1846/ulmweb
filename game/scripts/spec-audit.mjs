@@ -759,7 +759,15 @@ const SYSTEM_SPECS = [
             { file: "js/systems/feudal-campaigns.js", symbol: "settleAnnualCampaigns" },
             { file: "js/presentation/management-ui.js", symbol: "campaign-aim" },
             { file: "js/presentation/world-map-panel.js", symbol: "renderWorldMapPanel" }
-        ], tests: ["tests/systems/feudal-campaigns.test.js", "tests/simulation/combat-determinism.test.js", "tests/browser/feudal-campaigns-ui.mjs"] }
+        ], tests: ["tests/systems/feudal-campaigns.test.js", "tests/simulation/combat-determinism.test.js", "tests/browser/feudal-campaigns-ui.mjs"] },
+        { id: "3.8.14", label: "Noble grievance arbitration and costed formal settlement", evidence: [
+            { file: "js/systems/noble-state.js", symbol: "NOBLE_FEUD_STAGES" },
+            { file: "js/systems/noble-state.js", symbol: "nobleFeudPenalty" },
+            { file: "js/systems/noble-feuds.js", symbol: "arbitrateFeud" },
+            { file: "js/systems/noble-feuds.js", symbol: "settleFeudWithTerms" },
+            { file: "js/simulation/simulation.js", symbol: "nobleFeuds" },
+            { file: "js/presentation/management-ui.js", symbol: "noble-feud-settle" }
+        ], tests: ["tests/systems/noble-feuds.test.js", "tests/systems/noble-host.test.js", "tests/browser/nobility-ui.mjs"] }
     ], {
         consumers: [
             { file: "js/systems/court.js", symbol: "updateCourt", role: "simulation" },
@@ -816,7 +824,16 @@ const SYSTEM_SPECS = [
             { file: "js/systems/royal-education.js", symbol: "getRoyalEducationSnapshot" },
             { file: "js/simulation/simulation.js", symbol: "royalEducation" },
             { file: "js/presentation/management-ui.js", symbol: "royalEducationPanel" }
-        ], tests: ["tests/systems/royal-education.test.js", "tests/browser/royal-education-ui.mjs"] }
+        ], tests: ["tests/systems/royal-education.test.js", "tests/browser/royal-education-ui.mjs"] },
+        { id: "3.9.12", label: "Atlas quest follow-ups with bounded annual expiry and real costs", evidence: [
+            { file: "js/systems/special-biome-couplings.js", symbol: "BIOME_FOLLOW_UP_YEARS" },
+            { file: "js/systems/special-biome-couplings.js", symbol: "armQuestFollowUp" },
+            { file: "js/systems/special-biome-couplings.js", symbol: "resolveBiomeQuestFollowUp" },
+            { file: "js/systems/special-biome-couplings.js", symbol: "getBiomeFollowUpSnapshot" },
+            { file: "js/systems/special-biome-couplings.js", symbol: "updateSpecialBiomeCouplings" },
+            { file: "js/presentation/expeditions-panel.js", symbol: "followUpCard" },
+            { file: "js/presentation/management-ui.js", symbol: "special-biome-quest-followup" }
+        ], tests: ["tests/systems/special-biome-couplings.test.js", "tests/systems/expeditions.test.js", "tests/browser/biome-atlas-ui.mjs"] }
     ], {
         consumers: [
             { file: "js/systems/diplomacy.js", symbol: "getDiplomacySnapshot", role: "diplomacy" },
@@ -1325,7 +1342,7 @@ export function runSpecAudit({ write = false } = {}) {
     const result = {
         version: 2,
         generatedBy: "scripts/spec-audit.mjs",
-        scope: "All numbered 1.1 and 1.2.1–1.2.18 requirements, including the 1.2.23.1.151–210 forest economy and forest culture, plus the documented 2.x phases, 3.3–4.0 roadmap points and the 3.11 expedition follow-up chain contract.",
+        scope: "All numbered 1.1 and 1.2.1–1.2.18 requirements, including the 1.2.23.1.151–210 forest economy and forest culture, plus the documented 2.x phases, 3.3–4.0 roadmap points, the 3.11 expedition follow-up chain contract, the 3.12 royal education contract, the 3.13 noble arbitration contract and the atlas quest follow-up contract.",
         commit: readCommit(),
         sourceHash: hashFiles(allFiles),
         generatedAt: readCommitDate(),
