@@ -35,6 +35,7 @@ import { regrowForests } from "../systems/resource-geography.js";
 import { updateFields } from "../systems/fields.js";
 import { updateForestFauna } from "../systems/forest-fauna.js";
 import { updateForestSuccession } from "../systems/forest-succession.js";
+import { updateForestLegacy } from "../systems/forest-legacy.js";
 import { updateForestPannage } from "../systems/forest-pannage.js";
 import { syncBiomeDiscovery, updateBiomeAtlasAnnual, updateBiomeAtlasSeason } from "../systems/biome-resource-state.js";
 import { updateLogistics } from "../systems/logistics.js";
@@ -160,7 +161,10 @@ const ANNUAL_TASKS = [
     // 1.2.19 settles the bounded 36-region atlas once per year: seasonal
     // regeneration, extraction pressure, pollination, predation, migration and
     // regional trade. The pass is skipped entirely when no atlas is present.
-    { name: "biomeAtlas", run(annual) { annual.biomeAtlas = updateBiomeAtlasAnnual(); } }
+    { name: "biomeAtlas", run(annual) { annual.biomeAtlas = updateBiomeAtlasAnnual(); } },
+    // 1.2.23.1.271–300: one bounded legacy pass per year. It runs after the
+    // atlas so every regional consequence reads the same settled ecology.
+    { name: "forestLegacy", run(annual) { annual.forestLegacy = updateForestLegacy(); } }
 ];
 
 let annualSlicingEnabled = false;

@@ -794,6 +794,17 @@ export function runCampaign({
         yearly,
         diagnostics,
         forestTypes,
+        forestLegacy: state.forestLegacy ? {
+            stats: { ...state.forestLegacy.stats },
+            climate: { ...state.forestLegacy.climate },
+            regions: state.forestLegacy.regions.map(region => ({
+                id: region.id, typeId: region.typeId, phase: region.phase,
+                canopy: region.canopy, living: region.species.filter(species => species.status === "living").length,
+                extinct: region.species.filter(species => species.status === "extinct").length,
+                hazards: Object.values(region.hazards).filter(hazard => hazard.year > 0).length,
+                rings: region.rings.length,
+            })),
+        } : null,
         timberEconomy,
         gameOver: Boolean(state.gameOver),
         ambition: getAmbitionSnapshot(),

@@ -2,13 +2,13 @@
 export const SPEC_COVERAGE = Object.freeze({
   "version": 2,
   "generatedBy": "scripts/spec-audit.mjs",
-  "commit": "3bb3fe7dd0158bae09152b312b6800d657f25f33",
-  "sourceHash": "ecf640a65ea575af17a998a67f70c95621c72c02f94f628c79fc4c6718340e62",
+  "commit": "840c8f271f27104babf6dd14b4bcf706ae10b5a6",
+  "sourceHash": "84aaeddc48bc7732baf0495bd3bf298c6bedd26670336e3f96f60c167ac6995f",
   "totals": {
-    "total": 1789,
-    "implemented": 1789,
+    "total": 1819,
+    "implemented": 1819,
     "open": 0,
-    "sections": 45
+    "sections": 46
   },
   "nextSection": null,
   "collisions": [
@@ -581,6 +581,14 @@ export const SPEC_COVERAGE = Object.freeze({
       "implemented": 30,
       "open": 0,
       "source": "js/world/forest-presentation.js"
+    },
+    {
+      "id": "1.2.23.1.271-300",
+      "title": "Long-term forest systems, events, modding and QA",
+      "total": 30,
+      "implemented": 30,
+      "open": 0,
+      "source": "js/world/forest-legacy-data.js"
     },
     {
       "id": "2.1",

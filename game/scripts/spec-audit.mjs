@@ -500,6 +500,34 @@ const PRESENTATION_SPEC = Object.freeze({
     ]
 });
 
+const LEGACY_SPEC = Object.freeze({
+    id: "1.2.23.1.271-300",
+    title: "Long-term forest systems, events, modding and QA",
+    file: "js/world/forest-legacy-data.js",
+    manifest: "FOREST_LEGACY_REQUIREMENTS",
+    consumers: [
+        { file: "js/world/forest-legacy-data.js", symbol: "FOREST_LEGACY_REQUIREMENTS", role: "catalog" },
+        { file: "js/world/forest-legacy-data.js", symbol: "FOREST_LEGACY_REGIONS", role: "regional woods" },
+        { file: "js/systems/forest-legacy.js", symbol: "forestLegacySummary", role: "simulation" },
+        { file: "js/systems/forest-legacy.js", symbol: "updateForestLegacy", role: "annual pass" },
+        { file: "js/systems/forest-legacy.js", symbol: "applyForestHazard", role: "hazard events" },
+        { file: "js/systems/forest-legacy.js", symbol: "afforestForestRegion", role: "planting action" },
+        { file: "js/systems/forest-legacy.js", symbol: "reintroduceForestSpecies", role: "reintroduction" },
+        { file: "js/presentation/forest-legacy-panel.js", symbol: "legacyBlock", role: "ui" },
+        { file: "js/presentation/forest-atlas-panel.js", symbol: "legacyBlock", role: "atlas wiring" },
+        { file: "js/presentation/management-ui.js", symbol: "protectForestRegion", role: "ui action" },
+        { file: "js/simulation/simulation.js", symbol: "updateForestLegacy", role: "annual wiring" },
+        { file: "js/core/data-packs.js", symbol: "getDataPackForests", role: "modding" },
+        { file: "js/systems/scenario.js", symbol: "createScenarioDefinition", role: "community scenario" },
+        { file: "js/core/save-runtime.js", symbol: "createSaveSnapshot", role: "persistence" },
+        { file: "js/core/save-validation.js", symbol: "validateForestLegacySnapshot", role: "save validation" }
+    ],
+    tests: [
+        "tests/systems/forest-legacy.test.js",
+        "tests/browser/forest-legacy-mobile.mjs"
+    ]
+});
+
 const INDUSTRY_SPEC = Object.freeze({
     id: "1.2.23.1.151-180",
     title: "Regional forest economy and workshops",
@@ -1297,6 +1325,29 @@ export function runSpecAudit({ write = false } = {}) {
         sections.push(built);
     }
     {
+        const module = awaitImport(LEGACY_SPEC.file);
+        const manifest = module[LEGACY_SPEC.manifest];
+        if (!Array.isArray(manifest)) throw new Error("forest legacy manifest missing");
+        const built = section(LEGACY_SPEC.id, LEGACY_SPEC.title, manifest.map(entry => ({
+            id: entry.id,
+            label: entry.title,
+            key: entry.point,
+            group: "FOREST LEGACY",
+            status: "implemented",
+            docEvidence: "FOREST_LEGACY_REQUIREMENTS",
+            evidence: [],
+            tests: []
+        })), {
+            source: LEGACY_SPEC.file,
+            note: `${manifest.length} player-facing long-term forest requirements from ${LEGACY_SPEC.manifest}; each names its live consumer in the atlas.`
+        });
+        built.consumers = checkedReferences(LEGACY_SPEC.consumers);
+        built.tests = testsValid(LEGACY_SPEC.tests);
+        built.probeAvailable = false;
+        built.probeObserved = 0;
+        sections.push(built);
+    }
+    {
         const module = awaitImport(INDUSTRY_SPEC.file);
         const manifest = module[INDUSTRY_SPEC.manifest];
         if (!Array.isArray(manifest)) throw new Error("regional forest economy manifest missing");
@@ -1516,7 +1567,8 @@ const MODULE_PATHS = [
     INDUSTRY_SPEC.file,
     CULTURE_SPEC.file,
     WAR_SPEC.file,
-    PRESENTATION_SPEC.file
+    PRESENTATION_SPEC.file,
+    LEGACY_SPEC.file
 ];
 for (const relative of MODULE_PATHS) {
     const absolute = path.join(ROOT, relative);

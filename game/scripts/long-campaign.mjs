@@ -69,6 +69,7 @@ try {
                 diagnostics: result.diagnostics,
                 provinceSummary: result.final.world,
                 forestTypes: result.forestTypes,
+                forestLegacy: result.forestLegacy,
                 timberEconomy: result.timberEconomy,
                 gameOver: result.gameOver,
                 ambition: result.ambition,

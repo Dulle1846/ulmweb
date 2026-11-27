@@ -1,13 +1,50 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.88.0`
-**Next development line:** `3.89.0-dev`
+**Current production version:** `3.89.0`
+**Next development line:** `3.90.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
 **Last repository verification:** 2026-11-27 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.89.0 — Langfristige Wälder, regionale Großereignisse und Modding
+
+Die zehn Provinzen besitzen jetzt ein gemeinsames Langzeitregister für ihre
+Wälder. Es läuft genau einmal pro Jahr nach dem bestehenden Biome-Atlas, nutzt
+dessen Klimadrift und regionale Waldtypen und schreibt keine zweite Karte und
+keinen zweiten Tick. Der Forest Atlas zeigt zehn Provinzwälder mit Typ,
+Klimadruck, Höhenlage, Arten, sechs Gefahrenchroniken, Jahresringen,
+Jahrhundert-Projektionen und echten Aktionen.
+
+- **Sukzession und Klima:** langsame Phasenverschiebung, Klimadruck,
+  Höhenmigration, seltene regionale Typwechsel und lokales Aussterben mit
+  deterministischem Samen-/Genbank-Schutz.
+- **Naturschutz:** drei Gesetze, Schutzgebiete mit eigenen Regeln,
+  Wiederaufforstung, Wiederansiedlung, Naturdenkmäler mit eigener Geschichte
+  und Bürgerwissenschaft.
+- **Institutionen:** Samenbank, Genbank, Baumschule und Waldmuseum mit drei
+  Stufen, sichtbaren Beständen und jährlicher Wirkung auf Backup, Setzlinge und
+  Codex.
+- **Sechs Großereignisse:** Feuer, Dürre, Sturm, Insektenkalamität, invasive
+  Art und Pilzepidemie mit realen Folgen für Kronendach, Artenstress,
+  Biomasse und Nahrung. Windwurf und Brandholz bleiben als Salvage im Bestand
+  und laufen über den vorhandenen Woodcutter-/Logistikpfad, nicht als freie
+  Ressource in die Kronkammer.
+- **Erinnerung:** 60 Jahresringe, drei Jahrhundert-Projektionen, alte Bäume mit
+  Namen und Geschichte, acht Erfolge und Codex-Einträge für Bäume, Tiere und
+  Waldkulturen.
+- **Modding:** validierte lokale Datenpakete dürfen eigene Waldtypen und Arten
+  liefern; ein Community-Szenario kann über `forestType` an einen solchen Wald
+  gebunden werden. Keine ausführbaren Inhalte.
+- **Speicher:** additiv und optional unter `state.forestLegacy`; Save-Schema 15
+  und alte Saves bleiben gültig. Alle Listen sind begrenzt, der Jahrespass ist
+  idempotent und der Zufall kommt ausschließlich aus dem Weltseed.
+- **QA:** 30-Punkte-Manifest, Data-Pack-/Scenario-/Save-Tests, 25-Jahres-
+  Determinismus, 300-Jahres-Soak über zehn Referenz-Seeds und ein mobiler
+  390×844-Browserpfad, der alle zehn Regionen, alle 30 Punkte und echte
+  Samenbank-/Schutzgebietsaktionen prüft.
 
 ## 3.88.0 — Provinzchartas, Loyalität und Kronabgabe
 

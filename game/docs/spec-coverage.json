@@ -2,14 +2,14 @@
   "version": 2,
   "generatedBy": "scripts/spec-audit.mjs",
   "scope": "All numbered 1.1 and 1.2.1–1.2.18 requirements, including the 1.2.23.1.151–270 forest economy, culture, warfare and presentation with the field guide, plus the documented 2.x phases, 3.3–4.0 roadmap points, the 3.11 expedition chain, 3.8.14 noble arbitration, 3.9.12 atlas quest follow-ups and the 3.12 keyboard-only play contract.",
-  "commit": "3bb3fe7dd0158bae09152b312b6800d657f25f33",
-  "sourceHash": "ecf640a65ea575af17a998a67f70c95621c72c02f94f628c79fc4c6718340e62",
-  "generatedAt": "2026-11-27T18:42:36+00:00",
+  "commit": "840c8f271f27104babf6dd14b4bcf706ae10b5a6",
+  "sourceHash": "84aaeddc48bc7732baf0495bd3bf298c6bedd26670336e3f96f60c167ac6995f",
+  "generatedAt": "2026-11-27T19:32:58+00:00",
   "totals": {
-    "total": 1789,
-    "implemented": 1789,
+    "total": 1819,
+    "implemented": 1819,
     "open": 0,
-    "sections": 45
+    "sections": 46
   },
   "collisions": [
     {
@@ -44015,6 +44015,1084 @@
       ],
       "source": "js/world/forest-presentation.js",
       "note": "30 player-facing forest presentation, audio, UI and accessibility requirements from FOREST_PRESENTATION_POINTS; each names its live consumer in the atlas.",
+      "probeFunction": null,
+      "probeClimate": "temperate",
+      "probeExtra": {},
+      "probeAvailable": false,
+      "probeObserved": 0,
+      "implemented": 30,
+      "open": 0,
+      "total": 30
+    },
+    {
+      "id": "1.2.23.1.271-300",
+      "title": "Long-term forest systems, events, modding and QA",
+      "points": [
+        {
+          "id": "1.2.23.1.271",
+          "label": "Century-scale forest succession",
+          "key": "Waldsukzession über mehrere Jahrhunderte",
+          "group": "FOREST LEGACY",
+          "status": "implemented",
+          "docEvidence": "FOREST_LEGACY_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-legacy.test.js",
+            "tests/browser/forest-legacy-mobile.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-legacy-data.js#FOREST_LEGACY_REQUIREMENTS (catalog)",
+            "js/world/forest-legacy-data.js#FOREST_LEGACY_REGIONS (regional woods)",
+            "js/systems/forest-legacy.js#forestLegacySummary (simulation)",
+            "js/systems/forest-legacy.js#updateForestLegacy (annual pass)",
+            "js/systems/forest-legacy.js#applyForestHazard (hazard events)",
+            "js/systems/forest-legacy.js#afforestForestRegion (planting action)",
+            "js/systems/forest-legacy.js#reintroduceForestSpecies (reintroduction)",
+            "js/presentation/forest-legacy-panel.js#legacyBlock (ui)",
+            "js/presentation/forest-atlas-panel.js#legacyBlock (atlas wiring)",
+            "js/presentation/management-ui.js#protectForestRegion (ui action)",
+            "js/simulation/simulation.js#updateForestLegacy (annual wiring)",
+            "js/core/data-packs.js#getDataPackForests (modding)",
+            "js/systems/scenario.js#createScenarioDefinition (community scenario)",
+            "js/core/save-runtime.js#createSaveSnapshot (persistence)",
+            "js/core/save-validation.js#validateForestLegacySnapshot (save validation)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.272",
+          "label": "Slow climate-driven forest-type shift",
+          "key": "Klimawandel mit langsamer Verschiebung von Waldtypen",
+          "group": "FOREST LEGACY",
+          "status": "implemented",
+          "docEvidence": "FOREST_LEGACY_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-legacy.test.js",
+            "tests/browser/forest-legacy-mobile.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-legacy-data.js#FOREST_LEGACY_REQUIREMENTS (catalog)",
+            "js/world/forest-legacy-data.js#FOREST_LEGACY_REGIONS (regional woods)",
+            "js/systems/forest-legacy.js#forestLegacySummary (simulation)",
+            "js/systems/forest-legacy.js#updateForestLegacy (annual pass)",
+            "js/systems/forest-legacy.js#applyForestHazard (hazard events)",
+            "js/systems/forest-legacy.js#afforestForestRegion (planting action)",
+            "js/systems/forest-legacy.js#reintroduceForestSpecies (reintroduction)",
+            "js/presentation/forest-legacy-panel.js#legacyBlock (ui)",
+            "js/presentation/forest-atlas-panel.js#legacyBlock (atlas wiring)",
+            "js/presentation/management-ui.js#protectForestRegion (ui action)",
+            "js/simulation/simulation.js#updateForestLegacy (annual wiring)",
+            "js/core/data-packs.js#getDataPackForests (modding)",
+            "js/systems/scenario.js#createScenarioDefinition (community scenario)",
+            "js/core/save-runtime.js#createSaveSnapshot (persistence)",
+            "js/core/save-validation.js#validateForestLegacySnapshot (save validation)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.273",
+          "label": "Species migration into cooler elevations",
+          "key": "Artenwanderung in kühlere Höhenlagen",
+          "group": "FOREST LEGACY",
+          "status": "implemented",
+          "docEvidence": "FOREST_LEGACY_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-legacy.test.js",
+            "tests/browser/forest-legacy-mobile.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-legacy-data.js#FOREST_LEGACY_REQUIREMENTS (catalog)",
+            "js/world/forest-legacy-data.js#FOREST_LEGACY_REGIONS (regional woods)",
+            "js/systems/forest-legacy.js#forestLegacySummary (simulation)",
+            "js/systems/forest-legacy.js#updateForestLegacy (annual pass)",
+            "js/systems/forest-legacy.js#applyForestHazard (hazard events)",
+            "js/systems/forest-legacy.js#afforestForestRegion (planting action)",
+            "js/systems/forest-legacy.js#reintroduceForestSpecies (reintroduction)",
+            "js/presentation/forest-legacy-panel.js#legacyBlock (ui)",
+            "js/presentation/forest-atlas-panel.js#legacyBlock (atlas wiring)",
+            "js/presentation/management-ui.js#protectForestRegion (ui action)",
+            "js/simulation/simulation.js#updateForestLegacy (annual wiring)",
+            "js/core/data-packs.js#getDataPackForests (modding)",
+            "js/systems/scenario.js#createScenarioDefinition (community scenario)",
+            "js/core/save-runtime.js#createSaveSnapshot (persistence)",
+            "js/core/save-validation.js#validateForestLegacySnapshot (save validation)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.274",
+          "label": "Local extinction of trees and animals",
+          "key": "Lokales Aussterben von Baum- und Tierarten",
+          "group": "FOREST LEGACY",
+          "status": "implemented",
+          "docEvidence": "FOREST_LEGACY_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-legacy.test.js",
+            "tests/browser/forest-legacy-mobile.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-legacy-data.js#FOREST_LEGACY_REQUIREMENTS (catalog)",
+            "js/world/forest-legacy-data.js#FOREST_LEGACY_REGIONS (regional woods)",
+            "js/systems/forest-legacy.js#forestLegacySummary (simulation)",
+            "js/systems/forest-legacy.js#updateForestLegacy (annual pass)",
+            "js/systems/forest-legacy.js#applyForestHazard (hazard events)",
+            "js/systems/forest-legacy.js#afforestForestRegion (planting action)",
+            "js/systems/forest-legacy.js#reintroduceForestSpecies (reintroduction)",
+            "js/presentation/forest-legacy-panel.js#legacyBlock (ui)",
+            "js/presentation/forest-atlas-panel.js#legacyBlock (atlas wiring)",
+            "js/presentation/management-ui.js#protectForestRegion (ui action)",
+            "js/simulation/simulation.js#updateForestLegacy (annual wiring)",
+            "js/core/data-packs.js#getDataPackForests (modding)",
+            "js/systems/scenario.js#createScenarioDefinition (community scenario)",
+            "js/core/save-runtime.js#createSaveSnapshot (persistence)",
+            "js/core/save-validation.js#validateForestLegacySnapshot (save validation)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.275",
+          "label": "Reintroduction of vanished species",
+          "key": "Wiederansiedlung verschwundener Arten",
+          "group": "FOREST LEGACY",
+          "status": "implemented",
+          "docEvidence": "FOREST_LEGACY_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-legacy.test.js",
+            "tests/browser/forest-legacy-mobile.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-legacy-data.js#FOREST_LEGACY_REQUIREMENTS (catalog)",
+            "js/world/forest-legacy-data.js#FOREST_LEGACY_REGIONS (regional woods)",
+            "js/systems/forest-legacy.js#forestLegacySummary (simulation)",
+            "js/systems/forest-legacy.js#updateForestLegacy (annual pass)",
+            "js/systems/forest-legacy.js#applyForestHazard (hazard events)",
+            "js/systems/forest-legacy.js#afforestForestRegion (planting action)",
+            "js/systems/forest-legacy.js#reintroduceForestSpecies (reintroduction)",
+            "js/presentation/forest-legacy-panel.js#legacyBlock (ui)",
+            "js/presentation/forest-atlas-panel.js#legacyBlock (atlas wiring)",
+            "js/presentation/management-ui.js#protectForestRegion (ui action)",
+            "js/simulation/simulation.js#updateForestLegacy (annual wiring)",
+            "js/core/data-packs.js#getDataPackForests (modding)",
+            "js/systems/scenario.js#createScenarioDefinition (community scenario)",
+            "js/core/save-runtime.js#createSaveSnapshot (persistence)",
+            "js/core/save-validation.js#validateForestLegacySnapshot (save validation)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.276",
+          "label": "Conservation as a political decision",
+          "key": "Naturschutz als politische Entscheidung",
+          "group": "FOREST LEGACY",
+          "status": "implemented",
+          "docEvidence": "FOREST_LEGACY_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-legacy.test.js",
+            "tests/browser/forest-legacy-mobile.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-legacy-data.js#FOREST_LEGACY_REQUIREMENTS (catalog)",
+            "js/world/forest-legacy-data.js#FOREST_LEGACY_REGIONS (regional woods)",
+            "js/systems/forest-legacy.js#forestLegacySummary (simulation)",
+            "js/systems/forest-legacy.js#updateForestLegacy (annual pass)",
+            "js/systems/forest-legacy.js#applyForestHazard (hazard events)",
+            "js/systems/forest-legacy.js#afforestForestRegion (planting action)",
+            "js/systems/forest-legacy.js#reintroduceForestSpecies (reintroduction)",
+            "js/presentation/forest-legacy-panel.js#legacyBlock (ui)",
+            "js/presentation/forest-atlas-panel.js#legacyBlock (atlas wiring)",
+            "js/presentation/management-ui.js#protectForestRegion (ui action)",
+            "js/simulation/simulation.js#updateForestLegacy (annual wiring)",
+            "js/core/data-packs.js#getDataPackForests (modding)",
+            "js/systems/scenario.js#createScenarioDefinition (community scenario)",
+            "js/core/save-runtime.js#createSaveSnapshot (persistence)",
+            "js/core/save-validation.js#validateForestLegacySnapshot (save validation)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.277",
+          "label": "Protected areas with their own rules",
+          "key": "Schutzgebiete mit eigenen Regeln",
+          "group": "FOREST LEGACY",
+          "status": "implemented",
+          "docEvidence": "FOREST_LEGACY_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-legacy.test.js",
+            "tests/browser/forest-legacy-mobile.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-legacy-data.js#FOREST_LEGACY_REQUIREMENTS (catalog)",
+            "js/world/forest-legacy-data.js#FOREST_LEGACY_REGIONS (regional woods)",
+            "js/systems/forest-legacy.js#forestLegacySummary (simulation)",
+            "js/systems/forest-legacy.js#updateForestLegacy (annual pass)",
+            "js/systems/forest-legacy.js#applyForestHazard (hazard events)",
+            "js/systems/forest-legacy.js#afforestForestRegion (planting action)",
+            "js/systems/forest-legacy.js#reintroduceForestSpecies (reintroduction)",
+            "js/presentation/forest-legacy-panel.js#legacyBlock (ui)",
+            "js/presentation/forest-atlas-panel.js#legacyBlock (atlas wiring)",
+            "js/presentation/management-ui.js#protectForestRegion (ui action)",
+            "js/simulation/simulation.js#updateForestLegacy (annual wiring)",
+            "js/core/data-packs.js#getDataPackForests (modding)",
+            "js/systems/scenario.js#createScenarioDefinition (community scenario)",
+            "js/core/save-runtime.js#createSaveSnapshot (persistence)",
+            "js/core/save-validation.js#validateForestLegacySnapshot (save validation)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.278",
+          "label": "Afforestation and reforestation",
+          "key": "Aufforstung und Wiederbewaldung",
+          "group": "FOREST LEGACY",
+          "status": "implemented",
+          "docEvidence": "FOREST_LEGACY_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-legacy.test.js",
+            "tests/browser/forest-legacy-mobile.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-legacy-data.js#FOREST_LEGACY_REQUIREMENTS (catalog)",
+            "js/world/forest-legacy-data.js#FOREST_LEGACY_REGIONS (regional woods)",
+            "js/systems/forest-legacy.js#forestLegacySummary (simulation)",
+            "js/systems/forest-legacy.js#updateForestLegacy (annual pass)",
+            "js/systems/forest-legacy.js#applyForestHazard (hazard events)",
+            "js/systems/forest-legacy.js#afforestForestRegion (planting action)",
+            "js/systems/forest-legacy.js#reintroduceForestSpecies (reintroduction)",
+            "js/presentation/forest-legacy-panel.js#legacyBlock (ui)",
+            "js/presentation/forest-atlas-panel.js#legacyBlock (atlas wiring)",
+            "js/presentation/management-ui.js#protectForestRegion (ui action)",
+            "js/simulation/simulation.js#updateForestLegacy (annual wiring)",
+            "js/core/data-packs.js#getDataPackForests (modding)",
+            "js/systems/scenario.js#createScenarioDefinition (community scenario)",
+            "js/core/save-runtime.js#createSaveSnapshot (persistence)",
+            "js/core/save-validation.js#validateForestLegacySnapshot (save validation)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.279",
+          "label": "Wildfire as a regional emergency",
+          "key": "Waldbrand als regionales Großereignis",
+          "group": "FOREST LEGACY",
+          "status": "implemented",
+          "docEvidence": "FOREST_LEGACY_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-legacy.test.js",
+            "tests/browser/forest-legacy-mobile.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-legacy-data.js#FOREST_LEGACY_REQUIREMENTS (catalog)",
+            "js/world/forest-legacy-data.js#FOREST_LEGACY_REGIONS (regional woods)",
+            "js/systems/forest-legacy.js#forestLegacySummary (simulation)",
+            "js/systems/forest-legacy.js#updateForestLegacy (annual pass)",
+            "js/systems/forest-legacy.js#applyForestHazard (hazard events)",
+            "js/systems/forest-legacy.js#afforestForestRegion (planting action)",
+            "js/systems/forest-legacy.js#reintroduceForestSpecies (reintroduction)",
+            "js/presentation/forest-legacy-panel.js#legacyBlock (ui)",
+            "js/presentation/forest-atlas-panel.js#legacyBlock (atlas wiring)",
+            "js/presentation/management-ui.js#protectForestRegion (ui action)",
+            "js/simulation/simulation.js#updateForestLegacy (annual wiring)",
+            "js/core/data-packs.js#getDataPackForests (modding)",
+            "js/systems/scenario.js#createScenarioDefinition (community scenario)",
+            "js/core/save-runtime.js#createSaveSnapshot (persistence)",
+            "js/core/save-validation.js#validateForestLegacySnapshot (save validation)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.280",
+          "label": "Drought with tree death and crop failure",
+          "key": "Dürre mit Baumsterben und Ernteausfällen",
+          "group": "FOREST LEGACY",
+          "status": "implemented",
+          "docEvidence": "FOREST_LEGACY_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-legacy.test.js",
+            "tests/browser/forest-legacy-mobile.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-legacy-data.js#FOREST_LEGACY_REQUIREMENTS (catalog)",
+            "js/world/forest-legacy-data.js#FOREST_LEGACY_REGIONS (regional woods)",
+            "js/systems/forest-legacy.js#forestLegacySummary (simulation)",
+            "js/systems/forest-legacy.js#updateForestLegacy (annual pass)",
+            "js/systems/forest-legacy.js#applyForestHazard (hazard events)",
+            "js/systems/forest-legacy.js#afforestForestRegion (planting action)",
+            "js/systems/forest-legacy.js#reintroduceForestSpecies (reintroduction)",
+            "js/presentation/forest-legacy-panel.js#legacyBlock (ui)",
+            "js/presentation/forest-atlas-panel.js#legacyBlock (atlas wiring)",
+            "js/presentation/management-ui.js#protectForestRegion (ui action)",
+            "js/simulation/simulation.js#updateForestLegacy (annual wiring)",
+            "js/core/data-packs.js#getDataPackForests (modding)",
+            "js/systems/scenario.js#createScenarioDefinition (community scenario)",
+            "js/core/save-runtime.js#createSaveSnapshot (persistence)",
+            "js/core/save-validation.js#validateForestLegacySnapshot (save validation)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.281",
+          "label": "Storms with windthrow and debris",
+          "key": "Stürme mit Windwurf und Trümmern",
+          "group": "FOREST LEGACY",
+          "status": "implemented",
+          "docEvidence": "FOREST_LEGACY_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-legacy.test.js",
+            "tests/browser/forest-legacy-mobile.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-legacy-data.js#FOREST_LEGACY_REQUIREMENTS (catalog)",
+            "js/world/forest-legacy-data.js#FOREST_LEGACY_REGIONS (regional woods)",
+            "js/systems/forest-legacy.js#forestLegacySummary (simulation)",
+            "js/systems/forest-legacy.js#updateForestLegacy (annual pass)",
+            "js/systems/forest-legacy.js#applyForestHazard (hazard events)",
+            "js/systems/forest-legacy.js#afforestForestRegion (planting action)",
+            "js/systems/forest-legacy.js#reintroduceForestSpecies (reintroduction)",
+            "js/presentation/forest-legacy-panel.js#legacyBlock (ui)",
+            "js/presentation/forest-atlas-panel.js#legacyBlock (atlas wiring)",
+            "js/presentation/management-ui.js#protectForestRegion (ui action)",
+            "js/simulation/simulation.js#updateForestLegacy (annual wiring)",
+            "js/core/data-packs.js#getDataPackForests (modding)",
+            "js/systems/scenario.js#createScenarioDefinition (community scenario)",
+            "js/core/save-runtime.js#createSaveSnapshot (persistence)",
+            "js/core/save-validation.js#validateForestLegacySnapshot (save validation)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.282",
+          "label": "Insect calamities in conifer woods",
+          "key": "Insektenkalamitäten in Nadelwäldern",
+          "group": "FOREST LEGACY",
+          "status": "implemented",
+          "docEvidence": "FOREST_LEGACY_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-legacy.test.js",
+            "tests/browser/forest-legacy-mobile.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-legacy-data.js#FOREST_LEGACY_REQUIREMENTS (catalog)",
+            "js/world/forest-legacy-data.js#FOREST_LEGACY_REGIONS (regional woods)",
+            "js/systems/forest-legacy.js#forestLegacySummary (simulation)",
+            "js/systems/forest-legacy.js#updateForestLegacy (annual pass)",
+            "js/systems/forest-legacy.js#applyForestHazard (hazard events)",
+            "js/systems/forest-legacy.js#afforestForestRegion (planting action)",
+            "js/systems/forest-legacy.js#reintroduceForestSpecies (reintroduction)",
+            "js/presentation/forest-legacy-panel.js#legacyBlock (ui)",
+            "js/presentation/forest-atlas-panel.js#legacyBlock (atlas wiring)",
+            "js/presentation/management-ui.js#protectForestRegion (ui action)",
+            "js/simulation/simulation.js#updateForestLegacy (annual wiring)",
+            "js/core/data-packs.js#getDataPackForests (modding)",
+            "js/systems/scenario.js#createScenarioDefinition (community scenario)",
+            "js/core/save-runtime.js#createSaveSnapshot (persistence)",
+            "js/core/save-validation.js#validateForestLegacySnapshot (save validation)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.283",
+          "label": "Invasive species with displacement",
+          "key": "Invasive Arten mit Verdrängungseffekten",
+          "group": "FOREST LEGACY",
+          "status": "implemented",
+          "docEvidence": "FOREST_LEGACY_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-legacy.test.js",
+            "tests/browser/forest-legacy-mobile.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-legacy-data.js#FOREST_LEGACY_REQUIREMENTS (catalog)",
+            "js/world/forest-legacy-data.js#FOREST_LEGACY_REGIONS (regional woods)",
+            "js/systems/forest-legacy.js#forestLegacySummary (simulation)",
+            "js/systems/forest-legacy.js#updateForestLegacy (annual pass)",
+            "js/systems/forest-legacy.js#applyForestHazard (hazard events)",
+            "js/systems/forest-legacy.js#afforestForestRegion (planting action)",
+            "js/systems/forest-legacy.js#reintroduceForestSpecies (reintroduction)",
+            "js/presentation/forest-legacy-panel.js#legacyBlock (ui)",
+            "js/presentation/forest-atlas-panel.js#legacyBlock (atlas wiring)",
+            "js/presentation/management-ui.js#protectForestRegion (ui action)",
+            "js/simulation/simulation.js#updateForestLegacy (annual wiring)",
+            "js/core/data-packs.js#getDataPackForests (modding)",
+            "js/systems/scenario.js#createScenarioDefinition (community scenario)",
+            "js/core/save-runtime.js#createSaveSnapshot (persistence)",
+            "js/core/save-validation.js#validateForestLegacySnapshot (save validation)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.284",
+          "label": "Fungal epidemics in regional hosts",
+          "key": "Pilzepidemien mit regionalen Baumarten",
+          "group": "FOREST LEGACY",
+          "status": "implemented",
+          "docEvidence": "FOREST_LEGACY_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-legacy.test.js",
+            "tests/browser/forest-legacy-mobile.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-legacy-data.js#FOREST_LEGACY_REQUIREMENTS (catalog)",
+            "js/world/forest-legacy-data.js#FOREST_LEGACY_REGIONS (regional woods)",
+            "js/systems/forest-legacy.js#forestLegacySummary (simulation)",
+            "js/systems/forest-legacy.js#updateForestLegacy (annual pass)",
+            "js/systems/forest-legacy.js#applyForestHazard (hazard events)",
+            "js/systems/forest-legacy.js#afforestForestRegion (planting action)",
+            "js/systems/forest-legacy.js#reintroduceForestSpecies (reintroduction)",
+            "js/presentation/forest-legacy-panel.js#legacyBlock (ui)",
+            "js/presentation/forest-atlas-panel.js#legacyBlock (atlas wiring)",
+            "js/presentation/management-ui.js#protectForestRegion (ui action)",
+            "js/simulation/simulation.js#updateForestLegacy (annual wiring)",
+            "js/core/data-packs.js#getDataPackForests (modding)",
+            "js/systems/scenario.js#createScenarioDefinition (community scenario)",
+            "js/core/save-runtime.js#createSaveSnapshot (persistence)",
+            "js/core/save-validation.js#validateForestLegacySnapshot (save validation)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.285",
+          "label": "Seed banks for threatened forests",
+          "key": "Samenbanken für bedrohte Waldtypen",
+          "group": "FOREST LEGACY",
+          "status": "implemented",
+          "docEvidence": "FOREST_LEGACY_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-legacy.test.js",
+            "tests/browser/forest-legacy-mobile.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-legacy-data.js#FOREST_LEGACY_REQUIREMENTS (catalog)",
+            "js/world/forest-legacy-data.js#FOREST_LEGACY_REGIONS (regional woods)",
+            "js/systems/forest-legacy.js#forestLegacySummary (simulation)",
+            "js/systems/forest-legacy.js#updateForestLegacy (annual pass)",
+            "js/systems/forest-legacy.js#applyForestHazard (hazard events)",
+            "js/systems/forest-legacy.js#afforestForestRegion (planting action)",
+            "js/systems/forest-legacy.js#reintroduceForestSpecies (reintroduction)",
+            "js/presentation/forest-legacy-panel.js#legacyBlock (ui)",
+            "js/presentation/forest-atlas-panel.js#legacyBlock (atlas wiring)",
+            "js/presentation/management-ui.js#protectForestRegion (ui action)",
+            "js/simulation/simulation.js#updateForestLegacy (annual wiring)",
+            "js/core/data-packs.js#getDataPackForests (modding)",
+            "js/systems/scenario.js#createScenarioDefinition (community scenario)",
+            "js/core/save-runtime.js#createSaveSnapshot (persistence)",
+            "js/core/save-validation.js#validateForestLegacySnapshot (save validation)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.286",
+          "label": "Gene banks and conservation breeding",
+          "key": "Genbanken und Erhaltungszucht",
+          "group": "FOREST LEGACY",
+          "status": "implemented",
+          "docEvidence": "FOREST_LEGACY_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-legacy.test.js",
+            "tests/browser/forest-legacy-mobile.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-legacy-data.js#FOREST_LEGACY_REQUIREMENTS (catalog)",
+            "js/world/forest-legacy-data.js#FOREST_LEGACY_REGIONS (regional woods)",
+            "js/systems/forest-legacy.js#forestLegacySummary (simulation)",
+            "js/systems/forest-legacy.js#updateForestLegacy (annual pass)",
+            "js/systems/forest-legacy.js#applyForestHazard (hazard events)",
+            "js/systems/forest-legacy.js#afforestForestRegion (planting action)",
+            "js/systems/forest-legacy.js#reintroduceForestSpecies (reintroduction)",
+            "js/presentation/forest-legacy-panel.js#legacyBlock (ui)",
+            "js/presentation/forest-atlas-panel.js#legacyBlock (atlas wiring)",
+            "js/presentation/management-ui.js#protectForestRegion (ui action)",
+            "js/simulation/simulation.js#updateForestLegacy (annual wiring)",
+            "js/core/data-packs.js#getDataPackForests (modding)",
+            "js/systems/scenario.js#createScenarioDefinition (community scenario)",
+            "js/core/save-runtime.js#createSaveSnapshot (persistence)",
+            "js/core/save-validation.js#validateForestLegacySnapshot (save validation)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.287",
+          "label": "Tree nurseries for reforestation",
+          "key": "Baumschulen für Wiederaufforstung",
+          "group": "FOREST LEGACY",
+          "status": "implemented",
+          "docEvidence": "FOREST_LEGACY_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-legacy.test.js",
+            "tests/browser/forest-legacy-mobile.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-legacy-data.js#FOREST_LEGACY_REQUIREMENTS (catalog)",
+            "js/world/forest-legacy-data.js#FOREST_LEGACY_REGIONS (regional woods)",
+            "js/systems/forest-legacy.js#forestLegacySummary (simulation)",
+            "js/systems/forest-legacy.js#updateForestLegacy (annual pass)",
+            "js/systems/forest-legacy.js#applyForestHazard (hazard events)",
+            "js/systems/forest-legacy.js#afforestForestRegion (planting action)",
+            "js/systems/forest-legacy.js#reintroduceForestSpecies (reintroduction)",
+            "js/presentation/forest-legacy-panel.js#legacyBlock (ui)",
+            "js/presentation/forest-atlas-panel.js#legacyBlock (atlas wiring)",
+            "js/presentation/management-ui.js#protectForestRegion (ui action)",
+            "js/simulation/simulation.js#updateForestLegacy (annual wiring)",
+            "js/core/data-packs.js#getDataPackForests (modding)",
+            "js/systems/scenario.js#createScenarioDefinition (community scenario)",
+            "js/core/save-runtime.js#createSaveSnapshot (persistence)",
+            "js/core/save-validation.js#validateForestLegacySnapshot (save validation)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.288",
+          "label": "Forest museum and natural-history collection",
+          "key": "Waldmuseum und Naturkundesammlung",
+          "group": "FOREST LEGACY",
+          "status": "implemented",
+          "docEvidence": "FOREST_LEGACY_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-legacy.test.js",
+            "tests/browser/forest-legacy-mobile.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-legacy-data.js#FOREST_LEGACY_REQUIREMENTS (catalog)",
+            "js/world/forest-legacy-data.js#FOREST_LEGACY_REGIONS (regional woods)",
+            "js/systems/forest-legacy.js#forestLegacySummary (simulation)",
+            "js/systems/forest-legacy.js#updateForestLegacy (annual pass)",
+            "js/systems/forest-legacy.js#applyForestHazard (hazard events)",
+            "js/systems/forest-legacy.js#afforestForestRegion (planting action)",
+            "js/systems/forest-legacy.js#reintroduceForestSpecies (reintroduction)",
+            "js/presentation/forest-legacy-panel.js#legacyBlock (ui)",
+            "js/presentation/forest-atlas-panel.js#legacyBlock (atlas wiring)",
+            "js/presentation/management-ui.js#protectForestRegion (ui action)",
+            "js/simulation/simulation.js#updateForestLegacy (annual wiring)",
+            "js/core/data-packs.js#getDataPackForests (modding)",
+            "js/systems/scenario.js#createScenarioDefinition (community scenario)",
+            "js/core/save-runtime.js#createSaveSnapshot (persistence)",
+            "js/core/save-validation.js#validateForestLegacySnapshot (save validation)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.289",
+          "label": "Natural monuments and protected old trees",
+          "key": "Naturdenkmäler und geschützte alte Bäume",
+          "group": "FOREST LEGACY",
+          "status": "implemented",
+          "docEvidence": "FOREST_LEGACY_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-legacy.test.js",
+            "tests/browser/forest-legacy-mobile.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-legacy-data.js#FOREST_LEGACY_REQUIREMENTS (catalog)",
+            "js/world/forest-legacy-data.js#FOREST_LEGACY_REGIONS (regional woods)",
+            "js/systems/forest-legacy.js#forestLegacySummary (simulation)",
+            "js/systems/forest-legacy.js#updateForestLegacy (annual pass)",
+            "js/systems/forest-legacy.js#applyForestHazard (hazard events)",
+            "js/systems/forest-legacy.js#afforestForestRegion (planting action)",
+            "js/systems/forest-legacy.js#reintroduceForestSpecies (reintroduction)",
+            "js/presentation/forest-legacy-panel.js#legacyBlock (ui)",
+            "js/presentation/forest-atlas-panel.js#legacyBlock (atlas wiring)",
+            "js/presentation/management-ui.js#protectForestRegion (ui action)",
+            "js/simulation/simulation.js#updateForestLegacy (annual wiring)",
+            "js/core/data-packs.js#getDataPackForests (modding)",
+            "js/systems/scenario.js#createScenarioDefinition (community scenario)",
+            "js/core/save-runtime.js#createSaveSnapshot (persistence)",
+            "js/core/save-validation.js#validateForestLegacySnapshot (save validation)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.290",
+          "label": "Tree rings as a climate archive",
+          "key": "Jahresringe als Klimaarchiv",
+          "group": "FOREST LEGACY",
+          "status": "implemented",
+          "docEvidence": "FOREST_LEGACY_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-legacy.test.js",
+            "tests/browser/forest-legacy-mobile.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-legacy-data.js#FOREST_LEGACY_REQUIREMENTS (catalog)",
+            "js/world/forest-legacy-data.js#FOREST_LEGACY_REGIONS (regional woods)",
+            "js/systems/forest-legacy.js#forestLegacySummary (simulation)",
+            "js/systems/forest-legacy.js#updateForestLegacy (annual pass)",
+            "js/systems/forest-legacy.js#applyForestHazard (hazard events)",
+            "js/systems/forest-legacy.js#afforestForestRegion (planting action)",
+            "js/systems/forest-legacy.js#reintroduceForestSpecies (reintroduction)",
+            "js/presentation/forest-legacy-panel.js#legacyBlock (ui)",
+            "js/presentation/forest-atlas-panel.js#legacyBlock (atlas wiring)",
+            "js/presentation/management-ui.js#protectForestRegion (ui action)",
+            "js/simulation/simulation.js#updateForestLegacy (annual wiring)",
+            "js/core/data-packs.js#getDataPackForests (modding)",
+            "js/systems/scenario.js#createScenarioDefinition (community scenario)",
+            "js/core/save-runtime.js#createSaveSnapshot (persistence)",
+            "js/core/save-validation.js#validateForestLegacySnapshot (save validation)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.291",
+          "label": "Old trees with story and memory",
+          "key": "Alte Bäume mit eigener Geschichte und Erinnerung",
+          "group": "FOREST LEGACY",
+          "status": "implemented",
+          "docEvidence": "FOREST_LEGACY_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-legacy.test.js",
+            "tests/browser/forest-legacy-mobile.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-legacy-data.js#FOREST_LEGACY_REQUIREMENTS (catalog)",
+            "js/world/forest-legacy-data.js#FOREST_LEGACY_REGIONS (regional woods)",
+            "js/systems/forest-legacy.js#forestLegacySummary (simulation)",
+            "js/systems/forest-legacy.js#updateForestLegacy (annual pass)",
+            "js/systems/forest-legacy.js#applyForestHazard (hazard events)",
+            "js/systems/forest-legacy.js#afforestForestRegion (planting action)",
+            "js/systems/forest-legacy.js#reintroduceForestSpecies (reintroduction)",
+            "js/presentation/forest-legacy-panel.js#legacyBlock (ui)",
+            "js/presentation/forest-atlas-panel.js#legacyBlock (atlas wiring)",
+            "js/presentation/management-ui.js#protectForestRegion (ui action)",
+            "js/simulation/simulation.js#updateForestLegacy (annual wiring)",
+            "js/core/data-packs.js#getDataPackForests (modding)",
+            "js/systems/scenario.js#createScenarioDefinition (community scenario)",
+            "js/core/save-runtime.js#createSaveSnapshot (persistence)",
+            "js/core/save-validation.js#validateForestLegacySnapshot (save validation)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.292",
+          "label": "Citizen science for species observation",
+          "key": "Bürgerwissenschaft für Artenbeobachtung",
+          "group": "FOREST LEGACY",
+          "status": "implemented",
+          "docEvidence": "FOREST_LEGACY_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-legacy.test.js",
+            "tests/browser/forest-legacy-mobile.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-legacy-data.js#FOREST_LEGACY_REQUIREMENTS (catalog)",
+            "js/world/forest-legacy-data.js#FOREST_LEGACY_REGIONS (regional woods)",
+            "js/systems/forest-legacy.js#forestLegacySummary (simulation)",
+            "js/systems/forest-legacy.js#updateForestLegacy (annual pass)",
+            "js/systems/forest-legacy.js#applyForestHazard (hazard events)",
+            "js/systems/forest-legacy.js#afforestForestRegion (planting action)",
+            "js/systems/forest-legacy.js#reintroduceForestSpecies (reintroduction)",
+            "js/presentation/forest-legacy-panel.js#legacyBlock (ui)",
+            "js/presentation/forest-atlas-panel.js#legacyBlock (atlas wiring)",
+            "js/presentation/management-ui.js#protectForestRegion (ui action)",
+            "js/simulation/simulation.js#updateForestLegacy (annual wiring)",
+            "js/core/data-packs.js#getDataPackForests (modding)",
+            "js/systems/scenario.js#createScenarioDefinition (community scenario)",
+            "js/core/save-runtime.js#createSaveSnapshot (persistence)",
+            "js/core/save-validation.js#validateForestLegacySnapshot (save validation)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.293",
+          "label": "Modding custom forest types and species",
+          "key": "Modding eigener Waldtypen und Arten",
+          "group": "FOREST LEGACY",
+          "status": "implemented",
+          "docEvidence": "FOREST_LEGACY_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-legacy.test.js",
+            "tests/browser/forest-legacy-mobile.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-legacy-data.js#FOREST_LEGACY_REQUIREMENTS (catalog)",
+            "js/world/forest-legacy-data.js#FOREST_LEGACY_REGIONS (regional woods)",
+            "js/systems/forest-legacy.js#forestLegacySummary (simulation)",
+            "js/systems/forest-legacy.js#updateForestLegacy (annual pass)",
+            "js/systems/forest-legacy.js#applyForestHazard (hazard events)",
+            "js/systems/forest-legacy.js#afforestForestRegion (planting action)",
+            "js/systems/forest-legacy.js#reintroduceForestSpecies (reintroduction)",
+            "js/presentation/forest-legacy-panel.js#legacyBlock (ui)",
+            "js/presentation/forest-atlas-panel.js#legacyBlock (atlas wiring)",
+            "js/presentation/management-ui.js#protectForestRegion (ui action)",
+            "js/simulation/simulation.js#updateForestLegacy (annual wiring)",
+            "js/core/data-packs.js#getDataPackForests (modding)",
+            "js/systems/scenario.js#createScenarioDefinition (community scenario)",
+            "js/core/save-runtime.js#createSaveSnapshot (persistence)",
+            "js/core/save-validation.js#validateForestLegacySnapshot (save validation)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.294",
+          "label": "Community scenarios with regional forests",
+          "key": "Community-Szenarien mit regionalen Wäldern",
+          "group": "FOREST LEGACY",
+          "status": "implemented",
+          "docEvidence": "FOREST_LEGACY_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-legacy.test.js",
+            "tests/browser/forest-legacy-mobile.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-legacy-data.js#FOREST_LEGACY_REQUIREMENTS (catalog)",
+            "js/world/forest-legacy-data.js#FOREST_LEGACY_REGIONS (regional woods)",
+            "js/systems/forest-legacy.js#forestLegacySummary (simulation)",
+            "js/systems/forest-legacy.js#updateForestLegacy (annual pass)",
+            "js/systems/forest-legacy.js#applyForestHazard (hazard events)",
+            "js/systems/forest-legacy.js#afforestForestRegion (planting action)",
+            "js/systems/forest-legacy.js#reintroduceForestSpecies (reintroduction)",
+            "js/presentation/forest-legacy-panel.js#legacyBlock (ui)",
+            "js/presentation/forest-atlas-panel.js#legacyBlock (atlas wiring)",
+            "js/presentation/management-ui.js#protectForestRegion (ui action)",
+            "js/simulation/simulation.js#updateForestLegacy (annual wiring)",
+            "js/core/data-packs.js#getDataPackForests (modding)",
+            "js/systems/scenario.js#createScenarioDefinition (community scenario)",
+            "js/core/save-runtime.js#createSaveSnapshot (persistence)",
+            "js/core/save-validation.js#validateForestLegacySnapshot (save validation)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.295",
+          "label": "Achievements for discovery and protection",
+          "key": "Erfolge für Entdeckung und Schutz seltener Waldtypen",
+          "group": "FOREST LEGACY",
+          "status": "implemented",
+          "docEvidence": "FOREST_LEGACY_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-legacy.test.js",
+            "tests/browser/forest-legacy-mobile.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-legacy-data.js#FOREST_LEGACY_REQUIREMENTS (catalog)",
+            "js/world/forest-legacy-data.js#FOREST_LEGACY_REGIONS (regional woods)",
+            "js/systems/forest-legacy.js#forestLegacySummary (simulation)",
+            "js/systems/forest-legacy.js#updateForestLegacy (annual pass)",
+            "js/systems/forest-legacy.js#applyForestHazard (hazard events)",
+            "js/systems/forest-legacy.js#afforestForestRegion (planting action)",
+            "js/systems/forest-legacy.js#reintroduceForestSpecies (reintroduction)",
+            "js/presentation/forest-legacy-panel.js#legacyBlock (ui)",
+            "js/presentation/forest-atlas-panel.js#legacyBlock (atlas wiring)",
+            "js/presentation/management-ui.js#protectForestRegion (ui action)",
+            "js/simulation/simulation.js#updateForestLegacy (annual wiring)",
+            "js/core/data-packs.js#getDataPackForests (modding)",
+            "js/systems/scenario.js#createScenarioDefinition (community scenario)",
+            "js/core/save-runtime.js#createSaveSnapshot (persistence)",
+            "js/core/save-validation.js#validateForestLegacySnapshot (save validation)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.296",
+          "label": "Codex entries for trees, animals and cultures",
+          "key": "Codex-Einträge für Bäume, Tiere und Waldkulturen",
+          "group": "FOREST LEGACY",
+          "status": "implemented",
+          "docEvidence": "FOREST_LEGACY_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-legacy.test.js",
+            "tests/browser/forest-legacy-mobile.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-legacy-data.js#FOREST_LEGACY_REQUIREMENTS (catalog)",
+            "js/world/forest-legacy-data.js#FOREST_LEGACY_REGIONS (regional woods)",
+            "js/systems/forest-legacy.js#forestLegacySummary (simulation)",
+            "js/systems/forest-legacy.js#updateForestLegacy (annual pass)",
+            "js/systems/forest-legacy.js#applyForestHazard (hazard events)",
+            "js/systems/forest-legacy.js#afforestForestRegion (planting action)",
+            "js/systems/forest-legacy.js#reintroduceForestSpecies (reintroduction)",
+            "js/presentation/forest-legacy-panel.js#legacyBlock (ui)",
+            "js/presentation/forest-atlas-panel.js#legacyBlock (atlas wiring)",
+            "js/presentation/management-ui.js#protectForestRegion (ui action)",
+            "js/simulation/simulation.js#updateForestLegacy (annual wiring)",
+            "js/core/data-packs.js#getDataPackForests (modding)",
+            "js/systems/scenario.js#createScenarioDefinition (community scenario)",
+            "js/core/save-runtime.js#createSaveSnapshot (persistence)",
+            "js/core/save-validation.js#validateForestLegacySnapshot (save validation)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.297",
+          "label": "Reference seeds for visual and ecological tests",
+          "key": "Referenz-Seeds für visuelle und ökologische Tests",
+          "group": "FOREST LEGACY",
+          "status": "implemented",
+          "docEvidence": "FOREST_LEGACY_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-legacy.test.js",
+            "tests/browser/forest-legacy-mobile.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-legacy-data.js#FOREST_LEGACY_REQUIREMENTS (catalog)",
+            "js/world/forest-legacy-data.js#FOREST_LEGACY_REGIONS (regional woods)",
+            "js/systems/forest-legacy.js#forestLegacySummary (simulation)",
+            "js/systems/forest-legacy.js#updateForestLegacy (annual pass)",
+            "js/systems/forest-legacy.js#applyForestHazard (hazard events)",
+            "js/systems/forest-legacy.js#afforestForestRegion (planting action)",
+            "js/systems/forest-legacy.js#reintroduceForestSpecies (reintroduction)",
+            "js/presentation/forest-legacy-panel.js#legacyBlock (ui)",
+            "js/presentation/forest-atlas-panel.js#legacyBlock (atlas wiring)",
+            "js/presentation/management-ui.js#protectForestRegion (ui action)",
+            "js/simulation/simulation.js#updateForestLegacy (annual wiring)",
+            "js/core/data-packs.js#getDataPackForests (modding)",
+            "js/systems/scenario.js#createScenarioDefinition (community scenario)",
+            "js/core/save-runtime.js#createSaveSnapshot (persistence)",
+            "js/core/save-validation.js#validateForestLegacySnapshot (save validation)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.298",
+          "label": "Browser tests for every forest region",
+          "key": "Browser-Tests für jede Waldregion",
+          "group": "FOREST LEGACY",
+          "status": "implemented",
+          "docEvidence": "FOREST_LEGACY_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-legacy.test.js",
+            "tests/browser/forest-legacy-mobile.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-legacy-data.js#FOREST_LEGACY_REQUIREMENTS (catalog)",
+            "js/world/forest-legacy-data.js#FOREST_LEGACY_REGIONS (regional woods)",
+            "js/systems/forest-legacy.js#forestLegacySummary (simulation)",
+            "js/systems/forest-legacy.js#updateForestLegacy (annual pass)",
+            "js/systems/forest-legacy.js#applyForestHazard (hazard events)",
+            "js/systems/forest-legacy.js#afforestForestRegion (planting action)",
+            "js/systems/forest-legacy.js#reintroduceForestSpecies (reintroduction)",
+            "js/presentation/forest-legacy-panel.js#legacyBlock (ui)",
+            "js/presentation/forest-atlas-panel.js#legacyBlock (atlas wiring)",
+            "js/presentation/management-ui.js#protectForestRegion (ui action)",
+            "js/simulation/simulation.js#updateForestLegacy (annual wiring)",
+            "js/core/data-packs.js#getDataPackForests (modding)",
+            "js/systems/scenario.js#createScenarioDefinition (community scenario)",
+            "js/core/save-runtime.js#createSaveSnapshot (persistence)",
+            "js/core/save-validation.js#validateForestLegacySnapshot (save validation)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.299",
+          "label": "Long-term soaks for growth and species shift",
+          "key": "Langzeit-Soaks für Waldwachstum und Artenverschiebung",
+          "group": "FOREST LEGACY",
+          "status": "implemented",
+          "docEvidence": "FOREST_LEGACY_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-legacy.test.js",
+            "tests/browser/forest-legacy-mobile.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-legacy-data.js#FOREST_LEGACY_REQUIREMENTS (catalog)",
+            "js/world/forest-legacy-data.js#FOREST_LEGACY_REGIONS (regional woods)",
+            "js/systems/forest-legacy.js#forestLegacySummary (simulation)",
+            "js/systems/forest-legacy.js#updateForestLegacy (annual pass)",
+            "js/systems/forest-legacy.js#applyForestHazard (hazard events)",
+            "js/systems/forest-legacy.js#afforestForestRegion (planting action)",
+            "js/systems/forest-legacy.js#reintroduceForestSpecies (reintroduction)",
+            "js/presentation/forest-legacy-panel.js#legacyBlock (ui)",
+            "js/presentation/forest-atlas-panel.js#legacyBlock (atlas wiring)",
+            "js/presentation/management-ui.js#protectForestRegion (ui action)",
+            "js/simulation/simulation.js#updateForestLegacy (annual wiring)",
+            "js/core/data-packs.js#getDataPackForests (modding)",
+            "js/systems/scenario.js#createScenarioDefinition (community scenario)",
+            "js/core/save-runtime.js#createSaveSnapshot (persistence)",
+            "js/core/save-validation.js#validateForestLegacySnapshot (save validation)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.1.300",
+          "label": "Roadmap guardrails for new forest types",
+          "key": "Roadmap-Leitplanken, damit neue Waldtypen Save-Kompatibilität, Determinismus und Performance nicht brechen",
+          "group": "FOREST LEGACY",
+          "status": "implemented",
+          "docEvidence": "FOREST_LEGACY_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/forest-legacy.test.js",
+            "tests/browser/forest-legacy-mobile.mjs"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/forest-legacy-data.js#FOREST_LEGACY_REQUIREMENTS (catalog)",
+            "js/world/forest-legacy-data.js#FOREST_LEGACY_REGIONS (regional woods)",
+            "js/systems/forest-legacy.js#forestLegacySummary (simulation)",
+            "js/systems/forest-legacy.js#updateForestLegacy (annual pass)",
+            "js/systems/forest-legacy.js#applyForestHazard (hazard events)",
+            "js/systems/forest-legacy.js#afforestForestRegion (planting action)",
+            "js/systems/forest-legacy.js#reintroduceForestSpecies (reintroduction)",
+            "js/presentation/forest-legacy-panel.js#legacyBlock (ui)",
+            "js/presentation/forest-atlas-panel.js#legacyBlock (atlas wiring)",
+            "js/presentation/management-ui.js#protectForestRegion (ui action)",
+            "js/simulation/simulation.js#updateForestLegacy (annual wiring)",
+            "js/core/data-packs.js#getDataPackForests (modding)",
+            "js/systems/scenario.js#createScenarioDefinition (community scenario)",
+            "js/core/save-runtime.js#createSaveSnapshot (persistence)",
+            "js/core/save-validation.js#validateForestLegacySnapshot (save validation)"
+          ],
+          "probe": null
+        }
+      ],
+      "consumers": [
+        {
+          "file": "js/world/forest-legacy-data.js",
+          "symbol": "FOREST_LEGACY_REQUIREMENTS",
+          "role": "catalog",
+          "valid": true
+        },
+        {
+          "file": "js/world/forest-legacy-data.js",
+          "symbol": "FOREST_LEGACY_REGIONS",
+          "role": "regional woods",
+          "valid": true
+        },
+        {
+          "file": "js/systems/forest-legacy.js",
+          "symbol": "forestLegacySummary",
+          "role": "simulation",
+          "valid": true
+        },
+        {
+          "file": "js/systems/forest-legacy.js",
+          "symbol": "updateForestLegacy",
+          "role": "annual pass",
+          "valid": true
+        },
+        {
+          "file": "js/systems/forest-legacy.js",
+          "symbol": "applyForestHazard",
+          "role": "hazard events",
+          "valid": true
+        },
+        {
+          "file": "js/systems/forest-legacy.js",
+          "symbol": "afforestForestRegion",
+          "role": "planting action",
+          "valid": true
+        },
+        {
+          "file": "js/systems/forest-legacy.js",
+          "symbol": "reintroduceForestSpecies",
+          "role": "reintroduction",
+          "valid": true
+        },
+        {
+          "file": "js/presentation/forest-legacy-panel.js",
+          "symbol": "legacyBlock",
+          "role": "ui",
+          "valid": true
+        },
+        {
+          "file": "js/presentation/forest-atlas-panel.js",
+          "symbol": "legacyBlock",
+          "role": "atlas wiring",
+          "valid": true
+        },
+        {
+          "file": "js/presentation/management-ui.js",
+          "symbol": "protectForestRegion",
+          "role": "ui action",
+          "valid": true
+        },
+        {
+          "file": "js/simulation/simulation.js",
+          "symbol": "updateForestLegacy",
+          "role": "annual wiring",
+          "valid": true
+        },
+        {
+          "file": "js/core/data-packs.js",
+          "symbol": "getDataPackForests",
+          "role": "modding",
+          "valid": true
+        },
+        {
+          "file": "js/systems/scenario.js",
+          "symbol": "createScenarioDefinition",
+          "role": "community scenario",
+          "valid": true
+        },
+        {
+          "file": "js/core/save-runtime.js",
+          "symbol": "createSaveSnapshot",
+          "role": "persistence",
+          "valid": true
+        },
+        {
+          "file": "js/core/save-validation.js",
+          "symbol": "validateForestLegacySnapshot",
+          "role": "save validation",
+          "valid": true
+        }
+      ],
+      "tests": [
+        {
+          "file": "tests/systems/forest-legacy.test.js",
+          "valid": true
+        },
+        {
+          "file": "tests/browser/forest-legacy-mobile.mjs",
+          "valid": true
+        }
+      ],
+      "source": "js/world/forest-legacy-data.js",
+      "note": "30 player-facing long-term forest requirements from FOREST_LEGACY_REQUIREMENTS; each names its live consumer in the atlas.",
       "probeFunction": null,
       "probeClimate": "temperate",
       "probeExtra": {},

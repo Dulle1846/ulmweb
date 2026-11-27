@@ -4,7 +4,7 @@
 // same normalized pack feeds the start-screen scenario cards and the world
 // map's province labels, so a pack has a visible consumer without creating a
 // second scenario or world system.
-import { createScenarioDefinition } from "../systems/scenario.js";
+import { createScenarioDefinition, SCENARIO_CLIMATES } from "../systems/scenario.js";
 import { WORLD_REGION_IDS, regionIsKnown } from "../world/world-regions.js";
 
 export const DATA_PACK_FORMAT = "kings-and-cards-data-pack";
@@ -15,6 +15,8 @@ export const DATA_PACK_LIMIT = 3;
 export const DATA_PACK_SCENARIO_LIMIT = 6;
 export const DATA_PACK_SCENARIO_TOTAL_LIMIT = 12;
 export const DATA_PACK_REGION_LIMIT = WORLD_REGION_IDS.length;
+export const DATA_PACK_FOREST_LIMIT = 6;
+export const DATA_PACK_FOREST_SPECIES_LIMIT = 8;
 export const DATA_PACK_MAX_BYTES = 96_000;
 export const DATA_PACK_NAME_LIMIT = 48;
 export const DATA_PACK_DESCRIPTION_LIMIT = 240;
@@ -23,9 +25,9 @@ const SEMVER = /^\d+\.\d+\.\d+$/;
 const PACK_ID = /^[a-z0-9][a-z0-9-]{2,31}$/;
 const SCENARIO_ID = /^[a-z0-9][a-z0-9-]{2,63}$/;
 const FORBIDDEN_KEYS = new Set(["__proto__", "prototype", "constructor", "script", "code", "eval", "function", "html", "src"]);
-const PACK_KEYS = new Set(["format", "formatVersion", "id", "name", "author", "version", "gameVersion", "description", "scenarios", "regions"]);
+const PACK_KEYS = new Set(["format", "formatVersion", "id", "name", "author", "version", "gameVersion", "description", "scenarios", "regions", "forests"]);
 const SCENARIO_KEYS = new Set([
-    "id", "name", "description", "difficulty", "recommendedClimate", "startDay",
+    "id", "name", "description", "difficulty", "recommendedClimate", "forestType", "startDay",
     "resources", "morale", "legitimacy", "objective", "reward", "failure",
     // Written back by createScenarioDefinition when a normalized pack is
     // stored. They are derived values, never executable content.
@@ -35,6 +37,8 @@ const OBJECTIVE_KEYS = new Set(["type", "target", "deadlineYear", "deadlineDay"]
 const STORE_KEYS = new Set(["wood", "stone", "gold", "food"]);
 const EFFECT_KEYS = new Set(["wood", "stone", "gold", "food", "morale", "legitimacy"]);
 const REGION_KEYS = new Set(["id", "name"]);
+const FOREST_KEYS = new Set(["id", "baseId", "packId", "name", "label", "description", "climate", "climates", "palette", "species", "rare"]);
+const FOREST_SPECIES_KEYS = new Set(["id", "name", "label", "kind", "share"]);
 
 function rejectUnknownKeys(source, allowed, path) {
     for (const key of Object.keys(source)) {
@@ -121,11 +125,19 @@ function safeJsonValue(value, path, depth = 0) {
     throw new Error(path + " contains a non-data value.");
 }
 
-function normalizeScenarioScenario(raw, packId, index) {
+function normalizeScenarioScenario(raw, packId, index, forests = []) {
     if (!raw || typeof raw !== "object" || Array.isArray(raw)) throw new Error("scenario " + (index + 1) + " must be an object.");
     safeJsonValue(raw, "scenarios[" + index + "]");
     const path = "scenario " + (index + 1);
     rejectUnknownKeys(raw, SCENARIO_KEYS, path);
+    let forestType = null;
+    if (raw.forestType !== undefined && raw.forestType !== null && raw.forestType !== "") {
+        const requested = safeText(raw.forestType, path + " forestType", { min: 3, max: 64, allowEmpty: false }).toLowerCase();
+        if (!SCENARIO_ID.test(requested)) throw new Error(path + " forestType must use lowercase letters, numbers and single hyphens.");
+        const match = forests.find(forest => forest.id === requested || forest.baseId === requested || forest.id.endsWith("-" + requested));
+        if (!match) throw new Error(path + " forestType does not name a forest in this pack.");
+        forestType = match.id;
+    }
     for (const [field, allowed] of [["resources", STORE_KEYS], ["objective", OBJECTIVE_KEYS], ["reward", EFFECT_KEYS], ["failure", EFFECT_KEYS]]) {
         if (raw[field] === undefined) continue;
         if (!raw[field] || typeof raw[field] !== "object" || Array.isArray(raw[field])) {
@@ -140,10 +152,54 @@ function normalizeScenarioScenario(raw, packId, index) {
     const id = (prefix + base).slice(0, 64);
     if (!SCENARIO_ID.test(id)) throw new Error("scenario " + (index + 1) + " id is invalid after namespacing.");
     try {
-        return createScenarioDefinition({ ...raw, id });
+        return createScenarioDefinition({ ...raw, id, ...(forestType ? { forestType } : {}) });
     } catch (error) {
         throw new Error("scenario " + (index + 1) + ": " + (error?.message || "invalid scenario definition"));
     }
+}
+
+function normalizeForest(raw, packId, index) {
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) throw new Error("forest " + (index + 1) + " must be an object.");
+    safeJsonValue(raw, "forests[" + index + "]");
+    const path = "forest " + (index + 1);
+    rejectUnknownKeys(raw, FOREST_KEYS, path);
+    const rawId = safeText(raw.id, path + " id", { min: 3, max: 48, allowEmpty: false }).toLowerCase();
+    if (!SCENARIO_ID.test(rawId)) throw new Error(path + " id must use lowercase letters, numbers and single hyphens.");
+    const localId = rawId.startsWith(packId + "-") ? rawId.slice(packId.length + 1) : rawId;
+    const forestId = (packId + "-" + localId).slice(0, 64);
+    const label = safeText(raw.label ?? raw.name, path + " name", { min: 3, max: 64, allowEmpty: false });
+    const description = safeText(raw.description ?? "A player-authored regional woodland.", path + " description", { max: 240 });
+    const climates = raw.climates !== undefined ? raw.climates : [raw.climate || "temperate"];
+    if (!Array.isArray(climates) || !climates.length || climates.length > 4) throw new Error(path + " must name one to four climates.");
+    const cleanClimates = climates.map(value => safeText(value, path + " climate", { min: 3, max: 24, allowEmpty: false }).toLowerCase());
+    if (cleanClimates.some(value => !SCENARIO_CLIMATES.includes(value))) throw new Error(path + " uses an unknown climate.");
+    const palette = raw.palette === undefined ? ["#315b38", "#507b49", "#6d8e55"] : raw.palette;
+    if (!Array.isArray(palette) || palette.length < 2 || palette.length > 8) throw new Error(path + " needs two to eight palette colours.");
+    const cleanPalette = palette.map(value => safeText(value, path + " palette", { min: 4, max: 16, allowEmpty: false }));
+    if (cleanPalette.some(value => !/^#[0-9a-f]{3,8}$/i.test(value))) throw new Error(path + " contains an invalid palette colour.");
+    const species = raw.species;
+    if (!Array.isArray(species) || species.length < 2 || species.length > DATA_PACK_FOREST_SPECIES_LIMIT) {
+        throw new Error(path + " needs two to " + DATA_PACK_FOREST_SPECIES_LIMIT + " species.");
+    }
+    const cleanSpecies = species.map((row, speciesIndex) => {
+        if (!row || typeof row !== "object" || Array.isArray(row)) throw new Error(path + " species " + (speciesIndex + 1) + " must be an object.");
+        rejectUnknownKeys(row, FOREST_SPECIES_KEYS, path + " species " + (speciesIndex + 1));
+        const id = safeText(row.id ?? row.name, path + " species id", { min: 2, max: 48, allowEmpty: false }).toLowerCase();
+        if (!SCENARIO_ID.test(id)) throw new Error(path + " species id must use lowercase letters, numbers and single hyphens.");
+        const localId = id.startsWith(packId + "-") ? id.slice(packId.length + 1) : id;
+        return {
+            id: (packId + "-" + localId).slice(0, 48),
+            label: safeText(row.label ?? row.name, path + " species label", { min: 2, max: 48, allowEmpty: false }),
+            kind: row.kind === "animal" ? "animal" : "tree",
+            share: Math.max(1, Math.min(100, Math.floor(Number(row.share) || 20))),
+        };
+    });
+    if (!cleanSpecies.some(row => row.kind === "tree")) throw new Error(path + " needs at least one tree species.");
+    return {
+        id: forestId, baseId: localId, label, description, climates: cleanClimates,
+        palette: cleanPalette, species: cleanSpecies, rare: Boolean(raw.rare),
+        packId,
+    };
 }
 
 function normalizeRegionOverride(raw, index) {
@@ -178,14 +234,24 @@ export function validateDataPack(input) {
     const description = safeText(input.description ?? "", "pack description", { max: DATA_PACK_DESCRIPTION_LIMIT });
     const rawScenarios = input.scenarios === undefined ? [] : input.scenarios;
     const rawRegions = input.regions === undefined ? [] : input.regions;
+    const rawForests = input.forests === undefined ? [] : input.forests;
     if (!Array.isArray(rawScenarios) || rawScenarios.length > DATA_PACK_SCENARIO_LIMIT) {
         throw new Error("A pack may contain at most " + DATA_PACK_SCENARIO_LIMIT + " scenarios.");
     }
     if (!Array.isArray(rawRegions) || rawRegions.length > DATA_PACK_REGION_LIMIT) {
         throw new Error("A pack may contain at most " + DATA_PACK_REGION_LIMIT + " province labels.");
     }
-    if (!rawScenarios.length && !rawRegions.length) throw new Error("A pack must contain at least one scenario or province label.");
-    const scenarios = rawScenarios.map((raw, index) => normalizeScenarioScenario(raw, id, index));
+    if (!Array.isArray(rawForests) || rawForests.length > DATA_PACK_FOREST_LIMIT) {
+        throw new Error("A pack may contain at most " + DATA_PACK_FOREST_LIMIT + " forest types.");
+    }
+    if (!rawScenarios.length && !rawRegions.length && !rawForests.length) throw new Error("A pack must contain at least one scenario, province label or forest type.");
+    const forests = rawForests.map((raw, index) => normalizeForest(raw, id, index));
+    const seenForests = new Set();
+    for (const forest of forests) {
+        if (seenForests.has(forest.id)) throw new Error("A pack cannot contain two forest types with the same id.");
+        seenForests.add(forest.id);
+    }
+    const scenarios = rawScenarios.map((raw, index) => normalizeScenarioScenario(raw, id, index, forests));
     const seenScenarios = new Set();
     for (const scenario of scenarios) {
         if (seenScenarios.has(scenario.id)) throw new Error("A pack cannot contain two scenarios with the same id.");
@@ -207,7 +273,8 @@ export function validateDataPack(input) {
         gameVersion,
         description,
         scenarios,
-        regions
+        regions,
+        forests
     };
 }
 
@@ -317,6 +384,15 @@ export function getDataPackRegionLabel(regionId, storage = null) {
     return null;
 }
 
+export function getDataPackForests(storage = null) {
+    const packs = storage ? packsFromStorage(storage) : ensureDataPacksLoaded();
+    return packs.flatMap(pack => (pack.forests || []).map(forest => ({
+        ...forest,
+        packId: pack.id,
+        packName: pack.name,
+    })));
+}
+
 export function getDataPackScenarioLabel(scenarioId, storage = null) {
     const id = String(scenarioId || "");
     const packs = storage ? packsFromStorage(storage) : ensureDataPacksLoaded();
@@ -334,6 +410,7 @@ export function getDataPackSummary(storage = null) {
         author: pack.author,
         version: pack.version,
         scenarios: pack.scenarios.length,
-        regions: pack.regions.length
+        regions: pack.regions.length,
+        forests: (pack.forests || []).length
     }));
 }

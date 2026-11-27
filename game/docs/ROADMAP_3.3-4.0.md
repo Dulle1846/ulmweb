@@ -162,7 +162,8 @@ Art:
 - Long-term world history, chronicles and generational change.
 - Scenario editor and multiple start conditions. **Implemented in 3.49.0:** five authored openings, a local custom editor and a daily objective that reads the live realm; see [SCENARIOS.md](SCENARIOS.md).
 - Save migration and world simulation performance for long campaigns.
-- Optional mod/data packs only after schema and security boundaries are stable. **Implemented in 3.69.0:** a versioned, size-bounded JSON pack with a closed schema, forbidden-key/markup checks, semantic game-version compatibility, local storage and exactly two consumers (start-screen scenarios and province labels); no code execution or save mutation; see [DATA_PACKS.md](DATA_PACKS.md).
+- Optional mod/data packs only after schema and security boundaries are stable. **Implemented in 3.69.0:** a versioned, size-bounded JSON pack with a closed schema, forbidden-key/markup checks, semantic game-version compatibility, local storage and exactly two consumers (start-screen scenarios and province labels); no code execution or save mutation; see [DATA_PACKS.md](DATA_PACKS.md). **Extended in 3.89.0:** validated `forests` data and a scenario `forestType` binding feed the shared ten-province forest legacy ledger; new forest types must keep the guardrails in [FOREST_LEGACY.md](FOREST_LEGACY.md).
+- Long-term forest systems, regional catastrophes, conservation and memory. **Implemented in 3.89.0:** ten province woods share one bounded annual pass, additive optional save state, six regional hazards, succession/climate migration/extinction and return, seed and gene banks, nursery, museum, monuments and tree rings, plus reference seeds, a 300-year soak and a mobile browser proof; see [FOREST_LEGACY.md](FOREST_LEGACY.md).
 
 ## Cross-cutting requirements for every version
 

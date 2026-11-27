@@ -35,6 +35,7 @@ import { forestFaunaEcologyFor, forestFaunaEcologySummary } from "../world/fores
 import { cleanBiomeWater, craftBiomeGoods, drainBiomeRegion, harvestBiomeResource, huntBiomeSpecies, irrigateBiomeRegion, reforestBiomeRegion, reintroduceBiomeSpecies, restoreBiomeRegion, sellBiomeCraft, sellBiomeGoods, setBiomeFocus, setBiomePolicy, setBiomeProtection, slashAndBurnBiomeRegion, surveyBiomeRegion } from "../systems/biome-resource-state.js";
 import { renderBiomePanel } from "./biome-panel.js";
 import { invalidateForestAtlasSurvey, renderForestAtlasPanel } from "./forest-atlas-panel.js";
+import { afforestForestRegion, buildForestInstitution, designateForestMonument, fundCitizenScience, protectForestRegion, reintroduceForestSpecies, setForestConservationLaw } from "../systems/forest-legacy.js";
 import { previewForestAmbience } from "../core/forest-ambience.js";
 import { forestPresentationProfile } from "../world/forest-presentation.js";
 import { forestMapFilters, forestPresentationSummary, resetForestMapFilters, setForestMapFilter } from "../systems/forest-presentation.js";
@@ -2163,7 +2164,44 @@ export function setupManagementUI(){
    else toast(String(result.reason||"FOREST BATCH FAILED").toUpperCase());
    return;
   }
-     const warAction=e.target.closest("[data-war-action]");
+     const legacyRegionAction=e.target.closest("[data-legacy-region-action]");
+  if(legacyRegionAction){
+   const action=legacyRegionAction.dataset.legacyRegionAction;
+   const region=legacyRegionAction.dataset.legacyRegion;
+   let result;
+   switch(action){
+    case "protect": result=protectForestRegion(region); break;
+    case "afforest": result=afforestForestRegion(region); break;
+    case "reintroduce": result=reintroduceForestSpecies(region); break;
+    case "monument": result=designateForestMonument(region); break;
+    default: result={ok:false,reason:"Unknown forest legacy action"};
+   }
+   if(result.ok){toast(String(result.message||"FOREST LEGACY ACTION COMPLETE").toUpperCase());renderUI();render();}
+   else toast(String(result.reason||"FOREST LEGACY ACTION FAILED").replaceAll("-"," ").toUpperCase());
+   return;
+  }
+  const legacyBuild=e.target.closest("[data-legacy-build]");
+  if(legacyBuild){
+   const result=buildForestInstitution(legacyBuild.dataset.legacyBuild);
+   if(result.ok){toast(String(result.message||"FOREST INSTITUTION RAISED").toUpperCase());renderUI();render();}
+   else toast(String(result.reason||"FOREST INSTITUTION FAILED").replaceAll("-"," ").toUpperCase());
+   return;
+  }
+  const legacyLaw=e.target.closest("[data-legacy-law]");
+  if(legacyLaw){
+   const result=setForestConservationLaw(legacyLaw.dataset.legacyLaw);
+   if(result.ok){toast(String(result.message||"FOREST LAW ENACTED").toUpperCase());renderUI();render();}
+   else toast(String(result.reason||"FOREST LAW FAILED").replaceAll("-"," ").toUpperCase());
+   return;
+  }
+  const legacyCitizen=e.target.closest("[data-legacy-citizen]");
+  if(legacyCitizen){
+   const result=fundCitizenScience();
+   if(result.ok){toast(String(result.message||"CITIZEN SCIENCE RAISED").toUpperCase());renderUI();render();}
+   else toast(String(result.reason||"CITIZEN SCIENCE FAILED").replaceAll("-"," ").toUpperCase());
+   return;
+  }
+  const warAction=e.target.closest("[data-war-action]");
   if(warAction){
    const realm=warAction.dataset.warRealm;
    const action=warAction.dataset.warAction;

@@ -24,6 +24,7 @@ import {
 } from "../world/forest-industries.js";
 import { forestIndustrySummary } from "../systems/forest-industries.js";
 import { forestCultureSummary } from "../systems/forest-culture.js";
+import { legacyBlock } from "./forest-legacy-panel.js";
 import { forestWarfareSummary } from "../systems/forest-warfare.js";
 import { forestGuildSummary } from "../systems/forest-guild.js";
 import { forestMasterworkArchive } from "../systems/forest-industries.js";
@@ -1237,6 +1238,7 @@ export function renderForestAtlasPanel() {
         + presentationBlock()
         + industryBlock()
         + cultureBlock()
+        + legacyBlock()
         + warfareBlock()
         + regionHistoryBlock(survey)
         + faunaFieldGuide(survey)

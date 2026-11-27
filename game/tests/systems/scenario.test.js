@@ -80,6 +80,28 @@ test("custom scenarios are bounded and reject a deadline before the opening", ()
     assert.equal(clamped.objective.target, 100);
 });
 
+test("a community scenario can pin one custom regional forest through the real start path", () => {
+    resetState();
+    state.legacy = createLegacyState({ foundedYear: 1 });
+    const definition = createCustomScenario({
+        id: "custom-silver-wood",
+        name: "Silver Wood",
+        description: "A community opening in a planted birch wood.",
+        forestType: "northern-lore-silver-birch-wood",
+        objective: { type: "food", target: 100, deadlineYear: 2, deadlineDay: 0 }
+    });
+    assert.equal(definition.forestType, "northern-lore-silver-birch-wood");
+    const scenario = applyScenarioStart(definition);
+    assert.equal(scenario.forestType, "northern-lore-silver-birch-wood");
+    assert.equal(normalizeScenarioState(scenario).forestType, "northern-lore-silver-birch-wood");
+    assert.equal(validateScenarioState(scenario), true);
+    assert.throws(() => createCustomScenario({
+        ...definition,
+        id: "custom-bad-wood",
+        forestType: "../outside"
+    }), /forestType/i);
+});
+
 test("the free realm starts without an authored objective", () => {
     resetState();
     state.legacy = createLegacyState({ foundedYear: 1 });

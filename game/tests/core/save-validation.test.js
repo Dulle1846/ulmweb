@@ -202,6 +202,19 @@ test("invalid incomeThisTick values are rejected for every resource", () => {
     }
 });
 
+test("the optional forest-legacy ledger is validated without breaking older saves", () => {
+    assert.equal(validateSaveSnapshot(validSnapshot()), true, "a pre-3.89 save has no ledger and stays valid");
+    assert.equal(validateSaveSnapshot(validSnapshot({
+        forestLegacy: { version: 1, seed: 27101, regions: [] }
+    })), true);
+    assert.throws(() => validateSaveSnapshot(validSnapshot({
+        forestLegacy: { version: 999, seed: 27101, regions: [] }
+    })), /forest-legacy version/i);
+    assert.throws(() => validateSaveSnapshot(validSnapshot({
+        forestLegacy: { version: 1, seed: 0, regions: [] }
+    })), /forest-legacy seed/i);
+});
+
 test("newer save schemas are rejected with a typed error", () => {
     rejects(validSnapshot({ saveSchemaVersion: SAVE_SCHEMA_VERSION + 1 }), {
         code: "NEWER_SAVE_VERSION", field: "saveSchemaVersion", phase: "structure"

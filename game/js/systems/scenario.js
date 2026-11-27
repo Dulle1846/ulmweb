@@ -112,6 +112,8 @@ function normalizeDefinition(input = {}) {
     const recommendedClimate = SCENARIO_CLIMATES.includes(source.recommendedClimate) ? source.recommendedClimate : "temperate";
     const startDay = integer(source.startDay, 0, 399, 0);
     const startSeason = seasonFromDay(startDay);
+    const forestType = clean(source.forestType, 64).toLowerCase();
+    if (forestType && !/^[a-z0-9][a-z0-9-]{2,63}$/.test(forestType)) throw new Error("Scenario forestType is invalid.");
     const objective = normalizeObjective(source.objective);
     if (!objective) throw new Error("A scenario needs an objective.");
     if (deadlineAbsolute(objective) <= 400 + startDay) throw new Error("The scenario deadline must fall after its opening.");
@@ -123,6 +125,7 @@ function normalizeDefinition(input = {}) {
         description,
         difficulty: free ? "FREE" : difficulty,
         recommendedClimate,
+        forestType: forestType || null,
         startSeason,
         startDay,
         resources: stores(source.resources),

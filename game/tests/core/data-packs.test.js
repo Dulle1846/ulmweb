@@ -1,8 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-    DATA_PACK_FORMAT, DATA_PACK_GAME_VERSION, DATA_PACK_LIMIT, DATA_PACK_MAX_BYTES,
-    getDataPackRegionLabel, getDataPackScenarios, getDataPackSummary, installDataPack,
+    DATA_PACK_FOREST_LIMIT, DATA_PACK_FORMAT, DATA_PACK_GAME_VERSION, DATA_PACK_LIMIT, DATA_PACK_MAX_BYTES,
+    getDataPackForests, getDataPackRegionLabel, getDataPackScenarios, getDataPackSummary, installDataPack,
     parseDataPackText, readDataPackLibrary, removeDataPack, validateDataPack
 } from "../../js/core/data-packs.js";
 
@@ -30,6 +30,21 @@ function scenario(id = "long-thaw") {
         objective: { type: "food", target: 120, deadlineYear: 2, deadlineDay: 0 },
         reward: { food: 30, morale: 2 },
         failure: { morale: -3 }
+    };
+}
+
+function forest(overrides = {}) {
+    return {
+        id: "silver-birch-wood",
+        name: "Silver Birch Wood",
+        description: "A cool birch wood with a resident lynx.",
+        climates: ["temperate", "northern"],
+        palette: ["#6b7f58", "#9fb089"],
+        species: [
+            { id: "silver-birch", name: "Silver Birch", kind: "tree", share: 72 },
+            { id: "lynx", name: "Lynx", kind: "animal", share: 6 }
+        ],
+        ...overrides
     };
 }
 
@@ -67,6 +82,39 @@ test("a data pack validates into namespaced scenarios and known province labels"
     assert.equal(getDataPackRegionLabel("crown-heartland", storage), null);
     assert.deepEqual(getDataPackSummary(storage).map(row => row.name), ["Northern Lore"]);
     assert.equal(readDataPackLibrary(storage).length, 1);
+});
+
+test("a pack can add validated forest types and bind a scenario to one", () => {
+    const storage = memoryStorage();
+    const authored = pack({
+        scenarios: [{ ...scenario(), forestType: "silver-birch-wood" }],
+        regions: [],
+        forests: [forest()]
+    });
+    const normalized = validateDataPack(authored);
+    assert.equal(normalized.forests.length, 1);
+    assert.equal(normalized.forests[0].id, "northern-lore-silver-birch-wood");
+    assert.equal(normalized.forests[0].species.length, 2);
+    assert.equal(normalized.scenarios[0].forestType, "northern-lore-silver-birch-wood");
+    assert.equal(installDataPack(authored, storage).ok, true);
+    const installed = getDataPackForests(storage);
+    assert.equal(installed.length, 1);
+    assert.equal(installed[0].label, "Silver Birch Wood");
+    assert.equal(installed[0].packName, "Northern Lore");
+    assert.equal(installed[0].species[0].kind, "tree");
+    assert.equal(getDataPackSummary(storage)[0].forests, 1);
+    assert.equal(getDataPackScenarios(storage)[0].forestType, installed[0].id);
+});
+
+test("forest data is bounded, namespaced and refuses executable or empty content", () => {
+    assert.throws(() => validateDataPack(pack({ forests: [{ ...forest(), script: "alert(1)" }] })), /forbidden key/);
+    assert.throws(() => validateDataPack(pack({ forests: [forest({ species: [{ id: "fern", name: "Fern", kind: "animal" }, { id: "moth", name: "Moth", kind: "animal" }] })] })), /tree species/);
+    assert.throws(() => validateDataPack(pack({ forests: [forest({ climates: ["lunar"] })] })), /unknown climate/);
+    assert.throws(() => validateDataPack(pack({ forests: [forest({ palette: ["#gggggg", "#ffffff"] })] })), /invalid palette/);
+    assert.throws(() => validateDataPack(pack({ forests: [forest({ species: [] })] })), /two to/);
+    assert.throws(() => validateDataPack(pack({ forests: Array.from({ length: DATA_PACK_FOREST_LIMIT + 1 }, (_, index) => forest({ id: "wood-" + index })) })), /at most/);
+    assert.throws(() => validateDataPack(pack({ scenarios: [{ ...scenario(), forestType: "missing-wood" }], forests: [forest()] })), /does not name a forest/);
+    assert.equal(validateDataPack(pack({ scenarios: [], regions: [], forests: [forest()] })).forests.length, 1);
 });
 
 test("a pack is parsed from bounded JSON text and rejected when malformed", () => {

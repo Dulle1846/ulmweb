@@ -60,6 +60,7 @@ import { normalizeWorldMapSnapshot } from "../systems/world-map.js";
 import { restoreSpecialBiomeState, serializeSpecialBiomeState } from "../systems/special-biome-state.js";
 import { restoreEnvironmentalHazardState, serializeEnvironmentalHazardState } from "../systems/environmental-hazards.js";
 import { restoreBiomeAtlasState, serializeBiomeAtlasState } from "../systems/biome-resource-state.js";
+import { restoreForestLegacyState, serializeForestLegacyState } from "../systems/forest-legacy.js";
 import { restoreHand } from "../systems/cards.js";
 import { resolveSavedTerrainVersion } from "../world/terrain-model.js";
 import { initWorld } from "../world/world.js";
@@ -289,6 +290,7 @@ export function createSaveSnapshot() {
         specialBiomes: serializeSpecialBiomeState(),
         environmentalHazards: serializeEnvironmentalHazardState(),
         biomeAtlas: serializeBiomeAtlasState(),
+        forestLegacy: serializeForestLegacyState(),
         realmCycle: JSON.parse(JSON.stringify(state.realmCycle || createRealmCycleState())),
         court: JSON.parse(JSON.stringify(state.court || createCourtState())),
         nobility: serializeContractDto(state.nobility || createNobilityState()),
@@ -551,6 +553,9 @@ export function restoreSaveSnapshot(snapshot) {
     // discoveries, stocks, populations, policies and trade record. Old saves
     // without the field keep the deterministic generated baseline.
     restoreBiomeAtlasState(snapshot.biomeAtlas);
+    // The forest legacy ledger is additive and optional. A save written before
+    // 3.89.0 simply starts with a fresh deterministic ledger on the next tick.
+    restoreForestLegacyState(snapshot.forestLegacy);
     // Seats are reconciled against the restored buildings. A legacy save gets
     // its existing keep as a zero-balance seat without moving any resources.
     restoreSettlementOwners(snapshot.settlements);

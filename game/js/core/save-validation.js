@@ -29,6 +29,7 @@ import { validateExpeditionsState } from "../systems/expeditions.js";
 import { validateDisasterRecoveryState } from "../systems/disaster-recovery.js";
 import { validateSpecialBiomeState } from "../systems/special-biome-state.js";
 import { validateBiomeAtlasSnapshot } from "../systems/biome-resource-state.js";
+import { validateForestLegacySnapshot } from "../systems/forest-legacy.js";
 import { validateAiChronicleState } from "./ai-chronicle-state.js";
 import { validateEventTimelineState } from "./event-timeline.js";
 import { validateScenarioState } from "../systems/scenario.js";
@@ -231,6 +232,7 @@ export function validateSaveSnapshot(snapshot) {
             value => validateResourceGeographySnapshot(value, { count: savedCellCount }));
     }
     if (snapshot.biomeAtlas !== undefined) validateDomainSnapshot(snapshot.biomeAtlas, "biomeAtlas", validateBiomeAtlasSnapshot);
+    if (snapshot.forestLegacy !== undefined) validateDomainSnapshot(snapshot.forestLegacy, "forestLegacy", validateForestLegacySnapshot);
     if (snapshot.forestFauna !== undefined) validateDomainSnapshot(snapshot.forestFauna, "forestFauna", validateForestFaunaSnapshot);
     if (snapshot.forestGathering !== undefined) validateDomainSnapshot(snapshot.forestGathering, "forestGathering", validateForestGatheringSnapshot);
     if (snapshot.forestSuccession !== undefined) validateDomainSnapshot(snapshot.forestSuccession, "forestSuccession", validateForestSuccessionSnapshot);
