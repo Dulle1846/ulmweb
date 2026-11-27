@@ -1,13 +1,42 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.80.0`
+**Current production version:** `3.80.1`
 **Next development line:** `3.81.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
-**Last repository verification:** 2026-11-26 (UTC)
+**Last repository verification:** 2026-11-27 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.80.1 — Waldkultur im vollständigen Live-Spielerdurchlauf
+
+3.80.0 shipped the woodland culture, but only the atlas, grove tending and lore
+had been exercised on the deployed hosts. This patch is the result of a complete
+player-path run on both production hosts: every festival, offering, doctrine,
+grove action, hermit, school, remedy, hunt rite and calendar window is now
+clicked through the real Forest Atlas, saved, reloaded and compared, including
+a modified v1 culture save.
+
+- **One offering per season is now really per season.** The ledger only stored
+  the last honoured `year-season` key. A player could give honey in spring,
+  honour the other two seasons and then return to spring for a second honey
+  offering. `offeringYear` and the bounded `offeringSeasons` set now remember
+  every season already honoured; `lastOfferingKey` is kept for old saves and is
+  migrated into the new fields during normalization.
+- **A consecrated grove now anchors the home culture region.** The yearly pass
+  used to recompute the home profile from the nearest forest to the shrine and
+  could silently overwrite the region chosen at consecration. The profile and
+  calendar could therefore change after the first year, and lore collection
+  could offer a second region's six entries. `homeProfile` and the normalizer
+  now keep `homeRegion` on the oldest grove's `regionId` while a grove exists.
+- **Regression tests.** The culture suite now covers revisiting an already
+  honoured season and keeping the grove region stable across a yearly update,
+  in addition to the existing bounded-action and old-save checks.
+
+Production verification: full `npm test`, the deterministic 25-year campaign,
+the forest-industry browser reference and the complete live player run on both
+hosts. The 60-year endurance soak remains in the nightly workflow.
 
 ## 3.80.0 — Lebendige Haine, Jahresfeste und sechs Wissensarten
 

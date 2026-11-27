@@ -96,6 +96,8 @@ function emptyLedger() {
         nextConflictId: 1,
         lastOfferingKey: "",
         lastOfferingGood: "",
+        offeringYear: 0,
+        offeringSeasons: [],
         festivalYear: 0,
         festivalKind: "",
         festivalYears: { spring: 0, woodcut: 0, harvest: 0 },
@@ -176,6 +178,7 @@ export function normalizeForestCulture(value) {
         if (grove) ledger.groves.push(grove);
         if (ledger.groves.length >= FOREST_CULTURE_LIMITS.groves) break;
     }
+    if (FOREST_CULTURE_BY_REGION[ledger.groves[0]?.regionId]) ledger.homeRegion = ledger.groves[0].regionId;
     const seenLore = new Set();
     for (const entry of Array.isArray(source.lore) ? source.lore : []) {
         const lore = cleanLoreEntry(entry);
@@ -218,6 +221,11 @@ export function normalizeForestCulture(value) {
     ledger.nextConflictId = Math.max(1, Math.floor(number(source.nextConflictId, 1)));
     ledger.lastOfferingKey = cleanText(source.lastOfferingKey, 40);
     ledger.lastOfferingGood = ["honey", "herbs", "mushrooms"].includes(source.lastOfferingGood) ? source.lastOfferingGood : "";
+    const legacyOffering = /^(\d+)-([0-3])$/.exec(ledger.lastOfferingKey);
+    ledger.offeringYear = Math.max(0, Math.floor(number(source.offeringYear, legacyOffering ? legacyOffering[1] : 0)));
+    const offeringSeasons = Array.isArray(source.offeringSeasons) ? source.offeringSeasons : [];
+    if (legacyOffering) offeringSeasons.push(Number(legacyOffering[2]));
+    ledger.offeringSeasons = [...new Set(offeringSeasons.map(value => Math.floor(number(value, -1))).filter(value => value >= 0 && value <= 3))];
     ledger.festivalYear = Math.max(0, Math.floor(number(source.festivalYear)));
     ledger.festivalKind = ["spring", "woodcut", "harvest"].includes(source.festivalKind) ? source.festivalKind : "";
     ledger.festivalYears = {
@@ -253,6 +261,8 @@ export function ensureForestCulture() {
         && Array.isArray(current.conflicts) && Array.isArray(current.history)
         && Array.isArray(current.actions) && current.rights && typeof current.rights === "object"
         && current.festivalYears && typeof current.festivalYears === "object"
+        && (!current.groves.length || current.homeRegion === current.groves[0]?.regionId)
+        && Array.isArray(current.offeringSeasons) && Number.isFinite(Number(current.offeringYear))
         && Number.isFinite(Number(current.initiates)) && Number.isFinite(Number(current.apprentices))
         && Number.isFinite(Number(current.teachings)) && typeof current.remedyKey === "string"
         && current.groves.every(grove => grove && grove.trait && Number.isFinite(Number(grove.vitality)));
@@ -297,6 +307,11 @@ function anchorForHome() {
 }
 
 function homeProfile(ledger) {
+    const groveRegion = ledger.groves[0]?.regionId;
+    if (FOREST_CULTURE_BY_REGION[groveRegion]) {
+        ledger.homeRegion = groveRegion;
+        return FOREST_CULTURE_BY_REGION[groveRegion];
+    }
     const anchor = anchorForHome();
     if (!anchor) return null;
     const key = [state.worldSeed, state.worldW, state.worldH, anchor.id, Math.floor(anchor.x), Math.floor(anchor.y)].join("|");
@@ -521,9 +536,13 @@ function festivalReason(ledger, profile, grove, kind) {
     return { ok: true, reason: "Ready" };
 }
 
+function offeringUsed(ledger) {
+    return ledger.offeringYear === yearNow() && ledger.offeringSeasons.includes(seasonNow());
+}
+
 function offeringReason(ledger, grove, good) {
     if (!grove) return { ok: false, reason: "Consecrate a grove first" };
-    if (ledger.lastOfferingKey === yearNow() + "-" + seasonNow()) return { ok: false, reason: "This season has already been honoured" };
+    if (offeringUsed(ledger)) return { ok: false, reason: "This season has already been honoured" };
     if (!good) return { ok: false, reason: "No forest gift is available" };
     return { ok: true, reason: "Ready" };
 }
@@ -642,7 +661,11 @@ export function makeForestOffering(good = null) {
     const profile = forestCultureProfileFor(ledger.homeRegion) || homeProfile(ledger);
     if (!grove) return { ok: false, reason: "Consecrate a grove first" };
     if (!profile) return { ok: false, reason: "No living woodland found" };
-    if (ledger.lastOfferingKey === yearNow() + "-" + seasonNow()) return { ok: false, reason: "This season has already been honoured" };
+    if (ledger.offeringYear !== yearNow()) {
+        ledger.offeringYear = yearNow();
+        ledger.offeringSeasons = [];
+    }
+    if (offeringUsed(ledger)) return { ok: false, reason: "This season has already been honoured" };
     const requested = ["honey", "herbs", "mushrooms"].includes(good) ? good : (profile.offeringGood || "honey");
     const taken = takeRitualGood(requested);
     const chosen = taken || takeRitualGood(takeRitualGoodDry(profile.offeringGood));
@@ -662,6 +685,8 @@ export function makeForestOffering(good = null) {
     if (effects.morale) state.morale = clamp(number(state.morale, 50) + effects.morale, 0, 100);
     ledger.lastOfferingKey = yearNow() + "-" + seasonNow();
     ledger.lastOfferingGood = chosen;
+    ledger.offeringYear = yearNow();
+    ledger.offeringSeasons.push(seasonNow());
     ledger.offerings++;
     ledger.revision++;
     noteAction(ledger, "offering", "Offering of " + chosen + " at " + grove.label);

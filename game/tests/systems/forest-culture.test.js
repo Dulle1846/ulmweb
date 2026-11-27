@@ -157,6 +157,7 @@ test("offerings, festival, hunt rite and tree wedding are bounded and real", () 
     assert.ok(forestCultureSummary().favor > favor);
 
     state.seasonIndex = 0;
+    assert.equal(makeForestOffering().ok, false, "returning to an honoured season must not reopen its offering");
     const food = state.resources.food;
     const festival = holdForestFestival();
     assert.ok(festival.ok, festival.reason);
@@ -209,6 +210,19 @@ test("woodlore is bounded, deterministic and gives children regional names", () 
     assert.ok(rest.ok, "a v1 archive with three entries can collect the three new kinds");
     assert.equal(rest.added, 3);
     assert.equal(forestCultureSummary().lore.length, 6);
+});
+
+test("the consecrated grove keeps its regional culture stable across a year", () => {
+    setup();
+    assert.ok(dedicateSacredGrove().ok);
+    const groveRegion = forestCultureSummary().groves[0].regionId;
+    const otherRegion = FOREST_CULTURE_REGIONS.find(profile => profile.id !== groveRegion).id;
+    const ledger = state.economy.productionChains.forestCulture;
+    ledger.homeRegion = otherRegion;
+    assert.equal(forestCultureSummary().homeRegion, groveRegion, "the grove's region must anchor the culture profile");
+    state.year++;
+    updateForestCulture();
+    assert.equal(forestCultureSummary().homeRegion, groveRegion, "a year update must not drift away from the grove region");
 });
 
 test("the woodland branch adds five real technologies and its modifiers are bounded", () => {
@@ -355,6 +369,9 @@ test("old saves normalize to safe empty culture state and all counters stay boun
     assert.deepEqual(normalized.festivalYears, { spring: 0, woodcut: 0, harvest: 0 });
     assert.equal(normalized.doctrine, "balance");
     assert.equal(normalized.initiates, 0);
+    const legacyOffering = normalizeForestCulture({ lastOfferingKey: "8-2" });
+    assert.equal(legacyOffering.offeringYear, 8);
+    assert.deepEqual(legacyOffering.offeringSeasons, [2], "a legacy last-offering key must become a season lock");
     state.economy = {};
     const ensured = ensureForestCulture();
     assert.equal(ensured.version, 2);

@@ -1,6 +1,6 @@
 # Waldkultur, Religion, Gesellschaft und Wissen · 1.2.23.1.181–210
 
-**Status:** implementiert, verdrahtet und im Browser geprüft (v3.80.0)
+**Status:** implementiert, verdrahtet und live als Spielerdurchlauf geprüft (v3.80.1)
 **Datenmodell:** `js/world/forest-culture.js`
 **Laufzeit:** `js/systems/forest-culture.js`
 **Hain-Schutz:** `js/world/sacred-groves.js` (gelesen von Ernte, Jagd und Feuerwehr)
@@ -171,12 +171,18 @@ Die Technologien erscheinen im normalen Research-Panel und im neuen Zweig
 **Woodland**. Die Abschlusszahlen sind dynamisch (`TECHNOLOGIES.length`), nicht
 als „24“ fest verdrahtet.
 
-## Verifikation (v3.80.0)
+## Verifikation (v3.80.1)
 
-- `node --test tests/systems/forest-culture.test.js` — 13/13 grün: 30 Punkte,
+- `node --test tests/systems/forest-culture.test.js` — 14/14 grün: 30 Punkte,
   60 Profile, Druidenjob, Hain-Schutz, Hainalterung/Pflege, drei Feste, drei
   Gaben, Opfer/Jagd/Hochzeit, Rechte und Konflikt, sechs Lore-Arten,
-  Eremit/Schule/Remedien/Doktrin, Forschung, Save-Normalisierung v1→v2.
+  Eremit/Schule/Remedien/Doktrin, Forschung, stabiler Hain-Homeregion,
+  Save-Normalisierung v1→v2 und die jahreszeitübergreifende Gabensperre.
+- Live-Spielerdurchlauf auf beiden Produktions-Hosts: Hainweihe und
+  Hain-Schutz, Pflege, Kalenderfenster, Eremit, sechs Lore-Arten, Schule,
+  Remedien, Jagdinitiation, alle drei Feste und Gaben mit echten Kosten und
+  Sperren, alle drei Doktrinwechsel, ungepflegter Vitalitätsverlust, sowie
+  Export/Import und ein v1-Kultur-Save; 0 Seiten- und Konsolenfehler.
 - `npm test` — vollständiger Lauf, siehe Release-Changelog.
 - `npm run test:campaign` — 25 Jahre, `ok: true`, 10.040 Ticks.
 - `npm run spec:audit` — 1.712/1.712 Punkte, 0 offen; Abschnitt
@@ -188,6 +194,25 @@ als „24“ fest verdrahtet.
   Konsolenfehler. Screenshots:
   `artifacts/forest-industry-ui/forest-culture.png`,
   `forest-culture-roles.png`, `forest-culture-guide.png`.
+
+## Nachprüfung 3.80.1
+
+Der vollständige Live-Durchlauf deckte zwei Zustandsfehler auf, die behoben und
+in den Systemtests festgehalten sind:
+
+- **Gabe pro Jahreszeit war nur eine Gabe pro Besuch.** Der Ledger merkte sich
+  lediglich die zuletzt geehrte Jahreszeit. Nach Gaben im Frühling, Holzschlag
+  und Ernte wurde der Frühling beim Zurückschalten wieder freigeschaltet. Nun
+  speichert `offeringYear`/`offeringSeasons` alle in einem Jahr geehrten
+  Jahreszeiten; alte Saves werden aus `lastOfferingKey` migriert. Die
+  Beschränkung bleibt auf vier Jahreszeiten pro Jahr begrenzt.
+- **Die Kultur-Homeregion konnte nach einem Jahr wandern.** Die Hainweihe
+  setzte die Region des gewählten Hains, der jährliche Update berechnete sie
+  jedoch neu aus dem nächstgelegenen Wald und überschrieb sie. Dadurch konnten
+  Profil und Kalender wechseln und die Lore-Sammlung eine zweite Region
+  anbieten. Ein geweihter Hain ist jetzt der stabile Anker der Kulturregion;
+  die Normalisierung setzt `homeRegion` bei vorhandenem Hain auf dessen
+  `regionId` zurück.
 
 ## Bekannte Grenzen
 
