@@ -7,7 +7,7 @@ import {
     REGIONAL_FOREST_TYPES, REGIONAL_SPECIES, REGIONAL_BOUNTY_SEASONS,
     regionalCharacterFor, signatureTimberForRegionalType,
 } from "../world/regional-forests.js";
-import { FOREST_GOODS, forestStandAt } from "../world/forest-ecology.js";
+import { FOREST_GOODS, FOREST_SPECIES, forestStandAt } from "../world/forest-ecology.js";
 import { FOREST_MANAGEMENT_SYSTEMS } from "../world/forest-dynamics.js";
 import { forestFaunaEcologyFor, forestFaunaFieldGuide } from "../world/forest-fauna-ecology.js";
 import {
@@ -260,7 +260,10 @@ function meter(label, value, detail = "") {
 function speciesList(type) {
     const entries = Object.entries(type.species || {}).sort((a, b) => b[1] - a[1]);
     return entries.slice(0, 5).map(([id, weight]) => {
-        const species = REGIONAL_SPECIES[id] || {};
+        // Some regional mixes use the shared temperate/tropical species table
+        // rather than a 1.2.23.1-only record. Read both so every chip can
+        // explain its tree instead of showing a bare identifier.
+        const species = REGIONAL_SPECIES[id] || FOREST_SPECIES[id] || {};
         const label = species.label || id.replace(/-/g, " ");
         // 1.2.23.1.261: the chip explains the tree, not only its share.
         const tip = [
@@ -271,8 +274,8 @@ function speciesList(type) {
             species.firewood ? 'firewood ×' + Number(species.firewood).toFixed(2) : null,
             (species.understory || []).length ? 'understorey ' + species.understory.join(', ') : null,
         ].filter(Boolean).join(' · ');
-        return '<span class="forest-atlas__chip" tabindex="0" title="' + esc(tip) + '">'
-            + esc(label) + ' <b>' + Math.round(weight * 100) + '%</b></span>';
+        return '<button type="button" class="forest-atlas__chip" data-forest-tip="' + esc(tip)
+            + '" title="' + esc(tip) + '">' + esc(label) + ' <b>' + Math.round(weight * 100) + '%</b></button>';
     }).join("");
 }
 
@@ -285,8 +288,8 @@ function goodsList(type) {
         const tip = [label, good.category ? String(good.category) : null, use,
             good.season ? good.season + ' season' : null]
             .filter(Boolean).join(' · ');
-        return '<span class="forest-atlas__good" tabindex="0" title="' + esc(tip) + '">'
-            + esc(label) + ' <small>' + esc(use) + '</small></span>';
+        return '<button type="button" class="forest-atlas__good" data-forest-tip="' + esc(tip)
+            + '" title="' + esc(tip) + '">' + esc(label) + ' <small>' + esc(use) + '</small></button>';
     }).join("");
 }
 

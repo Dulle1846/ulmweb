@@ -1,6 +1,6 @@
 # Wald-Darstellung, Audio, UI und Accessibility 1.2.23.1.241–270
 
-**Status: implementiert, verdrahtet und im Browser geprüft (v3.84.0).**
+**Status: implementiert, verdrahtet und im Browser geprüft (v3.84.1).**
 
 Die dreißig Punkte bilden eine gemeinsame Präsentations-, Audio- und
 Zugänglichkeitsschicht über dem vorhandenen Waldmodell. Sie verändern keine
@@ -125,6 +125,12 @@ Einstellung für Interface und Wald.
   18 Filter, Filterwirkung, alle Einstellungen, die kombinierte
   Farbenblind-/Kontrastdarstellung, Schriftvergrößerung, Cache-Neuaufbau,
   symbolische Karte, Ambience-Status und die Untertitel-Live-Region.
+- `npm run test:forest-presentation-mobile` — echter Touch-Spielerpfad bei
+  390×844 und 768×1024: Gründung, Atlas, alle 30 Guide-Punkte, jeder der 18
+  Filter und der Reset, 23 Legende-Einträge, Baum- und Gut-Tooltip per Tap,
+  alle neun Wald-Einstellungen plus reduzierte Bewegung, Untertitel-Cue,
+  symbolische Karte, Speichern/Neuladen/Fortsetzen sowie Overflow- und
+  Überlappungsprüfungen. Dieselbe Reise läuft gegen beide Live-Hosts.
 - `npm test` und der deterministische 25-Jahres-Feldzug sind das Release-Gate;
   der 60-Jahres-Soak bleibt Nightly.
 

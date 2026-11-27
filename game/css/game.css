@@ -999,6 +999,9 @@ button:focus-visible, [role="button"]:focus-visible {
 .toggle span:before {position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#87918b;content:"";transition:transform 140ms ease,background 140ms ease}
 .toggle input:checked+span {background:rgba(177,143,83,.35);border-color:#d4b477}
 .toggle input:checked+span:before {transform:translateX(18px);background:#f1d79f}
+/* A 24px switch stays visually compact while its label grows to a full
+   44px touch target. */
+@media(pointer:coarse){.toggle{width:48px;height:44px;flex:0 0 48px}.toggle span{inset:10px 3px}}
 .shortcut-list {margin:20px 0}
 .shortcut-list h3 {margin:0 0 8px;color:#c9ad75;font-size:8px;letter-spacing:.17em}
 .shortcut-list>div {display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid rgba(221,190,126,.08);color:#aab5ad;font-size:10px}

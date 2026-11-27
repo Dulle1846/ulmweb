@@ -687,9 +687,9 @@ export const FOREST_PRESENTATION_POINTS = Object.freeze([
     }),
     Object.freeze({
         id: '1.2.23.1.261', group: 'ui', title: 'Tooltips for tree species and forest goods',
-        point: 'Hovering a species chip or a good explains its ecology and its use.',
-        consumer: 'forest-atlas-panel.js · species chips / goods chips title attributes',
-        detail: 'Every species chip carries its Latin name, its form, its timber and firewood character and its understorey role. Every good chip carries its category, its use and its season. The tooltip text is generated from the shared species and goods tables, so a new regional species or good appears with a correct tooltip without a second catalogue.',
+        point: 'Tapping or activating a species chip or a good explains its ecology and its use.',
+        consumer: 'forest-atlas-panel.js · species chips / goods chips + shared touch tooltip',
+        detail: 'Every species chip carries its Latin name, its form, its timber and firewood character and its understorey role. Every good chip carries its category, its use and its season. The same text opens in a shared tooltip on touch, remains available as the native title, and is generated from the shared species and goods tables, so a new regional species or good appears without a second catalogue.',
     }),
     Object.freeze({
         id: '1.2.23.1.262', group: 'ui', title: 'Filter by forest type, resource and protection',

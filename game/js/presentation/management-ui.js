@@ -207,6 +207,39 @@ function setNavigationActive(target){
  });
 }
 function toast(message){const el=$("action-toast");if(!el)return;el.textContent=message;el.classList.add("is-visible");setTimeout(()=>el.classList.remove("is-visible"),1800);}
+// Touch has no hover, so atlas explanations open on a real tap as a single
+// shared tooltip. Keyboard focus still exposes the same text through the
+// button's native title and the live tooltip region.
+function hideForestTip(){
+ const tip=$("forest-tip");
+ document.querySelectorAll("[data-forest-tip][aria-describedby='forest-tip']").forEach(target=>target.removeAttribute("aria-describedby"));
+ if(!tip)return;
+ tip.classList.add("hidden");
+ tip.setAttribute("aria-hidden","true");
+ tip.textContent="";
+}
+function showForestTip(target){
+ const tip=$("forest-tip"),text=target?.getAttribute("data-forest-tip");
+ if(!tip||!text)return;
+ hideForestTip();
+ tip.textContent=text;
+ tip.classList.remove("hidden");
+ tip.setAttribute("aria-hidden","false");
+ target.setAttribute("aria-describedby","forest-tip");
+ const anchor=target.getBoundingClientRect(),box=tip.getBoundingClientRect(),margin=8;
+ const half=box.width/2;
+ const left=Math.min(Math.max(margin+half,anchor.left+anchor.width/2),window.innerWidth-margin-half);
+ let top=anchor.bottom+8;
+ if(top+box.height>window.innerHeight-margin)top=Math.max(margin,anchor.top-box.height-8);
+ tip.style.left=Math.round(left)+"px";
+ tip.style.top=Math.round(top)+"px";
+}
+function toggleForestTip(target){
+ const open=target.getAttribute("aria-describedby")==="forest-tip";
+ hideForestTip();
+ if(!open)showForestTip(target);
+}
+
 function resourceCostLabel(cost){return Object.entries(cost||{}).map(([key,amount])=>amount+" "+String(key).toUpperCase()).join(" · ")||"no stores";}
 function meter(label,value){const v=Math.max(0,Math.min(100,Number(value)||0));return '<div class="command-meter"><span>'+esc(label)+'</span><i><b style="width:'+v+'%"></b></i><strong>'+Math.round(v)+'</strong></div>';}
 function intro(k,t,p){return '<div class="command-panel-intro"><span>'+esc(k)+'</span><h3>'+esc(t)+'</h3><p>'+esc(p)+'</p></div>';}
@@ -1905,7 +1938,9 @@ export function setupManagementUI(){
   if(!focusTimelineEvent(e.detail?.eventId))return;
   activePanel="chronicle";render(true);setCommandModalOpen(true);
  });
- $("command-close")?.addEventListener("click",()=>setCommandModalOpen(false));
+ $("command-close")?.addEventListener("click",()=>{hideForestTip();setCommandModalOpen(false);});
+ document.addEventListener("click",e=>{if(!e.target.closest?.("[data-forest-tip]"))hideForestTip();});
+ $("command-panel-content")?.addEventListener("scroll",hideForestTip,{passive:true});
  $("command-modal")?.addEventListener("click",e=>{if(e.target===$("command-modal"))setCommandModalOpen(false);});
  $("command-panel-content")?.addEventListener("input",e=>{
   if(e.target.id==="building-search"){
@@ -2192,6 +2227,12 @@ export function setupManagementUI(){
    else toast(String(result.reason||"MEDIATION FAILED").toUpperCase());
    return;
   }
+  const forestTipTarget=e.target.closest("[data-forest-tip]");
+  if(forestTipTarget){
+   e.preventDefault();
+   toggleForestTip(forestTipTarget);
+   return;
+  }
   // 1.2.23.1.262: filter chips re-render the atlas in place. The filter state
   // lives with the presentation system, so it also survives a panel reopen
   // without being written to the save.
@@ -2356,7 +2397,7 @@ export function setupManagementUI(){
   else if(action==="events")$("tab-0")?.click();
   else if(action==="save")$("save-btn")?.click();
  }));
- document.addEventListener("keydown",e=>{if(e.key==="Escape")setCommandModalOpen(false);});
+ document.addEventListener("keydown",e=>{if(e.key==="Escape"){hideForestTip();setCommandModalOpen(false);}});
  // The closed shell is kept in the layout tree, but Chromium still defers some
  // of its first style/layout work while it is invisible: opening the empty
  // dialog then cost 55-60 ms on a 4x-throttled device. Pay that layout once

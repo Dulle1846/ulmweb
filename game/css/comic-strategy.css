@@ -445,9 +445,9 @@
 .forest-atlas__timber strong{color:var(--ui-paper-text);font:700 8px/1.2 var(--ui-title-font,Georgia,serif);letter-spacing:.03em}
 .forest-atlas__timber span{color:var(--ui-paper-muted);font:700 6px/1.3 var(--ui-body-font,sans-serif);letter-spacing:.05em}
 .forest-atlas__chips,.forest-atlas__goods{display:flex;flex-wrap:wrap;gap:4px;padding:0 10px 8px}
-.forest-atlas__chip{padding:2px 6px;border:1px solid var(--ui-line);border-radius:999px;color:var(--ui-paper-text);font:700 6px/1.2 var(--ui-body-font,sans-serif);letter-spacing:.03em}
+.forest-atlas__chip{appearance:none;padding:2px 6px;border:1px solid var(--ui-line);border-radius:999px;background:transparent;color:var(--ui-paper-text);font:700 6px/1.2 var(--ui-body-font,sans-serif);letter-spacing:.03em;cursor:pointer;text-align:left}.forest-atlas__chip:focus-visible,.forest-atlas__good:focus-visible{outline:2px solid #f0d79a;outline-offset:2px}
 .forest-atlas__chip b{color:var(--color-antique-gold)}
-.forest-atlas__good{padding:2px 5px;border-radius:3px;background:rgba(0,0,0,.22);color:var(--ui-paper-muted);font:700 6px/1.2 var(--ui-body-font,sans-serif);letter-spacing:.04em;text-transform:capitalize}
+.forest-atlas__good{appearance:none;padding:2px 5px;border:0;border-radius:3px;background:rgba(0,0,0,.22);color:var(--ui-paper-muted);font:700 6px/1.2 var(--ui-body-font,sans-serif);letter-spacing:.04em;text-transform:capitalize;cursor:pointer;text-align:left}
 .forest-atlas__good small{display:block;font:500 5px/1.2 var(--ui-body-font,sans-serif);color:rgba(227,189,113,.85);text-transform:none;letter-spacing:0}
 .forest-atlas__field-guide{margin:10px 0 2px;border:1px solid rgba(120,160,110,.45);border-radius:6px;background:rgba(38,52,38,.2)}
 .forest-atlas__field-guide>summary{display:grid;grid-template-columns:auto minmax(0,1fr);gap:3px 10px;align-items:baseline;padding:9px 10px;cursor:pointer;list-style:none}
@@ -787,7 +787,7 @@ html.forest-font-large .forest-atlas__presentation p,
 html.forest-font-large .forest-atlas__presentation .command-note{font-size:10.5px;line-height:1.45}
 html.forest-font-large .forest-atlas__guide-point h4,
 html.forest-font-large .forest-atlas__legend-entry strong,
-html.forest-font-large .forest-atlas__presentation-settings strong{font-size:10.8px;line-height:1.35}
+html.forest-font-large .forest-atlas__presentation-settings strong{font-size:12.5px;line-height:1.35}
 html.forest-font-large .forest-atlas__field-guide>summary strong{font-size:12px}
 html.forest-font-xlarge .forest-atlas__profile,
 html.forest-font-xlarge .forest-atlas__chip,
@@ -802,15 +802,37 @@ html.forest-font-xlarge .forest-atlas__presentation p,
 html.forest-font-xlarge .forest-atlas__presentation .command-note{font-size:12px;line-height:1.5}
 html.forest-font-xlarge .forest-atlas__guide-point h4,
 html.forest-font-xlarge .forest-atlas__legend-entry strong,
-html.forest-font-xlarge .forest-atlas__presentation-settings strong{font-size:12.6px;line-height:1.35}
+html.forest-font-xlarge .forest-atlas__presentation-settings strong{font-size:14px;line-height:1.35}
 html.forest-font-xlarge .forest-atlas__field-guide>summary strong{font-size:14px}
 /* 1.2.23.1.267: the sound subtitle is a live region above the map, not a
    tooltip or a toast, so it never steals input and never hides the controls. */
 .forest-subtitle{position:fixed;z-index:1180;left:50%;bottom:58px;transform:translateX(-50%);max-width:min(92vw,720px);padding:6px 11px;border:1px solid rgba(214,191,150,.45);border-radius:4px;background:rgba(13,20,15,.92);color:#f2e6c9;font:700 9px/1.35 var(--ui-body-font,sans-serif);letter-spacing:.04em;text-align:center;text-wrap:balance;pointer-events:none;box-shadow:0 3px 12px rgba(0,0,0,.35)}
 .forest-subtitle.hidden{display:none}
+/* The subtitle stays a live region, but an open management panel owns the
+   viewport. Fading it out avoids covering the atlas without hiding the cue
+   from assistive technology. */
+body.ui-modal-open .forest-subtitle{opacity:0}
+/* One shared tooltip element serves every atlas species and goods button. */
+.forest-tip{position:fixed;z-index:1190;max-width:min(280px,calc(100vw - 16px));padding:7px 9px;border:1px solid rgba(214,191,150,.6);border-radius:4px;background:rgba(13,20,15,.97);color:#f2e6c9;font:600 10px/1.4 var(--ui-body-font,sans-serif);letter-spacing:.02em;text-align:left;transform:translateX(-50%);pointer-events:none;box-shadow:0 4px 16px rgba(0,0,0,.45)}
+.forest-tip.hidden{display:none}
 body.ui-forest-symbolic .forest-atlas__card{background:rgba(24,30,23,.55)}
+@media(max-width:900px),(pointer:coarse){
+ .forest-atlas__filter-chip{min-height:44px;padding:8px 11px;font-size:9px}
+ .forest-atlas__chip{min-height:40px;padding:8px 11px;font-size:9.5px}
+ .forest-atlas__good{min-height:42px;padding:7px 10px;font-size:9px}
+ .forest-atlas__good small{font-size:8px}
+ .forest-atlas__profile,
+ .forest-atlas__presentation p,
+ .forest-atlas__presentation .command-note{font-size:10px;line-height:1.45}
+ .forest-atlas__guide-point h4{font-size:12px}
+ .forest-atlas__guide-point p,
+ .forest-atlas__guide-point small{font-size:10px;line-height:1.5}
+ .forest-atlas__legend-entry strong{font-size:10.5px}
+ .forest-atlas__legend-entry small{font-size:9px;line-height:1.4}
+ .forest-atlas__presentation-settings small{font-size:9px}
+ .forest-atlas__presentation-settings strong{font-size:10.5px}
+}
 @media(max-width:620px){
  .forest-atlas__legend-grid{grid-template-columns:1fr}
- .forest-atlas__filter-chip{font-size:7px;min-height:26px}
  .forest-subtitle{bottom:70px;font-size:10px}
 }

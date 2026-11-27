@@ -1,6 +1,6 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.84.0`
+**Current production version:** `3.84.1`
 **Next development line:** `3.85.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
@@ -8,6 +8,30 @@
 **Last repository verification:** 2026-11-27 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.84.1 — Mobile Wald-Atlas und Touch-Bedienung
+
+The 3.84.0 forest presentation shipped without a real small-screen player pass.
+A touch session at 390×844 and 768×1024 found three concrete gaps and closed
+them without touching simulation, determinism or the save schema.
+
+- **Touch tooltips are real.** Species and goods chips are now buttons with one
+  shared tooltip region. A tap (or keyboard activation) opens the ecology text,
+  an outside tap or Escape closes it, and the native title remains for desktop
+  hover. The shared ecology table now also covers the 31 temperate and tropical
+  species that previously produced a bare identifier.
+- **Touch targets are usable.** Filter chips are 44px high on coarse pointers;
+  species and goods chips are 40–42px; settings switches keep their compact look
+  inside a 44px label target. Atlas guide, legend and note type is enlarged on
+  small screens without overriding the three-step forest text scale.
+- **No panel collision.** The subtitle remains a polite live region but fades
+  while a management panel owns the viewport, so it cannot cover the atlas; it
+  returns visibly on the map. Filter chips wrap with no horizontal overflow.
+- **Player proof.** `test:forest-presentation-mobile` runs both viewports with
+  touch input, detailed and symbolic maps, all 60 cards, 30 guide points, every
+  one of the 18 filters plus reset, the 23-entry legend, both tooltip kinds, all
+  nine forest settings plus reduced motion, the subtitle cue, and save/reload
+  plus continue. Both live hosts are re-checked with the same journey.
 
 ## 3.84.0 — Wald-Darstellung, Audio, UI und Accessibility (241–270)
 
