@@ -16,7 +16,7 @@ Ernte, Fauna und Atlas verwenden.
 | `js/systems/forest-presentation.js` | Einstellungs-Normalisierung, Render-Tuning, Referenzszene, Filter, Legende, Guide-Zeilen, deterministische Sound-Cues. |
 | `js/core/forest-ambience.js` | Prozedurales WebAudio-Bett, Vögel/Insekten, Holz-Instrumente, Stille, Untertitel-Ereignisse. Keine Audiodatei. |
 | `js/presentation/rendering/terrain.js` | Parallax, Silhouetten, Farben, Nebel, Licht, Nässe, Totholz, Unterholz, Blüten, Fauna, Insekten, Kartenicons und symbolische Karte. |
-| `js/presentation/terrain-atlas-panel.js` | Feldguide, Filter, Legende, Tooltips, Einstellungs-Zusammenfassung. |
+| `js/presentation/forest-atlas-panel.js` | Feldguide, Filter, Legende, Tooltips, Einstellungs-Zusammenfassung. |
 | `js/app/main.js` | Persistierte Einstellungen, CSS-Klassen, Cache-Invalidierung, Untertitel-Live-Region. |
 | `js/core/persistence.js` | Neun Wald-Einstellungen in `DEFAULT_SETTINGS` und `normalizeSettings`. |
 
