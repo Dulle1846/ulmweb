@@ -234,11 +234,11 @@ try {
     assert.equal(initial.rootSites, 15);
     assert.equal(initial.cards, 15);
     assert.equal(initial.families, 15);
-    assert.equal(initial.species, 360, "the fifteen sites must mount twenty-four living cohorts each");
-    assert.equal(initial.specialists, 180, "the fifteen sites must mount twelve rare species each");
-    assert.equal(initial.hazards, 180, "the fifteen sites must mount twelve hazards each");
-    assert.equal(initial.goods, 120, "the fifteen sites must mount eight goods each");
-    assert.equal(initial.journal, 180, "the fifteen sites must mount twelve field notes each");
+    assert.equal(initial.species, 450, "the fifteen sites must mount thirty living cohorts each");
+    assert.equal(initial.specialists, 225, "the fifteen sites must mount fifteen rare species each");
+    assert.equal(initial.hazards, 225, "the fifteen sites must mount fifteen hazards each");
+    assert.equal(initial.goods, 150, "the fifteen sites must mount ten goods each");
+    assert.equal(initial.journal, 360, "the fifteen sites must mount twenty-four field notes each");
     assert.equal(initial.journalFound, 0, "field notes start locked");
     assert.ok(initial.actions >= 15, "every site must expose its action set");
     assert.equal(initial.points, 15);
@@ -270,11 +270,11 @@ try {
         actions: card.querySelectorAll("[data-frontier-action]").length,
     })));
     for (const card of cards) {
-        assert.equal(card.species, 24, card.family + " must show its full species roster");
-        assert.equal(card.specialists, 12, card.family + " must show its rare community");
-        assert.equal(card.hazards, 12, card.family + " must show its hazard record");
-        assert.equal(card.goods, 8, card.family + " must show eight rare goods");
-        assert.equal(card.journal, 12, card.family + " must show twelve field notes");
+        assert.equal(card.species, 30, card.family + " must show its full species roster");
+        assert.equal(card.specialists, 15, card.family + " must show its rare community");
+        assert.equal(card.hazards, 15, card.family + " must show its hazard record");
+        assert.equal(card.goods, 10, card.family + " must show ten rare goods");
+        assert.equal(card.journal, 24, card.family + " must show twenty-four field notes");
         assert.ok(card.actions >= 1, card.family + " must expose an action");
         assert.ok(card.condition >= 0 && card.condition <= 100);
     }
@@ -305,6 +305,7 @@ try {
             condition: Number(card?.dataset.frontierCondition),
             journal: card?.dataset.frontierJournalCount,
             journalFound: card.querySelectorAll('[data-frontier-journal-unlocked="1"]').length,
+            commission: card.querySelector("[data-frontier-commission]")?.dataset.frontierCommission || "",
             actions: [...card.querySelectorAll("[data-frontier-action]")].map(button => ({
                 action: button.dataset.frontierAction, disabled: button.disabled, title: button.title,
             })),
@@ -313,6 +314,7 @@ try {
     assert.equal(afterSurvey.gold, goldBefore - 8 + 18, "the survey fee and its field-note grant must both settle");
     assert.ok(Number(afterSurvey.journal) >= 1, "the first field note must appear after the survey");
     assert.equal(afterSurvey.journalFound, 1, "the field note must be rendered as found");
+    assert.notEqual(afterSurvey.commission, "none", "the first survey must issue a rotating commission");
     assert.equal(afterSurvey.surveyed, "1");
     assert.equal(afterSurvey.deep, "0");
     assert.equal(afterSurvey.actions.every(action => action.disabled), true,
@@ -348,7 +350,7 @@ try {
     }));
     assert.equal(afterDeep.deep, "1");
     assert.equal(afterDeep.gold, deepGoldBefore - 12 + 28, "the deep-survey fee and its field-note grant must both settle");
-    assert.equal(afterDeep.specials, 12);
+    assert.equal(afterDeep.specials, 15);
     report.checks.deepSurvey = { before: deepGoldBefore, after: afterDeep };
     await capture("action-deep-survey", page.locator('[data-frontier-family="savanna-dry-woodland"]'));
 
@@ -406,7 +408,7 @@ try {
     });
     assert.equal(tierOne.journal, 4, "tier 1 must complete with four notes");
     assert.equal(tierOne.tier, 2, "tier 2 must open after tier 1");
-    assert.deepEqual(tierOne.tiers.map(row => row.unlocked), [4, 0, 0]);
+    assert.deepEqual(tierOne.tiers.map(row => row.unlocked), [4, 0, 0, 0, 0, 0]);
     assert.equal(tierOne.tiers[1].state, "locked");
 
     await nextFrontierYear();
@@ -440,7 +442,7 @@ try {
     assert.equal(tierTwo.tierTwoFound, 1);
     assert.equal(tierTwo.tierTwoUnlocked, 1);
     assert.equal(tierTwo.charter, "0", "the tier-3 charter is still locked");
-    assert.equal(tierTwo.cycles.length, 2, "both recurring cycles must be visible");
+    assert.equal(tierTwo.cycles.length, 4, "all four recurring cycles must be visible");
     assert.ok(tierTwo.cycles.every(cycle => cycle.completions >= 0 && cycle.harvests >= 0));
     report.checks.tierLadder = { tierOne, tierTwo };
     await capture("tier-two", page.locator('[data-frontier-family="savanna-dry-woodland"]'));
@@ -472,7 +474,7 @@ try {
     assert.equal(restoredTier.journal, 5);
     assert.equal(restoredTier.tier, 2);
     assert.equal(restoredTier.tierTwoFound, 1);
-    assert.deepEqual(restoredTier.cycles, ["seasonal", "long"]);
+    assert.deepEqual(restoredTier.cycles, ["seasonal", "long", "pulse", "epoch"]);
     report.checks.persistence = restoredTier;
     await capture("tier-two-restored", page.locator('[data-frontier-family="savanna-dry-woodland"]'));
 

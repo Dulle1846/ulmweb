@@ -1149,6 +1149,20 @@ body.ui-forest-symbolic .forest-atlas__card{--ui-paper-text:#f2e5c4;--ui-paper-m
 .biome-frontier__cycle-track span.is-now{border-color:var(--frontier-accent);background:rgba(87,108,63,.14);color:var(--frontier-ink);font-weight:800}
 .biome-frontier__cycle-meta{display:flex;flex-wrap:wrap;gap:3px 7px;margin-top:5px;font-size:7px;letter-spacing:.04em;color:var(--frontier-muted)}
 .biome-frontier__cycle-reward{display:block;margin-top:4px;font-size:7.5px;line-height:1.35;color:var(--frontier-accent)}
+.biome-frontier__commission{padding:8px 9px;border:1px solid var(--frontier-line);border-left:4px solid var(--frontier-accent);border-radius:5px;background:rgba(238,228,199,.34)}
+.biome-frontier__commission header{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.biome-frontier__commission header small{display:block;font-size:7px;letter-spacing:.08em;color:var(--frontier-accent)}
+.biome-frontier__commission header b{display:block;margin-top:2px;font-size:10px;line-height:1.25}
+.biome-frontier__commission header>span{font-size:9px;font-weight:800;white-space:nowrap}
+.biome-frontier__commission p{margin:4px 0 6px;font-size:8px;line-height:1.4;color:var(--frontier-muted)}
+.biome-frontier__commission-track{height:6px;border:1px solid var(--frontier-line);border-radius:999px;overflow:hidden;background:rgba(87,108,63,.08)}
+.biome-frontier__commission-track i{display:block;height:100%;background:var(--frontier-accent)}
+.biome-frontier__commission-meta{display:flex;flex-wrap:wrap;justify-content:space-between;gap:3px 8px;margin-top:5px;font-size:7px;letter-spacing:.04em;color:var(--frontier-muted)}
+.biome-frontier__commission>small{display:block;margin-top:4px;font-size:7.5px;line-height:1.35;color:var(--frontier-muted)}
+.biome-frontier__commission.is-paid{border-left-color:#6f915d;background:rgba(87,108,63,.1)}
+.biome-frontier__commission.is-idle{border-left-style:dashed;opacity:.82}
+.biome-frontier__commission.is-idle b{font-size:9px;letter-spacing:.06em}
+.biome-frontier__commission.is-idle p{margin-bottom:0}
 .biome-frontier__journal-tiers{display:grid;gap:6px}
 .biome-frontier__journal-tier{border:1px solid var(--frontier-line);border-radius:5px;padding:5px 6px;background:rgba(238,228,199,.2)}
 .biome-frontier__journal-tier>header{display:flex;justify-content:space-between;gap:8px;align-items:baseline;margin-bottom:4px}
@@ -1222,6 +1236,12 @@ body.ui-forest-symbolic .forest-atlas__card{--ui-paper-text:#f2e5c4;--ui-paper-m
  .biome-frontier__cycle-track span{font-size:9px;padding:3px 7px}
  .biome-frontier__cycle-meta{font-size:9px;line-height:1.4}
  .biome-frontier__cycle-reward{font-size:9.5px;line-height:1.4}
+ .biome-frontier__commission{padding:9px 10px}
+ .biome-frontier__commission header small{font-size:8.5px}
+ .biome-frontier__commission header b{font-size:12px}
+ .biome-frontier__commission header>span{font-size:11px}
+ .biome-frontier__commission p,.biome-frontier__commission>small{font-size:10px;line-height:1.45}
+ .biome-frontier__commission-meta{font-size:9px;line-height:1.4}
  .biome-frontier__journal-tiers{gap:7px}
  .biome-frontier__journal-tier{padding:7px 8px}
  .biome-frontier__journal-tier>header b{font-size:10px}

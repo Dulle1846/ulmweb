@@ -18,17 +18,18 @@
 // same single catalogue and the same bounded yearly pass.
 import { BIOME_FRONTIER_EXPANSION } from "./biome-frontier-expansion.js";
 import { BIOME_FRONTIER_LIFEWORKS } from "./biome-frontier-lifeworks.js";
+import { BIOME_FRONTIER_HORIZONS } from "./biome-frontier-horizons.js";
 
 export const BIOME_FRONTIER_VERSION = 1;
 export const BIOME_FRONTIER_SITE_LIMIT = 15;
-export const BIOME_FRONTIER_SPECIES_LIMIT = 24;
-export const BIOME_FRONTIER_SPECIALIST_LIMIT = 12;
-export const BIOME_FRONTIER_HAZARD_LIMIT = 12;
-export const BIOME_FRONTIER_GOOD_LIMIT = 8;
-export const BIOME_FRONTIER_RELIC_LIMIT = 12;
-export const BIOME_FRONTIER_JOURNAL_LIMIT = 12;
-export const BIOME_FRONTIER_JOURNAL_TIER_LIMIT = 3;
-export const BIOME_FRONTIER_CYCLE_LIMIT = 2;
+export const BIOME_FRONTIER_SPECIES_LIMIT = 30;
+export const BIOME_FRONTIER_SPECIALIST_LIMIT = 15;
+export const BIOME_FRONTIER_HAZARD_LIMIT = 15;
+export const BIOME_FRONTIER_GOOD_LIMIT = 10;
+export const BIOME_FRONTIER_RELIC_LIMIT = 15;
+export const BIOME_FRONTIER_JOURNAL_LIMIT = 24;
+export const BIOME_FRONTIER_JOURNAL_TIER_LIMIT = 6;
+export const BIOME_FRONTIER_CYCLE_LIMIT = 4;
 export const BIOME_FRONTIER_SITE_HISTORY_LIMIT = 12;
 export const BIOME_FRONTIER_HISTORY_LIMIT = 48;
 export const BIOME_FRONTIER_GOODS_CAP = 999;
@@ -43,6 +44,7 @@ const catastrophe = (id, label, detail) => freeze({ id, label, detail });
 function defineFamily(definition) {
     const expansion = BIOME_FRONTIER_EXPANSION[definition.id] || {};
     const lifeworks = BIOME_FRONTIER_LIFEWORKS[definition.id] || {};
+    const horizons = BIOME_FRONTIER_HORIZONS[definition.id] || {};
     // The first six notes predate the tier system. They are assigned to tiers
     // 1/1/1, 2/2 and 3 and their fixed grants rise with the tier, so an old save
     // keeps every earned id while the new ladder starts at four notes per tier.
@@ -61,13 +63,14 @@ function defineFamily(definition) {
     });
     const merged = {
         ...definition,
-        species: [...definition.species, ...(expansion.species || []), ...(lifeworks.species || [])],
-        specialists: [...definition.specialists, ...(expansion.specialists || []), ...(lifeworks.specialists || [])],
-        hazards: [...definition.hazards, ...(expansion.hazards || []), ...(lifeworks.hazards || [])],
-        goods: [...definition.goods, ...(expansion.goods || []), ...(lifeworks.goods || [])],
-        relics: [...definition.relics, ...(expansion.relics || []), ...(lifeworks.relics || [])],
-        journal: [...legacyJournal, ...(lifeworks.journal || [])],
-        cycles: lifeworks.cycles || [],
+        species: [...definition.species, ...(expansion.species || []), ...(lifeworks.species || []), ...(horizons.species || [])],
+        specialists: [...definition.specialists, ...(expansion.specialists || []), ...(lifeworks.specialists || []), ...(horizons.specialists || [])],
+        hazards: [...definition.hazards, ...(expansion.hazards || []), ...(lifeworks.hazards || []), ...(horizons.hazards || [])],
+        goods: [...definition.goods, ...(expansion.goods || []), ...(lifeworks.goods || []), ...(horizons.goods || [])],
+        relics: [...definition.relics, ...(expansion.relics || []), ...(lifeworks.relics || []), ...(horizons.relics || [])],
+        journal: [...legacyJournal, ...(lifeworks.journal || []), ...(horizons.journal || [])],
+        cycles: [...(lifeworks.cycles || []), ...(horizons.cycles || [])],
+        commissions: horizons.commissions || [],
     };
     return freeze({
         ...merged,
@@ -1219,7 +1222,7 @@ export const BIOME_FRONTIER_GROUPS = freeze([
 
 export const BIOME_FRONTIER_GUARDRAILS = freeze([
     "The catalogue is data only: no code, DOM, URL or save mutation is accepted from a family definition.",
-    "One bounded site per family (15 total), with at most twenty-four species, twelve specialists, twelve hazards, eight goods, twelve relict layers, twelve tiered field notes, two recurring cycles and twelve site-history rows.",
+    "One bounded site per family (15 total), with at most thirty species, fifteen specialists, fifteen hazards, ten goods, fifteen relict layers, twenty-four tiered field notes in six tiers, four recurring cycles, three rotating field commissions and twelve site-history rows.",
     "The simulation advances once per year in the existing annual chain. There is no per-frame, per-tick or per-tile work.",
     "Every random-looking choice uses a stable hash of world seed, site id and year; it never consumes the shared gameplay RNG stream.",
     "The ledger is additive under state.biomeFrontiers. An absent field starts a deterministic fresh catalogue, so save schema 15 stays valid.",

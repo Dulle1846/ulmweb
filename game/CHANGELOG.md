@@ -1,13 +1,58 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.92.0`
-**Next development line:** `3.92.0-dev`
+**Current production version:** `3.93.0`
+**Next development line:** `3.93.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
 **Last repository verification:** 2026-11-28 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.93.0 — Frontier-Horizonte: 510 neue Einträge, sechs Stufen, vier Zyklen und rotierende Aufträge
+
+Der Frontier-Katalog wächst auf **450 Artengruppen** (30 pro Site), **225
+Spezialisten**, **225 benannte Störungen**, **150 Güter**, **225
+Relikt-Schichten**, **360 Feldnotizen**, **60 wiederkehrende Zyklen** und **45
+rotierende Feldaufträge**. Gegenüber 3.92.0 sind das **510 zusätzliche
+Katalogeinträge** in einem einzigen neuen Datenmodul; die Simulation bleibt
+derselbe eine Jahrespass.
+
+Jede Site erhalten **sechs neue Kohorten, drei Spezialisten, drei Störungen,
+zwei Güter, drei Relikt-Schichten, zwölf Feldnotizen in T4–T6, zwei Zyklen und
+drei Aufträge**. Die Feldnotizen lesen zusätzlich `sold`, `commissions`,
+`cycleHarvests`, `cycleRegenerations` und `cycleCompletions`; T4 zahlt
+160–190 Gold, T5 240–285 Gold und T6 390–470 Gold und zusätzlich **Prestige**.
+Die sechs Stufen heißen SURVEY, STEWARDSHIP, CHARTER, DEEP TIME, LEGACY und
+APEX; jede Stufe öffnet erst nach allen vier Notizen der vorigen.
+
+Die zwei neuen Zyklen sind ein **8-Jahres-Puls** und ein **24-Jahres-Epoch**.
+Jede Site hat damit vier Fenster: die bestehende 4-Jahres-Rotation, den
+20-Jahres-Bogen, den kurzen Puls und den langen Epoch. Der Epoch berührt
+Wirtschaft, Moral, Legitimität, Beziehungen, Garnison und Güter.
+
+**Rotierende Aufträge:** Drei pro Familie, sechs Jahre Laufzeit, Auswahl per
+stabilem Seed-Hash. Ein Auftrag wird erst nach der ersten Survey ausgegeben,
+speichert die Ausgangszähler und zahlt nur Arbeit, die nach der Ausgabe
+geleistet wurde. Er zahlt genau einmal, verfällt mit seiner Periode und wird
+dann neu gezogen; alte Saves erhalten den Auftrag beim nächsten Jahrespass.
+
+**UI:** Sechs Stufenlabels, eine Auftragskarte mit Fortschritt, Restjahren und
+Belohnung, vier Zykluskarten, Verkaufs- und Auftragszähler sowie die neuen
+Summen 450/225/225/150/360. Die Auftragskarte und alle Ziele sind auf Desktop
+und den sechs Mobile-/Querformat-Viewports lesbar.
+
+**Sicherheit:** Save-Schema 15 und additives `state.biomeFrontiers` bleiben
+unverändert. `commission`, `sold` und `commissions` sind begrenzte, validierte
+Zusatzfelder; ein fehlendes Feld wird deterministisch normalisiert. Kein
+Per-Frame-, Per-Tick- oder Per-Tile-Aufwand. Lange Kampagnen werden weiterhin
+nicht passiv umbalanciert, weil Aufträge, Notizen und Zyklusfenster erst nach
+der Survey zahlen.
+
+**Verifikation:** 15 Systemtests inklusive Auftrag genau einmal, Periodenwechsel,
+Save-Roundtrip, 25-Jahres-Determinismus und 300-Jahres-Soak; Desktop-Pfad mit
+450/225/225/150/360 Einträgen, sechs Stufen, vier Zyklen und Save/Reload;
+Mobile-Referenz auf 360×640, 390×844, 414×896, 640×360, 844×390 und 896×414.
 
 ## 3.92.0 — Frontier-Langzeitketten: 600 neue Einträge, drei Stufen und zwei Zyklen pro Site
 

@@ -71,33 +71,40 @@ test("all fifteen frontier ecosystems and their 1.2.23.2–16 points are complet
         assert.ok(family.label && family.labelDe, family.id + " needs both names");
         assert.ok(family.profile.length > 120, family.id + " needs a player-facing profile");
         assert.ok(family.formation.length > 40, family.id + " needs a formation description");
-        assert.equal(family.species.length, 24, family.id + " needs twenty-four species cohorts");
+        assert.equal(family.species.length, 30, family.id + " needs thirty species cohorts");
         assert.ok(family.species.some(row => row.kind === "tree" || row.kind === "plant"), family.id + " needs a plant layer");
         assert.ok(family.species.some(row => row.kind === "animal"), family.id + " needs an animal layer");
-        assert.equal(family.specialists.length, 12, family.id + " needs twelve rare species");
-        assert.equal(family.hazards.length, 12, family.id + " needs twelve disturbance regimes");
-        assert.equal(family.goods.length, 8, family.id + " needs eight rare goods");
-        assert.equal(family.journal.length, 12, family.id + " needs twelve field notes");
-        assert.equal(new Set(family.journal.map(entry => entry.id)).size, 12, family.id + " field note ids must be unique");
-        assert.deepEqual([1, 2, 3].map(tier => family.journal.filter(entry => entry.tier === tier).length), [4, 4, 4], family.id + " needs four notes per tier");
+        assert.equal(family.specialists.length, 15, family.id + " needs fifteen rare species");
+        assert.equal(family.hazards.length, 15, family.id + " needs fifteen disturbance regimes");
+        assert.equal(family.goods.length, 10, family.id + " needs ten rare goods");
+        assert.equal(family.journal.length, 24, family.id + " needs twenty-four field notes");
+        assert.equal(new Set(family.journal.map(entry => entry.id)).size, 24, family.id + " field note ids must be unique");
+        assert.deepEqual([1, 2, 3, 4, 5, 6].map(tier => family.journal.filter(entry => entry.tier === tier).length), [4, 4, 4, 4, 4, 4], family.id + " needs four notes per tier");
         for (const entry of family.journal) {
             assert.ok(entry.label.length > 3 && entry.detail.length > 40, family.id + " field notes need readable text");
             assert.ok(entry.goalLabel.length > 3, family.id + " field notes need a goal label");
             assert.ok(entry.reward.gold > 0, family.id + " field notes need a real reward");
-            assert.ok(entry.tier >= 1 && entry.tier <= 3, family.id + " field notes need a tier");
+            assert.ok(entry.tier >= 1 && entry.tier <= 6, family.id + " field notes need a tier");
         }
-        const tierGold = [1, 2, 3].map(tier => family.journal.filter(entry => entry.tier === tier).reduce((sum, entry) => sum + entry.reward.gold, 0));
-        assert.ok(tierGold[1] > tierGold[0] && tierGold[2] > tierGold[1], family.id + " tier rewards must rise");
-        assert.ok(family.cycles.length === 2, family.id + " needs two recurring cycles");
+        const tierGold = [1, 2, 3, 4, 5, 6].map(tier => family.journal.filter(entry => entry.tier === tier).reduce((sum, entry) => sum + entry.reward.gold, 0));
+        for (let tier = 1; tier < tierGold.length; tier++) assert.ok(tierGold[tier] > tierGold[tier - 1], family.id + " tier rewards must rise");
+        assert.ok(family.cycles.length === 4, family.id + " needs four recurring cycles");
         for (const cycle of family.cycles) {
             assert.equal(cycle.phaseLabels.length, 4, family.id + " cycles need four phases");
-            assert.ok(cycle.period >= 4 && cycle.period <= 20, family.id + " cycles need a bounded period");
+            assert.ok(cycle.period >= 4 && cycle.period <= 24, family.id + " cycles need a bounded period");
             assert.ok(cycle.reward.gold > 0, family.id + " cycles need a renewable reward");
         }
         assert.equal(family.palette.length, 3, family.id + " needs a palette");
         assert.ok(family.climateAnalog.length >= 3, family.id + " needs a climate sequence");
         assert.ok(family.referenceSeed > 0, family.id + " needs a reference seed");
-        assert.equal(family.relics.length, 12, family.id + " needs twelve relict layers");
+        assert.equal(family.relics.length, 15, family.id + " needs fifteen relict layers");
+        assert.equal(family.commissions.length, 3, family.id + " needs three rotating commissions");
+        assert.equal(new Set(family.commissions.map(entry => entry.id)).size, 3, family.id + " commission ids must be unique");
+        for (const commission of family.commissions) {
+            assert.ok(commission.label.length > 3 && commission.detail.length > 40, family.id + " commissions need readable text");
+            assert.ok(["restored", "harvested", "cycleHarvests", "cycleCompletions"].includes(commission.goal), family.id + " commission goal must be observable");
+            assert.ok(commission.at >= 1 && commission.reward.gold > 0, family.id + " commission needs a real target and reward");
+        }
     }
     assert.equal(new Set(BIOME_FRONTIER_FAMILIES.map(row => row.referenceSeed)).size, 15);
     assert.ok(biomeFrontierGuardrails().length >= 5);
@@ -114,13 +121,14 @@ test("the ledger starts one linked site per family with species, hazards, goods 
         assert.ok(site.atlasRegionId, site.family + " must bind to a province of the atlas");
         assert.ok(site.condition > 0 && site.condition <= 100);
         assert.ok(site.extent > 0 && site.extent <= 100);
-        assert.equal(site.species.length, 24);
-        assert.equal(site.specialists.length, 12);
-        assert.equal(site.hazards.length, 12);
-        assert.equal(site.goods.length, 8);
+        assert.equal(site.species.length, 30);
+        assert.equal(site.specialists.length, 15);
+        assert.equal(site.hazards.length, 15);
+        assert.equal(site.goods.length, 10);
         assert.equal(site.journal.length, 0);
-        assert.equal(biomeFrontierSite(site.id).journal.length, 12);
-        assert.equal(site.cycles.seasonal !== undefined && site.cycles.long !== undefined, true);
+        assert.equal(biomeFrontierSite(site.id).journal.length, 24);
+        assert.equal(site.cycles.seasonal !== undefined && site.cycles.long !== undefined && site.cycles.pulse !== undefined && site.cycles.epoch !== undefined, true);
+        assert.equal(site.commission, null, "a commission waits for the first survey");
         assert.equal(site.goods.every(good => good.stock === 0), true);
         assert.equal(site.phase, biomeFrontierPhaseFor(site.condition).id);
         assert.equal(site.layers.length >= 1, true);
@@ -130,8 +138,8 @@ test("the ledger starts one linked site per family with species, hazards, goods 
     assert.equal(summary.requirements.length, 15);
     assert.equal(summary.groups.length, 3);
     assert.equal(summary.stats.sites, 15);
-    assert.equal(summary.stats.specialists, 180);
-    assert.equal(summary.stats.journal, 180);
+    assert.equal(summary.stats.specialists, 225);
+    assert.equal(summary.stats.journal, 360);
     assert.equal(summary.regions.length, 15);
     assert.equal(summary.referenceSeeds.length, 15);
     const first = biomeFrontierSite(model.sites[0].id);
@@ -253,10 +261,10 @@ test("the annual pass shifts climate analogues, keeps sites bounded and is idemp
         assert.ok(site.magic >= 0 && site.magic <= 100);
         assert.ok(site.corruption >= 0 && site.corruption <= 100);
         assert.ok(site.history.length <= 12);
-        assert.ok(site.goods.length <= 8);
-        assert.ok(site.species.length <= 24);
-        assert.ok(site.specialists.length <= 12);
-        assert.ok(site.hazards.length <= 12);
+        assert.ok(site.goods.length <= 10);
+        assert.ok(site.species.length <= 30);
+        assert.ok(site.specialists.length <= 15);
+        assert.ok(site.hazards.length <= 15);
     }
     assert.ok(model.history.length <= 48);
 });
@@ -266,7 +274,7 @@ test("field notes unlock from real site work, pay once and stay in the save", ()
     const site = siteByFamily(model, "savanna-dry-woodland");
     const beforeGold = state.resources.gold;
     assert.equal(site.journal.length, 0);
-    assert.equal(biomeFrontierSite(site.id).journal.length, 12);
+    assert.equal(biomeFrontierSite(site.id).journal.length, 24);
     assert.equal(biomeFrontierSite(site.id).journal.filter(entry => entry.unlocked).length, 0);
 
     const surveyed = surveyBiomeFrontier(site.id);
@@ -296,7 +304,7 @@ test("field notes unlock from real site work, pay once and stay in the save", ()
 test("the field-note ladder opens tier 2 only after tier 1, pays once and survives save/load", () => {
     const model = setup();
     const site = siteByFamily(model, "savanna-dry-woodland");
-    assert.deepEqual(biomeFrontierSite(site.id).journalTiers.map(row => row.unlocked), [0, 0, 0]);
+    assert.deepEqual(biomeFrontierSite(site.id).journalTiers.map(row => row.unlocked), [0, 0, 0, 0, 0, 0]);
 
     state.year = 1;
     assert.equal(surveyBiomeFrontier(site.id).ok, true);
@@ -307,7 +315,7 @@ test("the field-note ladder opens tier 2 only after tier 1, pays once and surviv
     state.year = 4;
     assert.equal(harvestBiomeFrontier(site.id).ok, true);
     let view = biomeFrontierSite(site.id);
-    assert.deepEqual(view.journalTiers.map(row => row.unlocked), [4, 0, 0]);
+    assert.deepEqual(view.journalTiers.map(row => row.unlocked), [4, 0, 0, 0, 0, 0]);
     assert.equal(view.journalTier, 2, "four tier-1 notes open tier 2");
     assert.equal(view.journalTier, 2);
     assert.equal(view.journalTiers[2].unlocked, 0, "tier 3 stays closed while tier 2 is incomplete");
@@ -330,6 +338,50 @@ test("the field-note ladder opens tier 2 only after tier 1, pays once and surviv
     state.year = 6;
     updateBiomeFrontiers();
     assert.equal(restored.journal.filter(id => id === "restoration-line").length, 1, "save/load must not pay a field note twice");
+});
+
+test("rotating commissions open after survey, pay exactly once and rotate each six-year period", () => {
+    const model = setup();
+    const site = siteByFamily(model, "savanna-dry-woodland");
+    assert.equal(site.commission, null);
+    state.year = 1;
+    assert.equal(surveyBiomeFrontier(site.id).ok, true);
+    assert.ok(site.commission, "the first survey must issue a field commission");
+    const active = site.commission;
+    assert.equal(active.period, 0);
+    assert.equal(active.paid, false);
+    if (active.goal === "cycleHarvests") {
+        site.cycles.seasonal.harvests += active.at;
+    } else if (active.goal === "cycleCompletions") {
+        site.cycles.long.completions += active.at;
+    } else {
+        site[active.goal] += active.at;
+    }
+    state.year = 2;
+    updateBiomeFrontiers();
+    assert.equal(site.commission.paid, true, "completed commission work must pay");
+    assert.equal(site.commissions, 1);
+    assert.equal(model.stats.commissions, 1);
+    const once = JSON.stringify(site.commission);
+    updateBiomeFrontiers();
+    assert.equal(JSON.stringify(site.commission), once, "a commission pays once per period");
+    const snapshot = serializeBiomeFrontierState();
+    assert.equal(validateBiomeFrontierSnapshot(snapshot), true);
+    const savedCommission = JSON.parse(JSON.stringify(snapshot));
+    resetState();
+    restoreBiomeFrontierState(savedCommission);
+    const restored = siteByFamily(state.biomeFrontiers, "savanna-dry-woodland");
+    assert.equal(restored.commissions, 1);
+    assert.equal(restored.commission.paid, true);
+    const invalid = JSON.parse(JSON.stringify(snapshot));
+    invalid.sites[0].commission.id = "not-a-commission";
+    assert.throws(() => validateBiomeFrontierSnapshot(invalid), /unknown frontier commission/i);
+    state.year = 7;
+    restored.condition = 80;
+    updateBiomeFrontiers();
+    assert.equal(restored.commission.period, 1, "a new period must issue a new order");
+    assert.equal(restored.commission.paid, false);
+    assert.equal(restored.commissions, 1, "rotation must not pay the old commission twice");
 });
 
 test("recurring frontier cycles pay renewable harvests, regenerate the site and touch other systems", () => {
@@ -423,13 +475,13 @@ test("a 300-year soak keeps every frontier archive bounded", { timeout: 120000 }
             assert.ok(site.extent >= 0 && site.extent <= 100);
             assert.ok(site.magic >= 0 && site.magic <= 100);
             assert.ok(site.corruption >= 0 && site.corruption <= 100);
-            assert.ok(site.species.length <= 24);
-            assert.ok(site.specialists.length <= 12);
-            assert.ok(site.hazards.length <= 12);
-            assert.ok(site.goods.length <= 8);
+            assert.ok(site.species.length <= 30);
+            assert.ok(site.specialists.length <= 15);
+            assert.ok(site.hazards.length <= 15);
+            assert.ok(site.goods.length <= 10);
             assert.ok(site.goods.every(good => good.stock <= 999));
             assert.ok(site.history.length <= 12);
-            assert.ok(site.journal.length <= 12);
+            assert.ok(site.journal.length <= 24);
             assert.ok(site.climateAnalogIndex >= 0);
             const family = BIOME_FRONTIER_FAMILIES.find(row => row.id === site.family);
             assert.ok(site.climateAnalogIndex < family.climateAnalog.length);

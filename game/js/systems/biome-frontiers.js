@@ -27,6 +27,15 @@ export const BIOME_FRONTIER_UPDATE_INTERVAL_YEARS = 1;
 export const BIOME_FRONTIER_VANISH_CONDITION = 0.5;
 export const BIOME_FRONTIER_REVIVE_CONDITION = 16;
 export const BIOME_FRONTIER_GOOD_STOCK_LIMIT = 40;
+export const BIOME_FRONTIER_COMMISSION_PERIOD_YEARS = 6;
+
+const COMMISSION_GOAL_LABELS = Object.freeze({
+    restored: "RESTORE SITE WORK",
+    harvested: "HARVEST THE SITE",
+    sold: "SELL RARE GOODS",
+    cycleHarvests: "KEEP CYCLE WINDOWS",
+    cycleCompletions: "COMPLETE ROTATIONS",
+});
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, Number.isFinite(Number(value)) ? Number(value) : min));
 const num = (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback;
@@ -172,6 +181,90 @@ function cycleTotals(site) {
     };
 }
 
+function commissionPeriod(year) {
+    return Math.floor((Math.max(1, year) - 1) / BIOME_FRONTIER_COMMISSION_PERIOD_YEARS);
+}
+
+function commissionGoalValue(site, goal) {
+    if (goal === "restored") return Math.max(0, Math.floor(num(site.restored, 0)));
+    if (goal === "harvested") return Math.max(0, Math.floor(num(site.harvested, 0)));
+    if (goal === "sold") return Math.max(0, Math.floor(num(site.sold, 0)));
+    if (goal === "cycleHarvests") return cycleTotals(site).harvests;
+    if (goal === "cycleCompletions") return cycleTotals(site).completions;
+    return 0;
+}
+
+function commissionProgress(site, commission) {
+    if (!commission || !commission.id || commission.paid) return 0;
+    const goal = commission.goal || "";
+    const current = commissionGoalValue(site, goal);
+    const baseline = Math.max(0, Math.floor(num(commission.baseline?.[goal], 0)));
+    return Math.max(0, current - baseline);
+}
+
+function normalizeCommission(saved, def, year) {
+    if (!saved || typeof saved !== "object" || Array.isArray(saved)) return null;
+    const row = (def.commissions || []).find(entry => entry.id === String(saved.id));
+    if (!row) return null;
+    const period = Math.max(0, Math.floor(num(saved.period, commissionPeriod(year))));
+    const baseline = {};
+    for (const goal of ["restored", "harvested", "sold", "cycleHarvests", "cycleCompletions"]) {
+        baseline[goal] = Math.max(0, Math.floor(num(saved.baseline?.[goal], 0)));
+    }
+    return {
+        period,
+        id: row.id,
+        goal: row.goal,
+        at: Math.max(1, Math.floor(num(row.at, 1))),
+        baseline,
+        paid: Boolean(saved.paid),
+        openedYear: Math.max(1, Math.floor(num(saved.openedYear, period * BIOME_FRONTIER_COMMISSION_PERIOD_YEARS + 1))),
+    };
+}
+
+function ensureCommission(model, site, year = yearNow()) {
+    const def = definitionFor(site);
+    if (!def?.commissions?.length || !site.surveyed || site.phase === "vanished") return null;
+    const period = commissionPeriod(year);
+    const current = site.commission;
+    if (current && current.period === period && def.commissions.some(entry => entry.id === current.id)) return current;
+    const index = hash32(model.seed, hashString(def.id), period, 0x434f4d) % def.commissions.length;
+    const chosen = def.commissions[index];
+    const totals = cycleTotals(site);
+    site.commission = {
+        period,
+        id: chosen.id,
+        goal: chosen.goal,
+        at: Math.max(1, Math.floor(num(chosen.at, 1))),
+        baseline: {
+            restored: Math.max(0, Math.floor(num(site.restored, 0))),
+            harvested: Math.max(0, Math.floor(num(site.harvested, 0))),
+            sold: Math.max(0, Math.floor(num(site.sold, 0))),
+            cycleHarvests: totals.harvests,
+            cycleCompletions: totals.completions,
+        },
+        paid: false,
+        openedYear: Math.max(1, Math.floor(year)),
+    };
+    return site.commission;
+}
+
+function settleCommission(model, site, year = yearNow()) {
+    const def = definitionFor(site);
+    if (!def?.commissions?.length || !site.surveyed || site.phase === "vanished") return 0;
+    const active = ensureCommission(model, site, year);
+    if (!active || active.paid) return 0;
+    const row = def.commissions.find(entry => entry.id === active.id);
+    if (!row || commissionProgress(site, active) < Math.max(1, Math.floor(num(row.at, 1)))) return 0;
+    active.paid = true;
+    site.commissions = Math.max(0, Math.floor(num(site.commissions, 0))) + 1;
+    bump(model, "commissions", 1);
+    applyFrontierReward(model, site, row.reward || {});
+    pushHistory(model, site, "commission", "Field commission fulfilled: " + row.label + " · " + rewardSummary(row.reward));
+    logEvent("FRONTIER COMMISSION · " + row.label.toUpperCase() + " · " + site.name.toUpperCase(), "#d8c28e");
+    return 1;
+}
+
 function createSpecies(def, seed) {
     return def.species.slice(0, BIOME_FRONTIER_SPECIES_LIMIT).map((row, index) => ({
         id: row.id,
@@ -264,6 +357,9 @@ export function createBiomeFrontierSite(def, index, seed, year = yearNow()) {
         hazards: createHazards(def),
         goods: createGoods(def),
         journal: [],
+        sold: 0,
+        commissions: 0,
+        commission: null,
         cycles: createCycles(def, year, siteSeed),
         history: [],
     };
@@ -287,6 +383,7 @@ function baseState(year = yearNow()) {
             stabilised: 0, vanished: 0, transfigured: 0, climateShifts: 0,
             magicEvents: 0, catastrophes: 0, goods: 0, discoveries: 0,
             cycleHarvests: 0, cycleRegenerations: 0, cycleCompletions: 0,
+            sold: 0, commissions: 0,
         },
     };
 }
@@ -422,6 +519,9 @@ function normalizeSite(row, def, index, seed, year) {
         hazards,
         goods,
         journal,
+        sold: Math.max(0, Math.floor(num(saved.sold, 0))),
+        commissions: Math.max(0, Math.floor(num(saved.commissions, 0))),
+        commission: normalizeCommission(saved.commission, def, year),
         cycles: normalizeCycles(saved.cycles, def, year, seed),
         history: Array.isArray(saved.history)
             ? saved.history.map(normalizeHistory).filter(Boolean).slice(-BIOME_FRONTIER_SITE_HISTORY_LIMIT)
@@ -471,6 +571,8 @@ function normalizeModel(snapshot) {
             cycleHarvests: Math.max(0, Math.floor(num(snapshot.stats?.cycleHarvests, 0))),
             cycleRegenerations: Math.max(0, Math.floor(num(snapshot.stats?.cycleRegenerations, 0))),
             cycleCompletions: Math.max(0, Math.floor(num(snapshot.stats?.cycleCompletions, 0))),
+            sold: Math.max(0, Math.floor(num(snapshot.stats?.sold, 0))),
+            commissions: Math.max(0, Math.floor(num(snapshot.stats?.commissions, 0))),
         },
     };
 }
@@ -558,7 +660,10 @@ function journalGoalMet(site, entry) {
         case "layers": return site.layers.length >= at;
         case "specialists": return site.specialists.filter(row => row.status === "living").length >= at;
         case "cycleHarvests": return totals.harvests >= at;
+        case "cycleRegenerations": return totals.regenerations >= at;
         case "cycleCompletions": return totals.completions >= at;
+        case "sold": return Math.max(0, Math.floor(num(site.sold, 0))) >= at;
+        case "commissions": return Math.max(0, Math.floor(num(site.commissions, 0))) >= at;
         default: return false;
     }
 }
@@ -612,6 +717,7 @@ function rewardSummary(reward = {}) {
         reward.magic ? (reward.magic > 0 ? "+" : "") + reward.magic + " wild magic" : "",
         reward.corruption ? (reward.corruption > 0 ? "+" : "") + reward.corruption + " corruption" : "",
         reward.goods ? "+" + reward.goods + " goods" : "",
+        reward.prestige ? "+" + reward.prestige + " prestige" : "",
         reward.charter ? "crown charter" : "",
     ].filter(Boolean).join(", ");
 }
@@ -629,6 +735,10 @@ function applyFrontierReward(model, site, reward = {}) {
     if (reward.magic) site.magic = round(clamp(num(site.magic, 0) + reward.magic, 0, 100), 1);
     if (reward.corruption) site.corruption = round(clamp(num(site.corruption, 0) + reward.corruption, 0, 100), 1);
     if (reward.goods) addCycleGoods(site, reward.goods);
+    if (reward.prestige) {
+        if (!state.legacy || typeof state.legacy !== "object") state.legacy = {};
+        state.legacy.prestige = Math.min(10000, Math.max(0, num(state.legacy.prestige, 0) + reward.prestige));
+    }
     if (reward.charter) site.charter = true;
 }
 
@@ -874,6 +984,17 @@ function siteSummary(site, model) {
         journalUnlocked: site.journal.length,
         journalTotal: def?.journal?.length || 0,
         cycles,
+        commission: site.commission ? {
+            ...site.commission,
+            baseline: { ...site.commission.baseline },
+            label: (def?.commissions || []).find(entry => entry.id === site.commission.id)?.label || "Field commission",
+            detail: (def?.commissions || []).find(entry => entry.id === site.commission.id)?.detail || "",
+            goalLabel: COMMISSION_GOAL_LABELS[site.commission.goal] || "FIELD WORK",
+            progress: site.commission.paid ? site.commission.at : commissionProgress(site, site.commission),
+            remainingYears: Math.max(0, commissionPeriod(year) * BIOME_FRONTIER_COMMISSION_PERIOD_YEARS + BIOME_FRONTIER_COMMISSION_PERIOD_YEARS - year + 1),
+            reward: { ...((def?.commissions || []).find(entry => entry.id === site.commission.id)?.reward || {}) },
+            rewardSummary: rewardSummary((def?.commissions || []).find(entry => entry.id === site.commission.id)?.reward || {}),
+        } : null,
         cycleHarvests: totals.harvests,
         cycleRegenerations: totals.regenerations,
         cycleCompletions: totals.completions,
@@ -920,6 +1041,8 @@ export function biomeFrontierSummary() {
             cycleHarvests: sites.reduce((sum, site) => sum + site.cycleHarvests, 0),
             cycleRegenerations: sites.reduce((sum, site) => sum + site.cycleRegenerations, 0),
             cycleCompletions: sites.reduce((sum, site) => sum + site.cycleCompletions, 0),
+            sold: sites.reduce((sum, site) => sum + Math.max(0, Math.floor(num(site.sold, 0))), 0),
+            commissions: sites.reduce((sum, site) => sum + Math.max(0, Math.floor(num(site.commissions, 0))), 0),
             averageCondition: round(sites.reduce((sum, site) => sum + site.condition, 0) / Math.max(1, sites.length), 1),
         },
         history: model.history.slice().reverse().map(row => ({ ...row })),
@@ -959,7 +1082,9 @@ export function surveyBiomeFrontier(siteId, deep = false) {
     }
     clearActionLock(site);
     bump(model, "surveyed", 1);
+    ensureCommission(model, site, yearNow());
     settleJournal(model, site);
+    settleCommission(model, site, yearNow());
     const message = wantsDeep
         ? def.site.name + " deep survey: " + site.specialists.length + " specialist species and " + site.layers.length + " relict layers recorded."
         : def.site.name + " surveyed: " + site.species.length + " species and " + site.hazards.length + " disturbance regimes charted.";
@@ -1056,6 +1181,7 @@ export function harvestBiomeFrontier(siteId) {
     bump(model, "goods", amount);
     adjustBiome(site, { vegetation: -0.005 });
     settleJournal(model, site);
+    settleCommission(model, site, yearNow());
     const message = amount + " " + good.label + " taken from " + site.name + "; condition fell to " + Math.round(site.condition) + ".";
     pushHistory(model, site, "harvest", message);
     logEvent("FRONTIER HARVEST · " + amount + " " + good.label.toUpperCase() + " · " + site.name.toUpperCase());
@@ -1099,7 +1225,10 @@ export function sellBiomeFrontierGood(siteId, goodId = null) {
     addResource("gold", value);
     const amount = good.stock;
     good.stock = 0;
+    site.sold = Math.max(0, Math.floor(num(site.sold, 0))) + 1;
     bump(model, "goods", -amount);
+    bump(model, "sold", 1);
+    settleCommission(model, site, yearNow());
     pushHistory(model, site, "trade", amount + " " + good.label + " sold for " + value + " gold.");
     logEvent("FRONTIER GOODS SOLD · " + amount + " " + good.label.toUpperCase() + " FOR " + value + " GOLD", "#d8bd82");
     return { ok: true, site: site.id, good: good.id, amount, gold: value, message: "SOLD " + amount + " " + good.label.toUpperCase() + " · +" + value + "G" };
@@ -1290,6 +1419,8 @@ function advanceBiomeFrontierYear(model, site, year) {
     }
     settleCycles(model, site, year);
     settleJournal(model, site);
+    ensureCommission(model, site, year);
+    settleCommission(model, site, year);
     return {
         vanished: site.phase === "vanished",
         changed: site.phase !== beforePhase || site.aspect !== beforeAspect || Boolean(catastrophe),
@@ -1351,6 +1482,7 @@ export function serializeBiomeFrontierState() {
             specialists: site.specialists.map(row => ({ ...row })),
             hazards: site.hazards.map(row => ({ ...row })),
             goods: site.goods.map(row => ({ ...row })),
+            commission: site.commission ? { ...site.commission, baseline: { ...site.commission.baseline } } : null,
             history: site.history.map(row => ({ ...row })),
         })),
         history: model.history.map(row => ({ ...row })),
@@ -1395,6 +1527,15 @@ export function validateBiomeFrontierSnapshot(snapshot) {
         if (site.journal !== undefined && (!Array.isArray(site.journal) || site.journal.length > BIOME_FRONTIER_BY_ID[site.family].journal.length
             || site.journal.some(id => !journalIds.has(String(id))))) {
             throw new Error("Save data contains an invalid frontier field journal.");
+        }
+        if (site.sold !== undefined && (!Number.isFinite(Number(site.sold)) || Number(site.sold) < 0)) throw new Error("Save data contains an invalid frontier sold counter.");
+        if (site.commissions !== undefined && (!Number.isFinite(Number(site.commissions)) || Number(site.commissions) < 0)) throw new Error("Save data contains an invalid frontier commission counter.");
+        if (site.commission !== undefined && site.commission !== null) {
+            if (typeof site.commission !== "object" || Array.isArray(site.commission)) throw new Error("Save data contains an invalid frontier commission.");
+            const commission = BIOME_FRONTIER_BY_ID[site.family].commissions.find(entry => entry.id === site.commission.id);
+            if (!commission) throw new Error("Save data contains an unknown frontier commission.");
+            if (!Number.isFinite(Number(site.commission.period)) || Number(site.commission.period) < 0) throw new Error("Save data contains an invalid frontier commission period.");
+            if (!site.commission.baseline || typeof site.commission.baseline !== "object" || Array.isArray(site.commission.baseline)) throw new Error("Save data contains an invalid frontier commission baseline.");
         }
         if (!Array.isArray(site.history) || site.history.length > BIOME_FRONTIER_SITE_HISTORY_LIMIT) throw new Error("Save data contains too much frontier site history.");
     }

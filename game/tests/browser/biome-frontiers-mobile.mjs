@@ -168,6 +168,9 @@ async function runViewport(viewport, index) {
         journal: Number(element.dataset.frontierJournalCount),
         journalEntries: element.querySelectorAll("[data-frontier-journal]").length,
         journalTier: Number(element.dataset.frontierJournalTier),
+        commission: element.querySelector("[data-frontier-commission]")?.dataset.frontierCommission || "",
+        commissionPaid: element.querySelector("[data-frontier-commission]")?.dataset.frontierCommissionPaid || "",
+        commissions: Number(element.dataset.frontierCommissions || 0),
         charter: element.dataset.frontierCharter || "0",
         tierTwoFound: element.querySelectorAll('[data-frontier-journal-tier-block="2"] [data-frontier-journal-unlocked="1"]').length,
         cycles: [...element.querySelectorAll("[data-frontier-cycle]")].map(row => ({
@@ -315,7 +318,7 @@ async function runViewport(viewport, index) {
             requirements: [...document.querySelectorAll("[data-frontier-point]")].map(entry => entry.dataset.frontierPoint),
         }));
         assert.equal(initial.cards, 15);
-        assert.equal(initial.journal, 180, "all fifteen field journals must mount twelve notes");
+        assert.equal(initial.journal, 360, "all fifteen field journals must mount twenty-four notes");
         assert.equal(initial.points, 15);
         assert.deepEqual(initial.requirements, Array.from({ length: 15 }, (_, offset) => "1.2.23." + (offset + 2)));
         checks.initial = initial;
@@ -364,7 +367,8 @@ async function runViewport(viewport, index) {
         const afterSurvey = await readCard("savanna-dry-woodland");
         assert.equal(afterSurvey.surveyed, "1");
         assert.ok(afterSurvey.journal >= 1, "the survey must unlock its first field note");
-        assert.equal(afterSurvey.journalEntries, 12, "the field journal must mount all twelve notes");
+        assert.equal(afterSurvey.journalEntries, 24, "the field journal must mount all twenty-four notes");
+        assert.notEqual(afterSurvey.commission, "none", "the first survey must issue a rotating commission");
         assert.ok(afterSurvey.history.includes("survey"), "the survey result must be readable");
         assert.match(afterSurvey.lastDecision, /LAST DECISION · YEAR 1 · SURVEY Redpass Thornsea surveyed/);
         assert.equal(afterSurvey.actions.every(action => action.disabled), true, "a site must allow one action per year");
@@ -442,7 +446,7 @@ async function runViewport(viewport, index) {
         await clickAction("savanna-dry-woodland", "deepSurvey");
         const afterDeep = await readCard("savanna-dry-woodland");
         assert.equal(afterDeep.deep, "1");
-        assert.equal(afterDeep.specialists, 12, "deep survey must read the living rare community");
+        assert.equal(afterDeep.specialists, 15, "deep survey must read the living rare community");
         assert.ok(afterDeep.history.includes("deep survey"));
         checks.deepSurvey = { before: beforeDeep, after: afterDeep };
         await capture("deep-survey-result");
@@ -465,7 +469,7 @@ async function runViewport(viewport, index) {
         assert.equal(tierTwoCard.tierTwoFound, 1, "exactly one tier-2 note must open");
         assert.equal(tierTwoCard.journalTier, 2);
         assert.equal(tierTwoCard.charter, "0");
-        assert.equal(tierTwoCard.cycles.length, 2, "both recurring cycles must be readable on mobile");
+        assert.equal(tierTwoCard.cycles.length, 4, "all four recurring cycles must be readable on mobile");
         checks.tierTwo = tierTwoCard;
         await capture("tier-two");
         await page.waitForTimeout(1900);
@@ -489,7 +493,8 @@ async function runViewport(viewport, index) {
             assert.equal(restored.journal, 5, "the tier-2 progress must survive save/reload");
             assert.equal(restored.journalTier, 2);
             assert.equal(restored.tierTwoFound, 1);
-            assert.equal(restored.cycles.length, 2);
+            assert.equal(restored.cycles.length, 4);
+            assert.notEqual(restored.commission, "none", "save/reload must keep the active commission");
             checks.mobilePersistence = restored;
             await capture("tier-two-restored");
         }

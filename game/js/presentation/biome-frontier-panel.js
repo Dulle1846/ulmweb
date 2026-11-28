@@ -58,6 +58,7 @@ function rewardText(reward = {}) {
         reward.magic ? (reward.magic > 0 ? "+" : "") + reward.magic + " magic" : "",
         reward.corruption ? (reward.corruption > 0 ? "+" : "") + reward.corruption + " corruption" : "",
         reward.goods ? "+" + reward.goods + " goods" : "",
+        reward.prestige ? "+" + reward.prestige + " prestige" : "",
         reward.charter ? "CROWN CHARTER" : "",
     ].filter(Boolean).join(" · ");
 }
@@ -71,13 +72,31 @@ function journalRow(entry) {
         + '</div></div>';
 }
 
+const TIER_LABELS = ["SURVEY", "STEWARDSHIP", "CHARTER", "DEEP TIME", "LEGACY", "APEX"];
+
 function journalTierBlock(site, group) {
     const rows = site.journal.filter(entry => entry.tier === group.tier);
     const state = group.complete ? "complete" : group.unlocked > 0 ? "active" : "locked";
     const gate = group.complete ? "COMPLETE" : group.unlocked > 0 ? "IN PROGRESS" : group.tier === 1 ? "OPEN FROM THE START" : "LOCKED UNTIL TIER " + (group.tier - 1) + " COMPLETES";
     return '<div class="biome-frontier__journal-tier" data-frontier-journal-tier-block="' + group.tier + '" data-frontier-journal-tier="' + group.tier + '" data-frontier-journal-tier-state="' + state + '" data-frontier-journal-tier-unlocked="' + group.unlocked + '" data-frontier-journal-tier-total="' + group.total + '">'
-        + '<header><b>TIER ' + group.tier + ' · ' + (group.tier === 1 ? "SURVEY" : group.tier === 2 ? "STEWARDSHIP" : "CHARTER") + '</b><span>' + group.unlocked + ' / ' + group.total + ' · ' + gate + '</span></header>'
+        + '<header><b>TIER ' + group.tier + ' · ' + (TIER_LABELS[group.tier - 1] || "CHARTER") + '</b><span>' + group.unlocked + ' / ' + group.total + ' · ' + gate + '</span></header>'
         + '<div class="biome-frontier__journal">' + rows.map(journalRow).join("") + '</div></div>';
+}
+
+function commissionCard(site) {
+    const commission = site.commission;
+    if (!commission) {
+        return '<div class="biome-frontier__commission is-idle" data-frontier-commission="none"><b>NO FIELD COMMISSION OPEN</b><p>Survey this site to receive a six-year rotating commission. Commissions are issued only after the first survey, so a long campaign is never rebalanced before the crown can see the site.</p></div>';
+    }
+    const done = commission.paid || commission.progress >= commission.at;
+    const width = Math.max(0, Math.min(100, Math.round(commission.progress / Math.max(1, commission.at) * 100)));
+    return '<article class="biome-frontier__commission' + (done ? " is-paid" : "") + '" data-frontier-commission="' + esc(commission.id) + '" data-frontier-commission-period="' + commission.period + '" data-frontier-commission-progress="' + commission.progress + '" data-frontier-commission-paid="' + (commission.paid ? "1" : "0") + '">'
+        + '<header><div><small>ROTATING FIELD COMMISSION · ' + commission.remainingYears + (commission.remainingYears === 1 ? " YEAR" : " YEARS") + ' LEFT</small><b>' + esc(commission.label) + '</b></div><span>' + (commission.paid ? "PAID" : commission.progress + " / " + commission.at) + '</span></header>'
+        + '<p>' + esc(commission.detail) + '</p>'
+        + '<div class="biome-frontier__commission-track"><i style="width:' + width + '%"></i></div>'
+        + '<div class="biome-frontier__commission-meta"><span>' + esc(commission.goalLabel || "FIELD WORK") + '</span><span>REWARD · ' + esc(commission.rewardSummary) + '</span></div>'
+        + '<small>' + (commission.paid ? "This commission has paid exactly once. A new one is issued next period." : "Progress counts only work completed after the commission was issued.") + '</small>'
+        + '</article>';
 }
 
 function cycleRow(cycle) {
@@ -125,6 +144,7 @@ function card(site, index) {
         + ' data-frontier-journal-count="' + number(site.journalUnlocked) + '" data-frontier-journal-total="' + number(site.journalTotal) + '"'
         + ' data-frontier-journal-tier="' + site.journalTier + '" data-frontier-charter="' + (site.charter ? "1" : "0") + '"'
         + ' data-frontier-cycle-harvests="' + site.cycleHarvests + '" data-frontier-cycle-completions="' + site.cycleCompletions + '"'
+        + ' data-frontier-sold="' + number(site.sold) + '" data-frontier-commissions="' + number(site.commissions) + '"'
         + (site.protected ? ' data-frontier-protected="1"' : '')
         + ((openFrontierFamily ? site.family === openFrontierFamily : index === 0) ? ' open' : '') + '>'
         + '<summary><span class="biome-frontier__glyph" style="--frontier-accent:' + esc(site.palette[1] || "#9fc08e") + '">' + esc(site.glyph) + '</span>'
@@ -151,6 +171,8 @@ function card(site, index) {
             : site.protected
                 ? "A warden's agreement is in force: annual decline is halved and the rare community has priority."
                 : "Open site: harvest is cheaper now, but every take lowers condition and can cost a specialist.") + '</p>'
+        + '<div class="biome-frontier__section">ROTATING FIELD COMMISSION · SIX-YEAR WORK ORDER</div>'
+        + commissionCard(site)
         + '<div class="biome-frontier__section">RECURRING CYCLES · HARVEST AND REGENERATION WINDOWS</div>'
         + '<div class="biome-frontier__cycles">' + site.cycles.map(cycleRow).join("") + '</div>'
         + '<div class="biome-frontier__hazards">' + site.hazards.map(hazardRow).join("") + '</div>'
@@ -201,7 +223,7 @@ export function biomeFrontierBlock() {
     return '<section class="biome-frontier" data-biome-frontier="15" data-frontier-sites="' + number(sites.length) + '"'
         + ' data-frontier-vanished="' + number(stats.vanished) + '" data-frontier-conserved="' + number(stats.conserved) + '">'
         + '<div class="command-section-title">FRONTIER ECOSYSTEMS · SAVANNA, COAST, ICE, DEEP, MAGIC AND MEMORY</div>'
-        + '<p class="command-note biome-frontier__intro">Fifteen extreme and changing ecosystems are bound to the ordinary province atlas: savanna and dry woodland, mangrove, coral coast, alpine grassland, subarctic shrubland, ice desert, underground lakes, magical primeval forest, cursed wasteland, fungal and crystal ground, magically transfigured biomes, rare endemic communities, historical landforms, climate-shifted ecotones and catastrophe belts. Each site now carries twenty-four cohorts, twelve rare specialists, twelve named disturbances, eight rare goods, twelve relict layers, twelve field notes in three tiers and two recurring cycles. The short cycle opens a harvest window every few years; the long cycle returns across decades with trade, diplomacy, garrison morale and magic. Nothing here runs per frame or replaces the 36-region atlas.</p>'
+        + '<p class="command-note biome-frontier__intro">Fifteen extreme and changing ecosystems are bound to the ordinary province atlas: savanna and dry woodland, mangrove, coral coast, alpine grassland, subarctic shrubland, ice desert, underground lakes, magical primeval forest, cursed wasteland, fungal and crystal ground, magically transfigured biomes, rare endemic communities, historical landforms, climate-shifted ecotones and catastrophe belts. Each site now carries thirty cohorts, fifteen rare specialists, fifteen named disturbances, ten rare goods, fifteen relict layers, twenty-four field notes in six tiers, four recurring cycles and three rotating six-year field commissions. The short cycles open harvest windows every few years; the long cycles return across decades with trade, diplomacy, garrison morale and magic. A commission is issued only after survey, counts only work done after issue, pays exactly once and expires with its period. Nothing here runs per frame or replaces the 36-region atlas.</p>'
         + '<div class="command-summary biome-frontier__summary">'
         + '<div><small>SITES</small><strong>' + number(sites.length) + ' / 15</strong></div>'
         + '<div><small>SURVEYED</small><strong>' + number(stats.surveyed) + ' / ' + number(sites.length) + '</strong></div>'
@@ -211,6 +233,7 @@ export function biomeFrontierBlock() {
         + '<div><small>RARE GOODS</small><strong>' + number(stats.goods) + '</strong></div>'
         + '<div><small>FIELD NOTES</small><strong>' + number(stats.discoveries) + ' / ' + number(stats.journal) + '</strong></div>'
         + '<div><small>CHARTERS</small><strong>' + number(stats.charters) + ' / ' + number(sites.length) + '</strong></div>'
+        + '<div><small>COMMISSIONS</small><strong>' + number(stats.commissions) + '</strong></div>'
         + '</div>'
         + '<div class="biome-frontier__climate"><div><small>SHARED CLIMATE SIGNAL</small><b>Warming ' + signed(summary.climate.warming) + ' · drift ' + number(summary.climate.drift) + '</b><p>The same drift that moves the province woods shifts these analogue labels. Cold sites lose condition; warm and dry sites may gain it until drought or fire takes the difference.</p></div>'
         + '<div><small>RARE COMMUNITIES</small><b>' + number(stats.livingSpecialists) + ' / ' + number(stats.specialists) + ' specialist species living</b><p>A specialist vanishes below 30 condition and returns at 65. Conservation halves annual decline; stabilisation holds wild magic and corruption at a workable level.</p></div></div>'
@@ -220,4 +243,4 @@ export function biomeFrontierBlock() {
         + '</section>';
 }
 
-export const __internals = Object.freeze({ card, guide, actionRow, goodRow, journalRow, meter });
+export const __internals = Object.freeze({ card, guide, actionRow, goodRow, journalRow, meter, commissionCard, TIER_LABELS });
