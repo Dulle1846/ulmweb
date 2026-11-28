@@ -94,6 +94,7 @@ function card(site, index) {
         + chip("PHASE", site.phaseLabel) + (site.vanishedYear ? chip("VANISHED", "year " + site.vanishedYear) : "")
         + (site.transfiguredYear ? chip("TRANSFIGURED", "year " + site.transfiguredYear) : "") + '</div>'
         + '<p class="command-note">' + esc(site.phaseDetail) + ' ' + esc(site.aspectDetail) + '</p>'
+        + (site.history.length ? '<p class="command-note biome-frontier__last"><b>LAST DECISION · YEAR ' + number(site.history[site.history.length - 1].year) + ' · ' + esc(site.history[site.history.length - 1].kind.toUpperCase()) + '</b> ' + esc(site.history[site.history.length - 1].text) + '</p>' : '')
         + '<div class="biome-frontier__actions">' + actions + '</div>'
         + '<p class="command-note">' + (site.actedThisYear
             ? "One frontier action per site each year. The next annual pass reopens it."

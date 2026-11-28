@@ -169,6 +169,7 @@ async function runViewport(viewport, index) {
         livingSpecies: element.querySelectorAll('[data-frontier-species-status="living"]').length,
         specialists: element.querySelectorAll('[data-frontier-specialist-status="living"]').length,
         history: element.querySelector(".biome-frontier__history")?.textContent?.replace(/\s+/g, " ").trim() || "",
+        lastDecision: element.querySelector(".biome-frontier__last")?.textContent?.replace(/\s+/g, " ").trim() || "",
         actions: [...element.querySelectorAll("[data-frontier-action]")].map(button => ({
             action: button.dataset.frontierAction, disabled: button.disabled, title: button.title,
         })),
@@ -351,6 +352,7 @@ async function runViewport(viewport, index) {
         const afterSurvey = await readCard("savanna-dry-woodland");
         assert.equal(afterSurvey.surveyed, "1");
         assert.ok(afterSurvey.history.includes("survey"), "the survey result must be readable");
+        assert.match(afterSurvey.lastDecision, /LAST DECISION · YEAR 1 · SURVEY Redpass Thornsea surveyed/);
         assert.equal(afterSurvey.actions.every(action => action.disabled), true, "a site must allow one action per year");
         const goldAfterSurvey = await page.evaluate(async () => (await import("./js/core/state.js")).state.resources.gold);
         assert.ok(goldAfterSurvey < goldStart, "the survey must spend gold");
@@ -401,6 +403,7 @@ async function runViewport(viewport, index) {
         assert.ok(harvested.goods > 0, "harvest must store a rare good");
         assert.ok(harvested.condition < harvestBefore.condition, "harvest must cost condition");
         assert.ok(harvested.history.includes("taken from"));
+        assert.match(harvested.lastDecision, /LAST DECISION · YEAR 2 · HARVEST/);
         checks.harvest = { before: harvestBefore, after: harvested };
         const sell = card("savanna-dry-woodland").locator("[data-command='frontier-sell']");
         assert.equal(await sell.count(), 1, "a stored frontier good must expose its sale");

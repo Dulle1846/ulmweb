@@ -280,7 +280,9 @@ den entdeckten Regionen. Jede Site ist ein `<details>`-Card mit:
 Die Karten sind standardmäßig geschlossen; nur die erste öffnet sich. Das hält
 den DOM-Aufwand auch im späten Spiel begrenzt. Nach einer Aktion bleibt die
 zuletzt geöffnete Karte offen, damit ihr Ergebnis an derselben Stelle sichtbar
-ist.
+ist. Direkt über der Aktionsleiste steht die letzte Entscheidung mit Jahr, Art
+und vollem Ergebnistext; der vollständige Verlauf bleibt darunter im
+SITE RECORD.
 
 ### Smartphone und Querformat
 

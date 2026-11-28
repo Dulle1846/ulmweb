@@ -1,6 +1,6 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.90.2`
+**Current production version:** `3.90.3`
 **Next development line:** `3.91.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
@@ -8,6 +8,20 @@
 **Last repository verification:** 2026-11-28 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.90.3 — Frontier-Ergebnis direkt bei den Aktionen
+
+Die Karte zeigt jetzt unmittelbar über der Aktionsleiste die letzte
+Entscheidung mit Jahr, Art und vollem Ergebnistext („Redpass Thornsea surveyed:
+8 species and 3 disturbance regimes charted.“). Auf dem Smartphone bleibt die
+Karte nach der Aktion an derselben Scrollposition offen, sodass das Ergebnis
+direkt unter dem Klima- und Phasenblock lesbar ist, ohne erst zu Artentabellen
+oder zum Kartenende zu scrollen. Der vollständige Verlauf bleibt zusätzlich im
+SITE RECORD erhalten.
+
+**Nachweis:** Der mobile Spielerpfad prüft den LAST-DECISION-Text nach Survey
+und Harvest auf allen sechs Viewports; Desktop- und Tablet-Register bleiben
+unverändert grün.
 
 ## 3.90.2 — Frontier-Biome auf Smartphone und im Querformat
 

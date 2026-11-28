@@ -1136,6 +1136,8 @@ body.ui-forest-symbolic .forest-atlas__card{--ui-paper-text:#f2e5c4;--ui-paper-m
 .biome-frontier__actions{display:flex;flex-wrap:wrap;gap:5px;align-items:stretch}
 .biome-frontier__button{width:auto;flex:1 1 150px;min-height:32px;font-size:8px;letter-spacing:.04em}
 .biome-frontier__button:disabled{opacity:.78;filter:none;color:#4d493c;background:#e8dcbd;border-style:dashed;cursor:not-allowed}
+.biome-frontier__last{margin:0!important;padding:7px 8px;border-left:3px solid var(--frontier-accent);background:rgba(87,108,63,.08);font-size:9px!important;line-height:1.45!important}
+.biome-frontier__last b{display:block;margin-bottom:2px;font-size:8px;letter-spacing:.07em;color:var(--frontier-accent)}
 .biome-frontier__history{display:grid;gap:3px}
 .biome-frontier__history>div{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px;align-items:baseline;font-size:8px;line-height:1.4}
 .biome-frontier__history b{font-size:7.5px;letter-spacing:.06em;color:var(--frontier-accent);white-space:nowrap}
@@ -1198,6 +1200,8 @@ body.ui-forest-symbolic .forest-atlas__card{--ui-paper-text:#f2e5c4;--ui-paper-m
  .biome-frontier__good .biome-frontier__button{grid-column:1/-1}
  .biome-frontier__actions{gap:6px}
  .biome-frontier__button{flex:1 1 100%;min-height:44px;font-size:10px;padding:0 10px}
+ .biome-frontier__last{font-size:10.5px!important;padding:8px 9px}
+ .biome-frontier__last b{font-size:9px}
  .biome-frontier__history>div{font-size:10px}
  .biome-frontier__history b{font-size:9px}
  .biome-frontier__details>summary{grid-template-columns:minmax(0,1fr);gap:3px;min-height:48px;padding:10px}
