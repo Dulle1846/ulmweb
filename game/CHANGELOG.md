@@ -1,6 +1,6 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.90.0`
+**Current production version:** `3.90.1`
 **Next development line:** `3.91.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
@@ -8,6 +8,18 @@
 **Last repository verification:** 2026-11-28 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.90.1 — Frontier-Karte bleibt nach einer Aktion offen
+
+Das Biome-Panel wird nach jeder Aktion neu aufgebaut. Bisher fiel die gerade
+bearbeitete Frontier-Karte dabei zu und die Ansicht sprang zur ersten Karte
+zurück. Der Renderer liest jetzt vor dem Austausch des alten DOM, welche Karte
+offen war, und öffnet genau diese Karte im neuen Stand wieder. Spieler sehen
+damit unmittelbar das Ergebnis ihrer Vermessung, Schutz-, Ernte- oder
+Stabilisierungsaktion, ohne die Karte erneut suchen und aufklappen zu müssen.
+
+Desktop- und Tablet-Spielerpfad erneut grün, ohne Konsolen-, Lade- oder
+Layoutfehler.
 
 ## 3.90.0 — Fünfzehn Frontier-Ökosysteme, Klimawandel und Katastrophengedächtnis
 

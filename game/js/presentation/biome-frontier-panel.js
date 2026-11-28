@@ -59,6 +59,9 @@ function actionRow(site, action) {
         + esc(action.label) + ' · ' + esc(costLabel(action.cost)) + '</button>';
 }
 
+let openFrontierFamily = null;
+let frontierOpenTracking = false;
+
 function card(site, index) {
     const aspectBadge = site.aspect === "natural" ? "" : '<span class="biome-badge is-rare">' + esc(site.aspectLabel.toUpperCase()) + '</span>';
     const phaseBadge = '<span class="biome-frontier__phase is-' + esc(site.phase) + '">' + esc(site.phaseLabel.toUpperCase()) + ' · ' + Math.round(site.condition) + '%</span>';
@@ -72,7 +75,8 @@ function card(site, index) {
         + ' data-frontier-surveyed="' + (site.surveyed ? "1" : "0") + '" data-frontier-deep-surveyed="' + (site.deepSurveyed ? "1" : "0") + '"'
         + ' data-frontier-species-count="' + number(site.livingSpecies) + '"'
         + ' data-frontier-specialist-count="' + number(site.livingSpecialists) + '" data-frontier-goods="' + number(site.goodsStock) + '"'
-        + (site.protected ? ' data-frontier-protected="1"' : '') + (index === 0 ? ' open' : '') + '>'
+        + (site.protected ? ' data-frontier-protected="1"' : '')
+        + ((openFrontierFamily ? site.family === openFrontierFamily : index === 0) ? ' open' : '') + '>'
         + '<summary><span class="biome-frontier__glyph" style="--frontier-accent:' + esc(site.palette[1] || "#9fc08e") + '">' + esc(site.glyph) + '</span>'
         + '<span class="biome-frontier__title"><b>' + esc(site.name) + '</b><small>' + esc(site.label) + ' · ' + esc(site.climateAnalog) + '</small></span>'
         + '<span class="biome-frontier__state">' + aspectBadge + phaseBadge + '<small>' + (site.protected ? "CONSERVED" : "OPEN SITE") + ' · ' + number(site.goodsStock) + ' GOODS</small></span></summary>'
@@ -124,6 +128,17 @@ function guide(summary) {
 }
 
 export function biomeFrontierBlock() {
+    // The panel is re-rendered after every action. Remember the card the player
+    // opened last so the new DOM opens exactly that card and shows the result.
+    if (!frontierOpenTracking && typeof document !== "undefined" && typeof document.addEventListener === "function") {
+        frontierOpenTracking = true;
+        document.addEventListener("toggle", event => {
+            const card = event.target;
+            if (card?.matches?.("[data-frontier-site]") && card.open) {
+                openFrontierFamily = card.dataset.frontierFamily || null;
+            }
+        }, true);
+    }
     const summary = biomeFrontierSummary();
     const sites = summary.sites;
     const stats = summary.stats;
