@@ -1,0 +1,17 @@
+
+> kings-and-cards@3.93.0 test:e2e
+> node tests/browser/run-e2e.mjs
+
+Browser preflight passed. Running browser E2E...
+Terrain hash snapshot: {"heightMap":{"kind":"Float32Array","length":495616,"hashA":"9f0993d8","hashB":"8b1612c0"},"moistureMap":{"kind":"Float32Array","length":495616,"hashA":"1944b4f8","hashB":"ad8603a8"},"temperatureMap":{"kind":"Float32Array","length":495616,"hashA":"933677d4","hashB":"d00a02c0"},"explored":{"kind":"array","length":176,"hashA":"57e4bf98","hashB":"a50889ec"}}
+Military/public-health E2E: {"militaryAfterRecruit":{"population":22,"soldiers":3,"recruit":"Alwen Stonehelm"},"drill":{"name":"Elric Wintermere","remaining":37},"sanitationAfter":{"score":37,"latrines":1},"publicHealthAfter":{"quarantine":1,"healers":["Dain Ravencrest"],"medicine":7,"sanitation":37}}
+Faith/justice E2E: {"shrineSite":{"id":"ec29kg-1l","stage":0},"courtSite":{"id":"ec29kg-1m","stage":0},"faith":{"clergy":1,"history":2,"festival":"harvest"},"justice":{"judges":1,"history":4,"cases":2,"fines":1}}
+Creature dossier fixture: {"gold":195,"food":215,"dragons":["Stormmaw"]}
+Creature species fixture: [{"species":"dragon","isDragon":true,"icon":"🐉"},{"species":"wyvern","isDragon":false,"icon":"🦇"}]
+Forest product button E2E: {"buildingId":"ec29kg-b","buildingType":3,"original":{"x":85,"y":85},"node":{"x":85,"y":84},"day":67,"goods":["timber","firewood","beech-timber","elm-timber","linden-timber","maple-timber","oak-timber","maple-syrup","wild-garlic","herbs","wood-sorrel","honey","willow-withies","linden-flower","moss","game","mushrooms","lichen","fur","beeswax","hides"],"moved":false,"initialDay":67,"dayOfYear":67,"before":{"stock":{"herbs":9,"lichen":4},"total":13,"history":0,"nodeStock":151},"after":{"stock":{"herbs":9,"lichen":4,"timber":2,"firewood":2,"beech-timber":2,"elm-timber":2,"linden-timber":2},"total":23,"history":1,"nodeStock":139},"toast":"GATHERED 2 Timber · 2 Firewood · 2 Beech timber · 2 Elm timber · 2 Linden timber"}
+Herb and lichen gold delivery E2E: {"before":{"gold":163,"herbs":4,"lichen":3,"expectedGold":10},"after":{"gold":173,"herbs":0,"lichen":0,"toast":"DELIVERED 4 SOLD FOR 6G · 3 SOLD FOR 4G"}}
+Conifer renderer E2E: {"ids":["spruce","fir","pine","larch","juniper","yew","dwarf-pine","podocarpus","redwood","sitka","hemlock","aleppo-pine"],"hashes":{"spruce":"bb33ab8c","fir":"af08bbc8","pine":"383f98eb","larch":"3bcfe79f","juniper":"dda60611","yew":"5f8d730e","dwarf-pine":"3b21e890","podocarpus":"66c57ba3","redwood":"84a34a0a","sitka":"a5ab5d42","hemlock":"345074ab","aleppo-pine":"fbb7a240"}}
+Drag diagnostic: {"lastTarget":"canvas","selectedCard":"GRAND MERCHANT STALLS OF THE FRONTIER","handBefore":5,"handAfter":4,"toast":"CARD PLACED","placement":"CARD PLACED · SELECT ANOTHER CARD TO PLACE","eventVisible":false}
+Ecology save/load E2E: {"colonies":76,"colonyId":"i2l-r-bark-beetle","herbalDoses":2,"herbalTreated":2,"disease":"e2e-herbal-fever","soldiers":4,"healers":1,"medicineBrewed":7,"forestDay":73}
+Legacy-save and large-order E2E passed: {"legacyTick":850,"backupTick":394,"queue":72,"roundTrip":72}
+Browser E2E passed: world forge, seed, guardian/ward dossier links, memorial archive, on-demand card draw, safe card selection, real drag placement, settings, pause/resume, save/load; no page errors.

@@ -1,0 +1,14 @@
+{
+  "commit_sha": "d9787f64a42e71027bedb4f619a7cbad09299240",
+  "run_id": "46156968026",
+  "run_number": "837",
+  "workflow_name": "Game Browser E2E",
+  "run_url": "https://github.com/Dulle1846/ulmweb/actions/runs/46156968026",
+  "branch": "ulmweb-branch",
+  "started_at": "2026-11-28T14:53:31Z",
+  "finished_at": "2026-11-28T14:55:03Z",
+  "job_status": "success",
+  "workflow_result": "success",
+  "browser_e2e_exit_code": "0",
+  "forester_longrun_exit_code": "0"
+}
