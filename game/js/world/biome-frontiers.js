@@ -13,18 +13,22 @@
 // community, one hazard with a real annual consequence, one rare good and a
 // reference seed. The 300-year soak and the save round-trip are the contract.
 //
-// The expansion module adds four to six species, three specialists, three
-// hazards, two goods, relict layers and six long-term field notes per family.
-// It remains the same single catalogue and the same bounded yearly pass.
+// The expansion modules add cohorts, specialists, hazards, goods, relict
+// layers, tiered field notes and recurring cycles per family. They remain the
+// same single catalogue and the same bounded yearly pass.
 import { BIOME_FRONTIER_EXPANSION } from "./biome-frontier-expansion.js";
+import { BIOME_FRONTIER_LIFEWORKS } from "./biome-frontier-lifeworks.js";
 
 export const BIOME_FRONTIER_VERSION = 1;
 export const BIOME_FRONTIER_SITE_LIMIT = 15;
-export const BIOME_FRONTIER_SPECIES_LIMIT = 12;
-export const BIOME_FRONTIER_SPECIALIST_LIMIT = 6;
-export const BIOME_FRONTIER_HAZARD_LIMIT = 6;
-export const BIOME_FRONTIER_GOOD_LIMIT = 4;
-export const BIOME_FRONTIER_JOURNAL_LIMIT = 6;
+export const BIOME_FRONTIER_SPECIES_LIMIT = 24;
+export const BIOME_FRONTIER_SPECIALIST_LIMIT = 12;
+export const BIOME_FRONTIER_HAZARD_LIMIT = 12;
+export const BIOME_FRONTIER_GOOD_LIMIT = 8;
+export const BIOME_FRONTIER_RELIC_LIMIT = 12;
+export const BIOME_FRONTIER_JOURNAL_LIMIT = 12;
+export const BIOME_FRONTIER_JOURNAL_TIER_LIMIT = 3;
+export const BIOME_FRONTIER_CYCLE_LIMIT = 2;
 export const BIOME_FRONTIER_SITE_HISTORY_LIMIT = 12;
 export const BIOME_FRONTIER_HISTORY_LIMIT = 48;
 export const BIOME_FRONTIER_GOODS_CAP = 999;
@@ -38,14 +42,32 @@ const catastrophe = (id, label, detail) => freeze({ id, label, detail });
 
 function defineFamily(definition) {
     const expansion = BIOME_FRONTIER_EXPANSION[definition.id] || {};
+    const lifeworks = BIOME_FRONTIER_LIFEWORKS[definition.id] || {};
+    // The first six notes predate the tier system. They are assigned to tiers
+    // 1/1/1, 2/2 and 3 and their fixed grants rise with the tier, so an old save
+    // keeps every earned id while the new ladder starts at four notes per tier.
+    const legacyJournal = (expansion.journal || []).map((entry, index) => {
+        const tier = index < 3 ? 1 : index < 5 ? 2 : 3;
+        const factor = tier;
+        return freeze({
+            ...entry,
+            tier,
+            reward: freeze({
+                ...entry.reward,
+                gold: Math.round((Number(entry.reward?.gold) || 0) * factor),
+                morale: Math.round((Number(entry.reward?.morale) || 0) * factor),
+            }),
+        });
+    });
     const merged = {
         ...definition,
-        species: [...definition.species, ...(expansion.species || [])],
-        specialists: [...definition.specialists, ...(expansion.specialists || [])],
-        hazards: [...definition.hazards, ...(expansion.hazards || [])],
-        goods: [...definition.goods, ...(expansion.goods || [])],
-        relics: [...definition.relics, ...(expansion.relics || [])],
-        journal: expansion.journal || [],
+        species: [...definition.species, ...(expansion.species || []), ...(lifeworks.species || [])],
+        specialists: [...definition.specialists, ...(expansion.specialists || []), ...(lifeworks.specialists || [])],
+        hazards: [...definition.hazards, ...(expansion.hazards || []), ...(lifeworks.hazards || [])],
+        goods: [...definition.goods, ...(expansion.goods || []), ...(lifeworks.goods || [])],
+        relics: [...definition.relics, ...(expansion.relics || []), ...(lifeworks.relics || [])],
+        journal: [...legacyJournal, ...(lifeworks.journal || [])],
+        cycles: lifeworks.cycles || [],
     };
     return freeze({
         ...merged,
@@ -58,8 +80,9 @@ function defineFamily(definition) {
         hazards: freeze(merged.hazards.slice(0, BIOME_FRONTIER_HAZARD_LIMIT)),
         goods: freeze(merged.goods.slice(0, BIOME_FRONTIER_GOOD_LIMIT)),
         catastrophes: freeze(merged.catastrophes),
-        relics: freeze(merged.relics),
+        relics: freeze(merged.relics.slice(0, BIOME_FRONTIER_RELIC_LIMIT)),
         journal: freeze(merged.journal.slice(0, BIOME_FRONTIER_JOURNAL_LIMIT)),
+        cycles: freeze(merged.cycles.slice(0, BIOME_FRONTIER_CYCLE_LIMIT)),
     });
 }
 
@@ -1196,7 +1219,7 @@ export const BIOME_FRONTIER_GROUPS = freeze([
 
 export const BIOME_FRONTIER_GUARDRAILS = freeze([
     "The catalogue is data only: no code, DOM, URL or save mutation is accepted from a family definition.",
-    "One bounded site per family (15 total), with at most twelve species, six specialists, six hazards, four goods, six field notes and twelve site-history rows.",
+    "One bounded site per family (15 total), with at most twenty-four species, twelve specialists, twelve hazards, eight goods, twelve relict layers, twelve tiered field notes, two recurring cycles and twelve site-history rows.",
     "The simulation advances once per year in the existing annual chain. There is no per-frame, per-tick or per-tile work.",
     "Every random-looking choice uses a stable hash of world seed, site id and year; it never consumes the shared gameplay RNG stream.",
     "The ledger is additive under state.biomeFrontiers. An absent field starts a deterministic fresh catalogue, so save schema 15 stays valid.",

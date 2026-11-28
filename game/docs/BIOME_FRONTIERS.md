@@ -1,7 +1,7 @@
 # Frontier-Biome 1.2.23.2–16 — Savannen, Küsten, Eis, Tiefe, Magie und Erinnerung
 
-**Version:** 3.91.0  
-**Katalog:** `js/world/biome-frontiers.js` + `js/world/biome-frontier-expansion.js`  
+**Version:** 3.92.0  
+**Katalog:** `js/world/biome-frontiers.js` + `js/world/biome-frontier-expansion.js` + `js/world/biome-frontier-lifeworks.js`  
 **Simulation:** `js/systems/biome-frontiers.js`  
 **UI:** `js/presentation/biome-frontier-panel.js` (im Biome-Panel)  
 **Jahrespass:** `updateBiomeFrontiers()` in `js/simulation/simulation.js`  
@@ -17,11 +17,31 @@ magischer Urwald, verfluchtes Ödland, Pilz- und Kristallboden, magisch
 verwandelte Biome, seltene endemische Lebensgemeinschaften, historische
 Landschaftsformen, klimaverscho­bene Ökotone und Katastrophengürtel.
 
-Der Katalog ist **keine zweite Karte**. Der Content-Pack 3.91.0 erweitert jede
-Familie auf zwölf Kohorten, sechs seltene Arten, sechs Störungen, vier Güter,
-sechs Relikt-Schichten und sechs Feldnotizen. Das sind **180 Artengruppen, 90
-Spezialisten, 90 Hazards, 60 Güter, 90 Relikt-Schichten und 90 Langzeit-
-Feldnotizen** — 326 neue Katalogeinträge gegenüber 3.90.3.
+Der Katalog ist **keine zweite Karte**. Der Deep-Pack 3.92.0 erweitert jede
+Familie auf **24 Kohorten, 12 seltene Arten, 12 benannte Störungen, 8 Güter,
+12 Relikt-Schichten und 12 Feldnotizen in drei Stufen**. Das sind **360
+Artengruppen, 180 Spezialisten, 180 Hazards, 120 Güter, 180 Relikt-Schichten,
+180 Langzeit-Feldnotizen und 30 wiederkehrende Zyklen** — 600 neue
+Katalogeinträge gegenüber 3.91.0.
+
+### Vorher/Nachher je Kategorie
+
+| Kategorie | 3.91.0 pro Site | 3.92.0 pro Site | 3.91.0 gesamt | 3.92.0 gesamt |
+| --- | ---: | ---: | ---: | ---: |
+| Artengruppen / Kohorten | 12 | **24** | 180 | **360** |
+| Seltene Spezialisten | 6 | **12** | 90 | **180** |
+| Benannte Störungen | 6 | **12** | 90 | **180** |
+| Seltene Güter | 4 | **8** | 60 | **120** |
+| Relikt-Schichten | 6 | **12** | 90 | **180** |
+| Feldnotizen | 6 | **12** | 90 | **180** |
+| Kettenstufen | 1 | **3** (4/4/4) | 1 | **3** |
+| Wiederkehrende Zyklen | 0 | **2** | 0 | **30** |
+
+Die Feldnotizen zahlen jetzt **T1 18–34 Gold, T2 40–76 Gold, T3 96–128 Gold**
+(plus Moral, Nahrung, Holz, Stein, Legitimität, Beziehungen, Garnisonsmoral
+oder eine dauerhafte Kronen-Charta). Die kurzen Zyklen haben Periode 4, die
+langen Periode 20; jeder kurze Harvest zahlt 14–20 Gold, jeder lange 60–82 Gold
+und zusätzlich mindestens einen systemübergreifenden Effekt.
 
 - Jedes der 15 Sites wird über einen stabilen Anker dem vorhandenen
   36-Regionen-Biome-Atlas zugeordnet (`atlasRegionId`, `atlasRegionName`).
@@ -50,13 +70,14 @@ Jede Familie in `BIOME_FRONTIER_FAMILIES` deklariert:
 | `soil`, `water`, `seasonality` | Standortfaktoren im Klartext |
 | `profile`, `formation` | ausführliche Spielerbeschreibung und Struktur |
 | `climateAnalog` | geordnete Klima-Analogie (langfristige Verschiebung) |
-| `species` | 12 Baum-, Pflanzen-, Tier-, Pilz-, Korallen- oder Flechtenkohorten |
-| `specialists` | 6 seltene Arten der regionalen Lebensgemeinschaft |
-| `hazards` | 6 benannte Störungsregime mit Auslöser und Wirkung |
-| `goods` | 4 seltene Güter mit Wert und Jahresertrag |
-| `journal` | 6 Feldnotizen mit deklarativem Ziel, Zieltext und einmaliger Belohnung |
+| `species` | 24 Baum-, Pflanzen-, Tier-, Pilz-, Korallen- oder Flechtenkohorten |
+| `specialists` | 12 seltene Arten der regionalen Lebensgemeinschaft |
+| `hazards` | 12 benannte Störungsregime mit Auslöser und Wirkung |
+| `goods` | 8 seltene Güter mit Wert und Jahresertrag |
+| `journal` | 12 Feldnotizen in 3 Stufen, je 4 Notizen, mit steigender einmaliger Belohnung |
+| `cycles` | 2 wiederkehrende Zyklen: kurze 4-Jahres-Rotation und langer 20-Jahres-Bogen |
 | `catastrophes` | benannte Katastrophe(n) |
-| `relics` | historische/Relikt-Schichten |
+| `relics` | 12 historische/Relikt-Schichten |
 | `magicShift` | magische Verwandlung mit eigenem Namen |
 | `site` | Name, Variante, Lore und Atlas-Anker |
 | `referenceSeed` | deterministischer Referenz-Seed |
@@ -84,26 +105,66 @@ gelesen. Jeder der 15 Punkte nennt in `consumer` seinen lebenden Verbraucher.
 | 1.2.23.15 | `climate-shift` | The Moving Treeline | taiga, tundra, mountain, temperate | Northern Hawk Owl, Tundra Vole, Bog Rosemary | Treeline Seed, Summer Pasture |
 | 1.2.23.16 | `catastrophe-belt` | The Drowned Coast | coastal, swamp, temperate, tropical | Pioneer Ground Beetle, Saltmarsh Sparrow, Grey Seal Pup | Salvage Driftwood, Saltmarsh Hay |
 
-### Content-Pack 3.91.0 — Der lange Feldforschungsbogen
+Die Tabelle nennt die ursprünglichen Kernarten und -güter. Das Panel zeigt pro
+Site die vollen 24 Kohorten, 12 Spezialisten und 8 Güter; die neuen deep-pack
+Namen stehen ausschließlich in `biome-frontier-lifeworks.js`.
 
-Jede Site hat sechs **Feldnotizen**. Eine Notiz ist kein freischaltbarer Text
-ohne Spiel: Sie liest einen echten Zähler oder Zustand (Survey, Deep Survey,
-Conservation, Restoration, Harvest, Stabilisation, Condition, Hazard, Klima-
-Analogstufe, Relikt-Schicht oder lebende Spezialisten), zahlt einmalig Gold und
-Moral und schreibt ihren Namen dauerhaft in den SITE RECORD. Die Notizen sind
-also Langzeitziele über mehrere Jahre und teils Jahrzehnte, keine zweite
-Währung und kein zweiter Jahrespass.
+### Content-Pack 3.92.0 — Die dreistufige Feldforschungskette
 
-Beispiele: der **Feuerkalender** lehrt geplantes Frühbrennen, die
-**Mangroven-Schutzwälle** opfern den äußeren Saum an die nächste Sturmflut, die
-**Korallen-Akustikkarte** hört den Riffzustand, das **Eisbohrkern-Archiv** datiert
-alte Stürme, der **Ley-Kompass** hält die Richtung im gefalteten Wald, die
-**Fluchquarantäne** schützt das Umland, das **Sporenwetter** warnt vor der
-nächsten Pilzwolke, der **Faltatlas** zeichnet beide Formen des Prism Scars, die
-**Serpentin-Saatbank** rettet endemische Kräuter, die **Hecken-Charta** regelt
-den Schnitt, der **Klima-Analog-Saatgutwechsel** pflanzt den Wald der Zukunft,
-und der **Breach-Pilot** lenkt die nächste Sturmflut durch das alte Feld statt
-durch das Dorf.
+Jede Site hat zwölf **Feldnotizen**, verteilt auf drei Stufen mit je vier
+Notizen. Eine Notiz ist kein freischaltbarer Text ohne Spiel: Sie liest einen
+echten Zähler oder Zustand — Survey, Deep Survey, Conservation, Restoration,
+Harvest, Stabilisation, Condition, Hazard, Klima-Analogstufe, Relikt-Schicht,
+lebende Spezialisten, Zyklus-Ernten oder abgeschlossene Rotationen — und zahlt
+genau einmal. Die Belohnungen steigen mit der Stufe und umfassen Gold, Moral,
+Nahrung, Holz, Stein, Legitimität, Fraktionszustimmung, diplomatische
+Beziehungen, Garnisonsmoral, Wildmagie/Korruption sowie die dauerhafte
+**Kronen-Charta** der Stufe 3.
+
+**Freischaltung:** Stufe 1 ist von Beginn an offen. Stufe 2 öffnet erst, wenn
+alle vier Notizen der Stufe 1 im `state.biomeFrontiers`-Ledger stehen; Stufe 3
+erst nach allen vier Notizen der Stufe 2. Die erreichbare Stufe wird beim
+Settle-Aufruf einmal festgelegt. Eine einzelne Aktion kann deshalb nicht durch
+mehrere Stufen kaskadieren. Jede ID bleibt in alten Saves gültig; die früheren
+sechs Notizen wurden den Stufen 1/1/1, 2/2 und 3 zugeordnet und ihre festen
+Gold-/Moralgrants steigen mit der Stufe.
+
+Beispiele: der **Feuerkalender** und die **Gras-Kohorte** bilden Stufe 1; die
+**Restoration Line** und das **Rotationsbuch** öffnen Stufe 2; die
+**Redpass-Charta** schließt nach fünf vollständigen Rotationen Stufe 3 ab.
+Dieselbe Kette existiert für alle 15 Familien mit eigenen Namen und Zielen,
+etwa **Creek Harvest → Root Restoration → Blue-Carbon Pact** an der Mangrove,
+**Shelf Take → Snow Wall → Ice Steward** in der Eiswüste oder **Wrack Take →
+Dune Repair → Living-Coast Charter** am Katastrophengürtel.
+
+### Übersicht der neuen Ketten und Zyklen
+
+Jede Site folgt demselben mechanischen Rhythmus, aber mit eigenen Namen:
+Stufe 1 verlangt Survey, Deep Survey, Conservation und den ersten Harvest;
+Stufe 2 verbindet Restoration mit einer echten Zyklus-Ernte; Stufe 3 verlangt
+Hazard-Erfahrung, vier Restorationen, acht Zyklus-Ernten und fünf vollständige
+Rotationen. Die kurze Rotation öffnet alle vier Jahre ein Harvest-Fenster und
+danach ein Regenerationsfenster; der lange Bogen läuft über zwanzig Jahre und
+berührt bei jedem Harvest Wirtschaft, Moral, Politik, Diplomatie, Garnison
+und/oder Magie.
+
+| Punkt | Familie | Kurzer Zyklus | Langer Zyklus |
+| --- | --- | --- | --- |
+| 1.2.23.2 | `savanna-dry-woodland` | Grass-and-Fire Rotation · 4J | Elephant Road Decade · 20J |
+| 1.2.23.3 | `mangrove` | Tide and Propagule Cycle · 4J | Cyclone Recovery Arc · 20J |
+| 1.2.23.4 | `coral-coast` | Reef Spawning Window · 4J | Reef Resilience Decade · 20J |
+| 1.2.23.5 | `alpine-grassland` | Shieling Season · 4J | Transhumance Generation · 20J |
+| 1.2.23.6 | `subarctic-shrub` | Lichen Recovery Cycle · 4J | Reindeer Migration Arc · 20J |
+| 1.2.23.7 | `ice-desert` | Meltwater Window · 4J | Shelf Break Cycle · 20J |
+| 1.2.23.8 | `underground-lakes` | Drip and Flood Cycle · 4J | Lake Level Century · 20J |
+| 1.2.23.9 | `magic-primeval` | Ley Tide · 4J | Covenant Renewal · 20J |
+| 1.2.23.10 | `cursed-wasteland` | Mourning Cycle · 4J | Curse Waning · 20J |
+| 1.2.23.11 | `fungal-crystal` | Fruiting Pulse · 4J | Crystal Seam Cycle · 20J |
+| 1.2.23.12 | `magic-transfigured` | Fold Weather · 4J | Anchor Alignment · 20J |
+| 1.2.23.13 | `rare-community` | Refuge Season · 4J | Refugium Century · 20J |
+| 1.2.23.14 | `historic-landform` | Parish Year · 4J | Charter Renewal · 20J |
+| 1.2.23.15 | `climate-shift` | Treeline Season · 4J | Analog Transition · 20J |
+| 1.2.23.16 | `catastrophe-belt` | Storm and Salvage Cycle · 4J | Breach Recovery Arc · 20J |
 
 ### 1.2.23.2 — Savannen und Trockenwälder
 
@@ -270,13 +331,24 @@ deaktivierten Button, nie als stummes `disabled`.
 7. **Seltene Gemeinschaft:** unter 30 verschwindet ein Spezialist, ab 65 kehrt
    einer zurück.
 8. **Güter:** jährlicher Ertrag nur bei Condition ≥ 30, unter Schutz etwas
-   geringer; Bestand ist auf 999 begrenzt.
-9. **Relikt-Schichten:** historische Sites lesen alle zwölf Jahre eine weitere
-   Schicht.
-10. **Feldnotizen:** deklarative Ziele werden nach jeder Aktion, jeder
-    Katastrophe und am Ende des Jahrespasses geprüft; jede Notiz zahlt genau
-    einmal und wird im Site-Verlauf gespeichert.
-11. **Phase:** pristine ≥ 82, resilient ≥ 62, strained ≥ 40, relict ≥ 18,
+   geringer, mit Kronen-Charta +8 %; Bestand ist auf 999 begrenzt.
+9. **Zyklen:** pro Site werden zwei Zyklen gelesen. Ein Harvest-Fenster zahlt
+   einmal pro Periode, ein Regenerationsfenster hebt Condition und senkt
+   Korruption, und eine volle Rotation erhöht den Zähler. Die bezahlten
+   Perioden werden in `site.cycles` gespeichert, damit Save/Load keinen
+   Harvest doppelt auszahlt. **Nur untersuchte Sites zahlen**: die erste Survey
+   macht die Site für die Krone lesbar; vorher läuft die Ökologie weiter, aber
+   Harvest- und Regenerationsfenster verfallen, statt Jahre nachträglich
+   auszuzahlen. Lange Harvests schreiben zusätzlich in `state.resources`,
+   `state.morale`, `state.politics`, `state.diplomacy`, Soldatenmoral und/oder
+   Wildmagie.
+10. **Relikt-Schichten:** historische Sites lesen alle zwölf Jahre eine weitere
+    Schicht.
+11. **Feldnotizen:** deklarative Ziele werden nach jeder Aktion, jeder
+    Katastrophe und am Ende des Jahrespasses geprüft, aber erst nach der ersten
+    Survey. Die beim Aufruf erreichbare Stufe ist fixiert; jede Notiz zahlt
+    genau einmal und wird im Site-Verlauf gespeichert.
+12. **Phase:** pristine ≥ 82, resilient ≥ 62, strained ≥ 40, relict ≥ 18,
     collapse ≥ 1, vanished < 0,5.
 
 ## 6. Persistenz und Performance
@@ -287,9 +359,9 @@ deaktivierten Button, nie als stummes `disabled`.
   exakter JSON-Roundtrip garantiert ist.
 - `validateBiomeFrontierSnapshot()` prüft Version, Seed, 15 Sites, eindeutige
   Familien, Array-Grenzen und alle 0–100-Werte.
-- Jede Site hat höchstens 12 Arten, 6 Spezialisten, 6 Hazards, 4 Güter, 6
-  Feldnotizen, 12 History-Zeilen und 6 Relikt-Schichten; der globale Verlauf ist
-  auf 48 Zeilen begrenzt.
+- Jede Site hat höchstens 24 Arten, 12 Spezialisten, 12 Hazards, 8 Güter, 12
+  Feldnotizen, 2 Zyklen, 12 History-Zeilen und 12 Relikt-Schichten; der globale
+  Verlauf ist auf 48 Zeilen begrenzt.
 - Der Jahrespass läuft über 15 Sites. Es gibt keinen Per-Frame-, Per-Tick- oder
   Per-Tile-Aufwand und keinen neuen Canvas.
 
@@ -300,9 +372,12 @@ den entdeckten Regionen. Jede Site ist ein `<details>`-Card mit:
 
 - Name, Familie, Klima-Analogie, Phase und Aspekt,
 - vier Metern (Condition, Extent, Wild Magic, Corruption),
-- drei Hazard-Karten mit Jahr und Severity,
-- Arten-Roster, seltener Gemeinschaft, sechs Feldnotizen und Relikt-Schichten,
-- Gütern mit Bestand und Verkauf,
+- zwölf Hazard-Karten mit Jahr und Severity,
+- zwei Zyklus-Karten mit Phase, Harvest-/Regenerationsfenster, Rotationen und
+  Belohnungszeile,
+- Arten-Roster, seltener Gemeinschaft, zwölf Feldnotizen in drei Stufen und
+  zwölf Relikt-Schichten,
+- acht Gütern mit Bestand und Verkauf,
 - echten Aktionsbuttons mit Kosten und Begründung,
 - Site-Record und Field Guide 1.2.23.2–16.
 
@@ -330,21 +405,26 @@ Kontrast und den sichtbaren Jahresgrund.
 
 ## 8. Verifikation
 
-- `tests/systems/biome-frontiers.test.js` — 12 Tests: Katalog, 15 Sites,
-  Aktionen, Jahres-Sperre, Katastrophe/Revival, Klima-Analogie, Atlas-Kopplung,
-  Feldnotizen, 25-Jahres-Determinismus, Save-Roundtrip, 300-Jahres-Soak,
+- `tests/systems/biome-frontiers.test.js` — **14 Tests**: Katalog (24/12/12/8/12/12,
+  drei Stufen, zwei Zyklen), 15 Sites, Aktionen, Jahres-Sperre,
+  Katastrophe/Revival, Klima-Analogie, Atlas-Kopplung, Feldnotizen,
+  Stufen-Gating mit einmaliger T2-Belohnung, Save-Roundtrip, Zyklus- und
+  Cross-System-Effekte, 25-Jahres-Determinismus, 300-Jahres-Soak,
   Action-Begründungen.
 - `tests/browser/biome-frontiers-ui.mjs` — Desktop/Tablet-Spielerpfad: 15
-  Karten, 180 Kohorten, 90 Spezialisten, 90 Hazards, 60 Güter, 90 Feldnotizen,
-  15 Guide-Punkte, Survey, Conservation, Stabilisation, Layout-Audit und
-  Screenshots.
+  Karten, **360 Kohorten, 180 Spezialisten, 180 Hazards, 120 Güter, 180
+  Feldnotizen**, 15 Guide-Punkte, Survey, Deep Survey, Conservation,
+  Restoration, Stufe 1 → Stufe 2, genau eine T2-Belohnung, echter Save/Reload
+  über `#save-btn` und `#continue-game-btn`, Layout-Audit und Screenshots.
 - `tests/browser/biome-frontiers-mobile.mjs` — Smartphone-Referenz auf
   360×640, 390×844 und 414×896 sowie 640×360, 844×390 und 896×414: alle 15
   Guide-Punkte werden einzeln gelesen, jede Site-Karte geöffnet und geschlossen
   und alle acht Aktionen (Survey, Deep Survey, Conservation, Restoration,
   Revival, Harvest, Stabilisation, Verkauf) über echte Touch-Ziele ausgeführt.
-  44-px-Ziele, Textumbruch, Scrollport, Überlappung, Konsolen- und Assetfehler
-  werden pro Breite geprüft.
+  Zusätzlich läuft auf jedem Viewport die Kette Stufe 1 → Stufe 2; auf 640×360
+  wird sie gespeichert, neu geladen und unverändert wiedergefunden. 44-px-Ziele,
+  Textumbruch, Scrollport, Überlappung, Konsolen- und Assetfehler werden pro
+  Breite geprüft.
 - `scripts/biome-frontiers-soak.mjs` — drei Seeds × 300 Jahre, Bound- und
   Finite-Prüfung, JSON-Bericht.
 - `npm run spec:audit` — Sektion `1.2.23.2-16` ohne offene Punkte.
@@ -353,8 +433,9 @@ Kontrast und den sichtbaren Jahresgrund.
 
 1. Der Katalog ist reine Daten: kein Code, DOM, URL oder Save-Mutation aus einer
    Familiendefinition.
-2. Eine Site pro Familie, 15 insgesamt; alle Arrays sind begrenzt (12 Arten, 6
-   Spezialisten, 6 Hazards, 4 Güter, 6 Feldnotizen, 12 Verlaufszeilen).
+2. Eine Site pro Familie, 15 insgesamt; alle Arrays sind begrenzt (24 Arten, 12
+   Spezialisten, 12 Hazards, 8 Güter, 12 Feldnotizen, 2 Zyklen, 12
+   Verlaufszeilen, 12 Relikt-Schichten).
 3. Der Jahrespass läuft einmal in der bestehenden Jahreskette.
 4. Deterministische Hashes aus Seed, Site und Jahr; kein Verbrauch des
    gemeinsamen Gameplay-RNG.

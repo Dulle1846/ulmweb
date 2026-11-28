@@ -1138,7 +1138,26 @@ body.ui-forest-symbolic .forest-atlas__card{--ui-paper-text:#f2e5c4;--ui-paper-m
 .biome-frontier__button:disabled{opacity:.78;filter:none;color:#4d493c;background:#e8dcbd;border-style:dashed;cursor:not-allowed}
 .biome-frontier__last{margin:0!important;padding:7px 8px;border-left:3px solid var(--frontier-accent);background:rgba(87,108,63,.08);font-size:9px!important;line-height:1.45!important}
 .biome-frontier__last b{display:block;margin-bottom:2px;font-size:8px;letter-spacing:.07em;color:var(--frontier-accent)}
+.biome-frontier__cycles{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:5px}
+.biome-frontier__cycle{min-width:0;padding:7px 8px;border:1px solid var(--frontier-line);border-radius:5px;background:rgba(238,228,199,.32)}
+.biome-frontier__cycle header{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.biome-frontier__cycle header b{font-size:9px}
+.biome-frontier__cycle header span{font-size:7.5px;letter-spacing:.07em;color:var(--frontier-accent);white-space:nowrap}
+.biome-frontier__cycle p{margin:3px 0 5px;font-size:8px;line-height:1.4;color:var(--frontier-muted)}
+.biome-frontier__cycle-track{display:flex;gap:3px;flex-wrap:wrap}
+.biome-frontier__cycle-track span{padding:2px 5px;border:1px solid var(--frontier-line);border-radius:999px;font-size:7px;color:var(--frontier-muted)}
+.biome-frontier__cycle-track span.is-now{border-color:var(--frontier-accent);background:rgba(87,108,63,.14);color:var(--frontier-ink);font-weight:800}
+.biome-frontier__cycle-meta{display:flex;flex-wrap:wrap;gap:3px 7px;margin-top:5px;font-size:7px;letter-spacing:.04em;color:var(--frontier-muted)}
+.biome-frontier__cycle-reward{display:block;margin-top:4px;font-size:7.5px;line-height:1.35;color:var(--frontier-accent)}
+.biome-frontier__journal-tiers{display:grid;gap:6px}
+.biome-frontier__journal-tier{border:1px solid var(--frontier-line);border-radius:5px;padding:5px 6px;background:rgba(238,228,199,.2)}
+.biome-frontier__journal-tier>header{display:flex;justify-content:space-between;gap:8px;align-items:baseline;margin-bottom:4px}
+.biome-frontier__journal-tier>header b{font-size:8px;letter-spacing:.1em;color:var(--frontier-accent)}
+.biome-frontier__journal-tier>header span{font-size:7px;color:var(--frontier-muted)}
+.biome-frontier__journal-tier[data-frontier-journal-tier-state="complete"]{border-color:rgba(120,160,102,.7)}
 .biome-frontier__journal{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:4px}
+.biome-frontier__journal-entry.is-gated{opacity:.68;border-style:dashed}
+.biome-frontier__journal-reward{display:block;margin-top:2px;font-size:7px;line-height:1.3;color:var(--frontier-accent);font-style:normal}
 .biome-frontier__journal-entry{display:grid;grid-template-columns:auto minmax(0,1fr);gap:5px;align-items:start;min-width:0;padding:5px 6px;border:1px solid var(--frontier-line);border-radius:4px;background:rgba(238,228,199,.35)}
 .biome-frontier__journal-entry.is-found{border-left:3px solid var(--frontier-accent);background:rgba(87,108,63,.08)}
 .biome-frontier__journal-entry>span{font-size:8px;color:var(--frontier-accent)}
@@ -1195,11 +1214,24 @@ body.ui-forest-symbolic .forest-atlas__card{--ui-paper-text:#f2e5c4;--ui-paper-m
  .biome-frontier__hazard em{font-size:8.5px}
  .biome-frontier__section{font-size:10px;margin-top:8px}
  .biome-frontier__species-list,.biome-frontier__specialists{grid-template-columns:minmax(0,1fr);gap:5px}
+ .biome-frontier__cycles{grid-template-columns:minmax(0,1fr);gap:6px}
+ .biome-frontier__cycle{padding:9px 10px}
+ .biome-frontier__cycle header b{font-size:12px}
+ .biome-frontier__cycle header span{font-size:9px}
+ .biome-frontier__cycle p{font-size:10.5px;line-height:1.45}
+ .biome-frontier__cycle-track span{font-size:9px;padding:3px 7px}
+ .biome-frontier__cycle-meta{font-size:9px;line-height:1.4}
+ .biome-frontier__cycle-reward{font-size:9.5px;line-height:1.4}
+ .biome-frontier__journal-tiers{gap:7px}
+ .biome-frontier__journal-tier{padding:7px 8px}
+ .biome-frontier__journal-tier>header b{font-size:10px}
+ .biome-frontier__journal-tier>header span{font-size:9px}
  .biome-frontier__journal{grid-template-columns:minmax(0,1fr);gap:5px}
  .biome-frontier__journal-entry{padding:7px 8px}
  .biome-frontier__journal-entry>span{font-size:10px}
  .biome-frontier__journal-entry b{font-size:10.5px}
  .biome-frontier__journal-entry small{font-size:10px;line-height:1.45}
+ .biome-frontier__journal-reward{font-size:9px;line-height:1.4}
  .biome-frontier__species,.biome-frontier__specialist{padding:7px 8px}
  .biome-frontier__species>span{font-size:8.5px}
  .biome-frontier__species b,.biome-frontier__specialist b{font-size:11px}

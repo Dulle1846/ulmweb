@@ -1,13 +1,53 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.91.0`
-**Next development line:** `3.91.0-dev`
+**Current production version:** `3.92.0`
+**Next development line:** `3.92.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
 **Last repository verification:** 2026-11-28 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.92.0 — Frontier-Langzeitketten: 600 neue Einträge, drei Stufen und zwei Zyklen pro Site
+
+Der Frontier-Katalog verdoppelt seine Tiefe: **360 Artengruppen** (24 pro
+Site), **180 Spezialisten**, **180 benannte Störungen**, **120 Güter**, **180
+Relikt-Schichten**, **180 Feldnotizen** und **30 wiederkehrende Zyklen**. Jede
+der 15 Sites hat jetzt zwölf Feldnotizen in drei Stufen mit je vier Notizen.
+
+Die Kette liest echte Zähler: Survey, Deep Survey, Conservation, Restoration,
+Harvest, Stabilisation, Condition, Hazard, Klima-Analogstufe, Relikt-Schichten,
+lebende Spezialisten, Zyklus-Ernten und abgeschlossene Rotationen. Stufe 2
+öffnet erst nach allen vier Stufe-1-Notizen, Stufe 3 nach allen vier
+Stufe-2-Notizen; die erreichbare Stufe wird pro Aufruf einmal fixiert, damit
+eine Aktion nicht kaskadiert. Die Grants steigen von **18–34 Gold (T1)** über
+**40–76 Gold (T2)** auf **96–128 Gold (T3)** und zahlen zusätzlich Moral,
+Nahrung, Holz, Stein, Legitimität, Fraktionszustimmung, diplomatische
+Beziehungen oder Garnisonsmoral. Die letzte Stufe vergibt eine dauerhafte
+**Kronen-Charta**: +0,55 Condition pro Jahr und +8 % Güterertrag.
+
+Jede Site hat zwei Zyklen: eine **4-Jahres-Rotation** mit Harvest- und
+Regenerationsfenster und einen **20-Jahres-Bogen**. Harvests zahlen einmal pro
+Periode; die bezahlte Periode wird in `site.cycles` gespeichert, sodass
+Save/Load nicht doppelt zahlt. Lange Harvests schreiben in Ressourcen, Moral,
+Politik, Diplomatie, Soldatenmoral und Wildmagie/Korruption — die Biome sind
+damit sichtbar mit Wirtschaft, Krieg, Bevölkerung und Magie verbunden.
+
+**Sicherheit:** Save-Schema 15 und additives `state.biomeFrontiers` bleiben
+unverändert. Alte sechs Notizen behalten ihre IDs, werden den Stufen 1/1/1, 2/2
+und 3 zugeordnet und ihre Grants steigen mit der Stufe. Der Jahrespass bleibt
+ein Durchlauf über 15 Sites; die Zyklen laufen im selben Pass, ohne Per-Frame-
+oder Per-Tick-Arbeit. Unerforschte Sites bleiben wirtschaftlich stumm: die
+Ökologie läuft weiter, aber Feldnotizen und Zyklusfenster zahlen erst nach der
+ersten Survey. So bleiben lange Kampagnen deterministisch und werden nicht
+passiv durch Biome umbalanciert, die der Spieler nie betreten hat.
+
+**Verifikation:** 14 Systemtests inklusive Stufen-Gating, einmaliger
+T2-Belohnung, Save-Roundtrip, Zyklus- und Cross-System-Effekten, 25-Jahres-
+Determinismus und 300-Jahres-Soak; Desktop-Spielerpfad mit 360/180/180/120/180
+Einträgen und echtem Save/Reload; Mobile-/Querformat-Pfad auf sechs Viewports
+inklusive Stufe 1 → 2 und Save/Reload auf 640×360.
 
 ## 3.91.0 — Frontier-Katalog: 326 neue Arten, Störungen, Güter und Feldnotizen
 

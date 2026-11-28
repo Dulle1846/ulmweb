@@ -190,6 +190,26 @@ try {
     await page.waitForFunction(() => document.querySelectorAll("[data-frontier-site]").length === 15
         && document.querySelectorAll("[data-frontier-point]").length === 15, null, { timeout: 60000 });
 
+    const reopenBiome = async () => {
+        if (!(await page.locator("#command-modal").isVisible())) {
+            await activate(page.locator("#command-open-btn"));
+            await page.locator("#command-modal").waitFor({ state: "visible", timeout: 10000 });
+        }
+        if (await panelSelect.isVisible()) await panelSelect.selectOption("biome");
+        else await activate(page.locator('[data-command-tab="biome"]'));
+        await page.waitForFunction(() => document.querySelectorAll("[data-frontier-site]").length === 15, null, { timeout: 60000 });
+    };
+    const nextFrontierYear = async () => {
+        await page.keyboard.press("Escape");
+        await page.waitForTimeout(250);
+        await page.evaluate(async () => {
+            const { state } = await import("./js/core/state.js");
+            state.year = Math.max(2, Number(state.year) + 1);
+        });
+        await reopenBiome();
+        await openCard("savanna-dry-woodland");
+    };
+
     const initial = await page.evaluate(() => {
         const root = document.querySelector("[data-biome-frontier]");
         const cards = [...root.querySelectorAll("[data-frontier-site]")];
@@ -214,11 +234,11 @@ try {
     assert.equal(initial.rootSites, 15);
     assert.equal(initial.cards, 15);
     assert.equal(initial.families, 15);
-    assert.equal(initial.species, 180, "the fifteen sites must mount twelve living cohorts each");
-    assert.equal(initial.specialists, 90, "the fifteen sites must mount six rare species each");
-    assert.equal(initial.hazards, 90, "the fifteen sites must mount six hazards each");
-    assert.equal(initial.goods, 60, "the fifteen sites must mount four goods each");
-    assert.equal(initial.journal, 90, "the fifteen sites must mount six field notes each");
+    assert.equal(initial.species, 360, "the fifteen sites must mount twenty-four living cohorts each");
+    assert.equal(initial.specialists, 180, "the fifteen sites must mount twelve rare species each");
+    assert.equal(initial.hazards, 180, "the fifteen sites must mount twelve hazards each");
+    assert.equal(initial.goods, 120, "the fifteen sites must mount eight goods each");
+    assert.equal(initial.journal, 180, "the fifteen sites must mount twelve field notes each");
     assert.equal(initial.journalFound, 0, "field notes start locked");
     assert.ok(initial.actions >= 15, "every site must expose its action set");
     assert.equal(initial.points, 15);
@@ -250,11 +270,11 @@ try {
         actions: card.querySelectorAll("[data-frontier-action]").length,
     })));
     for (const card of cards) {
-        assert.equal(card.species, 12, card.family + " must show its full species roster");
-        assert.equal(card.specialists, 6, card.family + " must show its rare community");
-        assert.equal(card.hazards, 6, card.family + " must show its hazard record");
-        assert.equal(card.goods, 4, card.family + " must show four rare goods");
-        assert.equal(card.journal, 6, card.family + " must show six field notes");
+        assert.equal(card.species, 24, card.family + " must show its full species roster");
+        assert.equal(card.specialists, 12, card.family + " must show its rare community");
+        assert.equal(card.hazards, 12, card.family + " must show its hazard record");
+        assert.equal(card.goods, 8, card.family + " must show eight rare goods");
+        assert.equal(card.journal, 12, card.family + " must show twelve field notes");
         assert.ok(card.actions >= 1, card.family + " must expose an action");
         assert.ok(card.condition >= 0 && card.condition <= 100);
     }
@@ -328,7 +348,7 @@ try {
     }));
     assert.equal(afterDeep.deep, "1");
     assert.equal(afterDeep.gold, deepGoldBefore - 12 + 28, "the deep-survey fee and its field-note grant must both settle");
-    assert.equal(afterDeep.specials, 6);
+    assert.equal(afterDeep.specials, 12);
     report.checks.deepSurvey = { before: deepGoldBefore, after: afterDeep };
     await capture("action-deep-survey", page.locator('[data-frontier-family="savanna-dry-woodland"]'));
 
@@ -356,6 +376,105 @@ try {
     assert.ok(magicAfter < magicBefore, "stabilisation must lower wild magic");
     report.checks.stabilise = { before: magicBefore, after: magicAfter };
     await capture("action-stabilise", page.locator('[data-frontier-family="magic-primeval"]'));
+
+    // Tier 1 requires four real actions on one site. The fourth action opens
+    // tier 2; the next restoration must unlock exactly one tier-2 note and pay
+    // its larger grant once. The save/reload below is the player's own route.
+    await nextFrontierYear();
+    const conserveSavanna = page.locator('[data-frontier-family="savanna-dry-woodland"] [data-frontier-action="conserve"]');
+    assert.equal(await conserveSavanna.isDisabled(), false, "the fourth tier-1 action must be available");
+    await activate(conserveSavanna);
+    await page.waitForFunction(() => document.querySelector('[data-frontier-family="savanna-dry-woodland"]')?.dataset.frontierProtected === "1", null, { timeout: 20000 });
+
+    await nextFrontierYear();
+    const harvestSavanna = page.locator('[data-frontier-family="savanna-dry-woodland"] [data-frontier-action="harvest"]');
+    assert.equal(await harvestSavanna.isDisabled(), false, "the fourth tier-1 action must remain playable");
+    await activate(harvestSavanna);
+    await page.waitForFunction(() => Number(document.querySelector('[data-frontier-family="savanna-dry-woodland"]')?.dataset.frontierJournalCount) >= 4, null, { timeout: 20000 });
+    const tierOne = await page.evaluate(() => {
+        const card = document.querySelector('[data-frontier-family="savanna-dry-woodland"]');
+        return {
+            journal: Number(card?.dataset.frontierJournalCount),
+            tier: Number(card?.dataset.frontierJournalTier),
+            tiers: [...card.querySelectorAll('[data-frontier-journal-tier-block]')].map(row => ({
+                tier: Number(row.dataset.frontierJournalTier),
+                state: row.dataset.frontierJournalTierState,
+                unlocked: Number(row.dataset.frontierJournalTierUnlocked),
+                total: Number(row.dataset.frontierJournalTierTotal),
+            })),
+        };
+    });
+    assert.equal(tierOne.journal, 4, "tier 1 must complete with four notes");
+    assert.equal(tierOne.tier, 2, "tier 2 must open after tier 1");
+    assert.deepEqual(tierOne.tiers.map(row => row.unlocked), [4, 0, 0]);
+    assert.equal(tierOne.tiers[1].state, "locked");
+
+    await nextFrontierYear();
+    const tierTwoGold = await page.evaluate(async () => (await import("./js/core/state.js")).state.resources.gold);
+    const restoreSavanna = page.locator('[data-frontier-family="savanna-dry-woodland"] [data-frontier-action="restore"]');
+    assert.equal(await restoreSavanna.isDisabled(), false, "the tier-2 restoration must be playable");
+    await activate(restoreSavanna);
+    await page.waitForFunction(() => document.querySelector('[data-frontier-family="savanna-dry-woodland"]')?.dataset.frontierJournalTier === "2"
+        && document.querySelector('[data-frontier-family="savanna-dry-woodland"] [data-frontier-journal-tier-block="2"]')?.dataset.frontierJournalTierUnlocked === "1", null, { timeout: 20000 });
+    const tierTwo = await page.evaluate(async () => {
+        const card = document.querySelector('[data-frontier-family="savanna-dry-woodland"]');
+        return {
+            gold: (await import("./js/core/state.js")).state.resources.gold,
+            journal: Number(card?.dataset.frontierJournalCount),
+            tier: Number(card?.dataset.frontierJournalTier),
+            found: card.querySelectorAll('[data-frontier-journal-unlocked="1"]').length,
+            tierTwoFound: card.querySelectorAll('[data-frontier-journal-tier-block="2"] [data-frontier-journal-unlocked="1"]').length,
+            tierTwoUnlocked: Number(card.querySelector('[data-frontier-journal-tier-block="2"]')?.dataset.frontierJournalTierUnlocked),
+            charter: card?.dataset.frontierCharter,
+            cycles: [...card.querySelectorAll("[data-frontier-cycle]")].map(row => ({
+                id: row.dataset.frontierCycle,
+                phase: Number(row.dataset.frontierCyclePhase),
+                harvests: Number(row.dataset.frontierCycleHarvests),
+                completions: Number(row.dataset.frontierCycleCompletions),
+            })),
+        };
+    });
+    assert.equal(tierTwo.gold, tierTwoGold - 12 + 46, "the first tier-2 note pays its larger grant exactly once");
+    assert.equal(tierTwo.journal, 5, "only one tier-2 note may open");
+    assert.equal(tierTwo.found, 5);
+    assert.equal(tierTwo.tierTwoFound, 1);
+    assert.equal(tierTwo.tierTwoUnlocked, 1);
+    assert.equal(tierTwo.charter, "0", "the tier-3 charter is still locked");
+    assert.equal(tierTwo.cycles.length, 2, "both recurring cycles must be visible");
+    assert.ok(tierTwo.cycles.every(cycle => cycle.completions >= 0 && cycle.harvests >= 0));
+    report.checks.tierLadder = { tierOne, tierTwo };
+    await capture("tier-two", page.locator('[data-frontier-family="savanna-dry-woodland"]'));
+    await page.waitForTimeout(1900);
+    await capture("tier-two-journal", page.locator('[data-frontier-family="savanna-dry-woodland"] .biome-frontier__journal-tiers'));
+
+    await page.locator("#command-close").click();
+    await page.locator("#save-btn").click();
+    await page.waitForFunction(() => (document.querySelector("#save-status")?.textContent || "").includes("SAVED"), null, { timeout: 15000 });
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.locator("#start-screen").waitFor({ state: "visible", timeout: 15000 });
+    await page.waitForFunction(() => !document.querySelector("#continue-game-btn")?.disabled, null, { timeout: 10000 });
+    await page.locator("#continue-game-btn").click();
+    await page.waitForFunction(async () => (await import("./js/core/state.js")).state.hasStarted, null, { timeout: 60000 });
+    await page.evaluate(async () => { (await import("./js/core/state.js")).state.isPaused = true; });
+    await reopenBiome();
+    await openCard("savanna-dry-woodland");
+    const restoredTier = await page.evaluate(async () => {
+        const card = document.querySelector('[data-frontier-family="savanna-dry-woodland"]');
+        return {
+            gold: (await import("./js/core/state.js")).state.resources.gold,
+            journal: Number(card?.dataset.frontierJournalCount),
+            tier: Number(card?.dataset.frontierJournalTier),
+            tierTwoFound: card.querySelectorAll('[data-frontier-journal-tier-block="2"] [data-frontier-journal-unlocked="1"]').length,
+            cycles: [...card.querySelectorAll("[data-frontier-cycle]")].map(row => row.dataset.frontierCycle),
+        };
+    });
+    assert.equal(restoredTier.gold, tierTwo.gold, "save/reload must not pay the tier-2 reward again");
+    assert.equal(restoredTier.journal, 5);
+    assert.equal(restoredTier.tier, 2);
+    assert.equal(restoredTier.tierTwoFound, 1);
+    assert.deepEqual(restoredTier.cycles, ["seasonal", "long"]);
+    report.checks.persistence = restoredTier;
+    await capture("tier-two-restored", page.locator('[data-frontier-family="savanna-dry-woodland"]'));
 
     await openAllCards();
     const finalLayout = await auditLayout();

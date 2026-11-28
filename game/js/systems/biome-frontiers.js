@@ -10,14 +10,17 @@ import { state } from "../core/state.js";
 import { addLog } from "../core/event-log.js";
 import { addResource } from "./resources.js";
 import { getClimateDrift } from "./climate-drift.js";
+import { applyPoliticalEffects } from "./politics.js";
 import {
     BIOME_FRONTIER_ACTIONS, BIOME_FRONTIER_ASPECTS, BIOME_FRONTIER_BY_ID,
-    BIOME_FRONTIER_FAMILIES, BIOME_FRONTIER_GOOD_LIMIT, BIOME_FRONTIER_GOODS_CAP,
-    BIOME_FRONTIER_GROUPS, BIOME_FRONTIER_GUARDRAILS, BIOME_FRONTIER_HAZARD_LIMIT,
-    BIOME_FRONTIER_HISTORY_LIMIT, BIOME_FRONTIER_PHASES, BIOME_FRONTIER_REFERENCE_SEEDS,
-    BIOME_FRONTIER_REQUIREMENTS, BIOME_FRONTIER_SITE_HISTORY_LIMIT,
-    BIOME_FRONTIER_SITE_LIMIT, BIOME_FRONTIER_SPECIALIST_LIMIT,
-    BIOME_FRONTIER_SPECIES_LIMIT, BIOME_FRONTIER_VERSION,
+    BIOME_FRONTIER_CYCLE_LIMIT, BIOME_FRONTIER_FAMILIES, BIOME_FRONTIER_GOOD_LIMIT,
+    BIOME_FRONTIER_GOODS_CAP, BIOME_FRONTIER_GROUPS, BIOME_FRONTIER_GUARDRAILS,
+    BIOME_FRONTIER_HAZARD_LIMIT, BIOME_FRONTIER_HISTORY_LIMIT,
+    BIOME_FRONTIER_JOURNAL_TIER_LIMIT, BIOME_FRONTIER_PHASES,
+    BIOME_FRONTIER_REFERENCE_SEEDS, BIOME_FRONTIER_REQUIREMENTS,
+    BIOME_FRONTIER_SITE_HISTORY_LIMIT, BIOME_FRONTIER_SITE_LIMIT,
+    BIOME_FRONTIER_SPECIALIST_LIMIT, BIOME_FRONTIER_SPECIES_LIMIT,
+    BIOME_FRONTIER_VERSION,
 } from "../world/biome-frontiers.js";
 
 export const BIOME_FRONTIER_UPDATE_INTERVAL_YEARS = 1;
@@ -95,6 +98,80 @@ export function biomeFrontierPhaseFor(condition) {
     return BIOME_FRONTIER_PHASES[BIOME_FRONTIER_PHASES.length - 1];
 }
 
+const CYCLE_PHASE_COUNT = 4;
+
+function cyclePeriodNumber(cycle, year, offset) {
+    return Math.floor((Math.max(1, year) - 1 + Math.max(0, offset)) / Math.max(1, cycle.period));
+}
+
+function cyclePhaseIndex(cycle, year, offset) {
+    const period = Math.max(1, cycle.period);
+    const span = Math.max(1, Math.floor(period / CYCLE_PHASE_COUNT));
+    return Math.min(CYCLE_PHASE_COUNT - 1, Math.floor(((Math.max(1, year) - 1 + Math.max(0, offset)) % period) / span));
+}
+
+function cycleYearsToPhase(cycle, year, offset, target) {
+    const period = Math.max(1, cycle.period);
+    const span = Math.max(1, Math.floor(period / CYCLE_PHASE_COUNT));
+    const elapsed = Math.max(1, year) - 1 + Math.max(0, offset);
+    const targetAt = Math.floor(elapsed / period) * period + Math.max(0, Math.min(CYCLE_PHASE_COUNT - 1, target)) * span;
+    return targetAt >= elapsed ? targetAt - elapsed : targetAt + period - elapsed;
+}
+
+function createCycles(def, year, seed) {
+    const state = {};
+    for (const [index, cycle] of (def.cycles || []).slice(0, BIOME_FRONTIER_CYCLE_LIMIT).entries()) {
+        const offset = hash32(seed, hashString(def.id), index + 1, 0x43594c) % Math.max(1, cycle.period);
+        const phase = cyclePhaseIndex(cycle, year, offset);
+        const periodNumber = cyclePeriodNumber(cycle, year, offset);
+        state[cycle.id] = {
+            phase,
+            offset,
+            lastYear: year,
+            harvests: 0,
+            regenerations: 0,
+            completions: 0,
+            lastHarvestPeriod: phase === cycle.harvestPhase ? periodNumber : -1,
+            lastRegenerationPeriod: phase === cycle.regenerationPhase ? periodNumber : -1,
+            lastCompletionPeriod: phase === 0 ? periodNumber : -1,
+        };
+    }
+    return state;
+}
+
+function normalizeCycles(saved, def, year, seed) {
+    const base = createCycles(def, year, seed);
+    const source = saved && typeof saved === "object" && !Array.isArray(saved) ? saved : {};
+    const cycles = {};
+    for (const [id, fallback] of Object.entries(base)) {
+        const row = source[id] && typeof source[id] === "object" && !Array.isArray(source[id]) ? source[id] : {};
+        const cycle = (def.cycles || []).find(entry => entry.id === id);
+        const offset = cycle ? Math.max(0, Math.floor(num(row.offset, fallback.offset))) % Math.max(1, cycle.period) : fallback.offset;
+        const phase = Math.max(0, Math.min(CYCLE_PHASE_COUNT - 1, Math.floor(num(row.phase, fallback.phase))));
+        cycles[id] = {
+            phase,
+            offset,
+            lastYear: Math.max(1, Math.floor(num(row.lastYear, year))),
+            harvests: Math.max(0, Math.floor(num(row.harvests, 0))),
+            regenerations: Math.max(0, Math.floor(num(row.regenerations, 0))),
+            completions: Math.max(0, Math.floor(num(row.completions, 0))),
+            lastHarvestPeriod: Number.isFinite(Number(row.lastHarvestPeriod)) ? Math.floor(Number(row.lastHarvestPeriod)) : fallback.lastHarvestPeriod,
+            lastRegenerationPeriod: Number.isFinite(Number(row.lastRegenerationPeriod)) ? Math.floor(Number(row.lastRegenerationPeriod)) : fallback.lastRegenerationPeriod,
+            lastCompletionPeriod: Number.isFinite(Number(row.lastCompletionPeriod)) ? Math.floor(Number(row.lastCompletionPeriod)) : fallback.lastCompletionPeriod,
+        };
+    }
+    return cycles;
+}
+
+function cycleTotals(site) {
+    const rows = Object.values(site.cycles || {}).filter(row => row && typeof row === "object");
+    return {
+        harvests: rows.reduce((sum, row) => sum + Math.max(0, Math.floor(num(row.harvests, 0))), 0),
+        regenerations: rows.reduce((sum, row) => sum + Math.max(0, Math.floor(num(row.regenerations, 0))), 0),
+        completions: rows.reduce((sum, row) => sum + Math.max(0, Math.floor(num(row.completions, 0))), 0),
+    };
+}
+
 function createSpecies(def, seed) {
     return def.species.slice(0, BIOME_FRONTIER_SPECIES_LIMIT).map((row, index) => ({
         id: row.id,
@@ -169,6 +246,7 @@ export function createBiomeFrontierSite(def, index, seed, year = yearNow()) {
         aspectSince: aspect === "natural" ? 0 : Math.max(1, year),
         phase: biomeFrontierPhaseFor(condition).id,
         protected: false,
+        charter: false,
         surveyed: false,
         deepSurveyed: false,
         lastActionYear: 0,
@@ -186,6 +264,7 @@ export function createBiomeFrontierSite(def, index, seed, year = yearNow()) {
         hazards: createHazards(def),
         goods: createGoods(def),
         journal: [],
+        cycles: createCycles(def, year, siteSeed),
         history: [],
     };
 }
@@ -207,6 +286,7 @@ function baseState(year = yearNow()) {
             surveyed: 0, conserved: 0, restored: 0, revived: 0, harvested: 0,
             stabilised: 0, vanished: 0, transfigured: 0, climateShifts: 0,
             magicEvents: 0, catastrophes: 0, goods: 0, discoveries: 0,
+            cycleHarvests: 0, cycleRegenerations: 0, cycleCompletions: 0,
         },
     };
 }
@@ -324,6 +404,7 @@ function normalizeSite(row, def, index, seed, year) {
         aspectSince: Math.max(0, Math.floor(num(saved.aspectSince, 0))),
         phase,
         protected: Boolean(saved.protected),
+        charter: Boolean(saved.charter),
         surveyed: Boolean(saved.surveyed),
         deepSurveyed: Boolean(saved.deepSurveyed),
         lastActionYear: Math.max(0, Math.floor(num(saved.lastActionYear, 0))),
@@ -341,6 +422,7 @@ function normalizeSite(row, def, index, seed, year) {
         hazards,
         goods,
         journal,
+        cycles: normalizeCycles(saved.cycles, def, year, seed),
         history: Array.isArray(saved.history)
             ? saved.history.map(normalizeHistory).filter(Boolean).slice(-BIOME_FRONTIER_SITE_HISTORY_LIMIT)
             : [],
@@ -386,6 +468,9 @@ function normalizeModel(snapshot) {
             catastrophes: Math.max(0, Math.floor(num(snapshot.stats?.catastrophes, 0))),
             goods: Math.max(0, Math.floor(num(snapshot.stats?.goods, 0))),
             discoveries: Math.max(0, Math.floor(num(snapshot.stats?.discoveries, 0))),
+            cycleHarvests: Math.max(0, Math.floor(num(snapshot.stats?.cycleHarvests, 0))),
+            cycleRegenerations: Math.max(0, Math.floor(num(snapshot.stats?.cycleRegenerations, 0))),
+            cycleCompletions: Math.max(0, Math.floor(num(snapshot.stats?.cycleCompletions, 0))),
         },
     };
 }
@@ -459,6 +544,7 @@ function bump(model, key, amount = 1) {
 
 function journalGoalMet(site, entry) {
     const at = Math.max(0, num(entry.at, 1));
+    const totals = cycleTotals(site);
     switch (entry.goal) {
         case "surveys": return site.surveys >= at;
         case "deep": return site.deepSurveyed;
@@ -471,31 +557,178 @@ function journalGoalMet(site, entry) {
         case "climate": return site.climateAnalogIndex >= at;
         case "layers": return site.layers.length >= at;
         case "specialists": return site.specialists.filter(row => row.status === "living").length >= at;
+        case "cycleHarvests": return totals.harvests >= at;
+        case "cycleCompletions": return totals.completions >= at;
         default: return false;
     }
 }
 
-// Field notes are the long-term research layer. They are declarative goals
-// over counters the site already keeps, unlock once, and pay a fixed reward.
-// They never consume the shared RNG or add a second annual pass.
+function shiftFrontierRelations(amount) {
+    const realms = Array.isArray(state.diplomacy?.realms) ? state.diplomacy.realms : [];
+    let changed = 0;
+    for (const realm of realms.slice(0, 4)) {
+        if (!realm || typeof realm !== "object" || realm.treaty === "war") continue;
+        realm.relation = round(clamp(num(realm.relation, 0) + amount, 0, 100), 1);
+        realm.lastContactYear = yearNow();
+        changed += 1;
+    }
+    return changed;
+}
+
+function bolsterFrontierGarrison(amount) {
+    let changed = 0;
+    for (const entity of state.entities || []) {
+        if (changed >= 24) break;
+        if (!entity || entity.dead || !entity.military || typeof entity.military !== "object") continue;
+        entity.military.morale = round(clamp(num(entity.military.morale, 60) + amount, 0, 100), 1);
+        changed += 1;
+    }
+    return changed;
+}
+
+function addCycleGoods(site, amount) {
+    let left = Math.max(0, Math.floor(num(amount, 0)));
+    let changed = 0;
+    for (const good of site.goods || []) {
+        if (left <= 0) break;
+        const before = good.stock;
+        good.stock = clamp(good.stock + Math.min(left, 2), 0, BIOME_FRONTIER_GOODS_CAP);
+        left -= good.stock - before;
+        if (good.stock > before) changed += 1;
+    }
+    return changed;
+}
+
+function rewardSummary(reward = {}) {
+    return [
+        reward.gold ? "+" + Math.round(reward.gold) + " gold" : "",
+        reward.food ? "+" + Math.round(reward.food) + " food" : "",
+        reward.wood ? "+" + Math.round(reward.wood) + " wood" : "",
+        reward.stone ? "+" + Math.round(reward.stone) + " stone" : "",
+        reward.morale ? "+" + reward.morale + " morale" : "",
+        reward.legitimacy ? "+" + reward.legitimacy + " legitimacy" : "",
+        reward.relation ? "+" + reward.relation + " relations" : "",
+        reward.military ? "+" + reward.military + " soldier morale" : "",
+        reward.magic ? (reward.magic > 0 ? "+" : "") + reward.magic + " wild magic" : "",
+        reward.corruption ? (reward.corruption > 0 ? "+" : "") + reward.corruption + " corruption" : "",
+        reward.goods ? "+" + reward.goods + " goods" : "",
+        reward.charter ? "crown charter" : "",
+    ].filter(Boolean).join(", ");
+}
+
+function applyFrontierReward(model, site, reward = {}) {
+    if (reward.gold) addResource("gold", reward.gold);
+    for (const key of ["food", "wood", "stone"]) if (reward[key]) addResource(key, reward[key]);
+    if (reward.morale && state.morale != null) state.morale = clamp(num(state.morale, 50) + reward.morale, 0, 100);
+    const politics = {};
+    if (reward.legitimacy) politics.legitimacy = reward.legitimacy;
+    if (reward.faction && reward.factionAmount) politics[reward.faction] = reward.factionAmount;
+    if (Object.keys(politics).length) applyPoliticalEffects(politics);
+    if (reward.relation) shiftFrontierRelations(reward.relation);
+    if (reward.military) bolsterFrontierGarrison(reward.military);
+    if (reward.magic) site.magic = round(clamp(num(site.magic, 0) + reward.magic, 0, 100), 1);
+    if (reward.corruption) site.corruption = round(clamp(num(site.corruption, 0) + reward.corruption, 0, 100), 1);
+    if (reward.goods) addCycleGoods(site, reward.goods);
+    if (reward.charter) site.charter = true;
+}
+
+// Field notes are the long-term research ladder. Four notes form each tier;
+// the next tier opens only after the previous tier is complete, and the tier
+// is fixed when this pass begins so one action cannot cascade through it.
+function journalTierComplete(site, def, tier) {
+    const rows = def.journal.filter(entry => entry.tier === tier);
+    return rows.length > 0 && rows.every(entry => site.journal.includes(entry.id));
+}
+
+function accessibleJournalTier(site, def) {
+    let tier = 1;
+    for (let current = 1; current < BIOME_FRONTIER_JOURNAL_TIER_LIMIT; current += 1) {
+        if (!journalTierComplete(site, def, current)) break;
+        tier = current + 1;
+    }
+    return tier;
+}
+
+// Field notes unlock once, pay once and never consume the shared RNG. Tier 3
+// may grant a permanent crown charter, which is the site's visible unlock.
 function settleJournal(model, site) {
     const def = definitionFor(site);
-    if (!def?.journal?.length || !Array.isArray(site.journal)) return 0;
+    // The journal records work the crown has actually seen. An unsurveyed
+    // frontier still lives its own ecology, but it cannot pay research grants
+    // before the first survey reaches it.
+    if (!site.surveyed || !def?.journal?.length || !Array.isArray(site.journal)) return 0;
+    const maxTier = accessibleJournalTier(site, def);
     let unlocked = 0;
     for (const entry of def.journal) {
-        if (site.journal.includes(entry.id) || !journalGoalMet(site, entry)) continue;
+        if (entry.tier > maxTier || site.journal.includes(entry.id) || !journalGoalMet(site, entry)) continue;
         site.journal.push(entry.id);
         if (site.journal.length > def.journal.length) site.journal.splice(0, site.journal.length - def.journal.length);
         unlocked += 1;
         bump(model, "discoveries", 1);
-        if (entry.reward.gold) addResource("gold", entry.reward.gold);
-        if (entry.reward.morale && state.morale != null) {
-            state.morale = clamp(num(state.morale, 50) + entry.reward.morale, 0, 100);
-        }
-        pushHistory(model, site, "journal", entry.label + " recorded: " + entry.detail);
-        logEvent("FIELD NOTE · " + entry.label.toUpperCase() + " · " + site.name.toUpperCase(), "#b7c99b");
+        applyFrontierReward(model, site, entry.reward || {});
+        pushHistory(model, site, "journal", "T" + entry.tier + " " + entry.label + " recorded: " + entry.detail);
+        logEvent("FIELD NOTE T" + entry.tier + " · " + entry.label.toUpperCase() + " · " + site.name.toUpperCase(), "#b7c99b");
     }
     return unlocked;
+}
+
+function applyCycleReward(model, site, cycle, phaseLabel) {
+    const reward = cycle.reward || {};
+    applyFrontierReward(model, site, reward);
+    const summary = rewardSummary(reward);
+    if (summary) {
+        pushHistory(model, site, "cycle", cycle.label + " · " + phaseLabel + ": " + summary);
+        logEvent("FRONTIER CYCLE · " + cycle.label.toUpperCase() + " · " + phaseLabel.toUpperCase() + " · " + site.name.toUpperCase(), "#c7b27a");
+    }
+}
+
+function settleCycles(model, site, year) {
+    const def = definitionFor(site);
+    if (!def?.cycles?.length || !site.cycles) return 0;
+    // Cycles keep turning in the wild, but harvest and regeneration windows
+    // only pay the crown once a survey has made the site legible. The period
+    // marker advances anyway, so a late survey cannot claim years of back pay.
+    const observed = Boolean(site.surveyed);
+    let paid = 0;
+    for (const cycle of def.cycles.slice(0, BIOME_FRONTIER_CYCLE_LIMIT)) {
+        const row = site.cycles[cycle.id];
+        if (!row) continue;
+        const phase = cyclePhaseIndex(cycle, year, row.offset);
+        const periodNumber = cyclePeriodNumber(cycle, year, row.offset);
+        const phaseLabel = cycle.phaseLabels[phase] || "phase " + (phase + 1);
+        if (phase === cycle.harvestPhase && row.lastHarvestPeriod !== periodNumber) {
+            row.lastHarvestPeriod = periodNumber;
+            if (observed) {
+                row.harvests += 1;
+                bump(model, "cycleHarvests", 1);
+                applyCycleReward(model, site, cycle, phaseLabel);
+                paid += 1;
+            }
+        }
+        if (phase === cycle.regenerationPhase && row.lastRegenerationPeriod !== periodNumber) {
+            row.lastRegenerationPeriod = periodNumber;
+            if (observed) {
+                row.regenerations += 1;
+                site.condition = round(clamp(num(site.condition, 0) + 2 + (site.charter ? 0.5 : 0), 0, 100), 1);
+                site.corruption = round(clamp(num(site.corruption, 0) - 1, 0, 100), 1);
+                bump(model, "cycleRegenerations", 1);
+                pushHistory(model, site, "cycle", cycle.label + " · " + phaseLabel + ": regeneration restored the site.");
+            }
+        }
+        if (phase === 0 && row.phase !== 0 && row.lastCompletionPeriod !== periodNumber) {
+            row.lastCompletionPeriod = periodNumber;
+            if (observed) {
+                row.completions += 1;
+                site.condition = round(clamp(num(site.condition, 0) + 1, 0, 100), 1);
+                bump(model, "cycleCompletions", 1);
+                pushHistory(model, site, "cycle", cycle.label + " completed a full " + cycle.period + "-year rotation.");
+                logEvent("FRONTIER ROTATION COMPLETE · " + cycle.label.toUpperCase() + " · " + site.name.toUpperCase(), "#a9c58d");
+            }
+        }
+        row.phase = phase;
+        row.lastYear = year;
+    }
+    return paid;
 }
 
 function costLabel(cost) {
@@ -558,6 +791,39 @@ function siteSummary(site, model) {
     const phase = BIOME_FRONTIER_PHASES.find(entry => entry.id === site.phase) || BIOME_FRONTIER_PHASES[0];
     const aspect = BIOME_FRONTIER_ASPECTS[site.aspect] || BIOME_FRONTIER_ASPECTS.natural;
     const goods = site.goods.map(good => ({ ...good }));
+    const year = Math.max(1, Math.floor(num(model.lastUpdateYear, yearNow())));
+    const totals = cycleTotals(site);
+    const journalTiers = Array.from({ length: BIOME_FRONTIER_JOURNAL_TIER_LIMIT }, (_, index) => {
+        const tier = index + 1;
+        const rows = (def?.journal || []).filter(entry => entry.tier === tier);
+        const unlocked = rows.filter(entry => site.journal.includes(entry.id)).length;
+        return { tier, total: rows.length, unlocked, complete: rows.length > 0 && unlocked === rows.length };
+    });
+    const accessibleTier = def ? accessibleJournalTier(site, def) : 1;
+    const cycles = (def?.cycles || []).slice(0, BIOME_FRONTIER_CYCLE_LIMIT).map(cycle => {
+        const row = site.cycles?.[cycle.id] || { phase: 0, offset: 0, harvests: 0, regenerations: 0, completions: 0 };
+        const phaseIndex = cyclePhaseIndex(cycle, year, row.offset);
+        return {
+            id: cycle.id,
+            label: cycle.label,
+            detail: cycle.detail,
+            period: cycle.period,
+            phase: phaseIndex,
+            phaseLabel: cycle.phaseLabels[phaseIndex] || "phase " + (phaseIndex + 1),
+            phaseLabels: [...cycle.phaseLabels],
+            harvestPhase: cycle.harvestPhase,
+            regenerationPhase: cycle.regenerationPhase,
+            harvestOpen: phaseIndex === cycle.harvestPhase,
+            regenerationOpen: phaseIndex === cycle.regenerationPhase,
+            yearsToHarvest: phaseIndex === cycle.harvestPhase ? 0 : cycleYearsToPhase(cycle, year, row.offset, cycle.harvestPhase),
+            yearsToRegeneration: phaseIndex === cycle.regenerationPhase ? 0 : cycleYearsToPhase(cycle, year, row.offset, cycle.regenerationPhase),
+            harvests: Math.max(0, Math.floor(num(row.harvests, 0))),
+            regenerations: Math.max(0, Math.floor(num(row.regenerations, 0))),
+            completions: Math.max(0, Math.floor(num(row.completions, 0))),
+            reward: { ...cycle.reward },
+            rewardSummary: rewardSummary(cycle.reward),
+        };
+    });
     return {
         ...site,
         title: def?.title || title(site.family),
@@ -596,11 +862,22 @@ function siteSummary(site, model) {
             detail: entry.detail,
             goal: entry.goal,
             goalLabel: entry.goalLabel,
+            tier: entry.tier,
+            tierAccessible: entry.tier <= accessibleTier,
             reward: { ...entry.reward },
+            rewardSummary: rewardSummary(entry.reward),
             unlocked: site.journal.includes(entry.id),
         })),
+        journalTiers,
+        journalTier: accessibleTier,
+        journalNextTier: accessibleTier < BIOME_FRONTIER_JOURNAL_TIER_LIMIT ? accessibleTier + 1 : 0,
         journalUnlocked: site.journal.length,
         journalTotal: def?.journal?.length || 0,
+        cycles,
+        cycleHarvests: totals.harvests,
+        cycleRegenerations: totals.regenerations,
+        cycleCompletions: totals.completions,
+        charter: Boolean(site.charter),
         livingSpecies: site.species.filter(row => row.status === "living").length,
         livingSpecialists: site.specialists.filter(row => row.status === "living").length,
         goodsStock: goods.reduce((sum, row) => sum + row.stock, 0),
@@ -639,6 +916,10 @@ export function biomeFrontierSummary() {
             livingSpecialists: sites.reduce((sum, site) => sum + site.livingSpecialists, 0),
             discoveries: sites.reduce((sum, site) => sum + site.journalUnlocked, 0),
             journal: sites.reduce((sum, site) => sum + site.journalTotal, 0),
+            charters: sites.filter(site => site.charter).length,
+            cycleHarvests: sites.reduce((sum, site) => sum + site.cycleHarvests, 0),
+            cycleRegenerations: sites.reduce((sum, site) => sum + site.cycleRegenerations, 0),
+            cycleCompletions: sites.reduce((sum, site) => sum + site.cycleCompletions, 0),
             averageCondition: round(sites.reduce((sum, site) => sum + site.condition, 0) / Math.max(1, sites.length), 1),
         },
         history: model.history.slice().reverse().map(row => ({ ...row })),
@@ -919,7 +1200,7 @@ function advanceBiomeFrontierYear(model, site, year) {
         : clamp((55 - site.condition) * 0.05, 0, 2.2);
     const corruptionDrag = site.corruption / 45;
     const aspectDrag = site.aspect === "transfigured" ? 0.6 : site.aspect === "blighted" ? 1.1 : 0;
-    site.condition = round(clamp(site.condition + gain - stress + protection + recovery - corruptionDrag - aspectDrag + jitter, 0, 100), 1);
+    site.condition = round(clamp(site.condition + gain - stress + protection + recovery - corruptionDrag - aspectDrag + jitter + (site.charter ? 0.55 : 0), 0, 100), 1);
     site.extent = round(clamp(site.extent + (site.condition - 55) * 0.035 + (site.protected ? 0.2 : 0), 0, 100), 1);
     site.ageYears = Math.max(0, site.ageYears + 1);
     site.climatePressure = round(clamp(site.climatePressure + Math.max(0, effectiveWarming) * 5 + (def.warmingStress - 0.5) * 0.8, 0, 100), 1);
@@ -985,7 +1266,7 @@ function advanceBiomeFrontierYear(model, site, year) {
     // site gives up a little less to the harvest economy.
     if (site.condition >= 30 && site.phase !== "vanished") {
         for (const good of site.goods) {
-            const amount = Math.max(1, Math.round(good.annual * (0.4 + site.condition / 100) * (site.protected ? 0.8 : 1)));
+            const amount = Math.max(1, Math.round(good.annual * (0.4 + site.condition / 100) * (site.protected ? 0.8 : 1) * (site.charter ? 1.08 : 1)));
             good.stock = clamp(good.stock + amount, 0, BIOME_FRONTIER_GOODS_CAP);
         }
     }
@@ -1007,6 +1288,7 @@ function advanceBiomeFrontierYear(model, site, year) {
     } else if (site.phase !== beforePhase && !catastrophe?.vanished) {
         pushHistory(model, site, "phase", site.name + " moved from " + beforePhase + " to " + site.phase + ".");
     }
+    settleCycles(model, site, year);
     settleJournal(model, site);
     return {
         vanished: site.phase === "vanished",
@@ -1096,6 +1378,19 @@ export function validateBiomeFrontierSnapshot(snapshot) {
         if (!Array.isArray(site.specialists) || site.specialists.length > BIOME_FRONTIER_SPECIALIST_LIMIT) throw new Error("Save data contains too many frontier specialists.");
         if (!Array.isArray(site.hazards) || site.hazards.length > BIOME_FRONTIER_HAZARD_LIMIT) throw new Error("Save data contains too many frontier hazards.");
         if (!Array.isArray(site.goods) || site.goods.length > BIOME_FRONTIER_GOOD_LIMIT) throw new Error("Save data contains too many frontier goods.");
+        if (site.layers !== undefined && (!Array.isArray(site.layers) || site.layers.length > BIOME_FRONTIER_BY_ID[site.family].relics.length)) {
+            throw new Error("Save data contains too many frontier relict layers.");
+        }
+        if (site.cycles !== undefined && (!site.cycles || typeof site.cycles !== "object" || Array.isArray(site.cycles))) {
+            throw new Error("Save data contains an invalid frontier cycle ledger.");
+        }
+        if (site.cycles && Object.keys(site.cycles).length > BIOME_FRONTIER_CYCLE_LIMIT) {
+            throw new Error("Save data contains too many frontier cycles.");
+        }
+        for (const cycle of Object.values(site.cycles || {})) {
+            if (!cycle || typeof cycle !== "object" || Array.isArray(cycle)) throw new Error("Save data contains an invalid frontier cycle.");
+            if (!Number.isFinite(Number(cycle.phase)) || Number(cycle.phase) < 0 || Number(cycle.phase) >= 4) throw new Error("Save data contains an out-of-range frontier cycle phase.");
+        }
         const journalIds = new Set(BIOME_FRONTIER_BY_ID[site.family].journal.map(entry => entry.id));
         if (site.journal !== undefined && (!Array.isArray(site.journal) || site.journal.length > BIOME_FRONTIER_BY_ID[site.family].journal.length
             || site.journal.some(id => !journalIds.has(String(id))))) {

@@ -45,10 +45,51 @@ function specialistRow(row) {
         + '<small>' + (vanished ? "LOST FROM THE SITE" : "LIVING") + ' · ' + esc(row.note) + '</small></div>';
 }
 
+function rewardText(reward = {}) {
+    return [
+        reward.gold ? "+" + number(reward.gold) + "G" : "",
+        reward.food ? "+" + number(reward.food) + " food" : "",
+        reward.wood ? "+" + number(reward.wood) + " wood" : "",
+        reward.stone ? "+" + number(reward.stone) + " stone" : "",
+        reward.morale ? "+" + reward.morale + " morale" : "",
+        reward.legitimacy ? "+" + reward.legitimacy + " legitimacy" : "",
+        reward.relation ? "+" + reward.relation + " relations" : "",
+        reward.military ? "+" + reward.military + " soldier morale" : "",
+        reward.magic ? (reward.magic > 0 ? "+" : "") + reward.magic + " magic" : "",
+        reward.corruption ? (reward.corruption > 0 ? "+" : "") + reward.corruption + " corruption" : "",
+        reward.goods ? "+" + reward.goods + " goods" : "",
+        reward.charter ? "CROWN CHARTER" : "",
+    ].filter(Boolean).join(" · ");
+}
+
 function journalRow(entry) {
-    return '<div class="biome-frontier__journal-entry' + (entry.unlocked ? " is-found" : "") + '" data-frontier-journal="' + esc(entry.id) + '" data-frontier-journal-unlocked="' + (entry.unlocked ? "1" : "0") + '">'
-        + '<span>' + (entry.unlocked ? "✦" : "◇") + '</span><div><b>' + esc(entry.label) + '</b><small>'
-        + (entry.unlocked ? esc(entry.detail) : "LOCKED · " + esc(entry.goalLabel)) + '</small></div></div>';
+    const gate = entry.tierAccessible ? "LOCKED · " + entry.goalLabel : "LOCKED · COMPLETE TIER " + (entry.tier - 1);
+    return '<div class="biome-frontier__journal-entry' + (entry.unlocked ? " is-found" : "") + (entry.tierAccessible ? "" : " is-gated") + '" data-frontier-journal="' + esc(entry.id) + '" data-frontier-journal-unlocked="' + (entry.unlocked ? "1" : "0") + '" data-frontier-journal-tier="' + entry.tier + '">'
+        + '<span>' + (entry.unlocked ? "✦" : "T" + entry.tier) + '</span><div><b>' + esc(entry.label) + '</b><small>'
+        + (entry.unlocked ? esc(entry.detail) : gate) + '</small>'
+        + '<em class="biome-frontier__journal-reward">' + esc(rewardText(entry.reward)) + '</em>'
+        + '</div></div>';
+}
+
+function journalTierBlock(site, group) {
+    const rows = site.journal.filter(entry => entry.tier === group.tier);
+    const state = group.complete ? "complete" : group.unlocked > 0 ? "active" : "locked";
+    const gate = group.complete ? "COMPLETE" : group.unlocked > 0 ? "IN PROGRESS" : group.tier === 1 ? "OPEN FROM THE START" : "LOCKED UNTIL TIER " + (group.tier - 1) + " COMPLETES";
+    return '<div class="biome-frontier__journal-tier" data-frontier-journal-tier-block="' + group.tier + '" data-frontier-journal-tier="' + group.tier + '" data-frontier-journal-tier-state="' + state + '" data-frontier-journal-tier-unlocked="' + group.unlocked + '" data-frontier-journal-tier-total="' + group.total + '">'
+        + '<header><b>TIER ' + group.tier + ' · ' + (group.tier === 1 ? "SURVEY" : group.tier === 2 ? "STEWARDSHIP" : "CHARTER") + '</b><span>' + group.unlocked + ' / ' + group.total + ' · ' + gate + '</span></header>'
+        + '<div class="biome-frontier__journal">' + rows.map(journalRow).join("") + '</div></div>';
+}
+
+function cycleRow(cycle) {
+    const harvest = cycle.harvestOpen ? "OPEN NOW" : "IN " + cycle.yearsToHarvest + (cycle.yearsToHarvest === 1 ? " YEAR" : " YEARS");
+    const regeneration = cycle.regenerationOpen ? "OPEN NOW" : "IN " + cycle.yearsToRegeneration + (cycle.yearsToRegeneration === 1 ? " YEAR" : " YEARS");
+    return '<article class="biome-frontier__cycle" data-frontier-cycle="' + esc(cycle.id) + '" data-frontier-cycle-phase="' + cycle.phase + '" data-frontier-cycle-harvests="' + cycle.harvests + '" data-frontier-cycle-regenerations="' + cycle.regenerations + '" data-frontier-cycle-completions="' + cycle.completions + '">'
+        + '<header><b>' + esc(cycle.label) + '</b><span>' + esc(cycle.phaseLabel.toUpperCase()) + ' · ' + cycle.period + 'Y</span></header>'
+        + '<p>' + esc(cycle.detail) + '</p>'
+        + '<div class="biome-frontier__cycle-track">' + cycle.phaseLabels.map((label, index) => '<span' + (index === cycle.phase ? ' class="is-now"' : '') + '>' + esc(label) + '</span>').join("") + '</div>'
+        + '<div class="biome-frontier__cycle-meta"><span>HARVEST ' + harvest + '</span><span>REGENERATION ' + regeneration + '</span><span>ROTATIONS ' + cycle.completions + '</span><span>HARVESTS ' + cycle.harvests + '</span></div>'
+        + '<small class="biome-frontier__cycle-reward">HARVEST PAYS · ' + esc(cycle.rewardSummary) + '</small>'
+        + '</article>';
 }
 
 function goodRow(site, good) {
@@ -82,11 +123,13 @@ function card(site, index) {
         + ' data-frontier-species-count="' + number(site.livingSpecies) + '"'
         + ' data-frontier-specialist-count="' + number(site.livingSpecialists) + '" data-frontier-goods="' + number(site.goodsStock) + '"'
         + ' data-frontier-journal-count="' + number(site.journalUnlocked) + '" data-frontier-journal-total="' + number(site.journalTotal) + '"'
+        + ' data-frontier-journal-tier="' + site.journalTier + '" data-frontier-charter="' + (site.charter ? "1" : "0") + '"'
+        + ' data-frontier-cycle-harvests="' + site.cycleHarvests + '" data-frontier-cycle-completions="' + site.cycleCompletions + '"'
         + (site.protected ? ' data-frontier-protected="1"' : '')
         + ((openFrontierFamily ? site.family === openFrontierFamily : index === 0) ? ' open' : '') + '>'
         + '<summary><span class="biome-frontier__glyph" style="--frontier-accent:' + esc(site.palette[1] || "#9fc08e") + '">' + esc(site.glyph) + '</span>'
         + '<span class="biome-frontier__title"><b>' + esc(site.name) + '</b><small>' + esc(site.label) + ' · ' + esc(site.climateAnalog) + '</small></span>'
-        + '<span class="biome-frontier__state">' + aspectBadge + phaseBadge + '<small>' + (site.protected ? "CONSERVED" : "OPEN SITE") + ' · ' + number(site.goodsStock) + ' GOODS</small></span></summary>'
+        + '<span class="biome-frontier__state">' + aspectBadge + (site.charter ? '<span class="biome-badge is-rare">CROWN CHARTER</span>' : '') + phaseBadge + '<small>' + (site.protected ? "CONSERVED" : "OPEN SITE") + ' · ' + number(site.goodsStock) + ' GOODS</small></span></summary>'
         + '<div class="biome-frontier__body">'
         + '<p class="biome-frontier__profile">' + esc(site.profile) + '</p>'
         + '<div class="biome-chip-line"><small>' + esc(site.requirementPoint) + '</small>'
@@ -108,13 +151,15 @@ function card(site, index) {
             : site.protected
                 ? "A warden's agreement is in force: annual decline is halved and the rare community has priority."
                 : "Open site: harvest is cheaper now, but every take lowers condition and can cost a specialist.") + '</p>'
+        + '<div class="biome-frontier__section">RECURRING CYCLES · HARVEST AND REGENERATION WINDOWS</div>'
+        + '<div class="biome-frontier__cycles">' + site.cycles.map(cycleRow).join("") + '</div>'
         + '<div class="biome-frontier__hazards">' + site.hazards.map(hazardRow).join("") + '</div>'
         + '<div class="biome-frontier__section">SPECIES COHORTS · ' + number(site.livingSpecies) + ' LIVING</div>'
         + '<div class="biome-frontier__species-list">' + site.species.map(speciesRow).join("") + '</div>'
         + '<div class="biome-frontier__section">RARE COMMUNITY · ' + number(site.livingSpecialists) + ' / ' + number(site.specialists.length) + ' LIVING</div>'
         + '<div class="biome-frontier__specialists">' + site.specialists.map(specialistRow).join("") + '</div>'
-        + '<div class="biome-frontier__section">FIELD JOURNAL · ' + number(site.journalUnlocked) + ' / ' + number(site.journalTotal) + ' RECORDED</div>'
-        + '<div class="biome-frontier__journal">' + site.journal.map(journalRow).join("") + '</div>'
+        + '<div class="biome-frontier__section">FIELD JOURNAL · ' + number(site.journalUnlocked) + ' / ' + number(site.journalTotal) + ' RECORDED · TIER ' + site.journalTier + ' OPEN</div>'
+        + '<div class="biome-frontier__journal-tiers">' + site.journalTiers.map(group => journalTierBlock(site, group)).join("") + '</div>'
         + (site.layers.length ? '<div class="biome-frontier__section">RELICT &amp; HISTORICAL LAYERS</div><div class="biome-frontier__layers">'
             + site.layers.map(layer => '<span class="biome-badge">' + esc(layer) + '</span>').join("") + '</div>' : '')
         + (site.magicShift ? '<div class="biome-frontier__magic"><b>MAGICAL SHIFT · ' + esc(site.magicShift.label) + '</b><p>' + esc(site.magicShift.detail) + '</p></div>' : '')
@@ -156,7 +201,7 @@ export function biomeFrontierBlock() {
     return '<section class="biome-frontier" data-biome-frontier="15" data-frontier-sites="' + number(sites.length) + '"'
         + ' data-frontier-vanished="' + number(stats.vanished) + '" data-frontier-conserved="' + number(stats.conserved) + '">'
         + '<div class="command-section-title">FRONTIER ECOSYSTEMS · SAVANNA, COAST, ICE, DEEP, MAGIC AND MEMORY</div>'
-        + '<p class="command-note biome-frontier__intro">Fifteen extreme and changing ecosystems are bound to the ordinary province atlas: savanna and dry woodland, mangrove, coral coast, alpine grassland, subarctic shrubland, ice desert, underground lakes, magical primeval forest, cursed wasteland, fungal and crystal ground, magically transfigured biomes, rare endemic communities, historical landforms, climate-shifted ecotones and catastrophe belts. Each site has twelve species cohorts, six rare specialists, six named disturbances, four rare goods and six long-term field notes; nothing here runs per frame or replaces the 36-region atlas.</p>'
+        + '<p class="command-note biome-frontier__intro">Fifteen extreme and changing ecosystems are bound to the ordinary province atlas: savanna and dry woodland, mangrove, coral coast, alpine grassland, subarctic shrubland, ice desert, underground lakes, magical primeval forest, cursed wasteland, fungal and crystal ground, magically transfigured biomes, rare endemic communities, historical landforms, climate-shifted ecotones and catastrophe belts. Each site now carries twenty-four cohorts, twelve rare specialists, twelve named disturbances, eight rare goods, twelve relict layers, twelve field notes in three tiers and two recurring cycles. The short cycle opens a harvest window every few years; the long cycle returns across decades with trade, diplomacy, garrison morale and magic. Nothing here runs per frame or replaces the 36-region atlas.</p>'
         + '<div class="command-summary biome-frontier__summary">'
         + '<div><small>SITES</small><strong>' + number(sites.length) + ' / 15</strong></div>'
         + '<div><small>SURVEYED</small><strong>' + number(stats.surveyed) + ' / ' + number(sites.length) + '</strong></div>'
@@ -165,6 +210,7 @@ export function biomeFrontierBlock() {
         + '<div><small>AVERAGE CONDITION</small><strong>' + number(stats.averageCondition) + ' / 100</strong></div>'
         + '<div><small>RARE GOODS</small><strong>' + number(stats.goods) + '</strong></div>'
         + '<div><small>FIELD NOTES</small><strong>' + number(stats.discoveries) + ' / ' + number(stats.journal) + '</strong></div>'
+        + '<div><small>CHARTERS</small><strong>' + number(stats.charters) + ' / ' + number(sites.length) + '</strong></div>'
         + '</div>'
         + '<div class="biome-frontier__climate"><div><small>SHARED CLIMATE SIGNAL</small><b>Warming ' + signed(summary.climate.warming) + ' · drift ' + number(summary.climate.drift) + '</b><p>The same drift that moves the province woods shifts these analogue labels. Cold sites lose condition; warm and dry sites may gain it until drought or fire takes the difference.</p></div>'
         + '<div><small>RARE COMMUNITIES</small><b>' + number(stats.livingSpecialists) + ' / ' + number(stats.specialists) + ' specialist species living</b><p>A specialist vanishes below 30 condition and returns at 65. Conservation halves annual decline; stabilisation holds wild magic and corruption at a workable level.</p></div></div>'
