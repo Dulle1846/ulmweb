@@ -1,4 +1,4 @@
-# Low-end panel audit (3.90.0)
+# Low-end panel audit (3.90.1)
 
 The management deck is the part of Kings & Cards that grows most with a living
 realm. This release makes its cost visible and keeps every newly added panel on

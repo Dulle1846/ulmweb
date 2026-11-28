@@ -13,6 +13,7 @@ import {
     BIOME_REGION_MAX, BIOME_RESOURCE_CATEGORIES, BIOME_RESOURCE_VERSION
 } from "../world/biome-resource-data.js";
 import { BIOME_PLANTS } from "../world/biome-generation-data.js";
+import { renderBiomeFrontierParts } from "./biome-frontier-panel.js";
 
 const esc = value => String(value ?? "").replace(/[&<>"']/g, character => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
@@ -496,6 +497,10 @@ export function renderBiomePanelParts() {
             return '<div class="biome-chip-line"><small>FRONTIER MARKET</small>' + frontierList + '</div>' +
                 '<p class="command-note">The Regional Exchange reads these surveyed stocks on its next 90-day quote. Harvesting lowers stock and raises the quote; protection, fallow years and annual regrowth ease it. Stored frontier goods sell at the current market quote.</p>';
         },
+        // Frontier biomes keep their own bounded parts: one header, one climate
+        // block and one site card per part. Building the parts stays inside a
+        // staged continuation so the plain join remains byte-identical.
+        () => ready().available ? { html: "", more: renderBiomeFrontierParts() } : "",
         () => {
             const atlas = ready();
             if (!atlas.available) return "";

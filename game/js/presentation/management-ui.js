@@ -36,6 +36,7 @@ import { cleanBiomeWater, craftBiomeGoods, drainBiomeRegion, harvestBiomeResourc
 import { renderBiomePanel, renderBiomePanelParts } from "./biome-panel.js";
 import { invalidateForestAtlasSurvey, renderForestAtlasPanel, renderForestAtlasPanelParts } from "./forest-atlas-panel.js";
 import { afforestForestRegion, buildForestInstitution, designateForestMonument, fundCitizenScience, protectForestRegion, reintroduceForestSpecies, setForestConservationLaw } from "../systems/forest-legacy.js";
+import { runBiomeFrontierAction, sellBiomeFrontierGood } from "../systems/biome-frontiers.js";
 import { previewForestAmbience } from "../core/forest-ambience.js";
 import { forestPresentationProfile } from "../world/forest-presentation.js";
 import { forestMapFilters, forestPresentationSummary, resetForestMapFilters, setForestMapFilter } from "../systems/forest-presentation.js";
@@ -2288,6 +2289,8 @@ function act(b){ const a=b.dataset.command,v=b.dataset.value;let r={ok:false,rea
  else if(a==="biome-sell")r=sellBiomeGoods(v,b.dataset.biomeResource);
  else if(a==="biome-craft")r=craftBiomeGoods(v,b.dataset.biomeRecipe);
  else if(a==="biome-sell-craft")r=sellBiomeCraft(v,b.dataset.biomeRecipe);
+ else if(a==="frontier-action")r=runBiomeFrontierAction(v,b.dataset.frontierAction);
+ else if(a==="frontier-sell")r=sellBiomeFrontierGood(v,b.dataset.frontierGood);
  else if(a==="expedition-start")r=startExpedition(v,$("expedition-leader-select")?.value,$("expedition-supply-select")?.value);
  else if(a==="endeavour-start")r=startEndeavour(v,{overseerId:$("endeavour-overseer-select")?.value||null,funding:endeavourFunding});
  else if(a==="endeavour-funding"){endeavourFunding=Math.max(0,Math.min(2,Number(v)||0));r={ok:true};}

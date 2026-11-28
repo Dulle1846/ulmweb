@@ -1,7 +1,7 @@
 # Kings & Cards
 
-**Production version:** 3.90.0
-**Next development line:** 3.90.1-dev
+**Production version:** 3.90.1
+**Next development line:** 3.90.2-dev
 **Production branch:** `ulmweb-branch`  
 **Production URL:** https://kings-and-cards.pages.dev/
 
@@ -44,8 +44,9 @@
 33. [Keyboard-only play](docs/KEYBOARD_ACCESSIBILITY.md) - pause from any focused control, real tablists with arrow/Home/End navigation across the information tabs and the 29-panel management deck, focus restoration after Buildings/Bulk-Repair and Market actions, high-contrast-safe focus rings and a Chromium keyboard-only proof (v3.87.0).
 34. [Provincial charters](docs/PROVINCIAL_CHARTERS.md) — three autonomy tiers, yearly crown levy, loyalty-driven petitions, grant/refuse/revoke actions, deterministic 25-year campaign evidence and the 390×844 browser proof (v3.88.0).
 35. [Langfristige Systeme, Events, Modding und QA 1.2.23.1.271–300](docs/FOREST_LEGACY.md) — ten province woods on one annual pass: centuries of succession, climate migration and local extinction, six regional hazards, conservation law and reserves, seed/gene banks, nursery, forest museum and citizen science, reintroduction, natural monuments and tree-ring memory, validated forest data packs and community scenarios, achievements, codex, ten reference seeds, a 300-year soak and the 390×844, 820×1180 and 1440×900 player proofs (v3.89.3).
+36. [Frontier-Biome 1.2.23.2–16](docs/BIOME_FRONTIERS.md) — fifteen extra ecosystems beyond the province woods: savanna and dry woodland, mangrove, coral coast, alpine grassland, subarctic shrub, ice desert, underground lakes, magic primeval forest, cursed wasteland, fungal and crystal ground, magically transfigured biomes, rare endemic communities, historic landforms, climate-shifted ecotones and catastrophe belts. Every site carries six to eight cohorts, three rare species, three named hazards, two goods, a climate analogue, relic layers and a real catastrophe; one bounded annual pass drives succession, magic, corruption and shifting climate analogues, while survey, deep survey, conservation, restoration, revival, harvest, stabilisation and sale spend real resources. Save-compatible additive ledger, fifteen-point field guide, 300-year soak and desktop/tablet player proof (v3.90.0).
 
-36. [Low-end panel audit](docs/LOW_END_PANEL_AUDIT.md) - bounded timing history for every panel, staged mounting and part-generated markup for all heavy decks, removal of dead hydration work, a real 4x-throttled Chromium proof across all 29 panels and a deterministic 25-year campaign inside the unchanged CPU budget (v3.90.0).
+37. [Low-end panel audit](docs/LOW_END_PANEL_AUDIT.md) - bounded timing history for every panel, staged mounting and part-generated markup for all heavy decks, removal of dead hydration work, a real 4x-throttled Chromium proof across all 29 panels and a deterministic 25-year campaign inside the unchanged CPU budget (v3.90.1).
 
 ## Development rules
 
