@@ -2,13 +2,13 @@
 export const SPEC_COVERAGE = Object.freeze({
   "version": 2,
   "generatedBy": "scripts/spec-audit.mjs",
-  "commit": "c3e74a14ea03c797209a5d0957fe425692039237",
-  "sourceHash": "a79dda47535871cfce6794cba6562b061aae96d38b9a52b146e7472b816d928b",
+  "commit": "aa4247b64bbe318c797641841aa73c510782df90",
+  "sourceHash": "ec3ca4dc2cdabe108142fb7f12d6e44cba09fbce48b80449862a6c1788507162",
   "totals": {
-    "total": 1819,
-    "implemented": 1819,
+    "total": 1834,
+    "implemented": 1834,
     "open": 0,
-    "sections": 46
+    "sections": 47
   },
   "nextSection": null,
   "collisions": [
@@ -589,6 +589,14 @@ export const SPEC_COVERAGE = Object.freeze({
       "implemented": 30,
       "open": 0,
       "source": "js/world/forest-legacy-data.js"
+    },
+    {
+      "id": "1.2.23.2-16",
+      "title": "Frontier biomes, climate shifts and catastrophe memory",
+      "total": 15,
+      "implemented": 15,
+      "open": 0,
+      "source": "js/world/biome-frontiers.js"
     },
     {
       "id": "2.1",

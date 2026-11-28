@@ -8,6 +8,7 @@ import { getBiomeEconomySnapshot } from "../systems/biome-resource-state.js";
 import { getBiomeFrontierSupply } from "../systems/biome-market-link.js";
 import { BIOME_FOCUSES, BIOME_MARKET_CATEGORIES, BIOME_POLICIES, BIOME_RESOURCE_CATEGORIES } from "../world/biome-resource-data.js";
 import { BIOME_PLANTS } from "../world/biome-generation-data.js";
+import { biomeFrontierBlock } from "./biome-frontier-panel.js";
 
 const esc = value => String(value ?? "").replace(/[&<>"']/g, character => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
@@ -252,6 +253,7 @@ export function renderBiomePanel() {
         '<div class="biome-chip-line"><small>IMPORTED RAW MATERIALS</small>' + importList + '</div><div class="biome-chip-line"><small>REGIONAL EXPORTS</small>' + exportList + '</div><div class="biome-chip-line"><small>SPECIALISATIONS</small>' + specialisations + '</div>' +
         '<div class="biome-chip-line"><small>FRONTIER MARKET</small>' + frontierList + '</div>' +
         '<p class="command-note">The Regional Exchange reads these surveyed stocks on its next 90-day quote. Harvesting lowers stock and raises the quote; protection, fallow years and annual regrowth ease it. Stored frontier goods sell at the current market quote.</p>' +
+        biomeFrontierBlock() +
         '<div class="command-section-title">DISCOVERED REGIONS · ' + regions.length + '</div><div class="biome-region-list">' + (regions.map(regionCard).join("") || '<p class="command-note">No region has been explored yet. Send expeditions or reveal the map to discover the first biome.</p>') + '</div>' +
         '<div class="command-section-title">ECOLOGICAL RECORD</div><div class="command-history-list">' + ((atlas.history || []).map(historyEntry).join("") || '<p class="command-note">No ecological event has been recorded yet.</p>') + '</div>' +
         '<p class="command-note">The atlas is bounded to 36 regions and is saved with the realm. Rare deposits are not shown until explored and surveyed; every stock, population and policy survives a save and reload.</p>';

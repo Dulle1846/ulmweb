@@ -1,15 +1,15 @@
 {
   "version": 2,
   "generatedBy": "scripts/spec-audit.mjs",
-  "scope": "All numbered 1.1 and 1.2.1–1.2.18 requirements, including the 1.2.23.1.151–270 forest economy, culture, warfare and presentation with the field guide, plus the documented 2.x phases, 3.3–4.0 roadmap points, the 3.11 expedition chain, 3.8.14 noble arbitration, 3.9.12 atlas quest follow-ups and the 3.12 keyboard-only play contract.",
-  "commit": "c3e74a14ea03c797209a5d0957fe425692039237",
-  "sourceHash": "a79dda47535871cfce6794cba6562b061aae96d38b9a52b146e7472b816d928b",
-  "generatedAt": "2026-11-27T21:30:00+00:00",
+  "scope": "All numbered 1.1 and 1.2.1–1.2.18 requirements, including the 1.2.23.1.151–270 forest economy, culture, warfare and presentation with the field guide, the 1.2.23.2–16 frontier biome catalogue, plus the documented 2.x phases, 3.3–4.0 roadmap points, the 3.11 expedition chain, 3.8.14 noble arbitration, 3.9.12 atlas quest follow-ups and the 3.12 keyboard-only play contract.",
+  "commit": "aa4247b64bbe318c797641841aa73c510782df90",
+  "sourceHash": "ec3ca4dc2cdabe108142fb7f12d6e44cba09fbce48b80449862a6c1788507162",
+  "generatedAt": "2026-11-27T22:24:43+00:00",
   "totals": {
-    "total": 1819,
-    "implemented": 1819,
+    "total": 1834,
+    "implemented": 1834,
     "open": 0,
-    "sections": 46
+    "sections": 47
   },
   "collisions": [
     {
@@ -45101,6 +45101,564 @@
       "implemented": 30,
       "open": 0,
       "total": 30
+    },
+    {
+      "id": "1.2.23.2-16",
+      "title": "Frontier biomes, climate shifts and catastrophe memory",
+      "points": [
+        {
+          "id": "1.2.23.2",
+          "label": "Savannas and dry woodlands",
+          "key": "Savannen und Trockenwälder",
+          "group": "FRONTIER BIOME",
+          "status": "implemented",
+          "docEvidence": "BIOME_FRONTIER_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/biome-frontiers.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/biome-frontiers.js#BIOME_FRONTIER_REQUIREMENTS (catalog)",
+            "js/world/biome-frontiers.js#BIOME_FRONTIER_FAMILIES (15 ecosystems)",
+            "js/systems/biome-frontiers.js#biomeFrontierSummary (simulation)",
+            "js/systems/biome-frontiers.js#updateBiomeFrontiers (annual pass)",
+            "js/systems/biome-frontiers.js#applyBiomeFrontierCatastrophe (catastrophe)",
+            "js/systems/biome-frontiers.js#surveyBiomeFrontier (survey)",
+            "js/systems/biome-frontiers.js#harvestBiomeFrontier (harvest)",
+            "js/systems/biome-frontiers.js#biomeFrontierActionAvailability (action rules)",
+            "js/presentation/biome-frontier-panel.js#biomeFrontierBlock (ui)",
+            "js/presentation/biome-panel.js#biomeFrontierBlock (panel wiring)",
+            "js/presentation/management-ui.js#runBiomeFrontierAction (ui action)",
+            "js/simulation/simulation.js#updateBiomeFrontiers (annual wiring)",
+            "js/core/save-runtime.js#serializeBiomeFrontierState (persistence)",
+            "js/core/save-validation.js#validateBiomeFrontierSnapshot (save validation)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.3",
+          "label": "Mangroves",
+          "key": "Mangroven",
+          "group": "FRONTIER BIOME",
+          "status": "implemented",
+          "docEvidence": "BIOME_FRONTIER_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/biome-frontiers.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/biome-frontiers.js#BIOME_FRONTIER_REQUIREMENTS (catalog)",
+            "js/world/biome-frontiers.js#BIOME_FRONTIER_FAMILIES (15 ecosystems)",
+            "js/systems/biome-frontiers.js#biomeFrontierSummary (simulation)",
+            "js/systems/biome-frontiers.js#updateBiomeFrontiers (annual pass)",
+            "js/systems/biome-frontiers.js#applyBiomeFrontierCatastrophe (catastrophe)",
+            "js/systems/biome-frontiers.js#surveyBiomeFrontier (survey)",
+            "js/systems/biome-frontiers.js#harvestBiomeFrontier (harvest)",
+            "js/systems/biome-frontiers.js#biomeFrontierActionAvailability (action rules)",
+            "js/presentation/biome-frontier-panel.js#biomeFrontierBlock (ui)",
+            "js/presentation/biome-panel.js#biomeFrontierBlock (panel wiring)",
+            "js/presentation/management-ui.js#runBiomeFrontierAction (ui action)",
+            "js/simulation/simulation.js#updateBiomeFrontiers (annual wiring)",
+            "js/core/save-runtime.js#serializeBiomeFrontierState (persistence)",
+            "js/core/save-validation.js#validateBiomeFrontierSnapshot (save validation)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.4",
+          "label": "Coral islands and tropical coasts",
+          "key": "Koralleninseln und tropische Küsten",
+          "group": "FRONTIER BIOME",
+          "status": "implemented",
+          "docEvidence": "BIOME_FRONTIER_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/biome-frontiers.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/biome-frontiers.js#BIOME_FRONTIER_REQUIREMENTS (catalog)",
+            "js/world/biome-frontiers.js#BIOME_FRONTIER_FAMILIES (15 ecosystems)",
+            "js/systems/biome-frontiers.js#biomeFrontierSummary (simulation)",
+            "js/systems/biome-frontiers.js#updateBiomeFrontiers (annual pass)",
+            "js/systems/biome-frontiers.js#applyBiomeFrontierCatastrophe (catastrophe)",
+            "js/systems/biome-frontiers.js#surveyBiomeFrontier (survey)",
+            "js/systems/biome-frontiers.js#harvestBiomeFrontier (harvest)",
+            "js/systems/biome-frontiers.js#biomeFrontierActionAvailability (action rules)",
+            "js/presentation/biome-frontier-panel.js#biomeFrontierBlock (ui)",
+            "js/presentation/biome-panel.js#biomeFrontierBlock (panel wiring)",
+            "js/presentation/management-ui.js#runBiomeFrontierAction (ui action)",
+            "js/simulation/simulation.js#updateBiomeFrontiers (annual wiring)",
+            "js/core/save-runtime.js#serializeBiomeFrontierState (persistence)",
+            "js/core/save-validation.js#validateBiomeFrontierSnapshot (save validation)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.5",
+          "label": "Alpine grasslands",
+          "key": "Alpine Graslandschaften",
+          "group": "FRONTIER BIOME",
+          "status": "implemented",
+          "docEvidence": "BIOME_FRONTIER_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/biome-frontiers.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/biome-frontiers.js#BIOME_FRONTIER_REQUIREMENTS (catalog)",
+            "js/world/biome-frontiers.js#BIOME_FRONTIER_FAMILIES (15 ecosystems)",
+            "js/systems/biome-frontiers.js#biomeFrontierSummary (simulation)",
+            "js/systems/biome-frontiers.js#updateBiomeFrontiers (annual pass)",
+            "js/systems/biome-frontiers.js#applyBiomeFrontierCatastrophe (catastrophe)",
+            "js/systems/biome-frontiers.js#surveyBiomeFrontier (survey)",
+            "js/systems/biome-frontiers.js#harvestBiomeFrontier (harvest)",
+            "js/systems/biome-frontiers.js#biomeFrontierActionAvailability (action rules)",
+            "js/presentation/biome-frontier-panel.js#biomeFrontierBlock (ui)",
+            "js/presentation/biome-panel.js#biomeFrontierBlock (panel wiring)",
+            "js/presentation/management-ui.js#runBiomeFrontierAction (ui action)",
+            "js/simulation/simulation.js#updateBiomeFrontiers (annual wiring)",
+            "js/core/save-runtime.js#serializeBiomeFrontierState (persistence)",
+            "js/core/save-validation.js#validateBiomeFrontierSnapshot (save validation)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.6",
+          "label": "Subarctic shrublands",
+          "key": "Subarktische Buschlandschaften",
+          "group": "FRONTIER BIOME",
+          "status": "implemented",
+          "docEvidence": "BIOME_FRONTIER_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/biome-frontiers.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/biome-frontiers.js#BIOME_FRONTIER_REQUIREMENTS (catalog)",
+            "js/world/biome-frontiers.js#BIOME_FRONTIER_FAMILIES (15 ecosystems)",
+            "js/systems/biome-frontiers.js#biomeFrontierSummary (simulation)",
+            "js/systems/biome-frontiers.js#updateBiomeFrontiers (annual pass)",
+            "js/systems/biome-frontiers.js#applyBiomeFrontierCatastrophe (catastrophe)",
+            "js/systems/biome-frontiers.js#surveyBiomeFrontier (survey)",
+            "js/systems/biome-frontiers.js#harvestBiomeFrontier (harvest)",
+            "js/systems/biome-frontiers.js#biomeFrontierActionAvailability (action rules)",
+            "js/presentation/biome-frontier-panel.js#biomeFrontierBlock (ui)",
+            "js/presentation/biome-panel.js#biomeFrontierBlock (panel wiring)",
+            "js/presentation/management-ui.js#runBiomeFrontierAction (ui action)",
+            "js/simulation/simulation.js#updateBiomeFrontiers (annual wiring)",
+            "js/core/save-runtime.js#serializeBiomeFrontierState (persistence)",
+            "js/core/save-validation.js#validateBiomeFrontierSnapshot (save validation)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.7",
+          "label": "Ice deserts",
+          "key": "Eiswüsten",
+          "group": "FRONTIER BIOME",
+          "status": "implemented",
+          "docEvidence": "BIOME_FRONTIER_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/biome-frontiers.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/biome-frontiers.js#BIOME_FRONTIER_REQUIREMENTS (catalog)",
+            "js/world/biome-frontiers.js#BIOME_FRONTIER_FAMILIES (15 ecosystems)",
+            "js/systems/biome-frontiers.js#biomeFrontierSummary (simulation)",
+            "js/systems/biome-frontiers.js#updateBiomeFrontiers (annual pass)",
+            "js/systems/biome-frontiers.js#applyBiomeFrontierCatastrophe (catastrophe)",
+            "js/systems/biome-frontiers.js#surveyBiomeFrontier (survey)",
+            "js/systems/biome-frontiers.js#harvestBiomeFrontier (harvest)",
+            "js/systems/biome-frontiers.js#biomeFrontierActionAvailability (action rules)",
+            "js/presentation/biome-frontier-panel.js#biomeFrontierBlock (ui)",
+            "js/presentation/biome-panel.js#biomeFrontierBlock (panel wiring)",
+            "js/presentation/management-ui.js#runBiomeFrontierAction (ui action)",
+            "js/simulation/simulation.js#updateBiomeFrontiers (annual wiring)",
+            "js/core/save-runtime.js#serializeBiomeFrontierState (persistence)",
+            "js/core/save-validation.js#validateBiomeFrontierSnapshot (save validation)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.8",
+          "label": "Underground lakes and cave systems",
+          "key": "Unterirdische Seen und Höhlensysteme",
+          "group": "FRONTIER BIOME",
+          "status": "implemented",
+          "docEvidence": "BIOME_FRONTIER_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/biome-frontiers.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/biome-frontiers.js#BIOME_FRONTIER_REQUIREMENTS (catalog)",
+            "js/world/biome-frontiers.js#BIOME_FRONTIER_FAMILIES (15 ecosystems)",
+            "js/systems/biome-frontiers.js#biomeFrontierSummary (simulation)",
+            "js/systems/biome-frontiers.js#updateBiomeFrontiers (annual pass)",
+            "js/systems/biome-frontiers.js#applyBiomeFrontierCatastrophe (catastrophe)",
+            "js/systems/biome-frontiers.js#surveyBiomeFrontier (survey)",
+            "js/systems/biome-frontiers.js#harvestBiomeFrontier (harvest)",
+            "js/systems/biome-frontiers.js#biomeFrontierActionAvailability (action rules)",
+            "js/presentation/biome-frontier-panel.js#biomeFrontierBlock (ui)",
+            "js/presentation/biome-panel.js#biomeFrontierBlock (panel wiring)",
+            "js/presentation/management-ui.js#runBiomeFrontierAction (ui action)",
+            "js/simulation/simulation.js#updateBiomeFrontiers (annual wiring)",
+            "js/core/save-runtime.js#serializeBiomeFrontierState (persistence)",
+            "js/core/save-validation.js#validateBiomeFrontierSnapshot (save validation)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.9",
+          "label": "Magical primeval forests",
+          "key": "Magische Urwälder",
+          "group": "FRONTIER BIOME",
+          "status": "implemented",
+          "docEvidence": "BIOME_FRONTIER_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/biome-frontiers.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/biome-frontiers.js#BIOME_FRONTIER_REQUIREMENTS (catalog)",
+            "js/world/biome-frontiers.js#BIOME_FRONTIER_FAMILIES (15 ecosystems)",
+            "js/systems/biome-frontiers.js#biomeFrontierSummary (simulation)",
+            "js/systems/biome-frontiers.js#updateBiomeFrontiers (annual pass)",
+            "js/systems/biome-frontiers.js#applyBiomeFrontierCatastrophe (catastrophe)",
+            "js/systems/biome-frontiers.js#surveyBiomeFrontier (survey)",
+            "js/systems/biome-frontiers.js#harvestBiomeFrontier (harvest)",
+            "js/systems/biome-frontiers.js#biomeFrontierActionAvailability (action rules)",
+            "js/presentation/biome-frontier-panel.js#biomeFrontierBlock (ui)",
+            "js/presentation/biome-panel.js#biomeFrontierBlock (panel wiring)",
+            "js/presentation/management-ui.js#runBiomeFrontierAction (ui action)",
+            "js/simulation/simulation.js#updateBiomeFrontiers (annual wiring)",
+            "js/core/save-runtime.js#serializeBiomeFrontierState (persistence)",
+            "js/core/save-validation.js#validateBiomeFrontierSnapshot (save validation)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.10",
+          "label": "Cursed wastelands",
+          "key": "Verfluchte Ödlande",
+          "group": "FRONTIER BIOME",
+          "status": "implemented",
+          "docEvidence": "BIOME_FRONTIER_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/biome-frontiers.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/biome-frontiers.js#BIOME_FRONTIER_REQUIREMENTS (catalog)",
+            "js/world/biome-frontiers.js#BIOME_FRONTIER_FAMILIES (15 ecosystems)",
+            "js/systems/biome-frontiers.js#biomeFrontierSummary (simulation)",
+            "js/systems/biome-frontiers.js#updateBiomeFrontiers (annual pass)",
+            "js/systems/biome-frontiers.js#applyBiomeFrontierCatastrophe (catastrophe)",
+            "js/systems/biome-frontiers.js#surveyBiomeFrontier (survey)",
+            "js/systems/biome-frontiers.js#harvestBiomeFrontier (harvest)",
+            "js/systems/biome-frontiers.js#biomeFrontierActionAvailability (action rules)",
+            "js/presentation/biome-frontier-panel.js#biomeFrontierBlock (ui)",
+            "js/presentation/biome-panel.js#biomeFrontierBlock (panel wiring)",
+            "js/presentation/management-ui.js#runBiomeFrontierAction (ui action)",
+            "js/simulation/simulation.js#updateBiomeFrontiers (annual wiring)",
+            "js/core/save-runtime.js#serializeBiomeFrontierState (persistence)",
+            "js/core/save-validation.js#validateBiomeFrontierSnapshot (save validation)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.11",
+          "label": "Fungal and crystal ecosystems",
+          "key": "Pilz- und Kristallökosysteme",
+          "group": "FRONTIER BIOME",
+          "status": "implemented",
+          "docEvidence": "BIOME_FRONTIER_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/biome-frontiers.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/biome-frontiers.js#BIOME_FRONTIER_REQUIREMENTS (catalog)",
+            "js/world/biome-frontiers.js#BIOME_FRONTIER_FAMILIES (15 ecosystems)",
+            "js/systems/biome-frontiers.js#biomeFrontierSummary (simulation)",
+            "js/systems/biome-frontiers.js#updateBiomeFrontiers (annual pass)",
+            "js/systems/biome-frontiers.js#applyBiomeFrontierCatastrophe (catastrophe)",
+            "js/systems/biome-frontiers.js#surveyBiomeFrontier (survey)",
+            "js/systems/biome-frontiers.js#harvestBiomeFrontier (harvest)",
+            "js/systems/biome-frontiers.js#biomeFrontierActionAvailability (action rules)",
+            "js/presentation/biome-frontier-panel.js#biomeFrontierBlock (ui)",
+            "js/presentation/biome-panel.js#biomeFrontierBlock (panel wiring)",
+            "js/presentation/management-ui.js#runBiomeFrontierAction (ui action)",
+            "js/simulation/simulation.js#updateBiomeFrontiers (annual wiring)",
+            "js/core/save-runtime.js#serializeBiomeFrontierState (persistence)",
+            "js/core/save-validation.js#validateBiomeFrontierSnapshot (save validation)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.12",
+          "label": "Biomes changed by magical events",
+          "key": "Veränderte Biome durch magische Ereignisse",
+          "group": "FRONTIER BIOME",
+          "status": "implemented",
+          "docEvidence": "BIOME_FRONTIER_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/biome-frontiers.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/biome-frontiers.js#BIOME_FRONTIER_REQUIREMENTS (catalog)",
+            "js/world/biome-frontiers.js#BIOME_FRONTIER_FAMILIES (15 ecosystems)",
+            "js/systems/biome-frontiers.js#biomeFrontierSummary (simulation)",
+            "js/systems/biome-frontiers.js#updateBiomeFrontiers (annual pass)",
+            "js/systems/biome-frontiers.js#applyBiomeFrontierCatastrophe (catastrophe)",
+            "js/systems/biome-frontiers.js#surveyBiomeFrontier (survey)",
+            "js/systems/biome-frontiers.js#harvestBiomeFrontier (harvest)",
+            "js/systems/biome-frontiers.js#biomeFrontierActionAvailability (action rules)",
+            "js/presentation/biome-frontier-panel.js#biomeFrontierBlock (ui)",
+            "js/presentation/biome-panel.js#biomeFrontierBlock (panel wiring)",
+            "js/presentation/management-ui.js#runBiomeFrontierAction (ui action)",
+            "js/simulation/simulation.js#updateBiomeFrontiers (annual wiring)",
+            "js/core/save-runtime.js#serializeBiomeFrontierState (persistence)",
+            "js/core/save-validation.js#validateBiomeFrontierSnapshot (save validation)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.13",
+          "label": "Rare regional plant and animal communities",
+          "key": "Seltene regionale Pflanzen- und Tiergemeinschaften",
+          "group": "FRONTIER BIOME",
+          "status": "implemented",
+          "docEvidence": "BIOME_FRONTIER_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/biome-frontiers.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/biome-frontiers.js#BIOME_FRONTIER_REQUIREMENTS (catalog)",
+            "js/world/biome-frontiers.js#BIOME_FRONTIER_FAMILIES (15 ecosystems)",
+            "js/systems/biome-frontiers.js#biomeFrontierSummary (simulation)",
+            "js/systems/biome-frontiers.js#updateBiomeFrontiers (annual pass)",
+            "js/systems/biome-frontiers.js#applyBiomeFrontierCatastrophe (catastrophe)",
+            "js/systems/biome-frontiers.js#surveyBiomeFrontier (survey)",
+            "js/systems/biome-frontiers.js#harvestBiomeFrontier (harvest)",
+            "js/systems/biome-frontiers.js#biomeFrontierActionAvailability (action rules)",
+            "js/presentation/biome-frontier-panel.js#biomeFrontierBlock (ui)",
+            "js/presentation/biome-panel.js#biomeFrontierBlock (panel wiring)",
+            "js/presentation/management-ui.js#runBiomeFrontierAction (ui action)",
+            "js/simulation/simulation.js#updateBiomeFrontiers (annual wiring)",
+            "js/core/save-runtime.js#serializeBiomeFrontierState (persistence)",
+            "js/core/save-validation.js#validateBiomeFrontierSnapshot (save validation)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.14",
+          "label": "Historical landforms",
+          "key": "Historische Landschaftsformen",
+          "group": "FRONTIER BIOME",
+          "status": "implemented",
+          "docEvidence": "BIOME_FRONTIER_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/biome-frontiers.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/biome-frontiers.js#BIOME_FRONTIER_REQUIREMENTS (catalog)",
+            "js/world/biome-frontiers.js#BIOME_FRONTIER_FAMILIES (15 ecosystems)",
+            "js/systems/biome-frontiers.js#biomeFrontierSummary (simulation)",
+            "js/systems/biome-frontiers.js#updateBiomeFrontiers (annual pass)",
+            "js/systems/biome-frontiers.js#applyBiomeFrontierCatastrophe (catastrophe)",
+            "js/systems/biome-frontiers.js#surveyBiomeFrontier (survey)",
+            "js/systems/biome-frontiers.js#harvestBiomeFrontier (harvest)",
+            "js/systems/biome-frontiers.js#biomeFrontierActionAvailability (action rules)",
+            "js/presentation/biome-frontier-panel.js#biomeFrontierBlock (ui)",
+            "js/presentation/biome-panel.js#biomeFrontierBlock (panel wiring)",
+            "js/presentation/management-ui.js#runBiomeFrontierAction (ui action)",
+            "js/simulation/simulation.js#updateBiomeFrontiers (annual wiring)",
+            "js/core/save-runtime.js#serializeBiomeFrontierState (persistence)",
+            "js/core/save-validation.js#validateBiomeFrontierSnapshot (save validation)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.15",
+          "label": "Biomes through long-term climate change",
+          "key": "Biome durch langfristige Klimaveränderungen",
+          "group": "FRONTIER BIOME",
+          "status": "implemented",
+          "docEvidence": "BIOME_FRONTIER_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/biome-frontiers.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/biome-frontiers.js#BIOME_FRONTIER_REQUIREMENTS (catalog)",
+            "js/world/biome-frontiers.js#BIOME_FRONTIER_FAMILIES (15 ecosystems)",
+            "js/systems/biome-frontiers.js#biomeFrontierSummary (simulation)",
+            "js/systems/biome-frontiers.js#updateBiomeFrontiers (annual pass)",
+            "js/systems/biome-frontiers.js#applyBiomeFrontierCatastrophe (catastrophe)",
+            "js/systems/biome-frontiers.js#surveyBiomeFrontier (survey)",
+            "js/systems/biome-frontiers.js#harvestBiomeFrontier (harvest)",
+            "js/systems/biome-frontiers.js#biomeFrontierActionAvailability (action rules)",
+            "js/presentation/biome-frontier-panel.js#biomeFrontierBlock (ui)",
+            "js/presentation/biome-panel.js#biomeFrontierBlock (panel wiring)",
+            "js/presentation/management-ui.js#runBiomeFrontierAction (ui action)",
+            "js/simulation/simulation.js#updateBiomeFrontiers (annual wiring)",
+            "js/core/save-runtime.js#serializeBiomeFrontierState (persistence)",
+            "js/core/save-validation.js#validateBiomeFrontierSnapshot (save validation)"
+          ],
+          "probe": null
+        },
+        {
+          "id": "1.2.23.16",
+          "label": "Biomes that vanish or change through ecological catastrophe",
+          "key": "Biome, die durch ökologische Katastrophen verschwinden oder sich verändern",
+          "group": "FRONTIER BIOME",
+          "status": "implemented",
+          "docEvidence": "BIOME_FRONTIER_REQUIREMENTS",
+          "evidence": [],
+          "tests": [
+            "tests/systems/biome-frontiers.test.js"
+          ],
+          "missing": [],
+          "consumers": [
+            "js/world/biome-frontiers.js#BIOME_FRONTIER_REQUIREMENTS (catalog)",
+            "js/world/biome-frontiers.js#BIOME_FRONTIER_FAMILIES (15 ecosystems)",
+            "js/systems/biome-frontiers.js#biomeFrontierSummary (simulation)",
+            "js/systems/biome-frontiers.js#updateBiomeFrontiers (annual pass)",
+            "js/systems/biome-frontiers.js#applyBiomeFrontierCatastrophe (catastrophe)",
+            "js/systems/biome-frontiers.js#surveyBiomeFrontier (survey)",
+            "js/systems/biome-frontiers.js#harvestBiomeFrontier (harvest)",
+            "js/systems/biome-frontiers.js#biomeFrontierActionAvailability (action rules)",
+            "js/presentation/biome-frontier-panel.js#biomeFrontierBlock (ui)",
+            "js/presentation/biome-panel.js#biomeFrontierBlock (panel wiring)",
+            "js/presentation/management-ui.js#runBiomeFrontierAction (ui action)",
+            "js/simulation/simulation.js#updateBiomeFrontiers (annual wiring)",
+            "js/core/save-runtime.js#serializeBiomeFrontierState (persistence)",
+            "js/core/save-validation.js#validateBiomeFrontierSnapshot (save validation)"
+          ],
+          "probe": null
+        }
+      ],
+      "consumers": [
+        {
+          "file": "js/world/biome-frontiers.js",
+          "symbol": "BIOME_FRONTIER_REQUIREMENTS",
+          "role": "catalog",
+          "valid": true
+        },
+        {
+          "file": "js/world/biome-frontiers.js",
+          "symbol": "BIOME_FRONTIER_FAMILIES",
+          "role": "15 ecosystems",
+          "valid": true
+        },
+        {
+          "file": "js/systems/biome-frontiers.js",
+          "symbol": "biomeFrontierSummary",
+          "role": "simulation",
+          "valid": true
+        },
+        {
+          "file": "js/systems/biome-frontiers.js",
+          "symbol": "updateBiomeFrontiers",
+          "role": "annual pass",
+          "valid": true
+        },
+        {
+          "file": "js/systems/biome-frontiers.js",
+          "symbol": "applyBiomeFrontierCatastrophe",
+          "role": "catastrophe",
+          "valid": true
+        },
+        {
+          "file": "js/systems/biome-frontiers.js",
+          "symbol": "surveyBiomeFrontier",
+          "role": "survey",
+          "valid": true
+        },
+        {
+          "file": "js/systems/biome-frontiers.js",
+          "symbol": "harvestBiomeFrontier",
+          "role": "harvest",
+          "valid": true
+        },
+        {
+          "file": "js/systems/biome-frontiers.js",
+          "symbol": "biomeFrontierActionAvailability",
+          "role": "action rules",
+          "valid": true
+        },
+        {
+          "file": "js/presentation/biome-frontier-panel.js",
+          "symbol": "biomeFrontierBlock",
+          "role": "ui",
+          "valid": true
+        },
+        {
+          "file": "js/presentation/biome-panel.js",
+          "symbol": "biomeFrontierBlock",
+          "role": "panel wiring",
+          "valid": true
+        },
+        {
+          "file": "js/presentation/management-ui.js",
+          "symbol": "runBiomeFrontierAction",
+          "role": "ui action",
+          "valid": true
+        },
+        {
+          "file": "js/simulation/simulation.js",
+          "symbol": "updateBiomeFrontiers",
+          "role": "annual wiring",
+          "valid": true
+        },
+        {
+          "file": "js/core/save-runtime.js",
+          "symbol": "serializeBiomeFrontierState",
+          "role": "persistence",
+          "valid": true
+        },
+        {
+          "file": "js/core/save-validation.js",
+          "symbol": "validateBiomeFrontierSnapshot",
+          "role": "save validation",
+          "valid": true
+        }
+      ],
+      "tests": [
+        {
+          "file": "tests/systems/biome-frontiers.test.js",
+          "valid": true
+        }
+      ],
+      "source": "js/world/biome-frontiers.js",
+      "note": "15 player-facing frontier-biome requirements from BIOME_FRONTIER_REQUIREMENTS; each names its live consumer in the biome register.",
+      "probeFunction": null,
+      "probeClimate": "temperate",
+      "probeExtra": {},
+      "probeAvailable": false,
+      "probeObserved": 0,
+      "implemented": 15,
+      "open": 0,
+      "total": 15
     },
     {
       "id": "2.1",

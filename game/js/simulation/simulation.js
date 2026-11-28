@@ -36,6 +36,7 @@ import { updateFields } from "../systems/fields.js";
 import { updateForestFauna } from "../systems/forest-fauna.js";
 import { updateForestSuccession } from "../systems/forest-succession.js";
 import { updateForestLegacy } from "../systems/forest-legacy.js";
+import { updateBiomeFrontiers } from "../systems/biome-frontiers.js";
 import { updateForestPannage } from "../systems/forest-pannage.js";
 import { syncBiomeDiscovery, updateBiomeAtlasAnnual, updateBiomeAtlasSeason } from "../systems/biome-resource-state.js";
 import { updateLogistics } from "../systems/logistics.js";
@@ -164,7 +165,11 @@ const ANNUAL_TASKS = [
     { name: "biomeAtlas", run(annual) { annual.biomeAtlas = updateBiomeAtlasAnnual(); } },
     // 1.2.23.1.271–300: one bounded legacy pass per year. It runs after the
     // atlas so every regional consequence reads the same settled ecology.
-    { name: "forestLegacy", run(annual) { annual.forestLegacy = updateForestLegacy(); } }
+    { name: "forestLegacy", run(annual) { annual.forestLegacy = updateForestLegacy(); } },
+    // 1.2.23.2–16: one bounded frontier-ecosystem pass per year. It runs after
+    // the atlas and the forest ledger so condition, climate analogue, magic and
+    // catastrophe all read the same settled world.
+    { name: "biomeFrontiers", run(annual) { annual.biomeFrontiers = updateBiomeFrontiers(); } }
 ];
 
 let annualSlicingEnabled = false;

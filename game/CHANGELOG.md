@@ -1,13 +1,53 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.89.3`
-**Next development line:** `3.90.0-dev`
+**Current production version:** `3.90.0`
+**Next development line:** `3.91.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
 **Production URL:** https://kings-and-cards.pages.dev/  
-**Last repository verification:** 2026-11-27 (UTC)
+**Last repository verification:** 2026-11-28 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.90.0 — Fünfzehn Frontier-Ökosysteme, Klimawandel und Katastrophengedächtnis
+
+Die Biome-Schicht erhält fünfzehn ausführlich beschriebene Ökosysteme, die
+nicht in jeder Provinz liegen und nicht alle Wald sind: Savanne und
+Trockenwald, Mangrove, Koralleninsel-Küste, alpine Graslandschaft,
+subarktisches Buschland, Eiswüste, unterirdische Seen, magischer Urwald,
+verfluchtes Ödland, Pilz- und Kristallboden, magisch verwandelte Biome, seltene
+endemische Gemeinschaften, historische Landschaftsformen, klimaverscho­bene
+Ökotone und Katastrophengürtel. Jede Site hat sechs bis acht Kohorten, drei
+seltene Arten, drei benannte Störungen, zwei Güter, eine Klima-Analogie, eine
+Reliktfolge und eine echte Katastrophe.
+
+Der Katalog ist reine Daten (`js/world/biome-frontiers.js`); die Simulation
+(`js/systems/biome-frontiers.js`) bindet genau eine Site pro Familie an die
+vorhandenen 36 Atlas-Regionen. Es gibt keine zweite Karte, kein neues Raster
+und keinen Per-Frame- oder Per-Tile-Aufwand. Der Jahrespass läuft einmal nach
+Biome-Atlas und Wald-Ledger, liest denselben Klimadrift und schreibt nur
+begrenzte DTOs. Condition, Ausdehnung, wilde Magie und Korruption bleiben
+0–100; jede Site erlaubt eine Aktion pro Jahr, jede Aktion kostet echtes Gold,
+Holz oder Stein.
+
+Spieler können vermessen, tief vermessen, unter Schutz stellen,
+wiederherstellen, ernten, stabilisieren und Güter verkaufen. Seltene Arten
+verschwinden unter 30 Condition und kehren ab 65 zurück; eine erloschene Site
+behält Geschichte und Relikt-Schichten und lässt sich für 26 Gold und 10 Holz
+wiederbeleben. Klimadruck verschiebt die Analogie (Savanne → Dornbusch →
+Sahel, Boreallwald → Waldsteppe → Federgrassteppe), Magie kann eine Site
+transfigurieren, Korruption kann sie blighted machen, und eine Katastrophe kann
+sie aus dem Atlas nehmen. Conservation hebt die Vegetation der angeschlossenen
+Atlas-Region, Ernte senkt sie.
+
+Save-Schema 15 bleibt unverändert; `state.biomeFrontiers` ist additiv und
+optional. Das BIOMES-Panel zeigt das Register mit Field Guide 1.2.23.2–16;
+alle fünfzehn Karten sind geschlossen, nur die erste öffnet sich.
+
+**Nachweise:** `npm test` grün, `npm run spec:audit` ohne offene Punkte,
+`npm run test:biome-frontiers-soak` über drei Seeds × 300 Jahre und der neue
+Browser-Spielerpfad bei 1440×900 und 820×1180 ohne Konsolen-, Lade- oder
+Layoutfehler.
 
 ## 3.89.3 — Waldregister auf Desktop und Tablet
 

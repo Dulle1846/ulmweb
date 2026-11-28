@@ -61,6 +61,7 @@ import { restoreSpecialBiomeState, serializeSpecialBiomeState } from "../systems
 import { restoreEnvironmentalHazardState, serializeEnvironmentalHazardState } from "../systems/environmental-hazards.js";
 import { restoreBiomeAtlasState, serializeBiomeAtlasState } from "../systems/biome-resource-state.js";
 import { restoreForestLegacyState, serializeForestLegacyState } from "../systems/forest-legacy.js";
+import { restoreBiomeFrontierState, serializeBiomeFrontierState } from "../systems/biome-frontiers.js";
 import { restoreHand } from "../systems/cards.js";
 import { resolveSavedTerrainVersion } from "../world/terrain-model.js";
 import { initWorld } from "../world/world.js";
@@ -291,6 +292,7 @@ export function createSaveSnapshot() {
         environmentalHazards: serializeEnvironmentalHazardState(),
         biomeAtlas: serializeBiomeAtlasState(),
         forestLegacy: serializeForestLegacyState(),
+        biomeFrontiers: serializeBiomeFrontierState(),
         realmCycle: JSON.parse(JSON.stringify(state.realmCycle || createRealmCycleState())),
         court: JSON.parse(JSON.stringify(state.court || createCourtState())),
         nobility: serializeContractDto(state.nobility || createNobilityState()),
@@ -556,6 +558,9 @@ export function restoreSaveSnapshot(snapshot) {
     // The forest legacy ledger is additive and optional. A save written before
     // 3.89.0 simply starts with a fresh deterministic ledger on the next tick.
     restoreForestLegacyState(snapshot.forestLegacy);
+    // The frontier-biome ledger is additive and optional. A save written
+    // before this release starts a deterministic catalogue on the next tick.
+    restoreBiomeFrontierState(snapshot.biomeFrontiers);
     // Seats are reconciled against the restored buildings. A legacy save gets
     // its existing keep as a zero-balance seat without moving any resources.
     restoreSettlementOwners(snapshot.settlements);

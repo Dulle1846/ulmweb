@@ -1067,3 +1067,98 @@ body.ui-forest-symbolic .forest-atlas__card{--ui-paper-text:#f2e5c4;--ui-paper-m
 .forest-legacy__monument b{display:block;font-size:10px;color:var(--legacy-accent)}
 .forest-legacy__monument small{display:block;font-size:8px;color:var(--legacy-muted)}
 .forest-legacy__monument p{margin:3px 0 0;font-size:8px;line-height:1.4;color:var(--legacy-muted)}
+
+/* 1.2.23.2–16 frontier ecosystems. The register lives inside the biome panel
+   and follows the same compact, collapsible card pattern as the province woods. */
+.biome-frontier{--frontier-bg:rgba(246,244,226,.5);--frontier-bg-strong:rgba(246,244,226,.74);--frontier-line:rgba(92,110,80,.32);--frontier-ink:#26301f;--frontier-muted:#4d5b45;--frontier-accent:#576c3f;margin:14px 0 4px;padding-top:8px;border-top:1px solid var(--frontier-line)}
+.biome-frontier__intro{max-width:900px}
+.biome-frontier__summary{grid-template-columns:repeat(auto-fit,minmax(112px,1fr))}
+.biome-frontier .biome-badge{gap:4px}
+.biome-frontier .biome-badge small{color:#f0d79a;font-size:7px;font-weight:800;letter-spacing:.08em}
+.biome-frontier__guide article>b{padding-right:4px}
+.biome-frontier__climate{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:8px 0}
+.biome-frontier__climate>div{min-width:0;padding:9px 10px;border:1px solid var(--frontier-line);border-radius:6px;background:var(--frontier-bg)}
+.biome-frontier__climate small{display:block;font-size:8px;letter-spacing:.09em;color:var(--frontier-muted)}
+.biome-frontier__climate b{display:block;margin:3px 0;font-size:12px}
+.biome-frontier__climate p{margin:0;font-size:10px;line-height:1.45;color:var(--frontier-muted)}
+.biome-frontier__list{display:grid;gap:7px}
+.biome-frontier__card{min-width:0;border:1px solid var(--frontier-line);border-radius:6px;background:var(--frontier-bg)}
+.biome-frontier__card[data-frontier-phase="vanished"]{border-style:dashed;opacity:.86}
+.biome-frontier__card[data-frontier-protected="1"]{border-color:rgba(120,160,102,.7)}
+.biome-frontier__card>summary{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center;padding:8px 9px;cursor:pointer;list-style:none}
+.biome-frontier__card>summary::-webkit-details-marker{display:none}
+.biome-frontier__glyph{display:grid;place-items:center;width:26px;height:26px;border:1px solid var(--frontier-line);border-radius:50%;color:var(--frontier-accent);font-size:14px;background:var(--frontier-bg-strong)}
+.biome-frontier__title{min-width:0}
+.biome-frontier__title b{display:block;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.biome-frontier__title small{display:block;font-size:8.5px;line-height:1.35;color:var(--frontier-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.biome-frontier__state{display:flex;flex-direction:column;align-items:flex-end;gap:3px;min-width:0}
+.biome-frontier__state small{font-size:7.5px;letter-spacing:.07em;color:var(--frontier-muted);white-space:nowrap}
+.biome-frontier__phase{font-size:8px;letter-spacing:.08em;padding:2px 6px;border:1px solid var(--frontier-line);border-radius:999px;white-space:nowrap}
+.biome-frontier__phase.is-vanished{border-color:rgba(180,110,90,.6);color:#8f4b35}
+.biome-frontier__phase.is-collapse,.biome-frontier__phase.is-relict{border-color:rgba(190,150,80,.65);color:#7d5a24}
+.biome-frontier__body{display:grid;gap:7px;padding:0 9px 10px;min-width:0}
+.biome-frontier__profile{margin:0;font-size:10.5px;line-height:1.5}
+.biome-frontier__meters{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:5px}
+.biome-frontier__meter{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:1px 6px;align-items:center;padding:5px 6px;border:1px solid var(--frontier-line);border-radius:4px;min-width:0}
+.biome-frontier__meter small{grid-column:1/-1;font-size:7.5px;letter-spacing:.08em;color:var(--frontier-muted)}
+.biome-frontier__meter i{display:block;height:4px;border-radius:2px;background:rgba(74,88,64,.2);overflow:hidden}
+.biome-frontier__meter i b{display:block;height:100%;background:linear-gradient(90deg,#7f9a63,#b8c58e)}
+.biome-frontier__meter.is-magic i b{background:linear-gradient(90deg,#8a6fb4,#d6c1f4)}
+.biome-frontier__meter.is-curse i b{background:linear-gradient(90deg,#8f7f46,#c8b36f)}
+.biome-frontier__meter em{font-size:9px;font-style:normal;color:var(--frontier-muted)}
+.biome-frontier__hazards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:4px}
+.biome-frontier__hazard{min-width:0;padding:5px 6px;border:1px solid var(--frontier-line);border-radius:4px}
+.biome-frontier__hazard b{display:block;font-size:8.5px}
+.biome-frontier__hazard small{display:block;font-size:7.5px;line-height:1.3;color:var(--frontier-muted)}
+.biome-frontier__hazard em{display:block;margin-top:2px;font-size:7px;letter-spacing:.07em;color:var(--frontier-accent);font-style:normal}
+.biome-frontier__hazard p{margin:2px 0 0;font-size:8px;line-height:1.35;color:var(--frontier-muted)}
+.biome-frontier__section{margin:6px 0 1px;font-size:8px;letter-spacing:.12em;color:var(--frontier-accent)}
+.biome-frontier__species-list,.biome-frontier__specialists{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:4px}
+.biome-frontier__species{display:grid;grid-template-columns:auto minmax(0,1fr);gap:1px 6px;align-items:baseline;min-width:0;padding:5px 6px;border:1px solid var(--frontier-line);border-radius:4px}
+.biome-frontier__species>span{font-size:7px;letter-spacing:.08em;color:var(--frontier-accent)}
+.biome-frontier__species b{font-size:8.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.biome-frontier__species small{grid-column:1/-1;font-size:7.5px;line-height:1.35;color:var(--frontier-muted)}
+.biome-frontier__species.is-vanished,.biome-frontier__specialist.is-vanished{opacity:.6;border-style:dashed}
+.biome-frontier__specialist{display:grid;grid-template-columns:auto minmax(0,1fr);gap:1px 6px;align-items:baseline;min-width:0;padding:5px 6px;border:1px solid var(--frontier-line);border-radius:4px}
+.biome-frontier__specialist>span{font-size:9px;color:var(--frontier-accent)}
+.biome-frontier__specialist b{font-size:8.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.biome-frontier__specialist small{grid-column:1/-1;font-size:7.5px;line-height:1.35;color:var(--frontier-muted)}
+.biome-frontier__layers{display:flex;flex-wrap:wrap;gap:4px}
+.biome-frontier__magic{padding:6px 7px;border:1px solid var(--frontier-line);border-radius:4px;background:rgba(120,100,160,.08)}
+.biome-frontier__magic b{display:block;font-size:8px;letter-spacing:.08em;color:var(--frontier-accent)}
+.biome-frontier__magic p{margin:2px 0 0;font-size:8.5px;line-height:1.4;color:var(--frontier-muted)}
+.biome-frontier__goods{display:grid;gap:4px}
+.biome-frontier__good{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px;align-items:center;min-width:0;padding:5px 6px;border:1px solid var(--frontier-line);border-radius:4px}
+.biome-frontier__good b{display:block;font-size:9px}
+.biome-frontier__good small{display:block;font-size:7.5px;line-height:1.35;color:var(--frontier-muted)}
+.biome-frontier__good strong{font-size:11px}
+.biome-frontier__good em{font-size:7px;letter-spacing:.08em;color:var(--frontier-muted);font-style:normal}
+.biome-frontier__actions{display:flex;flex-wrap:wrap;gap:5px;align-items:stretch}
+.biome-frontier__button{width:auto;flex:1 1 150px;min-height:32px;font-size:8px;letter-spacing:.04em}
+.biome-frontier__history{display:grid;gap:3px}
+.biome-frontier__history>div{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px;align-items:baseline;font-size:8px;line-height:1.4}
+.biome-frontier__history b{font-size:7.5px;letter-spacing:.06em;color:var(--frontier-accent);white-space:nowrap}
+.biome-frontier__details{border:1px solid var(--frontier-line);border-radius:6px;background:var(--frontier-bg);margin-top:7px}
+.biome-frontier__details>summary{display:grid;grid-template-columns:auto auto minmax(0,1fr);gap:8px;align-items:center;padding:7px 8px;cursor:pointer;list-style:none}
+.biome-frontier__details>summary::-webkit-details-marker{display:none}
+.biome-frontier__details>summary span{font-size:8px;letter-spacing:.1em;color:var(--frontier-accent)}
+.biome-frontier__details>summary strong{font-size:9px}
+.biome-frontier__details>summary em{font-size:8px;color:var(--frontier-muted);font-style:normal;text-align:right}
+.biome-frontier__guide{display:grid;gap:7px;padding:0 8px 9px}
+.biome-frontier__guide-group h4{margin:5px 0 3px;font-size:8px;letter-spacing:.1em;color:var(--frontier-accent)}
+.biome-frontier__guide article{display:grid;grid-template-columns:minmax(84px,auto) minmax(0,1fr);column-gap:10px;padding:5px 0;border-top:1px solid var(--frontier-line)}
+.biome-frontier__guide article>b{font-size:7.5px;color:var(--frontier-accent);white-space:nowrap;align-self:start;margin-right:10px}
+.biome-frontier__guide article strong{display:block;font-size:8.5px}
+.biome-frontier__guide article small{display:block;font-size:7.5px;color:var(--frontier-muted)}
+.biome-frontier__guide article p{margin:2px 0;font-size:8px;line-height:1.4;color:var(--frontier-muted)}
+.biome-frontier__guide article em{display:block;font-size:7px;line-height:1.35;color:var(--frontier-accent);opacity:.85;font-style:normal}
+.biome-frontier__guardrail{font-size:9px}
+@media(max-width:720px){
+ .biome-frontier__climate{grid-template-columns:minmax(0,1fr)}
+ .biome-frontier__card>summary{grid-template-columns:auto minmax(0,1fr)}
+ .biome-frontier__state{grid-column:1/-1;flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:flex-start}
+ .biome-frontier__good{grid-template-columns:minmax(0,1fr) auto}
+ .biome-frontier__good .biome-frontier__button{grid-column:1/-1}
+ .biome-frontier__details>summary{grid-template-columns:minmax(0,1fr)}
+ .biome-frontier__details>summary em{text-align:left}
+}

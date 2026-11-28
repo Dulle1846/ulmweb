@@ -528,6 +528,30 @@ const LEGACY_SPEC = Object.freeze({
     ]
 });
 
+const FRONTIER_SPEC = Object.freeze({
+    id: "1.2.23.2-16",
+    title: "Frontier biomes, climate shifts and catastrophe memory",
+    file: "js/world/biome-frontiers.js",
+    manifest: "BIOME_FRONTIER_REQUIREMENTS",
+    consumers: [
+        { file: "js/world/biome-frontiers.js", symbol: "BIOME_FRONTIER_REQUIREMENTS", role: "catalog" },
+        { file: "js/world/biome-frontiers.js", symbol: "BIOME_FRONTIER_FAMILIES", role: "15 ecosystems" },
+        { file: "js/systems/biome-frontiers.js", symbol: "biomeFrontierSummary", role: "simulation" },
+        { file: "js/systems/biome-frontiers.js", symbol: "updateBiomeFrontiers", role: "annual pass" },
+        { file: "js/systems/biome-frontiers.js", symbol: "applyBiomeFrontierCatastrophe", role: "catastrophe" },
+        { file: "js/systems/biome-frontiers.js", symbol: "surveyBiomeFrontier", role: "survey" },
+        { file: "js/systems/biome-frontiers.js", symbol: "harvestBiomeFrontier", role: "harvest" },
+        { file: "js/systems/biome-frontiers.js", symbol: "biomeFrontierActionAvailability", role: "action rules" },
+        { file: "js/presentation/biome-frontier-panel.js", symbol: "biomeFrontierBlock", role: "ui" },
+        { file: "js/presentation/biome-panel.js", symbol: "biomeFrontierBlock", role: "panel wiring" },
+        { file: "js/presentation/management-ui.js", symbol: "runBiomeFrontierAction", role: "ui action" },
+        { file: "js/simulation/simulation.js", symbol: "updateBiomeFrontiers", role: "annual wiring" },
+        { file: "js/core/save-runtime.js", symbol: "serializeBiomeFrontierState", role: "persistence" },
+        { file: "js/core/save-validation.js", symbol: "validateBiomeFrontierSnapshot", role: "save validation" }
+    ],
+    tests: ["tests/systems/biome-frontiers.test.js"]
+});
+
 const INDUSTRY_SPEC = Object.freeze({
     id: "1.2.23.1.151-180",
     title: "Regional forest economy and workshops",
@@ -1348,6 +1372,29 @@ export function runSpecAudit({ write = false } = {}) {
         sections.push(built);
     }
     {
+        const module = awaitImport(FRONTIER_SPEC.file);
+        const manifest = module[FRONTIER_SPEC.manifest];
+        if (!Array.isArray(manifest)) throw new Error("biome frontier manifest missing");
+        const built = section(FRONTIER_SPEC.id, FRONTIER_SPEC.title, manifest.map(entry => ({
+            id: entry.id,
+            label: entry.title,
+            key: entry.point,
+            group: "FRONTIER BIOME",
+            status: "implemented",
+            docEvidence: "BIOME_FRONTIER_REQUIREMENTS",
+            evidence: [],
+            tests: []
+        })), {
+            source: FRONTIER_SPEC.file,
+            note: `${manifest.length} player-facing frontier-biome requirements from ${FRONTIER_SPEC.manifest}; each names its live consumer in the biome register.`
+        });
+        built.consumers = checkedReferences(FRONTIER_SPEC.consumers);
+        built.tests = testsValid(FRONTIER_SPEC.tests);
+        built.probeAvailable = false;
+        built.probeObserved = 0;
+        sections.push(built);
+    }
+    {
         const module = awaitImport(INDUSTRY_SPEC.file);
         const manifest = module[INDUSTRY_SPEC.manifest];
         if (!Array.isArray(manifest)) throw new Error("regional forest economy manifest missing");
@@ -1421,7 +1468,7 @@ export function runSpecAudit({ write = false } = {}) {
     const result = {
         version: 2,
         generatedBy: "scripts/spec-audit.mjs",
-        scope: "All numbered 1.1 and 1.2.1–1.2.18 requirements, including the 1.2.23.1.151–270 forest economy, culture, warfare and presentation with the field guide, plus the documented 2.x phases, 3.3–4.0 roadmap points, the 3.11 expedition chain, 3.8.14 noble arbitration, 3.9.12 atlas quest follow-ups and the 3.12 keyboard-only play contract.",
+        scope: "All numbered 1.1 and 1.2.1–1.2.18 requirements, including the 1.2.23.1.151–270 forest economy, culture, warfare and presentation with the field guide, the 1.2.23.2–16 frontier biome catalogue, plus the documented 2.x phases, 3.3–4.0 roadmap points, the 3.11 expedition chain, 3.8.14 noble arbitration, 3.9.12 atlas quest follow-ups and the 3.12 keyboard-only play contract.",
         commit: readCommit(),
         sourceHash: hashFiles(allFiles),
         generatedAt: readCommitDate(),
@@ -1568,7 +1615,8 @@ const MODULE_PATHS = [
     CULTURE_SPEC.file,
     WAR_SPEC.file,
     PRESENTATION_SPEC.file,
-    LEGACY_SPEC.file
+    LEGACY_SPEC.file,
+    FRONTIER_SPEC.file
 ];
 for (const relative of MODULE_PATHS) {
     const absolute = path.join(ROOT, relative);
