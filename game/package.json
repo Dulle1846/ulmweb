@@ -1,6 +1,6 @@
 {
   "name": "kings-and-cards",
-  "version": "3.90.1",
+  "version": "3.90.2",
   "private": true,
   "type": "module",
   "scripts": {
@@ -53,6 +53,7 @@
     "test:forest-legacy-mobile": "node tests/browser/forest-legacy-mobile.mjs",
     "test:forest-legacy-soak": "node scripts/forest-legacy-soak.mjs",
     "test:biome-frontiers": "node tests/browser/biome-frontiers-ui.mjs",
+    "test:biome-frontiers-mobile": "node tests/browser/biome-frontiers-mobile.mjs",
     "test:biome-frontiers-soak": "node scripts/biome-frontiers-soak.mjs",
     "test:playability": "node tests/browser/playability-audit.mjs",
     "test:core-loop": "node tests/browser/core-loop-audit.mjs",

@@ -1135,6 +1135,7 @@ body.ui-forest-symbolic .forest-atlas__card{--ui-paper-text:#f2e5c4;--ui-paper-m
 .biome-frontier__good em{font-size:7px;letter-spacing:.08em;color:var(--frontier-muted);font-style:normal}
 .biome-frontier__actions{display:flex;flex-wrap:wrap;gap:5px;align-items:stretch}
 .biome-frontier__button{width:auto;flex:1 1 150px;min-height:32px;font-size:8px;letter-spacing:.04em}
+.biome-frontier__button:disabled{opacity:.78;filter:none;color:#4d493c;background:#e8dcbd;border-style:dashed;cursor:not-allowed}
 .biome-frontier__history{display:grid;gap:3px}
 .biome-frontier__history>div{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px;align-items:baseline;font-size:8px;line-height:1.4}
 .biome-frontier__history b{font-size:7.5px;letter-spacing:.06em;color:var(--frontier-accent);white-space:nowrap}
@@ -1153,12 +1154,93 @@ body.ui-forest-symbolic .forest-atlas__card{--ui-paper-text:#f2e5c4;--ui-paper-m
 .biome-frontier__guide article p{margin:2px 0;font-size:8px;line-height:1.4;color:var(--frontier-muted)}
 .biome-frontier__guide article em{display:block;font-size:7px;line-height:1.35;color:var(--frontier-accent);opacity:.85;font-style:normal}
 .biome-frontier__guardrail{font-size:9px}
-@media(max-width:720px){
+@media(max-width:720px),(max-height:520px){
+ .biome-frontier{margin-top:10px}
+ .biome-frontier__summary{grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
  .biome-frontier__climate{grid-template-columns:minmax(0,1fr)}
- .biome-frontier__card>summary{grid-template-columns:auto minmax(0,1fr)}
- .biome-frontier__state{grid-column:1/-1;flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:flex-start}
- .biome-frontier__good{grid-template-columns:minmax(0,1fr) auto}
+ .biome-frontier__climate small{font-size:9px}
+ .biome-frontier__climate b{font-size:13px}
+ .biome-frontier__climate p{font-size:11px}
+ .biome-frontier .command-note{font-size:11px;line-height:1.5}
+ .biome-frontier__summary small{font-size:9px}
+ .biome-frontier__magic p{font-size:10.5px;line-height:1.5}
+ .biome-frontier__card>summary{grid-template-columns:auto minmax(0,1fr);gap:8px;min-height:52px;padding:10px 9px}
+ .biome-frontier__glyph{width:32px;height:32px;font-size:16px}
+ .biome-frontier__title b{font-size:13px;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip}
+ .biome-frontier__title small{display:block;font-size:10px;line-height:1.35;white-space:normal;overflow:visible;text-overflow:clip}
+ .biome-frontier__state{grid-column:1/-1;flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:flex-start;gap:5px}
+ .biome-frontier__state small{font-size:9px;white-space:normal}
+ .biome-frontier__phase{font-size:9px;padding:3px 7px}
+ .biome-frontier__body{gap:9px;padding:0 9px 12px}
+ .biome-frontier__profile{font-size:12px;line-height:1.55}
+ .biome-frontier .biome-badge{font-size:9px;padding:4px 7px}
+ .biome-frontier .biome-badge small{font-size:8px}
+ .biome-frontier__meters{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+ .biome-frontier__meter{padding:7px 8px}
+ .biome-frontier__meter small{font-size:9px}
+ .biome-frontier__meter em{font-size:11px}
+ .biome-frontier__hazards{grid-template-columns:minmax(0,1fr);gap:5px}
+ .biome-frontier__hazard{padding:7px 8px}
+ .biome-frontier__hazard b{font-size:11px}
+ .biome-frontier__hazard small,.biome-frontier__hazard p{font-size:10px;line-height:1.45}
+ .biome-frontier__hazard em{font-size:8.5px}
+ .biome-frontier__section{font-size:10px;margin-top:8px}
+ .biome-frontier__species-list,.biome-frontier__specialists{grid-template-columns:minmax(0,1fr);gap:5px}
+ .biome-frontier__species,.biome-frontier__specialist{padding:7px 8px}
+ .biome-frontier__species>span{font-size:8.5px}
+ .biome-frontier__species b,.biome-frontier__specialist b{font-size:11px}
+ .biome-frontier__species small,.biome-frontier__specialist small{font-size:10px;line-height:1.45}
+ .biome-frontier__good{grid-template-columns:minmax(0,1fr) auto;padding:7px 8px}
+ .biome-frontier__good b{font-size:11px}
+ .biome-frontier__good small{font-size:10px}
+ .biome-frontier__good strong{font-size:14px}
+ .biome-frontier__good em{font-size:9px;text-align:right}
  .biome-frontier__good .biome-frontier__button{grid-column:1/-1}
- .biome-frontier__details>summary{grid-template-columns:minmax(0,1fr)}
- .biome-frontier__details>summary em{text-align:left}
+ .biome-frontier__actions{gap:6px}
+ .biome-frontier__button{flex:1 1 100%;min-height:44px;font-size:10px;padding:0 10px}
+ .biome-frontier__history>div{font-size:10px}
+ .biome-frontier__history b{font-size:9px}
+ .biome-frontier__details>summary{grid-template-columns:minmax(0,1fr);gap:3px;min-height:48px;padding:10px}
+ .biome-frontier__details>summary span{font-size:10px}
+ .biome-frontier__details>summary strong{font-size:11px}
+ .biome-frontier__details>summary em{font-size:10px;text-align:left}
+ .biome-frontier__guide{gap:10px;padding:0 10px 12px}
+ .biome-frontier__guide-group h4{font-size:10px;margin:8px 0 4px}
+ .biome-frontier__guide article{grid-template-columns:minmax(0,1fr);column-gap:0;row-gap:2px;padding:8px 0}
+ .biome-frontier__guide article>b{font-size:9.5px;margin-right:0;white-space:normal}
+ .biome-frontier__guide article strong{font-size:11.5px}
+ .biome-frontier__guide article small{font-size:10px}
+ .biome-frontier__guide article p{font-size:10.5px;line-height:1.55}
+ .biome-frontier__guide article em{font-size:9px;overflow-wrap:anywhere}
+ .biome-frontier__guardrail{font-size:10px}
+}
+
+/* Phones get the whole viewport and a compact command banner so the register,
+   its actions and the guide keep a usable scrollport. Touch controls meet the
+   44 px target instead of the desktop 32 px desktop density. */
+@media(max-width:640px){
+ .command-panel{width:calc(100vw - 12px);max-width:calc(100vw - 12px);height:calc(100dvh - 12px);max-height:calc(100dvh - 12px);padding:10px}
+ .command-panel-header{min-height:86px;padding:8px 10px}
+ .command-panel-header h2{font-size:20px;line-height:1.1}
+ .command-ribbon{font-size:7px}
+ .command-crest{width:44px;height:44px;flex:0 0 44px}
+ #command-close{width:44px;height:44px;min-width:44px;min-height:44px;font-size:22px}
+ .command-tab-select{margin:6px 2px 0}
+ .command-tab-select select{min-height:44px;font-size:13px}
+ #command-panel-content{padding:10px 2px 8px}
+}
+@media(max-height:520px) and (max-width:960px){
+ .command-modal-tabs{display:none!important}
+ .command-tab-select{display:flex;flex-direction:column;gap:2px;margin:4px 2px 0;color:#87613a;font-size:8px;font-weight:1000;letter-spacing:.12em}
+ .command-panel{height:calc(100dvh - 8px);max-height:calc(100dvh - 8px);padding:8px}
+ .command-panel-header{min-height:52px;padding:4px 8px;background-image:none}
+ #command-close{width:44px;height:44px;min-width:44px;min-height:44px;font-size:22px}
+ .command-ribbon{display:none}
+ .command-panel-header h2{margin:0;font-size:17px;line-height:1.05}
+ .command-crest{width:32px;height:32px;flex:0 0 32px}
+ .command-header-brand{gap:6px}
+ .command-tab-select{gap:2px;margin:4px 2px 0}
+ .command-tab-select>span{display:none}
+ .command-tab-select select{width:100%;min-height:44px;padding:6px;border:2px solid #a77b42;border-radius:7px;background:#fff8e4;color:#26384b;font:700 11px Arial,sans-serif}
+ #command-panel-content{padding:8px 2px}
 }

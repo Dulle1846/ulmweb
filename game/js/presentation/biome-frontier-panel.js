@@ -94,6 +94,12 @@ function card(site, index) {
         + chip("PHASE", site.phaseLabel) + (site.vanishedYear ? chip("VANISHED", "year " + site.vanishedYear) : "")
         + (site.transfiguredYear ? chip("TRANSFIGURED", "year " + site.transfiguredYear) : "") + '</div>'
         + '<p class="command-note">' + esc(site.phaseDetail) + ' ' + esc(site.aspectDetail) + '</p>'
+        + '<div class="biome-frontier__actions">' + actions + '</div>'
+        + '<p class="command-note">' + (site.actedThisYear
+            ? "One frontier action per site each year. The next annual pass reopens it."
+            : site.protected
+                ? "A warden's agreement is in force: annual decline is halved and the rare community has priority."
+                : "Open site: harvest is cheaper now, but every take lowers condition and can cost a specialist.") + '</p>'
         + '<div class="biome-frontier__hazards">' + site.hazards.map(hazardRow).join("") + '</div>'
         + '<div class="biome-frontier__section">SPECIES COHORTS · ' + number(site.livingSpecies) + ' LIVING</div>'
         + '<div class="biome-frontier__species-list">' + site.species.map(speciesRow).join("") + '</div>'
@@ -103,12 +109,6 @@ function card(site, index) {
             + site.layers.map(layer => '<span class="biome-badge">' + esc(layer) + '</span>').join("") + '</div>' : '')
         + (site.magicShift ? '<div class="biome-frontier__magic"><b>MAGICAL SHIFT · ' + esc(site.magicShift.label) + '</b><p>' + esc(site.magicShift.detail) + '</p></div>' : '')
         + '<div class="biome-frontier__section">RARE GOODS</div><div class="biome-frontier__goods">' + site.goods.map(good => goodRow(site, good)).join("") + '</div>'
-        + '<div class="biome-frontier__actions">' + actions + '</div>'
-        + '<p class="command-note">' + (site.actedThisYear
-            ? "One frontier action per site each year. The next annual pass reopens it."
-            : site.protected
-                ? "A warden's agreement is in force: annual decline is halved and the rare community has priority."
-                : "Open site: harvest is cheaper now, but every take lowers condition and can cost a specialist.") + '</p>'
         + (site.history.length ? '<div class="biome-frontier__section">SITE RECORD</div><div class="biome-frontier__history">'
             + site.history.slice().reverse().map(row => '<div><b>YEAR ' + number(row.year) + ' · ' + esc(row.kind.toUpperCase()) + '</b><span>' + esc(row.text) + '</span></div>').join("") + '</div>' : '')
         + '</div></details>';

@@ -1,6 +1,6 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.90.1`
+**Current production version:** `3.90.2`
 **Next development line:** `3.91.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
@@ -8,6 +8,30 @@
 **Last repository verification:** 2026-11-28 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.90.2 — Frontier-Biome auf Smartphone und im Querformat
+
+Die Frontier-Ökosysteme sind jetzt auf echten Smartphone-Breiten vollständig
+bedienbar. Der Management-Dialog nutzt auf 360, 390 und 414 CSS-Pixeln fast die
+ganze Viewport-Höhe, der Banner schrumpft, und das Panel-Auswahlfeld ersetzt die
+breite Registerleiste. Im kurzen Querformat (640×360, 844×390, 896×414) wird
+die Registerleiste ebenfalls zum nativen Auswahlfeld; der Dialog bleibt über
+die volle Höhe scrollbar.
+
+Die Aktionsleiste sitzt nicht mehr unter Artentabellen und Geschichte, sondern
+direkt unter Condition, Ausdehnung, Klima und Phase. Aktionen, Verkauf,
+Karten- und Field-Guide-Köpfe sowie der Schließen-Button treffen mindestens
+44×44 CSS-Pixel. Field Guide und Karten wechseln auf eine einspaltige,
+lesbare Schrift (10–12 px statt 7–8 px), lange Namen und Hinweise werden
+umbrochen statt abgeschnitten, und deaktivierte Aktionsknöpfe bleiben mit
+sichtbarem Grund und kräftigerem Kontrast lesbar. Die zuletzt geöffnete Karte
+bleibt nach jeder Aktion offen, sodass das Ergebnis an derselben Stelle steht.
+
+**Nachweise:** Mobilreferenz auf 360×640, 390×844 und 414×896 sowie im
+Querformat 640×360, 844×390 und 896×414. Jede Breite liest alle fünfzehn
+Guide-Punkte, öffnet und schließt Karten und führt Survey, Deep Survey,
+Conservation, Restoration, Revival, Harvest, Stabilisierung und Verkauf aus;
+kein horizontaler Overflow, keine Überlappung, kein Konsolen- oder Assetfehler.
 
 ## 3.90.1 — Frontier-Karte bleibt nach einer Aktion offen
 

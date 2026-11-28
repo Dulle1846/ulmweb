@@ -278,7 +278,24 @@ den entdeckten Regionen. Jede Site ist ein `<details>`-Card mit:
 - Site-Record und Field Guide 1.2.23.2–16.
 
 Die Karten sind standardmäßig geschlossen; nur die erste öffnet sich. Das hält
-den DOM-Aufwand auch im späten Spiel begrenzt.
+den DOM-Aufwand auch im späten Spiel begrenzt. Nach einer Aktion bleibt die
+zuletzt geöffnete Karte offen, damit ihr Ergebnis an derselben Stelle sichtbar
+ist.
+
+### Smartphone und Querformat
+
+Unter 641 px wird die 29-teilige Registerleiste zu einem nativen
+Auswahlfeld; der Dialog nutzt fast die volle Viewport-Höhe und der Banner
+schrumpft. Das gilt auch für kurze Querformate bis 960 px Breite, wo die
+Registerleiste sonst den gesamten Scrollport verbrauchen würde.
+
+Die Aktionsleiste steht direkt nach Condition, Ausdehnung, Klima und Phase,
+nicht erst unter Arten, Gütern und Geschichte. Auf schmalen Viewports sind
+Aktions-, Verkaufs-, Karten- und Guide-Schaltflächen mindestens 44×44 CSS-Pixel
+groß, der Field Guide wird einspaltig, und Karten- sowie Guide-Texte wachsen
+auf 10–12 px. Lange Site-Namen, Klima-Analogien und Hinweise umbrechen statt
+abgeschnitten zu werden; deaktivierte Aktionen behalten einen lesbaren
+Kontrast und den sichtbaren Jahresgrund.
 
 ## 8. Verifikation
 
@@ -288,6 +305,13 @@ den DOM-Aufwand auch im späten Spiel begrenzt.
 - `tests/browser/biome-frontiers-ui.mjs` — Desktop/Tablet-Spielerpfad: 15
   Karten, 45 Spezialisten, 45 Hazards, 30 Güter, 15 Guide-Punkte, Survey,
   Conservation, Stabilisation, Layout-Audit und Screenshots.
+- `tests/browser/biome-frontiers-mobile.mjs` — Smartphone-Referenz auf
+  360×640, 390×844 und 414×896 sowie 640×360, 844×390 und 896×414: alle 15
+  Guide-Punkte werden einzeln gelesen, jede Site-Karte geöffnet und geschlossen
+  und alle acht Aktionen (Survey, Deep Survey, Conservation, Restoration,
+  Revival, Harvest, Stabilisation, Verkauf) über echte Touch-Ziele ausgeführt.
+  44-px-Ziele, Textumbruch, Scrollport, Überlappung, Konsolen- und Assetfehler
+  werden pro Breite geprüft.
 - `scripts/biome-frontiers-soak.mjs` — drei Seeds × 300 Jahre, Bound- und
   Finite-Prüfung, JSON-Bericht.
 - `npm run spec:audit` — Sektion `1.2.23.2-16` ohne offene Punkte.
