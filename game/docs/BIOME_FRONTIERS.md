@@ -1,7 +1,7 @@
 # Frontier-Biome 1.2.23.2–16 — Savannen, Küsten, Eis, Tiefe, Magie und Erinnerung
 
-**Version:** 3.90.0  
-**Katalog:** `js/world/biome-frontiers.js`  
+**Version:** 3.91.0  
+**Katalog:** `js/world/biome-frontiers.js` + `js/world/biome-frontier-expansion.js`  
 **Simulation:** `js/systems/biome-frontiers.js`  
 **UI:** `js/presentation/biome-frontier-panel.js` (im Biome-Panel)  
 **Jahrespass:** `updateBiomeFrontiers()` in `js/simulation/simulation.js`  
@@ -17,7 +17,11 @@ magischer Urwald, verfluchtes Ödland, Pilz- und Kristallboden, magisch
 verwandelte Biome, seltene endemische Lebensgemeinschaften, historische
 Landschaftsformen, klimaverscho­bene Ökotone und Katastrophengürtel.
 
-Der Katalog ist **keine zweite Karte**:
+Der Katalog ist **keine zweite Karte**. Der Content-Pack 3.91.0 erweitert jede
+Familie auf zwölf Kohorten, sechs seltene Arten, sechs Störungen, vier Güter,
+sechs Relikt-Schichten und sechs Feldnotizen. Das sind **180 Artengruppen, 90
+Spezialisten, 90 Hazards, 60 Güter, 90 Relikt-Schichten und 90 Langzeit-
+Feldnotizen** — 326 neue Katalogeinträge gegenüber 3.90.3.
 
 - Jedes der 15 Sites wird über einen stabilen Anker dem vorhandenen
   36-Regionen-Biome-Atlas zugeordnet (`atlasRegionId`, `atlasRegionName`).
@@ -46,10 +50,11 @@ Jede Familie in `BIOME_FRONTIER_FAMILIES` deklariert:
 | `soil`, `water`, `seasonality` | Standortfaktoren im Klartext |
 | `profile`, `formation` | ausführliche Spielerbeschreibung und Struktur |
 | `climateAnalog` | geordnete Klima-Analogie (langfristige Verschiebung) |
-| `species` | 6–8 Baum-, Pflanzen-, Tier-, Pilz-, Korallen- oder Flechtenkohorten |
-| `specialists` | 3 seltene Arten der regionalen Lebensgemeinschaft |
-| `hazards` | 3 benannte Störungsregime mit Auslöser und Wirkung |
-| `goods` | 2 seltene Güter mit Wert und Jahresertrag |
+| `species` | 12 Baum-, Pflanzen-, Tier-, Pilz-, Korallen- oder Flechtenkohorten |
+| `specialists` | 6 seltene Arten der regionalen Lebensgemeinschaft |
+| `hazards` | 6 benannte Störungsregime mit Auslöser und Wirkung |
+| `goods` | 4 seltene Güter mit Wert und Jahresertrag |
+| `journal` | 6 Feldnotizen mit deklarativem Ziel, Zieltext und einmaliger Belohnung |
 | `catastrophes` | benannte Katastrophe(n) |
 | `relics` | historische/Relikt-Schichten |
 | `magicShift` | magische Verwandlung mit eigenem Namen |
@@ -78,6 +83,27 @@ gelesen. Jeder der 15 Punkte nennt in `consumer` seinen lebenden Verbraucher.
 | 1.2.23.14 | `historic-landform` | The Old Ridge | temperate, mediterranean, coastal | Great Crested Newt, Old-wood Lichen, Hazel Dormouse | Historic Hay, Old-wood Timber |
 | 1.2.23.15 | `climate-shift` | The Moving Treeline | taiga, tundra, mountain, temperate | Northern Hawk Owl, Tundra Vole, Bog Rosemary | Treeline Seed, Summer Pasture |
 | 1.2.23.16 | `catastrophe-belt` | The Drowned Coast | coastal, swamp, temperate, tropical | Pioneer Ground Beetle, Saltmarsh Sparrow, Grey Seal Pup | Salvage Driftwood, Saltmarsh Hay |
+
+### Content-Pack 3.91.0 — Der lange Feldforschungsbogen
+
+Jede Site hat sechs **Feldnotizen**. Eine Notiz ist kein freischaltbarer Text
+ohne Spiel: Sie liest einen echten Zähler oder Zustand (Survey, Deep Survey,
+Conservation, Restoration, Harvest, Stabilisation, Condition, Hazard, Klima-
+Analogstufe, Relikt-Schicht oder lebende Spezialisten), zahlt einmalig Gold und
+Moral und schreibt ihren Namen dauerhaft in den SITE RECORD. Die Notizen sind
+also Langzeitziele über mehrere Jahre und teils Jahrzehnte, keine zweite
+Währung und kein zweiter Jahrespass.
+
+Beispiele: der **Feuerkalender** lehrt geplantes Frühbrennen, die
+**Mangroven-Schutzwälle** opfern den äußeren Saum an die nächste Sturmflut, die
+**Korallen-Akustikkarte** hört den Riffzustand, das **Eisbohrkern-Archiv** datiert
+alte Stürme, der **Ley-Kompass** hält die Richtung im gefalteten Wald, die
+**Fluchquarantäne** schützt das Umland, das **Sporenwetter** warnt vor der
+nächsten Pilzwolke, der **Faltatlas** zeichnet beide Formen des Prism Scars, die
+**Serpentin-Saatbank** rettet endemische Kräuter, die **Hecken-Charta** regelt
+den Schnitt, der **Klima-Analog-Saatgutwechsel** pflanzt den Wald der Zukunft,
+und der **Breach-Pilot** lenkt die nächste Sturmflut durch das alte Feld statt
+durch das Dorf.
 
 ### 1.2.23.2 — Savannen und Trockenwälder
 
@@ -247,7 +273,10 @@ deaktivierten Button, nie als stummes `disabled`.
    geringer; Bestand ist auf 999 begrenzt.
 9. **Relikt-Schichten:** historische Sites lesen alle zwölf Jahre eine weitere
    Schicht.
-10. **Phase:** pristine ≥ 82, resilient ≥ 62, strained ≥ 40, relict ≥ 18,
+10. **Feldnotizen:** deklarative Ziele werden nach jeder Aktion, jeder
+    Katastrophe und am Ende des Jahrespasses geprüft; jede Notiz zahlt genau
+    einmal und wird im Site-Verlauf gespeichert.
+11. **Phase:** pristine ≥ 82, resilient ≥ 62, strained ≥ 40, relict ≥ 18,
     collapse ≥ 1, vanished < 0,5.
 
 ## 6. Persistenz und Performance
@@ -258,9 +287,9 @@ deaktivierten Button, nie als stummes `disabled`.
   exakter JSON-Roundtrip garantiert ist.
 - `validateBiomeFrontierSnapshot()` prüft Version, Seed, 15 Sites, eindeutige
   Familien, Array-Grenzen und alle 0–100-Werte.
-- Jede Site hat höchstens 8 Arten, 4 Spezialisten, 3 Hazards, 3 Güter, 8
-  History-Zeilen und 4 Relikt-Schichten; der globale Verlauf ist auf 32 Zeilen
-  begrenzt.
+- Jede Site hat höchstens 12 Arten, 6 Spezialisten, 6 Hazards, 4 Güter, 6
+  Feldnotizen, 12 History-Zeilen und 6 Relikt-Schichten; der globale Verlauf ist
+  auf 48 Zeilen begrenzt.
 - Der Jahrespass läuft über 15 Sites. Es gibt keinen Per-Frame-, Per-Tick- oder
   Per-Tile-Aufwand und keinen neuen Canvas.
 
@@ -272,7 +301,7 @@ den entdeckten Regionen. Jede Site ist ein `<details>`-Card mit:
 - Name, Familie, Klima-Analogie, Phase und Aspekt,
 - vier Metern (Condition, Extent, Wild Magic, Corruption),
 - drei Hazard-Karten mit Jahr und Severity,
-- Arten-Roster, seltener Gemeinschaft und Relikt-Schichten,
+- Arten-Roster, seltener Gemeinschaft, sechs Feldnotizen und Relikt-Schichten,
 - Gütern mit Bestand und Verkauf,
 - echten Aktionsbuttons mit Kosten und Begründung,
 - Site-Record und Field Guide 1.2.23.2–16.
@@ -301,12 +330,14 @@ Kontrast und den sichtbaren Jahresgrund.
 
 ## 8. Verifikation
 
-- `tests/systems/biome-frontiers.test.js` — 11 Tests: Katalog, 15 Sites,
+- `tests/systems/biome-frontiers.test.js` — 12 Tests: Katalog, 15 Sites,
   Aktionen, Jahres-Sperre, Katastrophe/Revival, Klima-Analogie, Atlas-Kopplung,
-  25-Jahres-Determinismus, Save-Roundtrip, 300-Jahres-Soak, Action-Begründungen.
+  Feldnotizen, 25-Jahres-Determinismus, Save-Roundtrip, 300-Jahres-Soak,
+  Action-Begründungen.
 - `tests/browser/biome-frontiers-ui.mjs` — Desktop/Tablet-Spielerpfad: 15
-  Karten, 45 Spezialisten, 45 Hazards, 30 Güter, 15 Guide-Punkte, Survey,
-  Conservation, Stabilisation, Layout-Audit und Screenshots.
+  Karten, 180 Kohorten, 90 Spezialisten, 90 Hazards, 60 Güter, 90 Feldnotizen,
+  15 Guide-Punkte, Survey, Conservation, Stabilisation, Layout-Audit und
+  Screenshots.
 - `tests/browser/biome-frontiers-mobile.mjs` — Smartphone-Referenz auf
   360×640, 390×844 und 414×896 sowie 640×360, 844×390 und 896×414: alle 15
   Guide-Punkte werden einzeln gelesen, jede Site-Karte geöffnet und geschlossen
@@ -322,7 +353,8 @@ Kontrast und den sichtbaren Jahresgrund.
 
 1. Der Katalog ist reine Daten: kein Code, DOM, URL oder Save-Mutation aus einer
    Familiendefinition.
-2. Eine Site pro Familie, 15 insgesamt; alle Arrays sind begrenzt.
+2. Eine Site pro Familie, 15 insgesamt; alle Arrays sind begrenzt (12 Arten, 6
+   Spezialisten, 6 Hazards, 4 Güter, 6 Feldnotizen, 12 Verlaufszeilen).
 3. Der Jahrespass läuft einmal in der bestehenden Jahreskette.
 4. Deterministische Hashes aus Seed, Site und Jahr; kein Verbrauch des
    gemeinsamen Gameplay-RNG.

@@ -45,6 +45,12 @@ function specialistRow(row) {
         + '<small>' + (vanished ? "LOST FROM THE SITE" : "LIVING") + ' · ' + esc(row.note) + '</small></div>';
 }
 
+function journalRow(entry) {
+    return '<div class="biome-frontier__journal-entry' + (entry.unlocked ? " is-found" : "") + '" data-frontier-journal="' + esc(entry.id) + '" data-frontier-journal-unlocked="' + (entry.unlocked ? "1" : "0") + '">'
+        + '<span>' + (entry.unlocked ? "✦" : "◇") + '</span><div><b>' + esc(entry.label) + '</b><small>'
+        + (entry.unlocked ? esc(entry.detail) : "LOCKED · " + esc(entry.goalLabel)) + '</small></div></div>';
+}
+
 function goodRow(site, good) {
     return '<div class="biome-frontier__good" data-frontier-good-row="' + esc(good.id) + '">'
         + '<span><b>' + esc(good.label) + '</b><small>' + esc(good.note) + ' · ' + number(good.value) + 'G each · +' + number(good.annual) + ' a year</small></span>'
@@ -75,6 +81,7 @@ function card(site, index) {
         + ' data-frontier-surveyed="' + (site.surveyed ? "1" : "0") + '" data-frontier-deep-surveyed="' + (site.deepSurveyed ? "1" : "0") + '"'
         + ' data-frontier-species-count="' + number(site.livingSpecies) + '"'
         + ' data-frontier-specialist-count="' + number(site.livingSpecialists) + '" data-frontier-goods="' + number(site.goodsStock) + '"'
+        + ' data-frontier-journal-count="' + number(site.journalUnlocked) + '" data-frontier-journal-total="' + number(site.journalTotal) + '"'
         + (site.protected ? ' data-frontier-protected="1"' : '')
         + ((openFrontierFamily ? site.family === openFrontierFamily : index === 0) ? ' open' : '') + '>'
         + '<summary><span class="biome-frontier__glyph" style="--frontier-accent:' + esc(site.palette[1] || "#9fc08e") + '">' + esc(site.glyph) + '</span>'
@@ -106,6 +113,8 @@ function card(site, index) {
         + '<div class="biome-frontier__species-list">' + site.species.map(speciesRow).join("") + '</div>'
         + '<div class="biome-frontier__section">RARE COMMUNITY · ' + number(site.livingSpecialists) + ' / ' + number(site.specialists.length) + ' LIVING</div>'
         + '<div class="biome-frontier__specialists">' + site.specialists.map(specialistRow).join("") + '</div>'
+        + '<div class="biome-frontier__section">FIELD JOURNAL · ' + number(site.journalUnlocked) + ' / ' + number(site.journalTotal) + ' RECORDED</div>'
+        + '<div class="biome-frontier__journal">' + site.journal.map(journalRow).join("") + '</div>'
         + (site.layers.length ? '<div class="biome-frontier__section">RELICT &amp; HISTORICAL LAYERS</div><div class="biome-frontier__layers">'
             + site.layers.map(layer => '<span class="biome-badge">' + esc(layer) + '</span>').join("") + '</div>' : '')
         + (site.magicShift ? '<div class="biome-frontier__magic"><b>MAGICAL SHIFT · ' + esc(site.magicShift.label) + '</b><p>' + esc(site.magicShift.detail) + '</p></div>' : '')
@@ -147,7 +156,7 @@ export function biomeFrontierBlock() {
     return '<section class="biome-frontier" data-biome-frontier="15" data-frontier-sites="' + number(sites.length) + '"'
         + ' data-frontier-vanished="' + number(stats.vanished) + '" data-frontier-conserved="' + number(stats.conserved) + '">'
         + '<div class="command-section-title">FRONTIER ECOSYSTEMS · SAVANNA, COAST, ICE, DEEP, MAGIC AND MEMORY</div>'
-        + '<p class="command-note biome-frontier__intro">Fifteen extreme and changing ecosystems are bound to the ordinary province atlas: savanna and dry woodland, mangrove, coral coast, alpine grassland, subarctic shrubland, ice desert, underground lakes, magical primeval forest, cursed wasteland, fungal and crystal ground, magically transfigured biomes, rare endemic communities, historical landforms, climate-shifted ecotones and catastrophe belts. Each site has real species, hazards, rare goods and a yearly pass; nothing here runs per frame or replaces the 36-region atlas.</p>'
+        + '<p class="command-note biome-frontier__intro">Fifteen extreme and changing ecosystems are bound to the ordinary province atlas: savanna and dry woodland, mangrove, coral coast, alpine grassland, subarctic shrubland, ice desert, underground lakes, magical primeval forest, cursed wasteland, fungal and crystal ground, magically transfigured biomes, rare endemic communities, historical landforms, climate-shifted ecotones and catastrophe belts. Each site has twelve species cohorts, six rare specialists, six named disturbances, four rare goods and six long-term field notes; nothing here runs per frame or replaces the 36-region atlas.</p>'
         + '<div class="command-summary biome-frontier__summary">'
         + '<div><small>SITES</small><strong>' + number(sites.length) + ' / 15</strong></div>'
         + '<div><small>SURVEYED</small><strong>' + number(stats.surveyed) + ' / ' + number(sites.length) + '</strong></div>'
@@ -155,6 +164,7 @@ export function biomeFrontierBlock() {
         + '<div><small>VANISHED</small><strong>' + number(stats.vanished) + '</strong></div>'
         + '<div><small>AVERAGE CONDITION</small><strong>' + number(stats.averageCondition) + ' / 100</strong></div>'
         + '<div><small>RARE GOODS</small><strong>' + number(stats.goods) + '</strong></div>'
+        + '<div><small>FIELD NOTES</small><strong>' + number(stats.discoveries) + ' / ' + number(stats.journal) + '</strong></div>'
         + '</div>'
         + '<div class="biome-frontier__climate"><div><small>SHARED CLIMATE SIGNAL</small><b>Warming ' + signed(summary.climate.warming) + ' · drift ' + number(summary.climate.drift) + '</b><p>The same drift that moves the province woods shifts these analogue labels. Cold sites lose condition; warm and dry sites may gain it until drought or fire takes the difference.</p></div>'
         + '<div><small>RARE COMMUNITIES</small><b>' + number(stats.livingSpecialists) + ' / ' + number(stats.specialists) + ' specialist species living</b><p>A specialist vanishes below 30 condition and returns at 65. Conservation halves annual decline; stabilisation holds wild magic and corruption at a workable level.</p></div></div>'
@@ -164,4 +174,4 @@ export function biomeFrontierBlock() {
         + '</section>';
 }
 
-export const __internals = Object.freeze({ card, guide, actionRow, goodRow, meter });
+export const __internals = Object.freeze({ card, guide, actionRow, goodRow, journalRow, meter });

@@ -1,6 +1,6 @@
 # Kings & Cards — Version and Development History
 
-**Current production version:** `3.90.3`
+**Current production version:** `3.91.0`
 **Next development line:** `3.91.0-dev`
 **Production branch:** `ulmweb-branch`  
 **Game root:** `game/`  
@@ -8,6 +8,31 @@
 **Last repository verification:** 2026-11-28 (UTC)
 
 This is the canonical release and change record for the game. It is intentionally stored at the root of `game/`, not buried in the technical documentation folder.
+
+## 3.91.0 — Frontier-Katalog: 326 neue Arten, Störungen, Güter und Feldnotizen
+
+Der Biome-Frontier-Katalog wächst von 108 auf **180 Artengruppen**, von 45 auf
+**90 seltene Arten**, von 45 auf **90 benannte Störungen**, von 30 auf **60
+Güter**, von 46 auf **90 Relikt-Schichten** und um **90 Feldnotizen**. Jede der
+fünfzehn Sites zeigt zwölf Kohorten, sechs Spezialisten, sechs Hazards und vier
+Güter.
+
+Dazu kommen **90 Langzeit-Feldnotizen** (sechs pro Ökosystem) mit echtem Ziel,
+einmaliger Belohnung und dauerhaftem Eintrag im SITE RECORD: Feuerkalender,
+Mangroven-Schutzwall, Korallen-Akustikkarte, Alpensaatgutkammer,
+Permafrost-Bohrloch, Eisbohrkern-Archiv, Höhlensonar, Ley-Kompass,
+Fluchquarantäne, Sporenwetter, Faltatlas, Serpentin-Saatbank, Hecken-Charta,
+Klima-Analog-Saatgut und Breach-Pilot sind nur die ersten Ideen. Die Notizen
+zahlen Gold und Moral, verbrauchen keinen zusätzlichen Jahres-Slot und laufen
+über dieselben Zähler wie Survey, Deep Survey, Conservation, Restoration,
+Harvest und Stabilisation.
+
+**Sicherheit:** Save-Schema 15 und additives `state.biomeFrontiers` bleiben
+unverändert; alte Saves werden normalisiert und erhalten die neuen Einträge
+beim nächsten Tick. Der Jahrespass bleibt ein Durchlauf über 15 Sites.
+
+**Verifikation:** Systemtest mit Field-Notes-Roundtrip, Desktop-Register mit
+180/90/90/60/90 Einträgen und alle sechs Mobile-/Querformat-Viewports grün.
 
 ## 3.90.3 — Frontier-Ergebnis direkt bei den Aktionen
 

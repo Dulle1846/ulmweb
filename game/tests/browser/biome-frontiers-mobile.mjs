@@ -165,6 +165,8 @@ async function runViewport(viewport, index) {
         deep: element.dataset.frontierDeepSurveyed,
         protected: element.dataset.frontierProtected || "",
         goods: Number(element.dataset.frontierGoods),
+        journal: Number(element.dataset.frontierJournalCount),
+        journalEntries: element.querySelectorAll("[data-frontier-journal]").length,
         species: element.querySelectorAll("[data-frontier-species]").length,
         livingSpecies: element.querySelectorAll('[data-frontier-species-status="living"]').length,
         specialists: element.querySelectorAll('[data-frontier-specialist-status="living"]').length,
@@ -192,7 +194,7 @@ async function runViewport(viewport, index) {
             ".biome-frontier__summary", ".biome-frontier__climate", ".biome-frontier__card",
             ".biome-frontier__body", ".biome-frontier__meters", ".biome-frontier__hazards",
             ".biome-frontier__species", ".biome-frontier__specialist", ".biome-frontier__good",
-            ".biome-frontier__actions", ".biome-frontier__history", ".biome-frontier__guide article",
+            ".biome-frontier__journal-entry", ".biome-frontier__actions", ".biome-frontier__history", ".biome-frontier__guide article",
         ];
         for (const element of root.querySelectorAll(selectors.join(","))) {
             if (!isVisible(element)) continue;
@@ -233,7 +235,7 @@ async function runViewport(viewport, index) {
             }
         }
         const clipped = [];
-        for (const element of root.querySelectorAll(".biome-frontier__title b, .biome-frontier__title small, .biome-frontier__species b, .biome-frontier__specialist b, .biome-frontier__good b, .biome-frontier__guide article p, .biome-frontier__guide article em")) {
+        for (const element of root.querySelectorAll(".biome-frontier__title b, .biome-frontier__title small, .biome-frontier__species b, .biome-frontier__specialist b, .biome-frontier__journal-entry b, .biome-frontier__journal-entry small, .biome-frontier__good b, .biome-frontier__guide article p, .biome-frontier__guide article em")) {
             if (!isVisible(element)) continue;
             if (element.scrollWidth > element.clientWidth + 1) {
                 clipped.push({ className: String(element.className), text: element.textContent.trim().slice(0, 40) });
@@ -300,10 +302,12 @@ async function runViewport(viewport, index) {
         await page.waitForFunction(() => document.querySelectorAll("[data-frontier-point]").length === 15, null, { timeout: 60000 });
         const initial = await page.evaluate(() => ({
             cards: document.querySelectorAll("[data-frontier-site]").length,
+            journal: document.querySelectorAll("[data-frontier-journal]").length,
             points: document.querySelectorAll("[data-frontier-point]").length,
             requirements: [...document.querySelectorAll("[data-frontier-point]")].map(entry => entry.dataset.frontierPoint),
         }));
         assert.equal(initial.cards, 15);
+        assert.equal(initial.journal, 90, "all fifteen field journals must mount six notes");
         assert.equal(initial.points, 15);
         assert.deepEqual(initial.requirements, Array.from({ length: 15 }, (_, offset) => "1.2.23." + (offset + 2)));
         checks.initial = initial;
@@ -351,11 +355,13 @@ async function runViewport(viewport, index) {
         await clickAction("savanna-dry-woodland", "survey");
         const afterSurvey = await readCard("savanna-dry-woodland");
         assert.equal(afterSurvey.surveyed, "1");
+        assert.ok(afterSurvey.journal >= 1, "the survey must unlock its first field note");
+        assert.equal(afterSurvey.journalEntries, 6, "the field journal must mount all six notes");
         assert.ok(afterSurvey.history.includes("survey"), "the survey result must be readable");
         assert.match(afterSurvey.lastDecision, /LAST DECISION · YEAR 1 · SURVEY Redpass Thornsea surveyed/);
         assert.equal(afterSurvey.actions.every(action => action.disabled), true, "a site must allow one action per year");
         const goldAfterSurvey = await page.evaluate(async () => (await import("./js/core/state.js")).state.resources.gold);
-        assert.ok(goldAfterSurvey < goldStart, "the survey must spend gold");
+        assert.equal(goldAfterSurvey, goldStart - 8 + 18, "the survey fee and its field-note grant must both settle");
         checks.survey = { before: beforeSurvey, after: afterSurvey, gold: [goldStart, goldAfterSurvey] };
         await capture("survey-result");
         await assertLayout("survey");
@@ -428,7 +434,7 @@ async function runViewport(viewport, index) {
         await clickAction("savanna-dry-woodland", "deepSurvey");
         const afterDeep = await readCard("savanna-dry-woodland");
         assert.equal(afterDeep.deep, "1");
-        assert.equal(afterDeep.specialists, 3, "deep survey must read the living rare community");
+        assert.equal(afterDeep.specialists, 6, "deep survey must read the living rare community");
         assert.ok(afterDeep.history.includes("deep survey"));
         checks.deepSurvey = { before: beforeDeep, after: afterDeep };
         await capture("deep-survey-result");
@@ -449,6 +455,7 @@ async function runViewport(viewport, index) {
             viewport: `${viewport.width}x${viewport.height}`,
             guide: pointReads.length,
             survey: afterSurvey.surveyed,
+            journal: afterSurvey.journal,
             conserved: conserved.protected,
             restored: [restoreBefore.condition, restored.condition],
             magic: [magicBefore.magic, stabilised.magic],

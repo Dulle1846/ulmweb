@@ -185,6 +185,7 @@ export function createBiomeFrontierSite(def, index, seed, year = yearNow()) {
         specialists: createSpecialists(def),
         hazards: createHazards(def),
         goods: createGoods(def),
+        journal: [],
         history: [],
     };
 }
@@ -205,7 +206,7 @@ function baseState(year = yearNow()) {
         stats: {
             surveyed: 0, conserved: 0, restored: 0, revived: 0, harvested: 0,
             stabilised: 0, vanished: 0, transfigured: 0, climateShifts: 0,
-            magicEvents: 0, catastrophes: 0, goods: 0,
+            magicEvents: 0, catastrophes: 0, goods: 0, discoveries: 0,
         },
     };
 }
@@ -294,6 +295,10 @@ function normalizeSite(row, def, index, seed, year) {
     const layers = Array.isArray(saved.layers)
         ? saved.layers.filter(layer => def.relics.includes(String(layer))).slice(0, def.relics.length)
         : [];
+    const journalIds = new Set(def.journal.map(entry => entry.id));
+    const journal = Array.isArray(saved.journal)
+        ? [...new Set(saved.journal.filter(id => journalIds.has(String(id))).map(String))].slice(0, def.journal.length)
+        : [];
     return {
         id: "frontier-" + def.id,
         family: def.id,
@@ -335,6 +340,7 @@ function normalizeSite(row, def, index, seed, year) {
         specialists,
         hazards,
         goods,
+        journal,
         history: Array.isArray(saved.history)
             ? saved.history.map(normalizeHistory).filter(Boolean).slice(-BIOME_FRONTIER_SITE_HISTORY_LIMIT)
             : [],
@@ -379,6 +385,7 @@ function normalizeModel(snapshot) {
             magicEvents: Math.max(0, Math.floor(num(snapshot.stats?.magicEvents, 0))),
             catastrophes: Math.max(0, Math.floor(num(snapshot.stats?.catastrophes, 0))),
             goods: Math.max(0, Math.floor(num(snapshot.stats?.goods, 0))),
+            discoveries: Math.max(0, Math.floor(num(snapshot.stats?.discoveries, 0))),
         },
     };
 }
@@ -448,6 +455,47 @@ function pushHistory(model, site, kind, message) {
 
 function bump(model, key, amount = 1) {
     model.stats[key] = Math.max(0, num(model.stats[key], 0) + amount);
+}
+
+function journalGoalMet(site, entry) {
+    const at = Math.max(0, num(entry.at, 1));
+    switch (entry.goal) {
+        case "surveys": return site.surveys >= at;
+        case "deep": return site.deepSurveyed;
+        case "conserved": return site.protected;
+        case "restored": return site.restored >= at;
+        case "harvested": return site.harvested >= at;
+        case "stabilised": return site.stabilised >= at;
+        case "condition": return site.condition >= at;
+        case "hazard": return site.hazards.some(row => row.year > 0);
+        case "climate": return site.climateAnalogIndex >= at;
+        case "layers": return site.layers.length >= at;
+        case "specialists": return site.specialists.filter(row => row.status === "living").length >= at;
+        default: return false;
+    }
+}
+
+// Field notes are the long-term research layer. They are declarative goals
+// over counters the site already keeps, unlock once, and pay a fixed reward.
+// They never consume the shared RNG or add a second annual pass.
+function settleJournal(model, site) {
+    const def = definitionFor(site);
+    if (!def?.journal?.length || !Array.isArray(site.journal)) return 0;
+    let unlocked = 0;
+    for (const entry of def.journal) {
+        if (site.journal.includes(entry.id) || !journalGoalMet(site, entry)) continue;
+        site.journal.push(entry.id);
+        if (site.journal.length > def.journal.length) site.journal.splice(0, site.journal.length - def.journal.length);
+        unlocked += 1;
+        bump(model, "discoveries", 1);
+        if (entry.reward.gold) addResource("gold", entry.reward.gold);
+        if (entry.reward.morale && state.morale != null) {
+            state.morale = clamp(num(state.morale, 50) + entry.reward.morale, 0, 100);
+        }
+        pushHistory(model, site, "journal", entry.label + " recorded: " + entry.detail);
+        logEvent("FIELD NOTE · " + entry.label.toUpperCase() + " · " + site.name.toUpperCase(), "#b7c99b");
+    }
+    return unlocked;
 }
 
 function costLabel(cost) {
@@ -542,6 +590,17 @@ function siteSummary(site, model) {
         goods,
         history: site.history.map(row => ({ ...row })),
         layers: [...site.layers],
+        journal: (def?.journal || []).map(entry => ({
+            id: entry.id,
+            label: entry.label,
+            detail: entry.detail,
+            goal: entry.goal,
+            goalLabel: entry.goalLabel,
+            reward: { ...entry.reward },
+            unlocked: site.journal.includes(entry.id),
+        })),
+        journalUnlocked: site.journal.length,
+        journalTotal: def?.journal?.length || 0,
         livingSpecies: site.species.filter(row => row.status === "living").length,
         livingSpecialists: site.specialists.filter(row => row.status === "living").length,
         goodsStock: goods.reduce((sum, row) => sum + row.stock, 0),
@@ -578,6 +637,8 @@ export function biomeFrontierSummary() {
             goods: goods.reduce((sum, good) => sum + good.stock, 0),
             specialists: sites.reduce((sum, site) => sum + site.specialists.length, 0),
             livingSpecialists: sites.reduce((sum, site) => sum + site.livingSpecialists, 0),
+            discoveries: sites.reduce((sum, site) => sum + site.journalUnlocked, 0),
+            journal: sites.reduce((sum, site) => sum + site.journalTotal, 0),
             averageCondition: round(sites.reduce((sum, site) => sum + site.condition, 0) / Math.max(1, sites.length), 1),
         },
         history: model.history.slice().reverse().map(row => ({ ...row })),
@@ -617,6 +678,7 @@ export function surveyBiomeFrontier(siteId, deep = false) {
     }
     clearActionLock(site);
     bump(model, "surveyed", 1);
+    settleJournal(model, site);
     const message = wantsDeep
         ? def.site.name + " deep survey: " + site.specialists.length + " specialist species and " + site.layers.length + " relict layers recorded."
         : def.site.name + " surveyed: " + site.species.length + " species and " + site.hazards.length + " disturbance regimes charted.";
@@ -640,6 +702,7 @@ export function conserveBiomeFrontier(siteId) {
     clearActionLock(site);
     bump(model, "conserved", 1);
     adjustBiome(site, { vegetation: 0.012, erosion: -0.006 });
+    settleJournal(model, site);
     const message = "A warden's agreement protects " + site.name + "; annual decline is halved and the rare community has priority.";
     pushHistory(model, site, "conserve", message);
     logEvent("FRONTIER CONSERVED · " + site.name.toUpperCase());
@@ -667,6 +730,7 @@ export function restoreBiomeFrontier(siteId) {
         bump(model, "revived", 1);
         bump(model, "restored", 1);
         adjustBiome(site, { vegetation: 0.03, erosion: -0.012 });
+        settleJournal(model, site);
         const message = site.name + " was revived from stored seed and local material; three founder cohorts now hold the site.";
         pushHistory(model, site, "revive", message);
         logEvent("FRONTIER REVIVED · " + site.name.toUpperCase());
@@ -683,6 +747,7 @@ export function restoreBiomeFrontier(siteId) {
     bump(model, "restored", 1);
     adjustBiome(site, { vegetation: 0.018, water: 0.004, erosion: -0.006 });
     if (state.morale != null) state.morale = clamp(num(state.morale, 50) + 1, 0, 100);
+    settleJournal(model, site);
     const message = "Restoration work in " + site.name + " raised condition to " + Math.round(site.condition) + " and extent to " + Math.round(site.extent) + ".";
     pushHistory(model, site, "restore", message);
     logEvent("FRONTIER RESTORED · " + site.name.toUpperCase());
@@ -709,6 +774,7 @@ export function harvestBiomeFrontier(siteId) {
     bump(model, "harvested", 1);
     bump(model, "goods", amount);
     adjustBiome(site, { vegetation: -0.005 });
+    settleJournal(model, site);
     const message = amount + " " + good.label + " taken from " + site.name + "; condition fell to " + Math.round(site.condition) + ".";
     pushHistory(model, site, "harvest", message);
     logEvent("FRONTIER HARVEST · " + amount + " " + good.label.toUpperCase() + " · " + site.name.toUpperCase());
@@ -735,6 +801,7 @@ export function stabiliseBiomeFrontier(siteId) {
     site.lastStabiliseYear = yearNow();
     clearActionLock(site);
     bump(model, "stabilised", 1);
+    settleJournal(model, site);
     const message = "Stabilisation reduced wild magic to " + Math.round(site.magic) + " and corruption to " + Math.round(site.corruption) + " in " + site.name + ".";
     pushHistory(model, site, "stabilise", message);
     logEvent("FRONTIER STABILISED · " + site.name.toUpperCase());
@@ -804,6 +871,7 @@ export function applyBiomeFrontierCatastrophe(siteId, kind = null, options = {})
         adjustBiome(site, { vegetation: -0.012 * severity, erosion: 0.008 * severity });
     }
     bump(model, "catastrophes", 1);
+    settleJournal(model, site);
     const message = (event?.label || "Ecological catastrophe") + " struck " + site.name + " at severity " + Math.round(severity * 100)
         + "% · condition " + Math.round(before) + " → " + Math.round(site.condition) + (vanished ? " · the site is gone" : "");
     pushHistory(model, site, "catastrophe", message);
@@ -939,6 +1007,7 @@ function advanceBiomeFrontierYear(model, site, year) {
     } else if (site.phase !== beforePhase && !catastrophe?.vanished) {
         pushHistory(model, site, "phase", site.name + " moved from " + beforePhase + " to " + site.phase + ".");
     }
+    settleJournal(model, site);
     return {
         vanished: site.phase === "vanished",
         changed: site.phase !== beforePhase || site.aspect !== beforeAspect || Boolean(catastrophe),
@@ -1027,6 +1096,11 @@ export function validateBiomeFrontierSnapshot(snapshot) {
         if (!Array.isArray(site.specialists) || site.specialists.length > BIOME_FRONTIER_SPECIALIST_LIMIT) throw new Error("Save data contains too many frontier specialists.");
         if (!Array.isArray(site.hazards) || site.hazards.length > BIOME_FRONTIER_HAZARD_LIMIT) throw new Error("Save data contains too many frontier hazards.");
         if (!Array.isArray(site.goods) || site.goods.length > BIOME_FRONTIER_GOOD_LIMIT) throw new Error("Save data contains too many frontier goods.");
+        const journalIds = new Set(BIOME_FRONTIER_BY_ID[site.family].journal.map(entry => entry.id));
+        if (site.journal !== undefined && (!Array.isArray(site.journal) || site.journal.length > BIOME_FRONTIER_BY_ID[site.family].journal.length
+            || site.journal.some(id => !journalIds.has(String(id))))) {
+            throw new Error("Save data contains an invalid frontier field journal.");
+        }
         if (!Array.isArray(site.history) || site.history.length > BIOME_FRONTIER_SITE_HISTORY_LIMIT) throw new Error("Save data contains too much frontier site history.");
     }
     return true;

@@ -12,15 +12,21 @@
 // a palette, at least two tree/plant and one animal species, one named rare
 // community, one hazard with a real annual consequence, one rare good and a
 // reference seed. The 300-year soak and the save round-trip are the contract.
+//
+// The expansion module adds four to six species, three specialists, three
+// hazards, two goods, relict layers and six long-term field notes per family.
+// It remains the same single catalogue and the same bounded yearly pass.
+import { BIOME_FRONTIER_EXPANSION } from "./biome-frontier-expansion.js";
 
 export const BIOME_FRONTIER_VERSION = 1;
 export const BIOME_FRONTIER_SITE_LIMIT = 15;
-export const BIOME_FRONTIER_SPECIES_LIMIT = 8;
-export const BIOME_FRONTIER_SPECIALIST_LIMIT = 4;
-export const BIOME_FRONTIER_HAZARD_LIMIT = 3;
-export const BIOME_FRONTIER_GOOD_LIMIT = 3;
-export const BIOME_FRONTIER_SITE_HISTORY_LIMIT = 8;
-export const BIOME_FRONTIER_HISTORY_LIMIT = 32;
+export const BIOME_FRONTIER_SPECIES_LIMIT = 12;
+export const BIOME_FRONTIER_SPECIALIST_LIMIT = 6;
+export const BIOME_FRONTIER_HAZARD_LIMIT = 6;
+export const BIOME_FRONTIER_GOOD_LIMIT = 4;
+export const BIOME_FRONTIER_JOURNAL_LIMIT = 6;
+export const BIOME_FRONTIER_SITE_HISTORY_LIMIT = 12;
+export const BIOME_FRONTIER_HISTORY_LIMIT = 48;
 export const BIOME_FRONTIER_GOODS_CAP = 999;
 
 const freeze = value => Object.freeze(value);
@@ -31,18 +37,29 @@ const good = (id, label, value, annual, note) => freeze({ id, label, value, annu
 const catastrophe = (id, label, detail) => freeze({ id, label, detail });
 
 function defineFamily(definition) {
-    return freeze({
+    const expansion = BIOME_FRONTIER_EXPANSION[definition.id] || {};
+    const merged = {
         ...definition,
-        climates: freeze(definition.climates),
-        atlasBiomes: freeze(definition.atlasBiomes),
-        palette: freeze(definition.palette),
-        climateAnalog: freeze(definition.climateAnalog),
-        species: freeze(definition.species),
-        specialists: freeze(definition.specialists),
-        hazards: freeze(definition.hazards),
-        goods: freeze(definition.goods),
-        catastrophes: freeze(definition.catastrophes),
-        relics: freeze(definition.relics),
+        species: [...definition.species, ...(expansion.species || [])],
+        specialists: [...definition.specialists, ...(expansion.specialists || [])],
+        hazards: [...definition.hazards, ...(expansion.hazards || [])],
+        goods: [...definition.goods, ...(expansion.goods || [])],
+        relics: [...definition.relics, ...(expansion.relics || [])],
+        journal: expansion.journal || [],
+    };
+    return freeze({
+        ...merged,
+        climates: freeze(merged.climates),
+        atlasBiomes: freeze(merged.atlasBiomes),
+        palette: freeze(merged.palette),
+        climateAnalog: freeze(merged.climateAnalog),
+        species: freeze(merged.species.slice(0, BIOME_FRONTIER_SPECIES_LIMIT)),
+        specialists: freeze(merged.specialists.slice(0, BIOME_FRONTIER_SPECIALIST_LIMIT)),
+        hazards: freeze(merged.hazards.slice(0, BIOME_FRONTIER_HAZARD_LIMIT)),
+        goods: freeze(merged.goods.slice(0, BIOME_FRONTIER_GOOD_LIMIT)),
+        catastrophes: freeze(merged.catastrophes),
+        relics: freeze(merged.relics),
+        journal: freeze(merged.journal.slice(0, BIOME_FRONTIER_JOURNAL_LIMIT)),
     });
 }
 
@@ -1079,7 +1096,7 @@ export const BIOME_FRONTIER_REQUIREMENTS = freeze([
         id: "1.2.23.2", family: "savanna-dry-woodland",
         title: "Savannas and dry woodlands", point: "Savannen und Trockenwälder",
         consumer: "BIOME_FRONTIER_FAMILIES[savanna-dry-woodland] + biomeFrontierSummary",
-        detail: "A full savanna site with baobab, acacia, shea and marula, grass and termite layers, elephant and giraffe pressure, three named disturbance regimes, shea-butter and gum-arabic goods and a documented fire-managed succession. The annual pass lets grass fire, drought and overgrazing open or close the canopy, and the site can be surveyed, conserved, restored or harvested.",
+        detail: "A full savanna site with baobab, acacia, shea and marula, grass and termite layers, elephant and giraffe pressure, six named disturbance regimes, four goods and a documented fire-managed succession. Twelve cohorts, six rare species and six field notes extend the site. The annual pass lets grass fire, drought, overgrazing, flash floods, charcoal clearance and prickly pear open or close the canopy, and the site can be surveyed, conserved, restored or harvested.",
     },
     {
         id: "1.2.23.3", family: "mangrove",
@@ -1179,7 +1196,7 @@ export const BIOME_FRONTIER_GROUPS = freeze([
 
 export const BIOME_FRONTIER_GUARDRAILS = freeze([
     "The catalogue is data only: no code, DOM, URL or save mutation is accepted from a family definition.",
-    "One bounded site per family (15 total), with at most eight species, four specialists, three hazards, three goods and eight site-history rows.",
+    "One bounded site per family (15 total), with at most twelve species, six specialists, six hazards, four goods, six field notes and twelve site-history rows.",
     "The simulation advances once per year in the existing annual chain. There is no per-frame, per-tick or per-tile work.",
     "Every random-looking choice uses a stable hash of world seed, site id and year; it never consumes the shared gameplay RNG stream.",
     "The ledger is additive under state.biomeFrontiers. An absent field starts a deterministic fresh catalogue, so save schema 15 stays valid.",

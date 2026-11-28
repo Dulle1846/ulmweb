@@ -71,12 +71,19 @@ test("all fifteen frontier ecosystems and their 1.2.23.2–16 points are complet
         assert.ok(family.label && family.labelDe, family.id + " needs both names");
         assert.ok(family.profile.length > 120, family.id + " needs a player-facing profile");
         assert.ok(family.formation.length > 40, family.id + " needs a formation description");
-        assert.ok(family.species.length >= 6, family.id + " needs at least six species");
+        assert.ok(family.species.length >= 12, family.id + " needs twelve species");
         assert.ok(family.species.some(row => row.kind === "tree" || row.kind === "plant"), family.id + " needs a plant layer");
         assert.ok(family.species.some(row => row.kind === "animal"), family.id + " needs an animal layer");
-        assert.ok(family.specialists.length >= 3, family.id + " needs a rare community");
-        assert.ok(family.hazards.length >= 3, family.id + " needs three disturbance regimes");
-        assert.ok(family.goods.length >= 2, family.id + " needs two rare goods");
+        assert.ok(family.specialists.length >= 6, family.id + " needs six rare species");
+        assert.ok(family.hazards.length >= 6, family.id + " needs six disturbance regimes");
+        assert.ok(family.goods.length >= 4, family.id + " needs four rare goods");
+        assert.equal(family.journal.length, 6, family.id + " needs six field notes");
+        assert.equal(new Set(family.journal.map(entry => entry.id)).size, 6, family.id + " field note ids must be unique");
+        for (const entry of family.journal) {
+            assert.ok(entry.label.length > 3 && entry.detail.length > 40, family.id + " field notes need readable text");
+            assert.ok(entry.goalLabel.length > 3, family.id + " field notes need a goal label");
+            assert.ok(entry.reward.gold > 0, family.id + " field notes need a real reward");
+        }
         assert.equal(family.palette.length, 3, family.id + " needs a palette");
         assert.ok(family.climateAnalog.length >= 3, family.id + " needs a climate sequence");
         assert.ok(family.referenceSeed > 0, family.id + " needs a reference seed");
@@ -97,10 +104,12 @@ test("the ledger starts one linked site per family with species, hazards, goods 
         assert.ok(site.atlasRegionId, site.family + " must bind to a province of the atlas");
         assert.ok(site.condition > 0 && site.condition <= 100);
         assert.ok(site.extent > 0 && site.extent <= 100);
-        assert.ok(site.species.length >= 6);
-        assert.equal(site.specialists.length, 3);
-        assert.equal(site.hazards.length, 3);
-        assert.equal(site.goods.length, 2);
+        assert.ok(site.species.length >= 12);
+        assert.equal(site.specialists.length, 6);
+        assert.equal(site.hazards.length, 6);
+        assert.equal(site.goods.length, 4);
+        assert.equal(site.journal.length, 0);
+        assert.equal(biomeFrontierSite(site.id).journal.length, 6);
         assert.equal(site.goods.every(good => good.stock === 0), true);
         assert.equal(site.phase, biomeFrontierPhaseFor(site.condition).id);
         assert.equal(site.layers.length >= 1, true);
@@ -110,7 +119,8 @@ test("the ledger starts one linked site per family with species, hazards, goods 
     assert.equal(summary.requirements.length, 15);
     assert.equal(summary.groups.length, 3);
     assert.equal(summary.stats.sites, 15);
-    assert.equal(summary.stats.specialists, 45);
+    assert.equal(summary.stats.specialists, 90);
+    assert.equal(summary.stats.journal, 90);
     assert.equal(summary.regions.length, 15);
     assert.equal(summary.referenceSeeds.length, 15);
     const first = biomeFrontierSite(model.sites[0].id);
@@ -126,7 +136,8 @@ test("survey, deep survey, conservation, restoration, harvest and sale are real 
     const surveyed = surveyBiomeFrontier(site.id);
     assert.equal(surveyed.ok, true);
     assert.equal(site.surveyed, true);
-    assert.ok(state.resources.gold < goldBefore, "a survey must cost gold");
+    // The survey fee is charged, then the first field note pays its fixed grant.
+    assert.equal(state.resources.gold, goldBefore - 8 + 18, "survey fee and field-note grant must both settle");
     assert.equal(site.lastActionYear, 1);
     fund();
     assert.equal(conserveBiomeFrontier(site.id).reason, "one-frontier-action-per-year");
@@ -230,12 +241,45 @@ test("the annual pass shifts climate analogues, keeps sites bounded and is idemp
         assert.ok(site.extent >= 0 && site.extent <= 100);
         assert.ok(site.magic >= 0 && site.magic <= 100);
         assert.ok(site.corruption >= 0 && site.corruption <= 100);
-        assert.ok(site.history.length <= 8);
-        assert.ok(site.goods.length <= 3);
-        assert.ok(site.species.length <= 8);
-        assert.ok(site.specialists.length <= 4);
+        assert.ok(site.history.length <= 12);
+        assert.ok(site.goods.length <= 4);
+        assert.ok(site.species.length <= 12);
+        assert.ok(site.specialists.length <= 6);
+        assert.ok(site.hazards.length <= 6);
     }
-    assert.ok(model.history.length <= 32);
+    assert.ok(model.history.length <= 48);
+});
+
+test("field notes unlock from real site work, pay once and stay in the save", () => {
+    const model = setup();
+    const site = siteByFamily(model, "savanna-dry-woodland");
+    const beforeGold = state.resources.gold;
+    assert.equal(site.journal.length, 0);
+    assert.equal(biomeFrontierSite(site.id).journal.length, 6);
+    assert.equal(biomeFrontierSite(site.id).journal.filter(entry => entry.unlocked).length, 0);
+
+    const surveyed = surveyBiomeFrontier(site.id);
+    assert.equal(surveyed.ok, true);
+    assert.ok(site.journal.includes("fire-calendar"));
+    assert.ok(state.resources.gold > beforeGold - 8, "the field note must pay its reward");
+    const afterFirst = site.journal.length;
+    state.year = 2;
+    updateBiomeFrontiers();
+    assert.equal(site.journal.length, afterFirst, "a field note must never unlock twice");
+    assert.equal(biomeFrontierSummary().stats.discoveries >= 1, true);
+
+    state.year = 3;
+    assert.equal(surveyBiomeFrontier(site.id).ok, true);
+    assert.ok(site.journal.includes("elephant-corridor"), "the deep survey must unlock its field note");
+    const snapshot = serializeBiomeFrontierState();
+    assert.equal(validateBiomeFrontierSnapshot(snapshot), true);
+    resetState();
+    restoreBiomeFrontierState(JSON.parse(JSON.stringify(snapshot)));
+    const restored = siteByFamily(state.biomeFrontiers, "savanna-dry-woodland");
+    assert.deepEqual(restored.journal, site.journal);
+    const invalid = JSON.parse(JSON.stringify(snapshot));
+    invalid.sites[0].journal = ["not-a-note"];
+    assert.throws(() => validateBiomeFrontierSnapshot(invalid), /field journal/i);
 });
 
 test("conservation feeds the linked atlas region instead of a parallel map", () => {
@@ -303,18 +347,19 @@ test("a 300-year soak keeps every frontier archive bounded", { timeout: 120000 }
             assert.ok(site.extent >= 0 && site.extent <= 100);
             assert.ok(site.magic >= 0 && site.magic <= 100);
             assert.ok(site.corruption >= 0 && site.corruption <= 100);
-            assert.ok(site.species.length <= 8);
-            assert.ok(site.specialists.length <= 4);
-            assert.ok(site.hazards.length <= 3);
-            assert.ok(site.goods.length <= 3);
+            assert.ok(site.species.length <= 12);
+            assert.ok(site.specialists.length <= 6);
+            assert.ok(site.hazards.length <= 6);
+            assert.ok(site.goods.length <= 4);
             assert.ok(site.goods.every(good => good.stock <= 999));
-            assert.ok(site.history.length <= 8);
+            assert.ok(site.history.length <= 12);
+            assert.ok(site.journal.length <= 6);
             assert.ok(site.climateAnalogIndex >= 0);
             const family = BIOME_FRONTIER_FAMILIES.find(row => row.id === site.family);
             assert.ok(site.climateAnalogIndex < family.climateAnalog.length);
             assert.ok(site.layers.length <= family.relics.length);
         }
-        assert.ok(model.history.length <= 32);
+        assert.ok(model.history.length <= 48);
     }
     assert.ok(model.stats.catastrophes + model.stats.magicEvents > 0, "300 years must produce real events");
     assert.ok(model.sites.some(site => site.phase !== "vanished"), "the catalogue must not end wholly erased");
